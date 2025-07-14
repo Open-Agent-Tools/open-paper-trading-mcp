@@ -1,0 +1,15 @@
+# Use the main application image as a base
+FROM open-paper-trading-mcp_app:latest
+
+# Install ADK and its dependencies
+RUN pip install google-generativeai "google-ai-generativelanguage==0.7.0"
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the evaluation script into the container
+COPY scripts/run_adk_eval.sh /usr/local/bin/run_adk_eval.sh
+RUN chmod +x /usr/local/bin/run_adk_eval.sh
+
+# Set the entrypoint for the container
+ENTRYPOINT ["/usr/local/bin/run_adk_eval.sh"]
