@@ -38,7 +38,7 @@ If you prefer to run the application locally without Docker, you can use `uv` to
 
 2.  **Install dependencies:**
     ```bash
-    uv pip sync
+    uv pip sync pyproject.toml
     ```
 
 3.  **Set up the environment:**
