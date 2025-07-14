@@ -16,9 +16,10 @@ import gzip
 import csv
 import os
 from datetime import datetime, date
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from pathlib import Path
 
+from .base import QuoteAdapter, AdapterConfig
 from ..models.assets import Asset, Option, asset_factory
 from ..models.quotes import Quote, OptionQuote, OptionsChain
 from ..services.greeks import calculate_option_greeks
@@ -29,7 +30,7 @@ class TestDataError(Exception):
     pass
 
 
-class TestDataQuoteAdapter:
+class TestDataQuoteAdapter(QuoteAdapter):
     """
     Quote adapter that provides historical test data for development and testing.
     
@@ -37,14 +38,20 @@ class TestDataQuoteAdapter:
     of options trading strategies and edge cases.
     """
     
-    def __init__(self, current_date: str = '2017-03-24'):
+    def __init__(self, current_date: str = '2017-03-24', config: Optional[AdapterConfig] = None):
         """
         Initialize with a specific date.
         
         Args:
             current_date: Date to retrieve quotes for (YYYY-MM-DD format)
                          Available dates: 2017-01-27, 2017-01-28, 2017-03-24, 2017-03-25
+            config: Adapter configuration, will create default if None
         """
+        if config is None:
+            config = AdapterConfig(name="test_data", priority=999, cache_ttl=3600.0)
+        
+        super().__init__(config)
+        
         self.current_date = datetime.strptime(current_date, '%Y-%m-%d').strftime('%Y-%m-%d')
         self._cache: Optional[Dict[str, Any]] = None
         self._data_file = Path(__file__).parent / 'test_data' / 'data.csv.gz'
@@ -137,40 +144,62 @@ class TestDataQuoteAdapter:
         
         return self._cache
     
-    def get_quote(self, asset: Any) -> Optional[Quote]:
+    def get_quote(self, symbol: str) -> Optional[Union[Quote, OptionQuote]]:
         """
-        Get quote for an asset on the current date.
+        Get quote for a symbol on the current date.
         
         Args:
-            asset: Asset symbol string or Asset object
+            symbol: Asset symbol string
             
         Returns:
             Quote object or None if not found
         """
-        asset_obj = asset_factory(asset)
+        asset_obj = asset_factory(symbol)
         cache_key = asset_obj.symbol + self.current_date
         
         cache = self.load_test_data()
         return cache.get(cache_key)
     
+    def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
+        """
+        Get quotes for multiple symbols.
+        
+        Args:
+            symbols: List of symbols to quote
+            
+        Returns:
+            Dictionary mapping symbols to their quotes
+        """
+        results = {}
+        cache = self.load_test_data()
+        
+        for symbol in symbols:
+            asset_obj = asset_factory(symbol)
+            cache_key = asset_obj.symbol + self.current_date
+            quote = cache.get(cache_key)
+            if quote is not None:
+                results[symbol] = quote
+                
+        return results
+    
     def get_options_chain(self, 
-                         underlying: Any, 
-                         expiration_date: Optional[date] = None) -> OptionsChain:
+                         underlying: str, 
+                         expiration: Optional[date] = None) -> Optional[OptionsChain]:
         """
         Get options chain for an underlying asset.
         
         Args:
-            underlying: Underlying asset symbol or object
-            expiration_date: Specific expiration date, or None for all
+            underlying: Underlying asset symbol
+            expiration: Specific expiration date, or None for all
             
         Returns:
-            OptionsChain object with calls and puts
+            OptionsChain object with calls and puts, or None if not available
         """
         underlying_asset = asset_factory(underlying)
         cache = self.load_test_data()
         
         # Get underlying quote
-        underlying_quote = self.get_quote(underlying_asset)
+        underlying_quote = self.get_quote(underlying)
         underlying_price = underlying_quote.price if underlying_quote else None
         
         # Filter options for this underlying and date
@@ -181,8 +210,11 @@ class TestDataQuoteAdapter:
                 hasattr(quote.asset, 'underlying') and
                 quote.asset.underlying.symbol == underlying_asset.symbol):
                 
-                if expiration_date is None or quote.asset.expiration_date == expiration_date:
+                if expiration is None or quote.asset.expiration_date == expiration:
                     all_options.append(quote)
+        
+        if not all_options:
+            return None
         
         # Separate calls and puts
         calls = [opt for opt in all_options if opt.asset.option_type == 'call']
@@ -193,7 +225,7 @@ class TestDataQuoteAdapter:
         puts.sort(key=lambda x: x.asset.strike)
         
         # Determine expiration date
-        exp_date = expiration_date
+        exp_date = expiration
         if exp_date is None and all_options:
             exp_date = all_options[0].asset.expiration_date
         
@@ -206,12 +238,12 @@ class TestDataQuoteAdapter:
             quote_time=datetime.strptime(self.current_date, '%Y-%m-%d')
         )
     
-    def get_expiration_dates(self, underlying: Any) -> List[date]:
+    def get_expiration_dates(self, underlying: str) -> List[date]:
         """
         Get available expiration dates for an underlying asset.
         
         Args:
-            underlying: Underlying asset symbol or object
+            underlying: Underlying asset symbol
             
         Returns:
             List of expiration dates
@@ -229,6 +261,93 @@ class TestDataQuoteAdapter:
                 expiration_dates.add(quote.asset.expiration_date)
         
         return sorted(list(expiration_dates))
+    
+    def is_market_open(self) -> bool:
+        """
+        Check if the market is currently open.
+        For test data, always return True.
+        
+        Returns:
+            True (test data is always available)
+        """
+        return True
+    
+    def get_market_hours(self) -> Dict[str, datetime]:
+        """
+        Get current market hours.
+        For test data, return standard market hours.
+        
+        Returns:
+            Dictionary with 'open' and 'close' times
+        """
+        today = datetime.now().replace(hour=9, minute=30, second=0, microsecond=0)
+        return {
+            'open': today,
+            'close': today.replace(hour=16, minute=0)
+        }
+    
+    def supports_symbol(self, symbol: str) -> bool:
+        """
+        Check if this adapter supports the given symbol.
+        
+        Args:
+            symbol: Symbol to check
+            
+        Returns:
+            True if symbol exists in test data
+        """
+        try:
+            cache = self.load_test_data()
+            asset_obj = asset_factory(symbol)
+            cache_key = asset_obj.symbol + self.current_date
+            return cache_key in cache
+        except Exception:
+            return False
+    
+    def get_last_updated(self, symbol: str) -> Optional[datetime]:
+        """
+        Get the last update time for a symbol's quote.
+        
+        Args:
+            symbol: Symbol to check
+            
+        Returns:
+            Last update timestamp (the test data date)
+        """
+        try:
+            return datetime.strptime(self.current_date, '%Y-%m-%d')
+        except Exception:
+            return None
+    
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Perform health check on the adapter.
+        
+        Returns:
+            Dictionary with health status and metrics
+        """
+        try:
+            cache = self.load_test_data()
+            symbol_count = len(set(quote.asset.symbol for quote in cache.values()
+                                  if quote.quote_date.strftime('%Y-%m-%d') == self.current_date))
+            
+            return {
+                'name': self.name,
+                'enabled': self.enabled,
+                'status': 'healthy',
+                'current_date': self.current_date,
+                'available_symbols': symbol_count,
+                'data_file_exists': self._data_file.exists(),
+                'last_check': datetime.now()
+            }
+        except Exception as e:
+            return {
+                'name': self.name,
+                'enabled': self.enabled,
+                'status': 'error',
+                'error': str(e),
+                'last_check': datetime.now()
+            }
     
     def get_available_symbols(self) -> List[str]:
         """Get all available symbols in test data."""

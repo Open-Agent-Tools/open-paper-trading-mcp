@@ -5,7 +5,7 @@ Adapted from paperbroker with Pydantic models and FastAPI integration.
 """
 
 from datetime import datetime, date
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Dict, Any
 from pydantic import BaseModel, Field, validator
 from .assets import Asset, Option, asset_factory
 
@@ -245,3 +245,204 @@ class OptionsChain(BaseModel):
     def get_puts_by_strike(self, strike: float) -> List[OptionQuote]:
         """Get put options for a specific strike."""
         return [opt for opt in self.puts if opt.strike == strike]
+    
+    def filter_by_strike_range(self, min_strike: Optional[float] = None, 
+                              max_strike: Optional[float] = None) -> 'OptionsChain':
+        """
+        Filter options by strike price range.
+        
+        Args:
+            min_strike: Minimum strike price (inclusive)
+            max_strike: Maximum strike price (inclusive)
+            
+        Returns:
+            New OptionsChain with filtered options
+        """
+        filtered_calls = self.calls.copy()
+        filtered_puts = self.puts.copy()
+        
+        if min_strike is not None:
+            filtered_calls = [opt for opt in filtered_calls if opt.strike >= min_strike]
+            filtered_puts = [opt for opt in filtered_puts if opt.strike >= min_strike]
+        
+        if max_strike is not None:
+            filtered_calls = [opt for opt in filtered_calls if opt.strike <= max_strike]
+            filtered_puts = [opt for opt in filtered_puts if opt.strike <= max_strike]
+        
+        return OptionsChain(
+            underlying_symbol=self.underlying_symbol,
+            expiration_date=self.expiration_date,
+            underlying_price=self.underlying_price,
+            calls=filtered_calls,
+            puts=filtered_puts,
+            quote_time=self.quote_time
+        )
+    
+    def filter_by_moneyness(self, moneyness_range: float = 0.2) -> 'OptionsChain':
+        """
+        Filter options by moneyness (how close strikes are to underlying price).
+        
+        Args:
+            moneyness_range: Range around ATM as a percentage (0.2 = 20%)
+            
+        Returns:
+            New OptionsChain with filtered options around the money
+        """
+        if self.underlying_price is None:
+            return self
+        
+        min_strike = self.underlying_price * (1 - moneyness_range)
+        max_strike = self.underlying_price * (1 + moneyness_range)
+        
+        return self.filter_by_strike_range(min_strike, max_strike)
+    
+    def get_atm_options(self, tolerance: float = 0.05) -> Dict[str, List[OptionQuote]]:
+        """
+        Get at-the-money options.
+        
+        Args:
+            tolerance: Tolerance for ATM as percentage of underlying price
+            
+        Returns:
+            Dictionary with 'calls' and 'puts' lists of ATM options
+        """
+        if self.underlying_price is None:
+            return {'calls': [], 'puts': []}
+        
+        tolerance_amount = self.underlying_price * tolerance
+        min_strike = self.underlying_price - tolerance_amount
+        max_strike = self.underlying_price + tolerance_amount
+        
+        atm_calls = [opt for opt in self.calls 
+                    if min_strike <= opt.strike <= max_strike]
+        atm_puts = [opt for opt in self.puts 
+                   if min_strike <= opt.strike <= max_strike]
+        
+        return {'calls': atm_calls, 'puts': atm_puts}
+    
+    def get_itm_options(self) -> Dict[str, List[OptionQuote]]:
+        """
+        Get in-the-money options.
+        
+        Returns:
+            Dictionary with 'calls' and 'puts' lists of ITM options
+        """
+        if self.underlying_price is None:
+            return {'calls': [], 'puts': []}
+        
+        itm_calls = [opt for opt in self.calls if opt.strike < self.underlying_price]
+        itm_puts = [opt for opt in self.puts if opt.strike > self.underlying_price]
+        
+        return {'calls': itm_calls, 'puts': itm_puts}
+    
+    def get_otm_options(self) -> Dict[str, List[OptionQuote]]:
+        """
+        Get out-of-the-money options.
+        
+        Returns:
+            Dictionary with 'calls' and 'puts' lists of OTM options
+        """
+        if self.underlying_price is None:
+            return {'calls': [], 'puts': []}
+        
+        otm_calls = [opt for opt in self.calls if opt.strike > self.underlying_price]
+        otm_puts = [opt for opt in self.puts if opt.strike < self.underlying_price]
+        
+        return {'calls': otm_calls, 'puts': otm_puts}
+    
+    def get_option_by_delta(self, target_delta: float, option_type: str = 'call') -> Optional[OptionQuote]:
+        """
+        Find option closest to target delta.
+        
+        Args:
+            target_delta: Target delta value
+            option_type: 'call' or 'put'
+            
+        Returns:
+            Option closest to target delta, or None if no options have delta
+        """
+        options = self.calls if option_type.lower() == 'call' else self.puts
+        
+        # Filter options that have delta values
+        options_with_delta = [opt for opt in options if opt.delta is not None]
+        if not options_with_delta:
+            return None
+        
+        # Find closest delta
+        closest_option = min(options_with_delta, 
+                           key=lambda opt: abs(opt.delta - target_delta))
+        
+        return closest_option
+    
+    def get_liquid_options(self, min_volume: int = 10, min_bid: float = 0.05) -> 'OptionsChain':
+        """
+        Filter options by liquidity criteria.
+        
+        Args:
+            min_volume: Minimum daily volume
+            min_bid: Minimum bid price
+            
+        Returns:
+            New OptionsChain with liquid options only
+        """
+        liquid_calls = [opt for opt in self.calls 
+                       if (opt.volume or 0) >= min_volume and opt.bid >= min_bid]
+        liquid_puts = [opt for opt in self.puts 
+                      if (opt.volume or 0) >= min_volume and opt.bid >= min_bid]
+        
+        return OptionsChain(
+            underlying_symbol=self.underlying_symbol,
+            expiration_date=self.expiration_date,
+            underlying_price=self.underlying_price,
+            calls=liquid_calls,
+            puts=liquid_puts,
+            quote_time=self.quote_time
+        )
+    
+    def get_summary_stats(self) -> Dict[str, Any]:
+        """
+        Get summary statistics for the options chain.
+        
+        Returns:
+            Dictionary with chain statistics
+        """
+        all_options = self.all_options
+        if not all_options:
+            return {}
+        
+        # Strike statistics
+        strikes = self.get_strikes()
+        
+        # Volume statistics
+        volumes = [opt.volume or 0 for opt in all_options]
+        total_volume = sum(volumes)
+        
+        # Open interest statistics  
+        open_interests = [opt.open_interest or 0 for opt in all_options]
+        total_oi = sum(open_interests)
+        
+        # Greeks statistics (if available)
+        deltas = [opt.delta for opt in all_options if opt.delta is not None]
+        
+        return {
+            'total_options': len(all_options),
+            'call_count': len(self.calls),
+            'put_count': len(self.puts),
+            'strike_range': {
+                'min': min(strikes) if strikes else None,
+                'max': max(strikes) if strikes else None,
+                'count': len(strikes)
+            },
+            'volume': {
+                'total': total_volume,
+                'average': total_volume / len(all_options) if all_options else 0
+            },
+            'open_interest': {
+                'total': total_oi,
+                'average': total_oi / len(all_options) if all_options else 0
+            },
+            'greeks': {
+                'delta_available': len(deltas),
+                'avg_delta': sum(deltas) / len(deltas) if deltas else None
+            }
+        }

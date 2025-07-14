@@ -1,14 +1,18 @@
 """
 Price estimation tools for determining likely transaction prices.
 
-Adapted from paperbroker with Pydantic integration.
+Adapted from paperbroker with enhanced features for realistic fill simulation.
+Includes slippage modeling, volume impact, and options-specific estimation.
 """
 
+import random
 from abc import ABC, abstractmethod
-from math import copysign
-from typing import Optional
+from math import copysign, sqrt
+from typing import Optional, Dict, Any, Union
+from datetime import datetime
 
-from ..models.quotes import Quote
+from ..models.quotes import Quote, OptionQuote
+from ..models.assets import Asset, Option, asset_factory
 
 
 class PriceEstimator(ABC):
@@ -228,5 +232,323 @@ def create_estimator(estimator_type: str, **kwargs) -> PriceEstimator:
         return MarketEstimator()
     elif estimator_type == 'volume':
         return VolumeWeightedEstimator(kwargs.get('size_impact_factor', 0.1))
+    elif estimator_type == 'realistic':
+        return RealisticEstimator(
+            kwargs.get('base_slippage', 0.1),
+            kwargs.get('size_impact', 0.05),
+            kwargs.get('volatility_impact', 0.02)
+        )
+    elif estimator_type == 'options':
+        return OptionsEstimator(kwargs.get('spread_factor', 0.3))
+    elif estimator_type == 'random':
+        return RandomWalkEstimator(
+            kwargs.get('volatility', 0.01),
+            kwargs.get('seed', None)
+        )
     else:
         raise ValueError(f"Unknown estimator type: {estimator_type}")
+
+
+class RealisticEstimator(PriceEstimator):
+    """
+    Advanced estimator that models realistic market conditions.
+    
+    Combines multiple factors:
+    - Base slippage (market microstructure)
+    - Size impact (liquidity constraints)  
+    - Volatility impact (bid-ask spreads widen with volatility)
+    - Time-of-day effects
+    """
+    
+    def __init__(self, base_slippage: float = 0.1, 
+                 size_impact: float = 0.05, 
+                 volatility_impact: float = 0.02):
+        """
+        Initialize realistic estimator.
+        
+        Args:
+            base_slippage: Base slippage factor (0.0 - 1.0)
+            size_impact: Impact factor for order size (0.0 - 1.0)
+            volatility_impact: Impact factor for volatility (0.0 - 1.0)
+        """
+        self.base_slippage = max(0.0, min(1.0, base_slippage))
+        self.size_impact = max(0.0, min(1.0, size_impact))
+        self.volatility_impact = max(0.0, min(1.0, volatility_impact))
+    
+    def estimate(self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None) -> float:
+        """Estimate price using realistic market modeling."""
+        
+        if (quote.bid is None or quote.ask is None or 
+            quote.bid <= 0.0 or quote.ask <= 0.0):
+            return MidpointEstimator().estimate(quote, quantity)
+        
+        if quantity is None or quantity == 0:
+            return round((quote.bid + quote.ask) / 2, 2)
+        
+        # Base calculation
+        direction = copysign(1, quantity)
+        spread = quote.ask - quote.bid
+        midpoint = quote.bid + spread / 2
+        
+        # Base slippage (market microstructure)
+        base_impact = spread * self.base_slippage * 0.5
+        
+        # Size impact
+        order_size = abs(quantity)
+        typical_size = 100  # Assume 100 shares is typical
+        if hasattr(quote, 'ask_size') and quote.ask_size > 0:
+            available_size = quote.ask_size if direction > 0 else quote.bid_size
+            size_ratio = min(order_size / max(available_size, typical_size), 2.0)
+        else:
+            size_ratio = order_size / typical_size
+        
+        size_impact = spread * self.size_impact * sqrt(size_ratio)
+        
+        # Volatility impact (wider spreads in volatile conditions)
+        volatility_factor = 1.0
+        if hasattr(quote, 'iv') and quote.iv is not None:
+            # Use implied volatility for options
+            volatility_factor = 1.0 + quote.iv * self.volatility_impact
+        elif spread / midpoint > 0.05:  # Wide spread indicates volatility
+            volatility_factor = 1.2
+        
+        # Time of day impact (wider spreads at open/close)
+        time_factor = self._get_time_factor()
+        
+        # Combine all impacts
+        total_impact = (base_impact + size_impact) * volatility_factor * time_factor
+        
+        # Apply based on direction
+        if direction > 0:  # Buying - price gets worse (higher)
+            return round(midpoint + total_impact, 2)
+        else:  # Selling - price gets worse (lower)
+            return round(midpoint - total_impact, 2)
+    
+    def _get_time_factor(self) -> float:
+        """Get time-of-day impact factor."""
+        now = datetime.now()
+        hour = now.hour
+        minute = now.minute
+        
+        # Market opens at 9:30 AM, closes at 4:00 PM
+        if hour < 9 or (hour == 9 and minute < 30) or hour >= 16:
+            return 1.0  # After hours - no additional impact
+        
+        # First 30 minutes (9:30-10:00) and last 30 minutes (3:30-4:00)
+        if ((hour == 9 and minute >= 30) or hour == 15 and minute >= 30):
+            return 1.3  # Higher volatility at open/close
+        
+        # Normal trading hours
+        return 1.0
+
+
+class OptionsEstimator(PriceEstimator):
+    """
+    Specialized estimator for options with wider bid-ask spreads.
+    
+    Options typically have wider spreads and different liquidity characteristics
+    than stocks. This estimator accounts for these differences.
+    """
+    
+    def __init__(self, spread_factor: float = 0.3):
+        """
+        Initialize options estimator.
+        
+        Args:
+            spread_factor: Factor for options spread execution (0.0 - 1.0)
+                          0.0 = always get worst price, 1.0 = always get best price
+        """
+        self.spread_factor = max(0.0, min(1.0, spread_factor))
+    
+    def estimate(self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None) -> float:
+        """Estimate option execution price."""
+        
+        if (quote.bid is None or quote.ask is None or 
+            quote.bid <= 0.0 or quote.ask <= 0.0):
+            if quote.price is not None and quote.price > 0.0:
+                return round(quote.price, 2)
+            raise ValueError("OptionsEstimator requires valid bid/ask or last price")
+        
+        if quantity is None or quantity == 0:
+            # For options, bias slightly toward the spread to account for illiquidity
+            return round(quote.bid + (quote.ask - quote.bid) * 0.6, 2)
+        
+        direction = copysign(1, quantity)
+        spread = quote.ask - quote.bid
+        
+        # For options, we rarely get the best price due to wide spreads
+        # Use spread_factor to determine how much of the spread we capture
+        if direction > 0:  # Buying
+            # 0 = pay ask, 1 = pay bid (impossible), spread_factor = somewhere in between
+            price = quote.ask - spread * self.spread_factor
+        else:  # Selling
+            # 0 = receive bid, 1 = receive ask (impossible), spread_factor = somewhere in between  
+            price = quote.bid + spread * self.spread_factor
+        
+        # Options are priced in increments (usually $0.05 or $0.10)
+        # Round to nearest nickel for options under $3, dime for options over $3
+        if price < 3.0:
+            price = round(price * 20) / 20  # Round to nearest $0.05
+        else:
+            price = round(price * 10) / 10  # Round to nearest $0.10
+        
+        return price
+
+
+class RandomWalkEstimator(PriceEstimator):
+    """
+    Estimator that adds random walk behavior to simulate market randomness.
+    
+    Useful for testing and Monte Carlo simulations.
+    """
+    
+    def __init__(self, volatility: float = 0.01, seed: Optional[int] = None):
+        """
+        Initialize random walk estimator.
+        
+        Args:
+            volatility: Daily volatility factor (standard deviation)
+            seed: Random seed for reproducible results
+        """
+        self.volatility = volatility
+        if seed is not None:
+            random.seed(seed)
+    
+    def estimate(self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None) -> float:
+        """Estimate price with random walk component."""
+        
+        # Get base price from midpoint estimator
+        try:
+            base_price = MidpointEstimator().estimate(quote, quantity)
+        except ValueError:
+            if quote.price is not None and quote.price > 0:
+                base_price = quote.price
+            else:
+                raise ValueError("Cannot determine base price for random walk")
+        
+        # Add random component
+        # Assume trading day is 6.5 hours, so intraday volatility is reduced
+        intraday_vol = self.volatility / sqrt(252 * 6.5)  # Scale down from daily
+        random_factor = random.gauss(0, intraday_vol)
+        
+        # Apply random walk
+        adjusted_price = base_price * (1 + random_factor)
+        
+        # Ensure price stays positive and reasonable
+        adjusted_price = max(adjusted_price, base_price * 0.8)  # No more than 20% down
+        adjusted_price = min(adjusted_price, base_price * 1.2)  # No more than 20% up
+        
+        return round(adjusted_price, 2)
+
+
+class MultiEstimator(PriceEstimator):
+    """
+    Composite estimator that combines multiple estimation methods.
+    
+    Useful for sophisticated modeling that considers multiple factors.
+    """
+    
+    def __init__(self, estimators: Dict[str, tuple]):
+        """
+        Initialize multi-estimator.
+        
+        Args:
+            estimators: Dictionary of {name: (estimator, weight)} pairs
+                       Weights should sum to 1.0
+        """
+        self.estimators = estimators
+        total_weight = sum(weight for _, weight in estimators.values())
+        if abs(total_weight - 1.0) > 0.01:
+            raise ValueError("Estimator weights should sum to 1.0")
+    
+    def estimate(self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None) -> float:
+        """Estimate price using weighted combination of estimators."""
+        
+        weighted_price = 0.0
+        total_weight = 0.0
+        
+        for name, (estimator, weight) in self.estimators.items():
+            try:
+                price = estimator.estimate(quote, quantity)
+                weighted_price += price * weight
+                total_weight += weight
+            except Exception as e:
+                # Skip estimators that fail
+                print(f"Estimator {name} failed: {e}")
+                continue
+        
+        if total_weight == 0:
+            raise ValueError("All estimators failed")
+        
+        return round(weighted_price / total_weight, 2)
+
+
+# Advanced factory function with presets
+def create_advanced_estimator(preset: str, **overrides) -> PriceEstimator:
+    """
+    Create estimator using presets for common scenarios.
+    
+    Args:
+        preset: Preset name ('conservative', 'aggressive', 'realistic', 'options', 'test')
+        **overrides: Parameter overrides for the preset
+        
+    Returns:
+        Configured estimator
+    """
+    presets = {
+        'conservative': {
+            'type': 'realistic',
+            'base_slippage': 0.2,
+            'size_impact': 0.1,
+            'volatility_impact': 0.05
+        },
+        'aggressive': {
+            'type': 'realistic', 
+            'base_slippage': 0.05,
+            'size_impact': 0.02,
+            'volatility_impact': 0.01
+        },
+        'realistic': {
+            'type': 'realistic',
+            'base_slippage': 0.1,
+            'size_impact': 0.05,
+            'volatility_impact': 0.02
+        },
+        'options': {
+            'type': 'options',
+            'spread_factor': 0.3
+        },
+        'test': {
+            'type': 'random',
+            'volatility': 0.005,
+            'seed': 42
+        }
+    }
+    
+    if preset not in presets:
+        raise ValueError(f"Unknown preset: {preset}")
+    
+    config = presets[preset].copy()
+    config.update(overrides)
+    
+    estimator_type = config.pop('type')
+    return create_estimator(estimator_type, **config)
+
+
+def get_estimator_for_asset(symbol: str, **kwargs) -> PriceEstimator:
+    """
+    Get appropriate estimator for an asset type.
+    
+    Args:
+        symbol: Asset symbol
+        **kwargs: Additional parameters for estimator
+        
+    Returns:
+        Appropriate estimator for the asset
+    """
+    asset = asset_factory(symbol)
+    
+    if isinstance(asset, Option):
+        return create_advanced_estimator('options', **kwargs)
+    else:
+        return create_advanced_estimator('realistic', **kwargs)
