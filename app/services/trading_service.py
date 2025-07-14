@@ -1,16 +1,21 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Dict
 from uuid import uuid4
 
 from app.models.trading import (
-    Order, OrderCreate, OrderStatus, OrderType,
-    StockQuote, Position, Portfolio, PortfolioSummary
+    Order,
+    OrderCreate,
+    OrderStatus,
+    StockQuote,
+    Position,
+    Portfolio,
+    PortfolioSummary,
 )
-from app.core.exceptions import NotFoundError, ValidationError
+from app.core.exceptions import NotFoundError
 
 
 class TradingService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.orders: List[Order] = []
         self.mock_quotes: Dict[str, StockQuote] = {
             "AAPL": StockQuote(
@@ -19,7 +24,7 @@ class TradingService:
                 change=2.50,
                 change_percent=1.69,
                 volume=1000000,
-                last_updated=datetime.now()
+                last_updated=datetime.now(),
             ),
             "GOOGL": StockQuote(
                 symbol="GOOGL",
@@ -27,7 +32,7 @@ class TradingService:
                 change=-15.00,
                 change_percent=-0.53,
                 volume=500000,
-                last_updated=datetime.now()
+                last_updated=datetime.now(),
             ),
             "MSFT": StockQuote(
                 symbol="MSFT",
@@ -35,7 +40,7 @@ class TradingService:
                 change=5.25,
                 change_percent=1.27,
                 volume=750000,
-                last_updated=datetime.now()
+                last_updated=datetime.now(),
             ),
             "TSLA": StockQuote(
                 symbol="TSLA",
@@ -43,8 +48,8 @@ class TradingService:
                 change=-8.50,
                 change_percent=-3.36,
                 volume=2000000,
-                last_updated=datetime.now()
-            )
+                last_updated=datetime.now(),
+            ),
         }
         self.portfolio_positions: List[Position] = [
             Position(
@@ -52,14 +57,14 @@ class TradingService:
                 quantity=10,
                 avg_price=145.00,
                 current_price=150.00,
-                unrealized_pnl=50.0
+                unrealized_pnl=50.0,
             ),
             Position(
                 symbol="GOOGL",
                 quantity=2,
                 avg_price=2850.00,
                 current_price=2800.00,
-                unrealized_pnl=-100.0
+                unrealized_pnl=-100.0,
             ),
         ]
         self.cash_balance = 10000.0
@@ -74,16 +79,16 @@ class TradingService:
         """Create a new trading order."""
         # Validate symbol exists
         self.get_quote(order_data.symbol)
-        
+
         new_order = Order(
             id=f"order_{uuid4().hex[:8]}",
             symbol=order_data.symbol.upper(),
             order_type=order_data.order_type,
             quantity=order_data.quantity,
             price=order_data.price,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
-        
+
         self.orders.append(new_order)
         return new_order
 
@@ -106,24 +111,28 @@ class TradingService:
 
     def get_portfolio(self) -> Portfolio:
         """Get complete portfolio information."""
-        total_invested = sum(pos.quantity * pos.current_price for pos in self.portfolio_positions)
+        total_invested = sum(
+            pos.quantity * pos.current_price for pos in self.portfolio_positions
+        )
         total_value = self.cash_balance + total_invested
         total_pnl = sum(pos.unrealized_pnl for pos in self.portfolio_positions)
-        
+
         return Portfolio(
             cash_balance=self.cash_balance,
             total_value=total_value,
             positions=self.portfolio_positions,
             daily_pnl=total_pnl,
-            total_pnl=total_pnl
+            total_pnl=total_pnl,
         )
 
     def get_portfolio_summary(self) -> PortfolioSummary:
         """Get portfolio summary."""
-        invested_value = sum(pos.quantity * pos.current_price for pos in self.portfolio_positions)
+        invested_value = sum(
+            pos.quantity * pos.current_price for pos in self.portfolio_positions
+        )
         total_value = self.cash_balance + invested_value
         total_pnl = sum(pos.unrealized_pnl for pos in self.portfolio_positions)
-        
+
         return PortfolioSummary(
             total_value=total_value,
             cash_balance=self.cash_balance,
@@ -131,7 +140,7 @@ class TradingService:
             daily_pnl=total_pnl,
             daily_pnl_percent=(total_pnl / total_value) * 100 if total_value > 0 else 0,
             total_pnl=total_pnl,
-            total_pnl_percent=(total_pnl / total_value) * 100 if total_value > 0 else 0
+            total_pnl_percent=(total_pnl / total_value) * 100 if total_value > 0 else 0,
         )
 
     def get_positions(self) -> List[Position]:

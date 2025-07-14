@@ -2,30 +2,36 @@
 """
 Development utility script for Open Paper Trading MCP
 """
+
 import subprocess
 import sys
 import os
-from pathlib import Path
+
 
 def run_command(cmd):
     """Run a command and return its result"""
     try:
-        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, shell=True, check=True, capture_output=True, text=True
+        )
         return result.stdout
     except subprocess.CalledProcessError as e:
         print(f"Error running command: {cmd}")
         print(f"Error: {e.stderr}")
         return None
 
+
 def start_server():
     """Start both FastAPI and MCP servers"""
     print("Starting both FastAPI and MCP servers...")
     os.system("uv run python app/main.py")
 
+
 def run_tests():
     """Run all tests"""
     print("Running tests...")
     os.system("uv run pytest -v")
+
 
 def format_code():
     """Format code with black and isort"""
@@ -33,15 +39,18 @@ def format_code():
     os.system("uv run black app tests")
     os.system("uv run isort app tests")
 
+
 def lint_code():
     """Lint code with flake8"""
     print("Linting code...")
     os.system("uv run flake8 app tests")
 
+
 def type_check():
     """Type check with mypy"""
     print("Type checking...")
     os.system("uv run mypy app")
+
 
 def run_all_checks():
     """Run all code quality checks"""
@@ -49,6 +58,7 @@ def run_all_checks():
     lint_code()
     type_check()
     run_tests()
+
 
 def main():
     if len(sys.argv) < 2:
@@ -63,7 +73,7 @@ def main():
         return
 
     command = sys.argv[1]
-    
+
     if command == "server":
         start_server()
     elif command == "test":
@@ -78,6 +88,7 @@ def main():
         run_all_checks()
     else:
         print(f"Unknown command: {command}")
+
 
 if __name__ == "__main__":
     main()

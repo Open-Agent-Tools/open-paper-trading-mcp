@@ -1,82 +1,101 @@
-# Project TODO List: Open Paper Trading MCP
+# Open Paper Trading MCP - Development Roadmap
 
-This document outlines the phased development plan to build out the key features of the Open Paper Trading MCP application. The focus is on moving from the current mocked implementation to a fully functional, persistent paper trading simulator.
+This document tracks the implementation progress and upcoming tasks for the paper trading simulator with dual REST API and MCP interfaces.
 
----
+## Phase 0: Infrastructure & Setup ✅ COMPLETE
 
-## Phase 0: Scaffolding & Infrastructure (✓ Complete)
+All infrastructure components are in place:
+- Docker containerization with PostgreSQL
+- Database models and schema
+- ADK test runner integration
+- Both FastAPI and FastMCP servers running
 
-**Goal:** Establish a robust, containerized foundation for the application with a persistent database.
+## Phase 1: Core Trading Engine 🚧 IN PROGRESS
 
--   [x] **1. Containerize the Application:**
-    -   [x] Create a `Dockerfile` for the main application.
-    -   [x] Create a `docker-compose.yml` to manage services.
-    -   [x] Configure the application to run within Docker.
+**Goal:** Replace mocked `TradingService` with real database-backed operations.
 
--   [x] **2. Implement Database Persistence:**
-    -   [x] Integrate `PostgreSQL` as the database service in Docker Compose.
-    -   [x] Create database models for `Account`, `Position`, `Order`, and `Transaction`.
-    -   [x] Configure the application to connect to the database.
-    -   [x] Implement logic to create database tables on startup.
+### 1.1 Database Integration
+- [ ] Convert `TradingService` to use async SQLAlchemy operations
+- [ ] Implement database session management and connection pooling
+- [ ] Add database migration support with Alembic
+- [ ] Create indexes for performance on frequently queried fields
 
--   [x] **3. Containerize the Test Runner:**
-    -   [x] Create a `Dockerfile.test` for the ADK evaluation runner.
-    -   [x] Add a `test-runner` service to Docker Compose.
-    -   [x] Create a helper script (`run_adk_eval.sh`) as the entrypoint.
+### 1.2 Account Management
+- [ ] Implement account creation with initial balance ($100,000 default)
+- [ ] Add account ownership tracking (human vs agent identifier)
+- [ ] Create account funding operations (deposit/withdraw)
+- [ ] Link authentication to accounts (JWT token contains account_id)
 
----
+### 1.3 Market Data Integration
+- [ ] Set up Polygon.io client with API key management
+- [ ] Implement quote caching with Redis (already in dependencies)
+- [ ] Add fallback to IEX Cloud or Alpha Vantage for redundancy
+- [ ] Create market hours checking and pre/post market handling
 
-## Phase 1: Core Engine Implementation
+### 1.4 Order Execution Engine
+- [ ] Implement order validation (funds check, position check for sells)
+- [ ] Add instant fill simulation for market orders
+- [ ] Create order state machine (PENDING → FILLED/REJECTED/CANCELLED)
+- [ ] Record all fills as transactions with timestamp and fees
+- [ ] Update positions and cash balance atomically on fills
 
-**Goal:** Replace the in-memory mock service with a functional trading engine that uses the persistent database.
+### 1.5 Portfolio Calculations
+- [ ] Calculate real-time P&L using live market prices
+- [ ] Implement cost basis tracking (FIFO method)
+- [ ] Add portfolio history snapshots for charting
+- [ ] Create portfolio performance metrics (Sharpe ratio, etc.)
 
--   [ ] **1. Implement Account Management:**
-    -   [ ] Create a default trading account on the first run.
-    -   [ ] Update the `auth` endpoints to link users to a trading account.
-    -   [ ] Create an API endpoint to view account details and balance.
+## Phase 2: Enhanced Features & UI 📊 PLANNED
 
--   [ ] **2. Implement Real-time Market Data:**
-    -   [ ] Integrate the Polygon.io API client to fetch real-time stock quotes.
-    -   [ ] Replace the hard-coded `mock_quotes` in `TradingService` with live API calls.
-    -   [ ] Add proper error handling for API failures (e.g., invalid symbol, rate limits).
+### 2.1 Frontend Dashboard
+- [ ] Create React/Vue.js SPA for portfolio visualization
+- [ ] Implement WebSocket for real-time updates
+- [ ] Add interactive charts with Chart.js or D3.js
+- [ ] Display account list with owner identification
+- [ ] Show portfolio performance over time
 
--   [ ] **3. Implement Order Execution Logic:**
-    -   [ ] **Crucial Step:** Rewrite `TradingService` methods (`create_order`, `cancel_order`, etc.) to interact with the database.
-    -   [ ] When an order is created, check if the account has sufficient funds (for buys) or shares (for sells).
-    -   [ ] Simulate order fills based on the current market price.
-    -   [ ] Update order status from `PENDING` to `FILLED` or `FAILED` in the database.
-    -   [ ] Record a transaction in the `transactions` table for every filled order.
+### 2.2 Advanced MCP Tools
+- [ ] `get_market_status` - Check if markets are open
+- [ ] `get_technical_indicators` - SMA, EMA, RSI, MACD
+- [ ] `search_symbols` - Find stocks by name or ticker
+- [ ] `get_news_sentiment` - Basic news analysis for symbols
+- [ ] `set_price_alert` - Notifications for price movements
 
--   [ ] **4. Implement Portfolio Management:**
-    -   [ ] When an order is filled, create or update the user's `Position` in the database.
-    -   [ ] Update the user's cash balance in the `accounts` table.
-    -   [ ] Rewrite portfolio endpoints (`get_portfolio`, `get_positions`, etc.) to calculate results from database tables and live market data.
+### 2.3 Risk Management
+- [ ] Add position sizing calculator
+- [ ] Implement stop-loss and take-profit orders
+- [ ] Create daily loss limits per account
+- [ ] Add margin trading simulation
 
----
+## Phase 3: Production Readiness 🚀 FUTURE
 
-## Phase 2: Enhancing Agent Capabilities & User Experience
+### 3.1 Performance & Scaling
+- [ ] Implement caching layer for frequently accessed data
+- [ ] Add database read replicas for scaling
+- [ ] Optimize queries with explain analyze
+- [ ] Load test with 100+ concurrent users
 
-**Goal:** Make the MCP agent more intelligent and provide a simple UI for visualization.
+### 3.2 Observability
+- [ ] Set up Prometheus metrics (already in dependencies)
+- [ ] Add distributed tracing with OpenTelemetry
+- [ ] Create Grafana dashboards
+- [ ] Implement structured logging with correlation IDs
 
--   [ ] **1. Develop Advanced MCP Tools:**
-    -   [ ] Create a tool for basic technical analysis (e.g., `get_moving_average`).
+### 3.3 Advanced Trading Features
+- [ ] Options trading simulation
+- [ ] Crypto trading support
+- [ ] International markets (multiple currencies)
+- [ ] Backtesting framework
+- [ ] Paper trading competitions
 
--   [ ] **2. Implement a Basic Web UI:**
-    -   [ ] Create a simple dashboard page using FastAPI templates (Jinja2).
-    -   [ ] Display the current portfolio summary (total value, P&L).
-    -   [ ] Show a table of current positions.
-    -   [ ] List recent orders and their status.
+## Quick Wins 🎯
 
----
+These can be done anytime to improve the project:
 
-## Phase 3: Advanced Features & Polish
-
-**Goal:** Add more sophisticated trading features and improve the overall robustness of the application.
-
--   [ ] **1. Support for Advanced Order Types:**
-    -   [ ] Implement logic for `LIMIT` and `STOP` orders.
-    -   [ ] Add a background task that periodically checks market prices to trigger these orders.
-
--   [ ] **2. Expand Test Coverage:**
-    -   [ ] Write integration tests that cover the full order-to-portfolio update lifecycle.
-    -   [ ] Create more complex ADK evaluation sets for the new agent tools.
+- [ ] Add comprehensive API documentation with examples
+- [ ] Create a CLI tool for account management
+- [ ] Implement rate limiting on endpoints
+- [ ] Add Swagger/OpenAPI client generation
+- [ ] Create Docker health checks
+- [ ] Set up pre-commit hooks for code quality
+- [ ] Add performance benchmarks

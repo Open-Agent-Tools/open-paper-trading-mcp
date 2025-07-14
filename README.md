@@ -1,294 +1,200 @@
-# Open Paper Trading MCP
+# Open Paper Trading MCP 📈
 
-A FastAPI-based paper trading simulation platform with MCP (Model Context Protocol) integration.
+A production-ready paper trading simulator with dual interfaces: REST API (FastAPI) and AI agent tools (MCP). Perfect for testing trading strategies, training AI agents, and learning market dynamics without real money.
 
-## 🚀 Quick Start (with Docker)
+## 🚀 Quick Start
 
-The recommended way to run this project is with Docker Compose.
+```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/open-paper-trading-mcp.git
+cd open-paper-trading-mcp
 
-1. **Start the application:**
-   ```bash
-   docker-compose up --build
-   ```
-   This command will:
-   - Build the Docker image for the application.
-   - Start the application container and a dedicated PostgreSQL database container.
-   - Create a persistent volume for the database to store data.
+# 2. Start everything with Docker
+docker-compose up --build
 
-2. **Access the services:**
-   - **FastAPI REST API**: http://localhost:2080/api/v1/
-   - **Interactive docs**: http://localhost:2080/docs
-   - **Health check**: http://localhost:2080/health
-   - **MCP Server**: http://localhost:2081 (SSE transport)
-
-3. **Shut down the application:**
-   ```bash
-   docker-compose down
-   ```
-
-## 💻 Local Development Setup (without Docker)
-
-If you prefer to run the application locally without Docker, you can use `uv` to manage the virtual environment and dependencies.
-
-1.  **Create and activate a virtual environment:**
-    ```bash
-    uv venv
-    source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    uv pip sync pyproject.toml
-    ```
-
-3.  **Set up the environment:**
-    - You will need a running PostgreSQL instance.
-    - Copy the `.env.example` file to `.env`.
-    - Update the `DATABASE_URL` in your `.env` file to point to your local PostgreSQL instance (e.g., `postgresql+asyncpg://user:pass@localhost:5432/db_name`).
-
-4.  **Run the application:**
-    ```bash
-    uv run python app/main.py
-    ```
-
-## Project Structure Overview
-
-This section provides a detailed look at the key files and directories in the project.
-
-### 🐳 Docker Configuration
-
--   `Dockerfile`: Defines the instructions to build the main application image. It installs dependencies, copies the application code, and sets the default command to run the server.
--   `Dockerfile.test`: Defines the image for the containerized test runner. It builds on the main application image and installs the ADK and other testing-specific dependencies.
--   `docker-compose.yml`: Orchestrates the multi-container environment. It defines three services:
-    -   `db`: A PostgreSQL database for persistent data storage.
-    -   `app`: The main Python application running both FastAPI and FastMCP servers.
-    -   `test-runner`: A dedicated container for running ADK evaluations in a controlled environment.
-
-### 🐍 Application Code (`/app`)
-
--   `main.py`: The main entry point for the application. It initializes the FastAPI app, sets up the MCP server to run in a background thread, and contains the `lifespan` event handler that creates the database tables on startup.
--   `/api`: Contains all FastAPI-related code.
-    -   `routes.py`: The main API router that includes all versioned endpoint routers.
-    -   `/v1/endpoints`: Each file (`auth.py`, `trading.py`, `portfolio.py`) defines the routes for a specific domain of the REST API.
--   `/core`: Core application logic and configuration.
-    -   `config.py`: Defines all application settings using Pydantic, loading values from environment variables.
-    -   `exceptions.py`: Defines custom exception classes for the application.
--   `/mcp`: Contains the MCP tool definitions.
-    -   `tools.py`: Defines all the functions exposed as tools to the AI agent via the FastMCP server.
--   `/models`: Defines the data structures for the application.
-    -   `trading.py`: Contains Pydantic models used for API request/response validation.
-    -   `/database/trading.py`: Contains the SQLAlchemy models that define the database schema.
--   `/services`: Contains the shared business logic.
-    -   `trading_service.py`: The heart of the application logic. **Currently mocked**, this service will be updated to interact with the database and external APIs.
--   `/storage`: Handles the database connection.
-    -   `database.py`: Sets up the SQLAlchemy engine and provides a `get_db` dependency for use in API endpoints.
-
-### 🧪 Testing (`/tests` and `/examples`)
-
--   `/tests`: Contains all automated tests.
-    -   `/unit`: Unit tests for individual components.
-    -   `/evals`: ADK evaluation files (`.json`) and configuration.
--   `/examples/google_adk_agent`: A sample ADK agent that can interact with the MCP server.
-
-### 📜 Scripts and Configuration
-
--   `/scripts`: Contains helper scripts for development.
-    -   `dev.py`: A simple CLI for running common development tasks like formatting and testing.
-    -   `run_adk_eval.sh`: The entrypoint script for the `test-runner` container, used to execute ADK evaluations.
--   `pyproject.toml`: The project's main configuration file, defining dependencies, project metadata, and tool settings.
--   `TODO.md`: The development plan outlining the next steps for implementation.
-
-## 📋 Features
-
-### 🔌 Dual Interface Support
-- **FastAPI REST API**: Traditional HTTP JSON endpoints
-- **MCP Server**: AI agent integration via Model Context Protocol
-- **Shared Business Logic**: Both interfaces use the same trading service
-
-### 💼 Trading Functionality
-- **Stock Quotes**: Real-time market data simulation
-- **Order Management**: Buy/sell orders with status tracking
-- **Portfolio Tracking**: Position management and P&L calculations
-- **Authentication**: OAuth2 bearer token authentication (FastAPI)
-
-### 🛠️ Development Features
-- **Type Safety**: Full type hints with Pydantic models
-- **Testing**: Comprehensive test suite with pytest (95%+ coverage)
-- **Auto-Documentation**: OpenAPI docs for REST API
-- **Development Tools**: Black, isort, flake8, mypy integration
-- **CI/CD**: GitHub Actions pipeline
-
-### 🤖 MCP Tools Available
-- `create_buy_order` / `create_sell_order` - Place trading orders
-- `get_all_orders` / `get_order` - Order management
-- `cancel_order` - Cancel pending orders
-- `get_portfolio` / `get_portfolio_summary` - Portfolio overview
-- `get_all_positions` / `get_position` - Position tracking
-
-### Example MCP Interactions
-
-Here are some examples of how an AI agent might use the available tools to execute trades.
-
-```python
-# Buy 100 shares of Apple
-create_buy_order(symbol="AAPL", quantity=100, price=195.20)
-
-# Sell 50 shares of Tesla
-create_sell_order(symbol="TSLA", quantity=50, price=282.45)
-
-# Buy 200 shares of Amazon
-create_buy_order(symbol="AMZN", quantity=200, price=124.80)
-
-# Sell 150 shares of Microsoft
-create_sell_order(symbol="MSFT", quantity=150, price=342.10)
-
-# Buy 80 shares of NVIDIA
-create_buy_order(symbol="NVDA", quantity=80, price=127.60)
-
-# Buy 120 shares of Meta
-create_buy_order(symbol="META", quantity=120, price=291.00)
-
-# Sell 100 shares of Netflix
-create_sell_order(symbol="NFLX", quantity=100, price=442.55)
-
-# Buy 300 shares of Google
-create_buy_order(symbol="GOOGL", quantity=300, price=141.75)
-
-# Sell 60 shares of AMD
-create_sell_order(symbol="AMD", quantity=60, price=117.90)
-
-# Buy 50 shares of IBM
-create_buy_order(symbol="IBM", quantity=50, price=138.35)
-
-# Check all open orders
-get_all_orders()
-
-# Check the current portfolio
-get_portfolio_summary()
+# 3. Services are now available at:
+#    - REST API: http://localhost:2080/api/v1/
+#    - API Docs: http://localhost:2080/docs
+#    - MCP Server: http://localhost:2081
 ```
 
-## Key Functional Features
+## 🏗️ Architecture Overview
 
-- **Account Instantiation**: Create new paper trading accounts with initial virtual funds and optional owner (e.g., agent name), allowing separate accounts for different agents or users.
-- **Order Placement**: Simulate buying and selling stocks/options at market or limit prices, updating virtual positions within a specific account.
-- **Portfolio Management**: View all positions, historical trades, open positions, and virtual account balances for a given account.
-- **Fund Management**: Deposit or withdraw virtual funds to/from a specific paper trading account.
-- **Persistence**: Store account data (including owner, timestamps for trades to compute balance history), trade history, and balances in a local storage backend for session continuity.
-- **Dual Access**: All features exposed via HTTP JSON APIs (e.g., POST /accounts, GET /positions/{account_id}) and as MCP tools (e.g., create_account, place_buy_order) for AI agent integration.
-- **Frontend Dashboard**: Lightweight web interface to list all accounts (with owners), display current balances, and show balance over time as interactive line charts.
+```
+┌─────────────────┐     ┌─────────────────┐
+│   REST Client   │     │    AI Agent     │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│  FastAPI :2080  │     │ FastMCP :2081   │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         └───────────┬───────────┘
+                     ▼
+           ┌─────────────────┐
+           │ TradingService  │
+           │   (Shared)      │
+           └────────┬────────┘
+                    ▼
+           ┌─────────────────┐
+           │   PostgreSQL    │
+           │   Database      │
+           └─────────────────┘
+```
 
-## Key Non-Functional Requirements
+**Key Design Decisions:**
+- **Monolithic Architecture**: Both servers run in one process, sharing the TradingService
+- **Database-First**: All state persisted in PostgreSQL, no in-memory storage
+- **Async Throughout**: Uses asyncio for high performance
+- **Type Safety**: Full Pydantic validation on all inputs/outputs
 
-- **Performance**: <50ms average response time for API/MCP calls and <200ms for frontend page loads, as user load is minimal (1 human + <5 agents concurrent).
-- **Reliability**: 99% availability during local runs; stateless operations where possible, with automatic recovery from DB on restart.
-- **Scalability**: Designed for low scale; handles up to 100 requests/min without optimization; easy to run on a standard laptop.
-- **Security**: Basic API key or token for HTTP/MCP access to prevent unauthorized access; no real funds involved, so focus on data integrity rather than encryption. All operations local, no external exposure unless configured.
-- **Availability**: Persistent storage ensures data survives container restarts; target 100% local uptime with Docker volumes.
+## 🛠️ Development
 
-## Architecture Overview
+### Local Setup (without Docker)
 
-The system is a monolithic, event-driven architecture. It is orchestrated with Docker Compose, running the application and a PostgreSQL database in separate containers.
+```bash
+# Install uv package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-Key components:
-- **HTTP API Server (FastAPI)**: Handles RESTful endpoints for traditional access.
-- **MCP Server (FastMCP)**: Exposes tools for AI agents, running in the same process as the FastAPI server to share logic.
-- **Backend Logic**: Shared Python modules for simulation: order execution, position tracking, and account management.
-- **Storage**: PostgreSQL database for persistent storage of all trading data.
-- **Docker Compose**: Manages the `app` and `db` services, including networking and persistent volumes.
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip sync pyproject.toml
 
-## Architectural Decisions and Trade-Offs
+# Set up PostgreSQL and update .env
+cp .env.example .env
+# Edit DATABASE_URL in .env
 
-1. **Monolith vs. Microservices**
-   - Decision rationale: A monolith with shared logic simplifies development and is sufficient for the current scale. The application runs in a single container, but the database is separated for better data management.
-   - Trade-offs: This approach is easy to maintain now, but may require splitting the application into separate services if it needs to scale significantly.
+# Run the application
+uv run python app/main.py
+```
 
-2. **PostgreSQL vs. SQLite**
-   - Decision rationale: PostgreSQL provides a robust, scalable, and production-ready database, managed in its own container. This is superior to a file-based SQLite database for all but the simplest of use cases.
-   - Trade-offs: Requires Docker Compose for orchestration, which adds a small amount of complexity compared to a single file.
+### Development Commands
 
-3. **Dual FastAPI/FastMCP in a Single Container**
-   - Decision rationale: Running both servers in the same container allows them to share the core `TradingService` in memory, which is simple and efficient.
-   - Trade-offs: The two services cannot be scaled independently. If one required significantly more resources, the application would need to be re-architected.
+```bash
+# Format code
+python scripts/dev.py format
 
-## Recommended Technology Stack
+# Run linting
+python scripts/dev.py lint
 
-- **Backend Language and Framework**: Python 3.12, with FastAPI and FastMCP.
-- **Database**: PostgreSQL, running in a dedicated Docker container.
-- **Infrastructure**: Docker Compose to orchestrate the application and database services.
-- **Observability**: Basic logging with Python's `logging` module.
+# Type checking
+python scripts/dev.py typecheck
 
-## Packaging and Publishing Process
+# Run all tests
+python scripts/dev.py test
 
-- **Packaging**: The application is packaged as a Docker image using the provided `Dockerfile`.
-- **Versioning and Deployment**: Use Git for versioning. For local deployment, use `docker-compose up`. This is the recommended way to run the application.
-- **Dev-to-Prod Workflow**: Use Git branches (main for prod-like, dev for features). CI via GitHub Actions can be used to lint, test, and build the Docker image on every push.
+# Run all checks
+python scripts/dev.py check
+```
 
-## Future Evolution Plan
+## 📋 Core Features
 
-The architecture is designed to be easily extensible.
-- **To Scale**: If the application grows, the `app` container can be split into separate `api` and `mcp` services. This would require introducing a shared communication layer (like a message queue or internal API calls) to replace the in-memory service sharing.
-- **For Real Market Data**: The `TradingService` can be updated to call external market data APIs.
-- **Enhanced Security**: Full JWT/OAuth can be implemented for both the API and MCP interfaces.
+### Current Capabilities (Phase 0 ✅)
 
-## 📊 API Reference
+- **Dual Interface**: REST API + MCP tools in one application
+- **Mock Trading**: Simulated orders with hardcoded market data
+- **Portfolio Tracking**: Basic position and P&L calculations
+- **Docker Setup**: Full containerization with PostgreSQL
+- **Type Safety**: 100% typed with Pydantic validation
 
-This section provides an overview of the available API endpoints. For detailed information, see the interactive docs at `/docs`.
+### In Development (Phase 1 🚧)
 
-### Example API Requests
+- **Database Integration**: Persistent storage for all trading data
+- **Account Management**: Multi-account support with ownership tracking
+- **Real Market Data**: Polygon.io integration for live prices
+- **Order Execution**: Realistic fill simulation with balance checks
+- **Portfolio History**: Track performance over time
 
-Below are examples of the JSON body you would send to the `POST /api/v1/trading/order` endpoint to create different orders.
+## 🤖 MCP Tools Reference
 
-```json
-[
-  {
+### Available Tools
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `create_buy_order` | Place a buy order | symbol, quantity, price |
+| `create_sell_order` | Place a sell order | symbol, quantity, price |
+| `get_all_orders` | List all orders | - |
+| `get_order` | Get specific order | order_id |
+| `cancel_order` | Cancel an order | order_id |
+| `get_portfolio` | Full portfolio details | - |
+| `get_portfolio_summary` | Portfolio metrics | - |
+| `get_all_positions` | List all positions | - |
+| `get_position` | Get specific position | symbol |
+
+### Example Usage
+
+```python
+# Place a market order
+response = create_buy_order(
+    symbol="AAPL",
+    quantity=100,
+    price=195.20
+)
+
+# Check portfolio performance
+summary = get_portfolio_summary()
+print(f"Total Value: ${summary['total_value']:,.2f}")
+print(f"Daily P&L: ${summary['daily_pnl']:,.2f}")
+```
+
+## 📊 REST API Examples
+
+### Create an Order
+```bash
+curl -X POST http://localhost:2080/api/v1/trading/order \
+  -H "Content-Type: application/json" \
+  -d '{
     "symbol": "AAPL",
     "order_type": "BUY",
     "quantity": 100,
     "price": 195.20
-  },
-  {
-    "symbol": "TSLA",
-    "order_type": "SELL",
-    "quantity": 50,
-    "price": 282.45
-  },
-  {
-    "symbol": "AMZN",
-    "order_type": "BUY",
-    "quantity": 200,
-    "price": 124.80
-  },
-  {
-    "symbol": "MSFT",
-    "order_type": "SELL",
-    "quantity": 150,
-    "price": 342.10
-  },
-  {
-    "symbol": "NVDA",
-    "order_type": "BUY",
-    "quantity": 80,
-    "price": 127.60
-  }
-]
+  }'
 ```
 
-## 🧪 ADK Evaluations
+### Get Portfolio Summary
+```bash
+curl http://localhost:2080/api/v1/portfolio/summary
+```
 
-Test your MCP server with Google ADK agent evaluations.
+### View All Positions
+```bash
+curl http://localhost:2080/api/v1/portfolio/positions
+```
 
-1. **Start the application:**
-   ```bash
-   docker-compose up --build
-   ```
+## 🧪 Testing
 
-2. **Run evaluation (in another terminal):**
-   ```bash
-   # Set your Google API key
-   export GOOGLE_API_KEY="your-google-api-key"
-   
-   # Run the evaluation
-   adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json --config_file_path tests/evals/test_config.json
-   ```
+### Run ADK Evaluations
 
-See [ADK Testing Guide](tests/evals/ADK-testing-evals.md) for detailed instructions.
+```bash
+# Set your Google API key
+export GOOGLE_API_KEY="your-google-api-key"
+
+# Run evaluation (app must be running)
+adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json \
+  --config_file_path tests/evals/test_config.json
+```
+
+See [ADK Testing Guide](tests/evals/ADK-testing-evals.md) for details.
+
+## 📚 Documentation
+
+- **API Documentation**: http://localhost:2080/docs (when running)
+- **MCP Protocol**: [Anthropic MCP Docs](https://modelcontextprotocol.io/)
+- **Development Plan**: See [TODO.md](TODO.md)
+- **Claude Integration**: See [CLAUDE.md](CLAUDE.md)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Run tests and linting (`python scripts/dev.py check`)
+4. Commit your changes
+5. Push to the branch
+6. Open a Pull Request
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+

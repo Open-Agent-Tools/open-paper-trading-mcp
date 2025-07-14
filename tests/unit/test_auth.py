@@ -1,12 +1,10 @@
-import pytest
 from fastapi.testclient import TestClient
 
 
 def test_token_endpoint(client: TestClient):
     """Test the token endpoint for authentication."""
     response = client.post(
-        "/api/v1/auth/token",
-        data={"username": "testuser", "password": "secret"}
+        "/api/v1/auth/token", data={"username": "testuser", "password": "secret"}
     )
     assert response.status_code == 200
     data = response.json()
@@ -18,7 +16,7 @@ def test_token_endpoint_invalid_credentials(client: TestClient):
     """Test the token endpoint with invalid credentials."""
     response = client.post(
         "/api/v1/auth/token",
-        data={"username": "wronguser", "password": "wrongpassword"}
+        data={"username": "wronguser", "password": "wrongpassword"},
     )
     assert response.status_code == 401
 

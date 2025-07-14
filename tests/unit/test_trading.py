@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -21,12 +20,7 @@ def test_get_quote_invalid_symbol(client: TestClient):
 
 def test_create_order(client: TestClient):
     """Test creating a new order."""
-    order_data = {
-        "symbol": "AAPL",
-        "order_type": "buy",
-        "quantity": 10,
-        "price": 150.0
-    }
+    order_data = {"symbol": "AAPL", "order_type": "buy", "quantity": 10, "price": 150.0}
     response = client.post("/api/v1/trading/order", json=order_data)
     assert response.status_code == 200
     data = response.json()
@@ -53,11 +47,11 @@ def test_get_order_by_id(client: TestClient):
         "symbol": "GOOGL",
         "order_type": "sell",
         "quantity": 5,
-        "price": 2800.0
+        "price": 2800.0,
     }
     create_response = client.post("/api/v1/trading/order", json=order_data)
     order_id = create_response.json()["id"]
-    
+
     # Then get it by ID
     response = client.get(f"/api/v1/trading/order/{order_id}")
     assert response.status_code == 200
@@ -69,19 +63,14 @@ def test_get_order_by_id(client: TestClient):
 def test_cancel_order(client: TestClient):
     """Test canceling an order."""
     # First create an order
-    order_data = {
-        "symbol": "AAPL",
-        "order_type": "buy",
-        "quantity": 10,
-        "price": 150.0
-    }
+    order_data = {"symbol": "AAPL", "order_type": "buy", "quantity": 10, "price": 150.0}
     create_response = client.post("/api/v1/trading/order", json=order_data)
     order_id = create_response.json()["id"]
-    
+
     # Then cancel it
     response = client.delete(f"/api/v1/trading/order/{order_id}")
     assert response.status_code == 200
-    
+
     # Verify it's cancelled
     get_response = client.get(f"/api/v1/trading/order/{order_id}")
     assert get_response.json()["status"] == "cancelled"

@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -23,8 +22,8 @@ def test_openapi_docs(client: TestClient):
     """Test that OpenAPI documentation is accessible."""
     response = client.get("/docs")
     assert response.status_code == 200
-    
-    
+
+
 def test_openapi_json(client: TestClient):
     """Test that OpenAPI JSON is accessible."""
     response = client.get("/api/v1/openapi.json")
