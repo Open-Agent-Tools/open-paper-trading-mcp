@@ -232,7 +232,46 @@ The architecture is designed to be easily extensible.
 
 ## 📊 API Reference
 
-(API and MCP tool references remain the same)
+This section provides an overview of the available API endpoints. For detailed information, see the interactive docs at `/docs`.
+
+### Example API Requests
+
+Below are examples of the JSON body you would send to the `POST /api/v1/trading/order` endpoint to create different orders.
+
+```json
+[
+  {
+    "symbol": "AAPL",
+    "order_type": "BUY",
+    "quantity": 100,
+    "price": 195.20
+  },
+  {
+    "symbol": "TSLA",
+    "order_type": "SELL",
+    "quantity": 50,
+    "price": 282.45
+  },
+  {
+    "symbol": "AMZN",
+    "order_type": "BUY",
+    "quantity": 200,
+    "price": 124.80
+  },
+  {
+    "symbol": "MSFT",
+    "order_type": "SELL",
+    "quantity": 150,
+    "price": 342.10
+  },
+  {
+    "symbol": "NVDA",
+    "order_type": "BUY",
+    "quantity": 80,
+    "price": 127.60
+  }
+]
+```
 
 ## 🧪 ADK Evaluations
 
