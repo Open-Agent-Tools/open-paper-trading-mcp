@@ -152,6 +152,11 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# AI Artifacts
+.adk/
+eval_history/
+
+# IDE configuration files
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be added to the global gitignore or merged into this project's gitignore.
@@ -161,6 +166,10 @@ cython_debug/
 
 # VS Code
 .vscode/
+
+# Vim
+*.swp
+*.swo
 
 # macOS
 .DS_Store
