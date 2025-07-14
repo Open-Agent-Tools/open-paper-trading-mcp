@@ -109,7 +109,7 @@ def main():
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=2080,
         reload=True if os.getenv("ENVIRONMENT") == "development" else False,
     )
 

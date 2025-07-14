@@ -11,10 +11,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:2080"]
     
     # Database
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./trading_database.db")
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
     
     # MCP Server Configuration
-    MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "8001"))
+    MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "2081"))
     MCP_SERVER_HOST: str = os.getenv("MCP_SERVER_HOST", "localhost")
     MCP_SERVER_NAME: str = "Open Paper Trading MCP"
     

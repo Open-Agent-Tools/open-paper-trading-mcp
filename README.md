@@ -9,14 +9,14 @@ A FastAPI-based paper trading simulation platform with MCP (Model Context Protoc
    uv run python app/main.py
    ```
    This starts:
-   - FastAPI server on http://localhost:8000
-   - MCP server on http://localhost:8001
+   - FastAPI server on http://localhost:2080
+   - MCP server on http://localhost:2081
 
 2. **Access the services:**
-   - **FastAPI REST API**: http://localhost:8000/api/v1/
-   - **Interactive docs**: http://localhost:8000/docs
-   - **Health check**: http://localhost:8000/health
-   - **MCP Server**: http://localhost:8001 (SSE transport)
+   - **FastAPI REST API**: http://localhost:2080/api/v1/
+   - **Interactive docs**: http://localhost:2080/docs
+   - **Health check**: http://localhost:2080/health
+   - **MCP Server**: http://localhost:2081 (SSE transport)
 
 3. **Run development commands:**
    ```bash
@@ -78,7 +78,7 @@ A FastAPI-based paper trading simulation platform with MCP (Model Context Protoc
 
 ## Architecture Overview
 
-The system is a monolithic, event-driven architecture running in a single Docker container for simplicity, given the low scale. It uses FastMCP for the MCP server, FastAPI for HTTP JSON endpoints and the lightweight frontend (serving HTML templates with embedded JS charts). The services run on separate ports (e.g., 8000 for FastAPI HTTP/JSON + Frontend, 8001 for FastMCP).
+The system is a monolithic, event-driven architecture running in a single Docker container for simplicity, given the low scale. It uses FastMCP for the MCP server, FastAPI for HTTP JSON endpoints and the lightweight frontend (serving HTML templates with embedded JS charts). The services run on separate ports (e.g., 2080 for FastAPI HTTP/JSON + Frontend, 2081 for FastMCP).
 
 Key components:
 - **HTTP API Server (FastAPI)**: Handles RESTful endpoints for traditional access, plus routes for serving the frontend dashboard.
@@ -128,7 +128,7 @@ Architectural patterns:
 - **Frontend Technology**: Jinja2 templates served by FastAPI for HTML rendering, with Chart.js for interactive balance-over-time charts (lightweight, no-build-step JS library; rationale: enables simple, effective visualizations without a full frontend framework).
 - **Database**: SQLite (lightweight, persistent, file-based; rationale: suits low-scale, local use with easy Docker volume mounting for data durability; supports timestamped data for history).
 - **Message Brokers or Queues**: Not needed; all operations synchronous due to low load.
-- **Infrastructure**: Docker for containerization (local runs); expose multiple ports (e.g., -p 8000:8000 -p 8001:8001).
+- **Infrastructure**: Docker for containerization (local runs); expose multiple ports (e.g., -p 2080:2080 -p 2081:2081).
 - **Observability**: Basic logging with Python's `logging` module; optional integration with `structlog` for structured logs. No advanced metrics/tracing needed at this scale.
 
 ## Codebase Directory Structure
@@ -162,7 +162,7 @@ TODO.md           # Phased development plan
 ## Packaging and Publishing Process
 
 - **Packaging**: Use Docker to build the image (`docker build -t paper-trading-server .`). Dependencies are managed via `pyproject.toml` and installed with `uv`.
-- **Versioning and Deployment**: Semantic versioning (e.g., v1.0.0) tagged in Git. Deploy locally with `docker run -p 8000:8000 -p 8001:8001 -v ./data:/app/data paper-trading-server` (mounts volume for SQLite persistence).
+- **Versioning and Deployment**: Semantic versioning (e.g., v1.0.0) tagged in Git. Deploy locally with `docker run -p 2080:2080 -p 2081:2081 -v ./data:/app/data paper-trading-server` (mounts volume for SQLite persistence).
 - **Target Registries or Environments**: Local only; no publishing to registries like Docker Hub unless extended. For dev, run directly with `uv run python app/main.py` (starts both servers).
 - **Dev-to-Prod Workflow**: Use Git branches (main for prod-like, dev for features). CI via GitHub Actions: lint/test on push, build Docker image on merge. No staging; direct local runs. Gates: All tests pass before merge.
 
@@ -202,7 +202,7 @@ GET  /api/v1/portfolio/position/{symbol} - Get specific position
 ```
 
 ### MCP Tools
-Available at `http://localhost:8001` via SSE transport:
+Available at `http://localhost:2081` via SSE transport:
 ```
 get_stock_quote(symbol: str)                    - Get current stock quotes
 create_buy_order(symbol, quantity, price)      - Place buy order
@@ -220,7 +220,7 @@ get_position(symbol: str)                       - Get specific position
 Environment variables (see `.env.example`):
 ```bash
 # Server Configuration
-MCP_SERVER_PORT=8001
+MCP_SERVER_PORT=2081
 MCP_SERVER_HOST=localhost
 
 # Database & Redis (for future use)
@@ -234,7 +234,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 # ADK Evaluations (optional)
 GOOGLE_API_KEY=your-google-api-key
 GOOGLE_MODEL=gemini-2.0-flash
-MCP_HTTP_URL=http://localhost:8001/mcp
+MCP_HTTP_URL=http://localhost:2081/mcp
 ```
 
 ## 🧪 ADK Evaluations
