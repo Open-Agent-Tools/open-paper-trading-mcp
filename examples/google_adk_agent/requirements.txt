@@ -1,0 +1,9 @@
+# Google ADK Agent Requirements
+google-adk
+google-generativeai
+python-dotenv
+
+# MCP and FastAPI dependencies (should already be installed in main project)
+mcp
+fastapi
+pydantic

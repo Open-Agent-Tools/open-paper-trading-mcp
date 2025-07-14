@@ -233,4 +233,29 @@ REDIS_URL=redis://localhost:6379
 # Security
 SECRET_KEY=your-secret-key
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# ADK Evaluations (optional)
+GOOGLE_API_KEY=your-google-api-key
+GOOGLE_MODEL=gemini-2.0-flash
+MCP_HTTP_URL=http://localhost:8001/mcp
 ```
+
+## 🧪 ADK Evaluations
+
+Test your MCP server with Google ADK agent evaluations:
+
+```bash
+# 1. Set up environment
+export GOOGLE_API_KEY="your-google-api-key"
+
+# 2. Start MCP server
+uv run python app/main.py
+
+# 3. Run evaluation (in another terminal)
+adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json --config_file_path tests/evals/test_config.json
+
+# 4. Verify setup
+uv run python test_adk_setup.py
+```
+
+See [ADK Testing Guide](tests/evals/ADK-testing-evals.md) for detailed instructions.
