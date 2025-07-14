@@ -2,9 +2,11 @@
 
 A FastAPI-based paper trading simulation platform with MCP (Model Context Protocol) integration.
 
-## 🚀 Quick Start
+## 🚀 Quick Start (with Docker)
 
-1. **Start the application with Docker Compose:**
+The recommended way to run this project is with Docker Compose.
+
+1. **Start the application:**
    ```bash
    docker-compose up --build
    ```
@@ -19,23 +21,35 @@ A FastAPI-based paper trading simulation platform with MCP (Model Context Protoc
    - **Health check**: http://localhost:2080/health
    - **MCP Server**: http://localhost:2081 (SSE transport)
 
-3. **Run development commands:**
-   You can run these commands in a separate terminal or inside the running `app` container:
-   ```bash
-   # Format code
-   docker-compose exec app python scripts/dev.py format
-   
-   # Run tests
-   docker-compose exec app python scripts/dev.py test
-   
-   # Run all checks
-   docker-compose exec app python scripts/dev.py check
-   ```
-
-4. **Shut down the application:**
+3. **Shut down the application:**
    ```bash
    docker-compose down
    ```
+
+## 💻 Local Development Setup (without Docker)
+
+If you prefer to run the application locally without Docker, you can use `uv` to manage the virtual environment and dependencies.
+
+1.  **Create and activate a virtual environment:**
+    ```bash
+    uv venv
+    source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    uv pip sync
+    ```
+
+3.  **Set up the environment:**
+    - You will need a running PostgreSQL instance.
+    - Copy the `.env.example` file to `.env`.
+    - Update the `DATABASE_URL` in your `.env` file to point to your local PostgreSQL instance (e.g., `postgresql+asyncpg://user:pass@localhost:5432/db_name`).
+
+4.  **Run the application:**
+    ```bash
+    uv run python app/main.py
+    ```
 
 ## Project Structure Overview
 
