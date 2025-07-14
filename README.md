@@ -1,6 +1,15 @@
 # Open Paper Trading MCP 📈
 
-A production-ready paper trading simulator with dual interfaces: REST API (FastAPI) and AI agent tools (MCP). Perfect for testing trading strategies, training AI agents, and learning market dynamics without real money.
+A comprehensive paper trading simulator with dual interfaces: REST API (FastAPI) and AI agent tools (MCP). Designed for algorithmic trading development, strategy backtesting, options trading simulation, and training AI agents in realistic market environments without financial risk.
+
+## 🎯 Core Capabilities
+
+- **Multi-Asset Trading**: Stocks, options, ETFs, and bonds with specialized implementations
+- **Options Trading**: Full options chain support with Greeks calculations (delta, gamma, theta, vega, rho)
+- **Strategy Development**: Build and test algorithmic trading strategies with backtesting framework  
+- **AI Agent Training**: Native MCP interface for training trading agents and LLMs
+- **Educational Platform**: Risk-free environment for learning market mechanics and trading concepts
+- **Production-Ready**: Type-safe, async architecture with comprehensive testing and monitoring
 
 ## 🚀 Quick Start
 
@@ -89,23 +98,49 @@ python scripts/dev.py test
 python scripts/dev.py check
 ```
 
-## 📋 Core Features
+## 📋 Feature Roadmap
 
-### Current Capabilities (Phase 0 ✅)
-
+### Phase 0: Infrastructure ✅ COMPLETE
 - **Dual Interface**: REST API + MCP tools in one application
-- **Mock Trading**: Simulated orders with hardcoded market data
+- **Mock Trading**: Simulated orders with hardcoded market data  
 - **Portfolio Tracking**: Basic position and P&L calculations
 - **Docker Setup**: Full containerization with PostgreSQL
 - **Type Safety**: 100% typed with Pydantic validation
 
-### In Development (Phase 1 🚧)
-
+### Phase 1: Core Trading Engine 🚧 IN PROGRESS
 - **Database Integration**: Persistent storage for all trading data
 - **Account Management**: Multi-account support with ownership tracking
 - **Real Market Data**: Polygon.io integration for live prices
 - **Order Execution**: Realistic fill simulation with balance checks
 - **Portfolio History**: Track performance over time
+
+### Phase 2: Options Trading & Greeks 📊 PLANNED
+- **Options Chain Support**: Real-time options quotes and Greeks calculations
+- **Complex Orders**: Multi-leg strategies (covered calls, spreads, straddles)
+- **Automatic Expiration**: Handle option expirations and assignments
+- **Risk Management**: Position sizing and margin requirements
+- **Options Education**: Interactive learning tools for options mechanics
+
+### Phase 3: Backtesting Framework 📈 PLANNED
+- **Historical Data**: Integrated data feeds for strategy testing
+- **Strategy Engine**: Plugin architecture for custom trading algorithms
+- **Performance Analytics**: Sharpe ratio, drawdown, win rate analysis
+- **Simulation Quality**: Realistic slippage, commissions, and market impact
+- **Comparative Analysis**: A/B testing multiple strategies
+
+### Phase 4: Advanced Features 🚀 PLANNED
+- **Machine Learning**: Integrate ML models for predictive analytics
+- **Paper Trading Competitions**: Multi-user contests and leaderboards
+- **Advanced Charts**: Technical analysis tools and indicators
+- **News Integration**: Sentiment analysis and event-driven trading
+- **International Markets**: Multi-currency and global exchange support
+
+### Phase 5: Educational & Community 🎓 PLANNED
+- **Interactive Tutorials**: Guided lessons for beginners to advanced
+- **Strategy Library**: Community-contributed trading algorithms
+- **Mentorship Tools**: Pair experienced traders with learners
+- **Certification System**: Skills validation and achievement tracking
+- **Research Tools**: Academic features for finance education
 
 ## 🤖 MCP Tools Reference
 
@@ -138,6 +173,23 @@ summary = get_portfolio_summary()
 print(f"Total Value: ${summary['total_value']:,.2f}")
 print(f"Daily P&L: ${summary['daily_pnl']:,.2f}")
 ```
+
+### Future MCP Tools (Roadmap)
+
+| Phase | Tool | Description |
+|-------|------|-------------|
+| **Phase 2** | `get_options_chain` | Retrieve options quotes with Greeks for a symbol |
+| | `create_multi_leg_order` | Execute complex strategies (spreads, straddles) |
+| | `calculate_option_greeks` | Compute delta, gamma, theta, vega, rho |
+| | `get_expiration_dates` | List available option expiration dates |
+| **Phase 3** | `backtest_strategy` | Run historical simulation of trading strategy |
+| | `get_historical_data` | Retrieve price history for backtesting |
+| | `analyze_performance` | Calculate Sharpe ratio, drawdown metrics |
+| | `simulate_order_impact` | Preview order effects without execution |
+| **Phase 4** | `get_technical_indicators` | Calculate SMA, EMA, RSI, MACD |
+| | `search_symbols` | Find stocks by company name or sector |
+| | `get_news_sentiment` | Analyze news impact on stock prices |
+| | `set_price_alerts` | Create notifications for price movements |
 
 ## 📊 REST API Examples
 

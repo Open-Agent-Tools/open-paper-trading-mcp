@@ -2,7 +2,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-engine = create_engine(settings.DATABASE_URL)
+# Convert asyncpg URL to sync psycopg2 URL for synchronous operations
+database_url = settings.DATABASE_URL
+if "+asyncpg" in database_url:
+    database_url = database_url.replace("+asyncpg", "")
+
+engine = create_engine(database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

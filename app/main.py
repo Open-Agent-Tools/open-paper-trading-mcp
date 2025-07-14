@@ -19,13 +19,21 @@ except ImportError:
     mcp = None
 
 
+def initialize_database():
+    """Initialize database tables synchronously."""
+    print("Initializing database...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+        # Continue anyway for development
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting up FastAPI server...")
-    print("Initializing database...")
-    Base.metadata.create_all(bind=engine)
-    print("Database initialized.")
+    initialize_database()
     yield
     # Shutdown
     print("Shutting down FastAPI server...")
