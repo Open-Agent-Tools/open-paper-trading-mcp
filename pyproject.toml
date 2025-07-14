@@ -104,6 +104,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+pythonpath = ["."]
 addopts = [
     "--strict-markers",
     "--strict-config",
@@ -142,3 +143,12 @@ exclude_lines = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101", "B601"]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.6",
+]

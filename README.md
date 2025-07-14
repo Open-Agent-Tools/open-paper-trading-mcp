@@ -1,10 +1,41 @@
-# Paper Trading MCP Server
+# Open Paper Trading MCP
 
-## Project Overview
+A FastAPI-based paper trading simulation platform with MCP (Model Context Protocol) integration.
 
-This project is a local, Dockerized server designed for paper trading, simulating stock and options trading without real financial risk. It mirrors the trading functions of the `robin-stocks` Python package, but operates in a simulated environment. The server exposes these functions via two interfaces: a traditional HTTP JSON API (using FastAPI) and an MCP server (using FastMCP), running on separate ports. Additionally, it includes a lightweight, "cheap and cheerful" frontend served by FastAPI, providing a simple web interface to display all accounts, agent/owner balances, and balance over time via charts.
+## 🚀 Quick Start
 
-This enables AI agents to use MCP tools, human users or other clients to access via standard RESTful endpoints, and easy visualization for monitoring. The system solves the problem of safely testing trading strategies and AI agent integrations by providing a realistic, local backend that persists user data (e.g., virtual portfolios) across sessions. It serves a small-scale audience: one human user and a few AI agents, making it ideal for personal development, experimentation, or educational purposes in fintech and AI.
+1. **Start the development server:**
+   ```bash
+   uv run uvicorn app.main:app --reload
+   ```
+
+2. **Access the API:**
+   - Interactive docs: http://localhost:8000/docs
+   - Health check: http://localhost:8000/health
+   - API: http://localhost:8000/api/v1/
+
+3. **Run development commands:**
+   ```bash
+   # Format code
+   python scripts/dev.py format
+   
+   # Run tests
+   python scripts/dev.py test
+   
+   # Run all checks
+   python scripts/dev.py check
+   ```
+
+## 📋 Features
+
+- **Authentication**: OAuth2 bearer token authentication
+- **Trading API**: Stock quotes, order placement, and order management
+- **Portfolio Management**: Position tracking and P&L calculations
+- **Real-time Data**: Mock stock quotes with price updates
+- **FastAPI Integration**: Auto-generated OpenAPI documentation
+- **Type Safety**: Full type hints with Pydantic models
+- **Testing**: Comprehensive test suite with pytest
+- **Development Tools**: Black, isort, flake8, mypy integration
 
 ## Key Functional Features
 
