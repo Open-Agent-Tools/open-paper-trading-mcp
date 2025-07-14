@@ -135,38 +135,35 @@ Architectural patterns:
 
 ```
 /app
-  /api            # HTTP API routes and controllers (FastAPI routers for JSON endpoints)
-  /ui             # Frontend routes and templates (FastAPI routers for dashboard, Jinja2 files)
-  /static         # Static assets (e.g., chart.js, custom CSS/JS)
-  /tools          # MCP tools definitions (e.g., create_account.py, place_buy_order.py with @mcp.tool)
-  /models         # Shared data models (Pydantic for API/tool inputs/outputs, SQLAlchemy for DB)
-  /simulation     # Shared business logic for paper trading simulation (e.g., order matching, balance history computation)
-  /storage        # DB setup and queries (SQLite connection, schemas with timestamps)
-  /config         # Configuration files (e.g., env vars, ports)
-Dockerfile        # Docker build instructions
-requirements.txt  # Python dependencies (add jinja2)
-main.py           # Entry point: initializes both FastAPI (with UI routes) and FastMCP servers, registers tools/routes
-/tests            # Unit and integration tests for both interfaces and frontend logic
-/docs             # Additional documentation beyond README
+  /api            # FastAPI routers and endpoint definitions
+    /v1
+      /endpoints  # API endpoints for different resources (trading, portfolio)
+  /core           # Core application settings, configuration, and exceptions
+  /mcp            # MCP tools definitions for AI agent integration
+  /models         # Pydantic models for data validation and serialization
+  /services       # Shared business logic for the trading simulation
+  main.py         # Main application entry point to initialize and run servers
+/scripts          # Development and utility scripts
+/tests            # Unit and integration tests
+  /evals          # ADK evaluation sets and configuration
+  /unit           # Pytest unit tests for services, endpoints, and tools
+pyproject.toml    # Project metadata and dependencies for `uv`
+TODO.md           # Phased development plan
 ```
 
-- `/app`: Core application code; keeps everything organized under one namespace.
-- `/api`: FastAPI-specific routes mirroring trading functions (e.g., /accounts, /orders).
-- `/ui`: Routes for frontend (e.g., GET /dashboard renders template with account data).
-- `/static`: JS libraries like chart.js and any custom scripts for client-side charting.
-- `/tools`: Contains @mcp.tool decorated functions for MCP exposure.
-- `/models`: Schemas for data validation shared between API, tools, and UI.
-- `/simulation`: Logic to simulate trades and compute histories, shared by all.
-- `/storage`: Handles persistence for accounts (add owner field) and timestamped trades.
-- `/config`: Settings like port numbers (e.g., API_PORT=8000, MCP_PORT=8001).
-- `/tests`: Tests for API endpoints, tools, UI rendering, and simulation logic.
-- `/docs`: For diagrams or extended guides, including API docs from FastAPI.
+- `/app`: Core application code.
+- `/app/api`: FastAPI-specific routing. The endpoints (`auth.py`, `trading.py`, etc.) define the actual API logic.
+- `/app/core`: Application-wide configuration (`config.py`) and custom exceptions.
+- `/app/mcp`: Contains `tools.py`, where all MCP tools available to the AI agent are defined.
+- `/app/models`: Pydantic schemas for data validation shared between the API and services.
+- `/app/services`: The core business logic. `trading_service.py` currently contains the mocked trading simulation.
+- `/tests`: All tests. Includes unit tests and ADK evaluation files for testing the agent's tools.
 
 ## Packaging and Publishing Process
 
-- **Packaging**: Use Docker to build the image (`docker build -t paper-trading-server .`). Dependencies managed via `requirements.txt` (e.g., `pip install -r requirements.txt`; add jinja2 via CDN or local). Include static files in build.
-- **Versioning and Deployment**: Semantic versioning (e.g., v1.0.0) tagged in Git. Deploy locally with `docker run -p 8000:8000 -p 8001:8001 -v ./data:/app/data paper-trading-server` (mounts volume for SQLite persistence). Frontend accessible at http://localhost:8000/dashboard.
-- **Target Registries or Environments**: Local only; no publishing to registries like Docker Hub unless extended. For dev, run directly with `python main.py` (starts both servers).
+- **Packaging**: Use Docker to build the image (`docker build -t paper-trading-server .`). Dependencies are managed via `pyproject.toml` and installed with `uv`.
+- **Versioning and Deployment**: Semantic versioning (e.g., v1.0.0) tagged in Git. Deploy locally with `docker run -p 8000:8000 -p 8001:8001 -v ./data:/app/data paper-trading-server` (mounts volume for SQLite persistence).
+- **Target Registries or Environments**: Local only; no publishing to registries like Docker Hub unless extended. For dev, run directly with `uv run python app/main.py` (starts both servers).
 - **Dev-to-Prod Workflow**: Use Git branches (main for prod-like, dev for features). CI via GitHub Actions: lint/test on push, build Docker image on merge. No staging; direct local runs. Gates: All tests pass before merge.
 
 ## Future Evolution Plan
