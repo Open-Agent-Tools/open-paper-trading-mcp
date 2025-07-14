@@ -125,6 +125,48 @@ This section provides a detailed look at the key files and directories in the pr
 - `get_portfolio` / `get_portfolio_summary` - Portfolio overview
 - `get_all_positions` / `get_position` - Position tracking
 
+### Example MCP Interactions
+
+Here are some examples of how an AI agent might use the available tools to execute trades.
+
+```python
+# Buy 100 shares of Apple
+create_buy_order(symbol="AAPL", quantity=100, price=195.20)
+
+# Sell 50 shares of Tesla
+create_sell_order(symbol="TSLA", quantity=50, price=282.45)
+
+# Buy 200 shares of Amazon
+create_buy_order(symbol="AMZN", quantity=200, price=124.80)
+
+# Sell 150 shares of Microsoft
+create_sell_order(symbol="MSFT", quantity=150, price=342.10)
+
+# Buy 80 shares of NVIDIA
+create_buy_order(symbol="NVDA", quantity=80, price=127.60)
+
+# Buy 120 shares of Meta
+create_buy_order(symbol="META", quantity=120, price=291.00)
+
+# Sell 100 shares of Netflix
+create_sell_order(symbol="NFLX", quantity=100, price=442.55)
+
+# Buy 300 shares of Google
+create_buy_order(symbol="GOOGL", quantity=300, price=141.75)
+
+# Sell 60 shares of AMD
+create_sell_order(symbol="AMD", quantity=60, price=117.90)
+
+# Buy 50 shares of IBM
+create_buy_order(symbol="IBM", quantity=50, price=138.35)
+
+# Check all open orders
+get_all_orders()
+
+# Check the current portfolio
+get_portfolio_summary()
+```
+
 ## Key Functional Features
 
 - **Account Instantiation**: Create new paper trading accounts with initial virtual funds and optional owner (e.g., agent name), allowing separate accounts for different agents or users.
