@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
     
+    # MCP Server Configuration
+    MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "8001"))
+    MCP_SERVER_HOST: str = os.getenv("MCP_SERVER_HOST", "localhost")
+    MCP_SERVER_NAME: str = "Open Paper Trading MCP"
+    
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:

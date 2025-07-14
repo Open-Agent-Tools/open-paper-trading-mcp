@@ -3,25 +3,33 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 import os
+import asyncio
+import threading
 from contextlib import asynccontextmanager
 
 from app.api.routes import api_router
 from app.core.config import settings
 from app.core.exceptions import CustomException
 
+# Import MCP tools only when not in test mode
+try:
+    from app.mcp.tools import mcp
+except ImportError:
+    mcp = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting up...")
+    print("Starting up FastAPI server...")
     yield
     # Shutdown
-    print("Shutting down...")
+    print("Shutting down FastAPI server...")
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="A FastAPI web application for paper trading",
+    description="A FastAPI web application for paper trading with MCP support",
     version="0.1.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
@@ -48,18 +56,56 @@ async def custom_exception_handler(request: Request, exc: CustomException):
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Open Paper Trading MCP API"}
+    return {
+        "message": "Welcome to Open Paper Trading MCP API",
+        "endpoints": {
+            "api": f"{settings.API_V1_STR}/",
+            "docs": "/docs",
+            "health": "/health",
+            "mcp": {
+                "host": settings.MCP_SERVER_HOST,
+                "port": settings.MCP_SERVER_PORT,
+                "name": settings.MCP_SERVER_NAME
+            }
+        }
+    }
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "servers": ["fastapi", "mcp"]}
 
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
+def run_mcp_server():
+    """Run the MCP server in a separate thread."""
+    if mcp is None:
+        print("MCP server not available (likely in test mode)")
+        return
+        
+    print(f"Starting MCP server on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}")
+    try:
+        mcp.run(
+            host=settings.MCP_SERVER_HOST,
+            port=settings.MCP_SERVER_PORT,
+            transport="sse"
+        )
+    except Exception as e:
+        print(f"Error running MCP server: {e}")
+
+
 def main():
+    """Main entry point to run both servers."""
+    # Start MCP server in a separate thread if available
+    if mcp is not None:
+        mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
+        mcp_thread.start()
+    else:
+        print("MCP server not available - running FastAPI only")
+    
+    # Run FastAPI server
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

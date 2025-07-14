@@ -18,9 +18,9 @@ def run_command(cmd):
         return None
 
 def start_server():
-    """Start the development server"""
-    print("Starting development server...")
-    os.system("uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000")
+    """Start both FastAPI and MCP servers"""
+    print("Starting both FastAPI and MCP servers...")
+    os.system("uv run python app/main.py")
 
 def run_tests():
     """Run all tests"""

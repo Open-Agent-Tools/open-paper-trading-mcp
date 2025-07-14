@@ -4,15 +4,19 @@ A FastAPI-based paper trading simulation platform with MCP (Model Context Protoc
 
 ## 🚀 Quick Start
 
-1. **Start the development server:**
+1. **Start both servers (FastAPI + MCP):**
    ```bash
-   uv run uvicorn app.main:app --reload
+   uv run python app/main.py
    ```
+   This starts:
+   - FastAPI server on http://localhost:8000
+   - MCP server on http://localhost:8001
 
-2. **Access the API:**
-   - Interactive docs: http://localhost:8000/docs
-   - Health check: http://localhost:8000/health
-   - API: http://localhost:8000/api/v1/
+2. **Access the services:**
+   - **FastAPI REST API**: http://localhost:8000/api/v1/
+   - **Interactive docs**: http://localhost:8000/docs
+   - **Health check**: http://localhost:8000/health
+   - **MCP Server**: http://localhost:8001 (SSE transport)
 
 3. **Run development commands:**
    ```bash
@@ -28,14 +32,31 @@ A FastAPI-based paper trading simulation platform with MCP (Model Context Protoc
 
 ## 📋 Features
 
-- **Authentication**: OAuth2 bearer token authentication
-- **Trading API**: Stock quotes, order placement, and order management
-- **Portfolio Management**: Position tracking and P&L calculations
-- **Real-time Data**: Mock stock quotes with price updates
-- **FastAPI Integration**: Auto-generated OpenAPI documentation
+### 🔌 Dual Interface Support
+- **FastAPI REST API**: Traditional HTTP JSON endpoints
+- **MCP Server**: AI agent integration via Model Context Protocol
+- **Shared Business Logic**: Both interfaces use the same trading service
+
+### 💼 Trading Functionality
+- **Stock Quotes**: Real-time market data simulation
+- **Order Management**: Buy/sell orders with status tracking
+- **Portfolio Tracking**: Position management and P&L calculations
+- **Authentication**: OAuth2 bearer token authentication (FastAPI)
+
+### 🛠️ Development Features
 - **Type Safety**: Full type hints with Pydantic models
-- **Testing**: Comprehensive test suite with pytest
+- **Testing**: Comprehensive test suite with pytest (95%+ coverage)
+- **Auto-Documentation**: OpenAPI docs for REST API
 - **Development Tools**: Black, isort, flake8, mypy integration
+- **CI/CD**: GitHub Actions pipeline
+
+### 🤖 MCP Tools Available
+- `get_stock_quote` - Get current stock quotes
+- `create_buy_order` / `create_sell_order` - Place trading orders
+- `get_all_orders` / `get_order` - Order management
+- `cancel_order` - Cancel pending orders
+- `get_portfolio` / `get_portfolio_summary` - Portfolio overview
+- `get_all_positions` / `get_position` - Position tracking
 
 ## Key Functional Features
 
@@ -156,3 +177,60 @@ The architecture is simple and monolithic, allowing easy iteration for small-sca
 - **Enhanced security**: Implement full JWT/OAuth for HTTP/MCP and add frontend login if exposing beyond local.
 - **UI expansion**: Evolve to a more interactive SPA (e.g., React) if complex interactions needed; add more dashboards like trade history tables.
 - **When to split**: If interfaces diverge (e.g., frontend needs dedicated caching), extract to separate services. Monitor via added metrics; evolve when response times exceed 100ms or data volume hits 1GB.
+
+## 📊 API Reference
+
+### FastAPI REST Endpoints
+```
+GET  /                                    - Welcome message with server info
+GET  /health                             - Health check for both servers
+GET  /docs                               - Interactive API documentation
+
+# Authentication
+POST /api/v1/auth/token                  - Get access token
+GET  /api/v1/auth/me                     - Get current user info
+
+# Trading
+GET  /api/v1/trading/quote/{symbol}      - Get stock quote
+POST /api/v1/trading/order               - Create new order
+GET  /api/v1/trading/orders              - Get all orders
+GET  /api/v1/trading/order/{order_id}    - Get specific order
+DEL  /api/v1/trading/order/{order_id}    - Cancel order
+
+# Portfolio
+GET  /api/v1/portfolio/                  - Get complete portfolio
+GET  /api/v1/portfolio/summary           - Get portfolio summary
+GET  /api/v1/portfolio/positions         - Get all positions
+GET  /api/v1/portfolio/position/{symbol} - Get specific position
+```
+
+### MCP Tools
+Available at `http://localhost:8001` via SSE transport:
+```
+get_stock_quote(symbol: str)                    - Get current stock quotes
+create_buy_order(symbol, quantity, price)      - Place buy order
+create_sell_order(symbol, quantity, price)     - Place sell order
+get_all_orders()                                - Get all orders
+get_order(order_id: str)                        - Get specific order
+cancel_order(order_id: str)                     - Cancel order
+get_portfolio()                                 - Get complete portfolio
+get_portfolio_summary()                         - Get portfolio summary
+get_all_positions()                             - Get all positions
+get_position(symbol: str)                       - Get specific position
+```
+
+### Configuration
+Environment variables (see `.env.example`):
+```bash
+# Server Configuration
+MCP_SERVER_PORT=8001
+MCP_SERVER_HOST=localhost
+
+# Database & Redis (for future use)
+DATABASE_URL=postgresql://user:pass@localhost/db
+REDIS_URL=redis://localhost:6379
+
+# Security
+SECRET_KEY=your-secret-key
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
