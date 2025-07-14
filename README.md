@@ -193,9 +193,6 @@ The architecture is designed to be easily extensible.
 
 (API and MCP tool references remain the same)
 
-### Configuration
-The application is configured via environment variables, which are set in the `docker-compose.yml` file for local development. See `.env.example` for a list of available variables.
-
 ## 🧪 ADK Evaluations
 
 Test your MCP server with Google ADK agent evaluations.

@@ -52,7 +52,7 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token", response_model=Token, deprecated=True)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:

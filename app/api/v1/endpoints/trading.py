@@ -8,7 +8,7 @@ from app.core.exceptions import NotFoundError, ValidationError
 router = APIRouter()
 
 
-@router.get("/quote/{symbol}", response_model=StockQuote)
+@router.get("/quote/{symbol}", response_model=StockQuote, deprecated=True)
 async def get_quote(symbol: str):
     try:
         return trading_service.get_quote(symbol)
