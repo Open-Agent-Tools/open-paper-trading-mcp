@@ -4,14 +4,36 @@ This document outlines the phased development plan to build out the key features
 
 ---
 
-## Phase 1: Core Engine & Persistence
+## Phase 0: Scaffolding & Infrastructure (✓ Complete)
 
-**Goal:** Replace the in-memory mock service with a functional trading engine and a persistent database. This is the foundation for all other features.
+**Goal:** Establish a robust, containerized foundation for the application with a persistent database.
 
--   [ ] **1. Implement Database Persistence:**
-    -   [ ] Integrate `SQLite` for data storage.
-    -   [ ] Create database models (using SQLAlchemy or similar) for `Accounts`, `Positions`, `Orders`, and `Transactions`.
-    -   [ ] Initialize the database with a default user account and starting cash balance.
+-   [x] **1. Containerize the Application:**
+    -   [x] Create a `Dockerfile` for the main application.
+    -   [x] Create a `docker-compose.yml` to manage services.
+    -   [x] Configure the application to run within Docker.
+
+-   [x] **2. Implement Database Persistence:**
+    -   [x] Integrate `PostgreSQL` as the database service in Docker Compose.
+    -   [x] Create database models for `Account`, `Position`, `Order`, and `Transaction`.
+    -   [x] Configure the application to connect to the database.
+    -   [x] Implement logic to create database tables on startup.
+
+-   [x] **3. Containerize the Test Runner:**
+    -   [x] Create a `Dockerfile.test` for the ADK evaluation runner.
+    -   [x] Add a `test-runner` service to Docker Compose.
+    -   [x] Create a helper script (`run_adk_eval.sh`) as the entrypoint.
+
+---
+
+## Phase 1: Core Engine Implementation
+
+**Goal:** Replace the in-memory mock service with a functional trading engine that uses the persistent database.
+
+-   [ ] **1. Implement Account Management:**
+    -   [ ] Create a default trading account on the first run.
+    -   [ ] Update the `auth` endpoints to link users to a trading account.
+    -   [ ] Create an API endpoint to view account details and balance.
 
 -   [ ] **2. Implement Real-time Market Data:**
     -   [ ] Integrate the Polygon.io API client to fetch real-time stock quotes.
@@ -19,18 +41,16 @@ This document outlines the phased development plan to build out the key features
     -   [ ] Add proper error handling for API failures (e.g., invalid symbol, rate limits).
 
 -   [ ] **3. Implement Order Execution Logic:**
+    -   [ ] **Crucial Step:** Rewrite `TradingService` methods (`create_order`, `cancel_order`, etc.) to interact with the database.
     -   [ ] When an order is created, check if the account has sufficient funds (for buys) or shares (for sells).
     -   [ ] Simulate order fills based on the current market price.
-    -   [ ] Update order status from `PENDING` to `FILLED` or `FAILED`.
-    -   [ ] Record a transaction in the database for every filled order.
+    -   [ ] Update order status from `PENDING` to `FILLED` or `FAILED` in the database.
+    -   [ ] Record a transaction in the `transactions` table for every filled order.
 
--   [ ] **4. Implement Portfolio & Account Management:**
-    -   [ ] When an order is filled, update the user's `Position` (quantity, average price).
-    -   [ ] Update the user's cash balance.
-    -   [ ] Recalculate portfolio metrics (`total_value`, `unrealized_pnl`, etc.) based on real-time data.
-
--   [ ] **5. Secure Endpoints:**
-    -   [ ] Apply authentication middleware to all trading and portfolio endpoints to ensure they are protected.
+-   [ ] **4. Implement Portfolio Management:**
+    -   [ ] When an order is filled, create or update the user's `Position` in the database.
+    -   [ ] Update the user's cash balance in the `accounts` table.
+    -   [ ] Rewrite portfolio endpoints (`get_portfolio`, `get_positions`, etc.) to calculate results from database tables and live market data.
 
 ---
 
@@ -49,10 +69,6 @@ This document outlines the phased development plan to build out the key features
     -   [ ] Show a table of current positions.
     -   [ ] List recent orders and their status.
 
--   [ ] **3. Improve Agent Context & Memory:**
-    -   [ ] Implement a mechanism for the agent to remember the context of a conversation (e.g., remember the last stock it was asked about).
-    -   [ ] Allow the agent to manage its own paper trading account.
-
 ---
 
 ## Phase 3: Advanced Features & Polish
@@ -63,14 +79,6 @@ This document outlines the phased development plan to build out the key features
     -   [ ] Implement logic for `LIMIT` and `STOP` orders.
     -   [ ] Add a background task that periodically checks market prices to trigger these orders.
 
--   [ ] **2. Multi-Account Support:**
-    -   [ ] Allow the creation of multiple, named paper trading accounts.
-    -   [ ] Enable the agent and API to specify which account to use for a transaction.
-
--   [ ] **3. Expand Test Coverage:**
+-   [ ] **2. Expand Test Coverage:**
     -   [ ] Write integration tests that cover the full order-to-portfolio update lifecycle.
     -   [ ] Create more complex ADK evaluation sets for the new agent tools.
-
--   [ ] **4. Documentation:**
-    -   [ ] Update the `README.md` to reflect the new, functional implementation.
-    -   [ ] Add detailed documentation for the API endpoints and MCP tools.

@@ -37,6 +37,53 @@ A FastAPI-based paper trading simulation platform with MCP (Model Context Protoc
    docker-compose down
    ```
 
+## Project Structure Overview
+
+This section provides a detailed look at the key files and directories in the project.
+
+### 🐳 Docker Configuration
+
+-   `Dockerfile`: Defines the instructions to build the main application image. It installs dependencies, copies the application code, and sets the default command to run the server.
+-   `Dockerfile.test`: Defines the image for the containerized test runner. It builds on the main application image and installs the ADK and other testing-specific dependencies.
+-   `docker-compose.yml`: Orchestrates the multi-container environment. It defines three services:
+    -   `db`: A PostgreSQL database for persistent data storage.
+    -   `app`: The main Python application running both FastAPI and FastMCP servers.
+    -   `test-runner`: A dedicated container for running ADK evaluations in a controlled environment.
+
+### 🐍 Application Code (`/app`)
+
+-   `main.py`: The main entry point for the application. It initializes the FastAPI app, sets up the MCP server to run in a background thread, and contains the `lifespan` event handler that creates the database tables on startup.
+-   `/api`: Contains all FastAPI-related code.
+    -   `routes.py`: The main API router that includes all versioned endpoint routers.
+    -   `/v1/endpoints`: Each file (`auth.py`, `trading.py`, `portfolio.py`) defines the routes for a specific domain of the REST API.
+-   `/core`: Core application logic and configuration.
+    -   `config.py`: Defines all application settings using Pydantic, loading values from environment variables.
+    -   `exceptions.py`: Defines custom exception classes for the application.
+-   `/mcp`: Contains the MCP tool definitions.
+    -   `tools.py`: Defines all the functions exposed as tools to the AI agent via the FastMCP server.
+-   `/models`: Defines the data structures for the application.
+    -   `trading.py`: Contains Pydantic models used for API request/response validation.
+    -   `/database/trading.py`: Contains the SQLAlchemy models that define the database schema.
+-   `/services`: Contains the shared business logic.
+    -   `trading_service.py`: The heart of the application logic. **Currently mocked**, this service will be updated to interact with the database and external APIs.
+-   `/storage`: Handles the database connection.
+    -   `database.py`: Sets up the SQLAlchemy engine and provides a `get_db` dependency for use in API endpoints.
+
+### 🧪 Testing (`/tests` and `/examples`)
+
+-   `/tests`: Contains all automated tests.
+    -   `/unit`: Unit tests for individual components.
+    -   `/evals`: ADK evaluation files (`.json`) and configuration.
+-   `/examples/google_adk_agent`: A sample ADK agent that can interact with the MCP server.
+
+### 📜 Scripts and Configuration
+
+-   `/scripts`: Contains helper scripts for development.
+    -   `dev.py`: A simple CLI for running common development tasks like formatting and testing.
+    -   `run_adk_eval.sh`: The entrypoint script for the `test-runner` container, used to execute ADK evaluations.
+-   `pyproject.toml`: The project's main configuration file, defining dependencies, project metadata, and tool settings.
+-   `TODO.md`: The development plan outlining the next steps for implementation.
+
 ## 📋 Features
 
 ### 🔌 Dual Interface Support
