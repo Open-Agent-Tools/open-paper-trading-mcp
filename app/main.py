@@ -10,6 +10,8 @@ from contextlib import asynccontextmanager
 from app.api.routes import api_router
 from app.core.config import settings
 from app.core.exceptions import CustomException
+from app.storage.database import engine
+from app.models.database.base import Base
 
 # Import MCP tools only when not in test mode
 try:
@@ -22,6 +24,9 @@ except ImportError:
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting up FastAPI server...")
+    print("Initializing database...")
+    Base.metadata.create_all(bind=engine)
+    print("Database initialized.")
     yield
     # Shutdown
     print("Shutting down FastAPI server...")

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:2080"]
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./trading_database.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db")
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
