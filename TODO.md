@@ -59,8 +59,6 @@ This document outlines the phased development plan to build out the key features
 **Goal:** Make the MCP agent more intelligent and provide a simple UI for visualization.
 
 -   [ ] **1. Develop Advanced MCP Tools:**
-    -   [ ] Create a tool to get historical price data for a stock (`get_historical_data`).
-    -   [ ] Create a tool to fetch market news for a given symbol (`get_market_news`).
     -   [ ] Create a tool for basic technical analysis (e.g., `get_moving_average`).
 
 -   [ ] **2. Implement a Basic Web UI:**
