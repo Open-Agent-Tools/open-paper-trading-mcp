@@ -119,7 +119,6 @@ This section provides a detailed look at the key files and directories in the pr
 - **CI/CD**: GitHub Actions pipeline
 
 ### 🤖 MCP Tools Available
-- `get_stock_quote` - Get current stock quotes
 - `create_buy_order` / `create_sell_order` - Place trading orders
 - `get_all_orders` / `get_order` - Order management
 - `cancel_order` - Cancel pending orders

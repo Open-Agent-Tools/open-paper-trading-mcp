@@ -36,7 +36,7 @@ class GetPositionArgs(BaseModel):
 
 @mcp.tool()
 def get_stock_quote(args: GetQuoteArgs) -> str:
-    """Get current stock quote for a symbol."""
+    """[DEPRECATED] Get current stock quote for a symbol."""
     try:
         quote = trading_service.get_quote(args.symbol)
         return json.dumps({
