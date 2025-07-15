@@ -1,7 +1,7 @@
 """
 Quote classes for market data and options pricing.
 
-Adapted from paperbroker with Pydantic models and FastAPI integration.
+Quote models with Pydantic validation and FastAPI integration.
 """
 
 from datetime import datetime, date
@@ -38,6 +38,15 @@ def quote_factory(
     """
     asset_obj = asset_factory(asset)
 
+    if asset_obj is None:
+        raise ValueError("Could not create asset from provided symbol")
+    
+    # Normalize quote_date to datetime
+    if isinstance(quote_date, str):
+        quote_date = datetime.fromisoformat(quote_date.replace("Z", "+00:00"))
+    elif isinstance(quote_date, date) and not isinstance(quote_date, datetime):
+        quote_date = datetime.combine(quote_date, datetime.min.time())
+    
     if isinstance(asset_obj, Option):
         return OptionQuote(
             quote_date=quote_date,
@@ -47,6 +56,7 @@ def quote_factory(
             ask=ask,
             bid_size=bid_size,
             ask_size=ask_size,
+            volume=None,
             underlying_price=underlying_price,
         )
     else:
@@ -58,6 +68,7 @@ def quote_factory(
             ask=ask,
             bid_size=bid_size,
             ask_size=ask_size,
+            volume=None,
         )
 
 
@@ -74,25 +85,30 @@ class Quote(BaseModel):
     volume: Optional[int] = Field(None, ge=0, description="Trading volume")
 
     @validator("asset", pre=True)
-    def normalize_asset(cls, v):
-        return asset_factory(v) if isinstance(v, str) else v
+    def normalize_asset(cls, v: Union[str, Asset]) -> Asset:
+        if isinstance(v, str):
+            asset = asset_factory(v)
+            if asset is None:
+                raise ValueError(f"Could not create asset for symbol: {v}")
+            return asset
+        return v
 
     @validator("quote_date", pre=True)
-    def normalize_date(cls, v):
+    def normalize_date(cls, v: Union[str, date, datetime]) -> datetime:
         if isinstance(v, str):
             return datetime.fromisoformat(v.replace("Z", "+00:00"))
         elif isinstance(v, date) and not isinstance(v, datetime):
             return datetime.combine(v, datetime.min.time())
-        return v
+        return v if isinstance(v, datetime) else datetime.now()
 
     @validator("price")
-    def calculate_midpoint(cls, v, values):
+    def calculate_midpoint(cls, v: Optional[float], values: Dict[str, Any]) -> Optional[float]:
         """Calculate midpoint if price not provided."""
         if v is None:
             bid = values.get("bid", 0.0)
             ask = values.get("ask", 0.0)
             if bid > 0 and ask > 0:
-                return (bid + ask) / 2
+                return float((bid + ask) / 2)
         return v
 
     @property
@@ -146,14 +162,17 @@ class OptionQuote(Quote):
     )
     ultima: Optional[float] = Field(None, description="Ultima (vomma sensitivity)")
     dual_delta: Optional[float] = Field(None, description="Dual delta")
+    
+    # Market data
+    open_interest: Optional[int] = Field(None, description="Open interest")
 
     @validator("asset")
-    def validate_option_asset(cls, v):
+    def validate_option_asset(cls, v: Asset) -> Asset:
         if not isinstance(v, Option):
             raise ValueError("OptionQuote requires an Option asset")
         return v
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 
         # Calculate Greeks if we have sufficient data
@@ -165,7 +184,7 @@ class OptionQuote(Quote):
         ):  # Only calculate if not already provided
             self._calculate_greeks()
 
-    def _calculate_greeks(self):
+    def _calculate_greeks(self) -> None:
         """Calculate Greeks using Black-Scholes."""
         try:
             from ..services.greeks import update_option_quote_with_greeks
@@ -216,6 +235,8 @@ class OptionQuote(Quote):
             or not isinstance(self.asset, Option)
             or not self.is_priceable()
         ):
+            return 0.0
+        if self.price is None:
             return 0.0
         return self.asset.get_extrinsic_value(price, self.price)
 
@@ -283,12 +304,12 @@ class OptionsChain(BaseModel):
         filtered_puts = self.puts.copy()
 
         if min_strike is not None:
-            filtered_calls = [opt for opt in filtered_calls if opt.strike >= min_strike]
-            filtered_puts = [opt for opt in filtered_puts if opt.strike >= min_strike]
+            filtered_calls = [opt for opt in filtered_calls if opt.strike is not None and opt.strike >= min_strike]
+            filtered_puts = [opt for opt in filtered_puts if opt.strike is not None and opt.strike >= min_strike]
 
         if max_strike is not None:
-            filtered_calls = [opt for opt in filtered_calls if opt.strike <= max_strike]
-            filtered_puts = [opt for opt in filtered_puts if opt.strike <= max_strike]
+            filtered_calls = [opt for opt in filtered_calls if opt.strike is not None and opt.strike <= max_strike]
+            filtered_puts = [opt for opt in filtered_puts if opt.strike is not None and opt.strike <= max_strike]
 
         return OptionsChain(
             underlying_symbol=self.underlying_symbol,
@@ -335,9 +356,9 @@ class OptionsChain(BaseModel):
         max_strike = self.underlying_price + tolerance_amount
 
         atm_calls = [
-            opt for opt in self.calls if min_strike <= opt.strike <= max_strike
+            opt for opt in self.calls if opt.strike is not None and min_strike <= opt.strike <= max_strike
         ]
-        atm_puts = [opt for opt in self.puts if min_strike <= opt.strike <= max_strike]
+        atm_puts = [opt for opt in self.puts if opt.strike is not None and min_strike <= opt.strike <= max_strike]
 
         return {"calls": atm_calls, "puts": atm_puts}
 
@@ -351,8 +372,8 @@ class OptionsChain(BaseModel):
         if self.underlying_price is None:
             return {"calls": [], "puts": []}
 
-        itm_calls = [opt for opt in self.calls if opt.strike < self.underlying_price]
-        itm_puts = [opt for opt in self.puts if opt.strike > self.underlying_price]
+        itm_calls = [opt for opt in self.calls if opt.strike is not None and opt.strike < self.underlying_price]
+        itm_puts = [opt for opt in self.puts if opt.strike is not None and opt.strike > self.underlying_price]
 
         return {"calls": itm_calls, "puts": itm_puts}
 
@@ -366,8 +387,8 @@ class OptionsChain(BaseModel):
         if self.underlying_price is None:
             return {"calls": [], "puts": []}
 
-        otm_calls = [opt for opt in self.calls if opt.strike > self.underlying_price]
-        otm_puts = [opt for opt in self.puts if opt.strike < self.underlying_price]
+        otm_calls = [opt for opt in self.calls if opt.strike is not None and opt.strike > self.underlying_price]
+        otm_puts = [opt for opt in self.puts if opt.strike is not None and opt.strike < self.underlying_price]
 
         return {"calls": otm_calls, "puts": otm_puts}
 
@@ -393,7 +414,7 @@ class OptionsChain(BaseModel):
 
         # Find closest delta
         closest_option = min(
-            options_with_delta, key=lambda opt: abs(opt.delta - target_delta)
+            options_with_delta, key=lambda opt: abs((opt.delta or 0) - target_delta)
         )
 
         return closest_option

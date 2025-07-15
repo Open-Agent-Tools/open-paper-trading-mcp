@@ -1,2 +1,0 @@
-from .QuoteAdapter import QuoteAdapter
-from .GoogleFinanceQuoteAdapter import GoogleFinanceQuoteAdapter

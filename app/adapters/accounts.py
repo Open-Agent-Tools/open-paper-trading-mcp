@@ -140,7 +140,7 @@ def account_factory(
     name: Optional[str] = None, owner: Optional[str] = None, cash: float = 100000.0
 ) -> Account:
     """Factory function to create new accounts."""
-    account_id = str(uuid.uuid4())[:8]  # Short ID like paperbroker
+    account_id = str(uuid.uuid4())[:8]  # Short ID like reference implementation
 
     if name is None:
         name = f"Account-{account_id}"

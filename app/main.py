@@ -61,7 +61,9 @@ if settings.BACKEND_CORS_ORIGINS:
 
 
 @app.exception_handler(CustomException)
-async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
+async def custom_exception_handler(
+    request: Request, exc: CustomException
+) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},

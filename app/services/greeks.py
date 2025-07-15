@@ -1,11 +1,17 @@
 """
 Options Greeks calculation service using Black-Scholes model.
 
-Pure Python implementation adapted from paperbroker, with improvements for numerical stability.
+Pure Python implementation adapted from reference implementation, with improvements for numerical stability.
 """
 
 import math
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
+
+from app.models.assets import Option
+
+if TYPE_CHECKING:
+    from app.models.quotes import OptionQuote
+    from app.models.assets import Option
 
 
 def calculate_option_greeks(
@@ -34,7 +40,7 @@ def calculate_option_greeks(
     """
 
     # Initialize output with None values
-    greeks = {
+    greeks: Dict[str, float | None] = {
         "iv": None,
         "delta": None,
         "gamma": None,
@@ -326,8 +332,8 @@ def _calculate_all_greeks(
 
 # Helper function to integrate with the quote system
 def update_option_quote_with_greeks(
-    option_quote, risk_free_rate: float = 0.02, dividend_yield: float = 0.0
-):
+    option_quote: "OptionQuote", risk_free_rate: float = 0.02, dividend_yield: float = 0.0
+) -> None:
     """Update an OptionQuote with calculated Greeks."""
     if (
         not option_quote.is_priceable()
@@ -340,12 +346,15 @@ def update_option_quote_with_greeks(
     if days_to_exp is None or days_to_exp <= 0:
         return
 
+    if not isinstance(option_quote.asset, Option):
+        return
+    
     greeks = calculate_option_greeks(
         option_type=option_quote.asset.option_type,
         strike=option_quote.asset.strike,
         underlying_price=option_quote.underlying_price,
         days_to_expiration=days_to_exp,
-        option_price=option_quote.price,
+        option_price=option_quote.price or 0.0,
         risk_free_rate=risk_free_rate,
         dividend_yield=dividend_yield,
     )

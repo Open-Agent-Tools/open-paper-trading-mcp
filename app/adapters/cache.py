@@ -16,7 +16,7 @@ class CacheEntry:
     Cache entry with TTL support.
     """
 
-    value: Union[Quote, OptionQuote, OptionsChain, Dict, List]
+    value: Union[Quote, OptionQuote, OptionsChain, Dict[str, Any], List[Any]]
     timestamp: float
     ttl: float
 
@@ -57,7 +57,7 @@ class QuoteCache:
 
     def get(
         self, key: str
-    ) -> Optional[Union[Quote, OptionQuote, OptionsChain, Dict, List]]:
+    ) -> Optional[Union[Quote, OptionQuote, OptionsChain, Dict[str, Any], List[Any]]]:
         """
         Get value from cache if it exists and hasn't expired.
 
@@ -86,7 +86,7 @@ class QuoteCache:
     def put(
         self,
         key: str,
-        value: Union[Quote, OptionQuote, OptionsChain, Dict, List],
+        value: Union[Quote, OptionQuote, OptionsChain, Dict[str, Any], List[Any]],
         ttl: Optional[float] = None,
     ) -> None:
         """
@@ -232,7 +232,7 @@ class QuoteCache:
                 )
 
             # Sort by age (newest first)
-            entries.sort(key=lambda x: x["age_seconds"])
+            entries.sort(key=lambda x: float(x["age_seconds"]) if isinstance(x["age_seconds"], (int, float, str)) else 0.0)
             return entries
 
 
@@ -241,7 +241,7 @@ class CachedQuoteAdapter:
     Wrapper that adds caching to any QuoteAdapter.
     """
 
-    def __init__(self, adapter, cache: Optional[QuoteCache] = None):
+    def __init__(self, adapter: Any, cache: Optional[QuoteCache] = None) -> None:
         """
         Initialize cached adapter.
 
@@ -258,7 +258,7 @@ class CachedQuoteAdapter:
 
         # Try cache first
         cached_quote = self.cache.get(cache_key)
-        if cached_quote is not None:
+        if cached_quote is not None and isinstance(cached_quote, (Quote, OptionQuote)):
             return cached_quote
 
         # Fetch from adapter
@@ -277,7 +277,7 @@ class CachedQuoteAdapter:
         for symbol in symbols:
             cache_key = f"quote:{symbol}:{self.adapter.name}"
             cached_quote = self.cache.get(cache_key)
-            if cached_quote is not None:
+            if cached_quote is not None and isinstance(cached_quote, (Quote, OptionQuote)):
                 results[symbol] = cached_quote
             else:
                 uncached_symbols.append(symbol)
@@ -293,7 +293,7 @@ class CachedQuoteAdapter:
         return results
 
     def get_options_chain(
-        self, underlying: str, expiration=None
+        self, underlying: str, expiration: Optional[Any] = None
     ) -> Optional[OptionsChain]:
         """Get options chain with caching."""
         exp_str = expiration.isoformat() if expiration else "all"
@@ -301,7 +301,7 @@ class CachedQuoteAdapter:
 
         # Try cache first
         cached_chain = self.cache.get(cache_key)
-        if cached_chain is not None:
+        if cached_chain is not None and isinstance(cached_chain, OptionsChain):
             return cached_chain
 
         # Fetch from adapter
@@ -313,13 +313,13 @@ class CachedQuoteAdapter:
 
         return chain
 
-    def get_expiration_dates(self, underlying: str) -> List:
+    def get_expiration_dates(self, underlying: str) -> List[Any]:
         """Get expiration dates with caching."""
         cache_key = f"expirations:{underlying}:{self.adapter.name}"
 
         # Try cache first
         cached_dates = self.cache.get(cache_key)
-        if cached_dates is not None:
+        if cached_dates is not None and isinstance(cached_dates, list):
             return cached_dates
 
         # Fetch from adapter
@@ -340,7 +340,7 @@ class CachedQuoteAdapter:
         return self.cache.get_stats()
 
     # Delegate other methods to the underlying adapter
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         """Delegate unknown methods to the underlying adapter."""
         return getattr(self.adapter, name)
 
@@ -354,7 +354,7 @@ def get_global_cache() -> QuoteCache:
     return _global_cache
 
 
-def cached_adapter(adapter, cache: Optional[QuoteCache] = None) -> CachedQuoteAdapter:
+def cached_adapter(adapter: Any, cache: Optional[QuoteCache] = None) -> CachedQuoteAdapter:
     """
     Wrap an adapter with caching.
 

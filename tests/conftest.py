@@ -4,12 +4,12 @@ from app.main import app
 
 
 @pytest.fixture
-def client():
+def client() -> TestClient:
     """Create a test client for the FastAPI app."""
     return TestClient(app)
 
 
 @pytest.fixture
-def auth_headers():
+def auth_headers() -> dict[str, str]:
     """Create authentication headers for testing."""
     return {"Authorization": "Bearer testuser"}

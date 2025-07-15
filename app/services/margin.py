@@ -1,7 +1,7 @@
 """
 Maintenance margin calculation service for options trading.
 
-Adapted from paperbroker with enhanced naked option calculations and modern Python patterns.
+Adapted from reference implementation with enhanced naked option calculations and modern Python patterns.
 Calculates margin requirements for various trading strategies according to standard rules.
 
 Margin Rules Summary:

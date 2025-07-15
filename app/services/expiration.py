@@ -1,7 +1,7 @@
 """
 Options expiration engine for automatic expiration processing.
 
-Migrated from paperbroker with modern Python patterns and enhanced functionality.
+Migrated from reference implementation with modern Python patterns and enhanced functionality.
 Handles automatic ITM/OTM option processing, assignment, and exercise simulation.
 """
 

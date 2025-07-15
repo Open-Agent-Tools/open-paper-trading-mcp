@@ -8,7 +8,7 @@ import sys
 import os
 
 
-def run_command(cmd):
+def run_command(cmd: str) -> str | None:
     """Run a command and return its result"""
     try:
         result = subprocess.run(
@@ -21,38 +21,38 @@ def run_command(cmd):
         return None
 
 
-def start_server():
+def start_server() -> None:
     """Start both FastAPI and MCP servers"""
     print("Starting both FastAPI and MCP servers...")
     os.system("uv run python app/main.py")
 
 
-def run_tests():
+def run_tests() -> None:
     """Run all tests"""
     print("Running tests...")
     os.system("uv run pytest -v")
 
 
-def format_code():
+def format_code() -> None:
     """Format code with black and isort"""
     print("Formatting code...")
     os.system("uv run black app tests")
     os.system("uv run isort app tests")
 
 
-def lint_code():
+def lint_code() -> None:
     """Lint code with flake8"""
     print("Linting code...")
     os.system("uv run flake8 app tests")
 
 
-def type_check():
+def type_check() -> None:
     """Type check with mypy"""
     print("Type checking...")
     os.system("uv run mypy app")
 
 
-def run_all_checks():
+def run_all_checks() -> None:
     """Run all code quality checks"""
     format_code()
     lint_code()
@@ -60,7 +60,7 @@ def run_all_checks():
     run_tests()
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python scripts/dev.py <command>")
         print("Commands:")

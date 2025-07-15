@@ -1,7 +1,7 @@
 """
 Order Impact Analysis Service for pre-trade risk assessment.
 
-Adapted from paperbroker OrderImpact with enhanced analysis capabilities.
+Adapted from reference implementation OrderImpact with enhanced analysis capabilities.
 Provides before/after simulation of orders to assess their impact on accounts.
 """
 

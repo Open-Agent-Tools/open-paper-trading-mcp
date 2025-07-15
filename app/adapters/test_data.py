@@ -1,7 +1,7 @@
 """
 Test data adapter using historical options and stock data.
 
-Adapted from paperbroker TestDataQuoteAdapter with modern Python patterns.
+Adapted from reference implementation TestDataQuoteAdapter with modern Python patterns.
 
 Data includes quotes for AAL and GOOG from 2017:
 - AAL: 2017-01-27 to 2017-01-28 (Jan expiration + earnings)

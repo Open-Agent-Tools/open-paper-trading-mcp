@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Union, Dict
+from typing import Optional, List, Union, Dict, Any
 from datetime import datetime, date
 from enum import Enum
 from .assets import Asset, Option, asset_factory
@@ -45,11 +45,11 @@ class OrderLeg(BaseModel):
     )
 
     @validator("asset", pre=True)
-    def normalize_asset(cls, v):
+    def normalize_asset(cls, v: Union[str, Asset]) -> Optional[Asset]:
         return asset_factory(v) if isinstance(v, str) else v
 
     @validator("quantity")
-    def set_quantity_sign(cls, v, values):
+    def set_quantity_sign(cls, v: int, values: Dict[str, object]) -> int:
         """Automatically set quantity sign based on order type."""
         order_type = values.get("order_type")
         if order_type in [OrderType.SELL, OrderType.STO, OrderType.STC]:
@@ -58,7 +58,7 @@ class OrderLeg(BaseModel):
             return abs(v)  # Positive for buys
 
     @validator("price")
-    def set_price_sign(cls, v, values):
+    def set_price_sign(cls, v: Optional[float], values: Dict[str, object]) -> Optional[float]:
         """Automatically set price sign based on order type."""
         if v is None:
             return v
@@ -100,7 +100,7 @@ class MultiLegOrder(BaseModel):
     """Multi-leg order for complex strategies."""
 
     id: Optional[str] = None
-    legs: List[OrderLeg] = Field(..., min_items=1, description="Order legs")
+    legs: List[OrderLeg] = Field(..., description="Order legs")
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
@@ -112,8 +112,8 @@ class MultiLegOrder(BaseModel):
     filled_at: Optional[datetime] = None
 
     @validator("legs")
-    def validate_no_duplicate_assets(cls, v):
-        """Ensure no duplicate assets in legs (following paperbroker logic)."""
+    def validate_no_duplicate_assets(cls, v: List[OrderLeg]) -> List[OrderLeg]:
+        """Ensure no duplicate assets in legs."""
         symbols = [
             leg.asset.symbol if hasattr(leg.asset, "symbol") else str(leg.asset)
             for leg in v
@@ -165,7 +165,7 @@ class MultiLegOrder(BaseModel):
         """Calculate net price for the strategy."""
         if any(leg.price is None for leg in self.legs):
             return None
-        return sum(leg.price * abs(leg.quantity) for leg in self.legs)
+        return sum(leg.price * abs(leg.quantity) for leg in self.legs if leg.price is not None)
 
     @property
     def is_opening_order(self) -> bool:
@@ -208,7 +208,7 @@ class OrderLegCreate(BaseModel):
 class MultiLegOrderCreate(BaseModel):
     """Create a multi-leg order."""
 
-    legs: List[OrderLegCreate] = Field(..., min_items=1, description="Order legs")
+    legs: List[OrderLegCreate] = Field(..., description="Order legs")
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
@@ -256,7 +256,7 @@ class Position(BaseModel):
     iv: Optional[float] = Field(None, description="Implied volatility")
 
     @validator("asset", pre=True)
-    def normalize_asset(cls, v):
+    def normalize_asset(cls, v: Union[str, Asset]) -> Optional[Asset]:
         if isinstance(v, str):
             return asset_factory(v)
         return v
@@ -310,29 +310,28 @@ class Position(BaseModel):
         pnl = (price - self.avg_price) * self.quantity * self.multiplier
         return pnl
 
-    def update_market_data(self, current_price: float, quote=None):
+    def update_market_data(self, current_price: float, quote: Optional[Any] = None) -> None:
         """Update position with current market data and Greeks."""
         self.current_price = current_price
         self.unrealized_pnl = self.calculate_unrealized_pnl(current_price)
 
         # Update Greeks if quote provided and this is an options position
         if quote is not None and self.is_option and hasattr(quote, "delta"):
-            self.delta = (
-                quote.delta * self.quantity * self.multiplier if quote.delta else None
-            )
-            self.gamma = (
-                quote.gamma * self.quantity * self.multiplier if quote.gamma else None
-            )
-            self.theta = (
-                quote.theta * self.quantity * self.multiplier if quote.theta else None
-            )
-            self.vega = (
-                quote.vega * self.quantity * self.multiplier if quote.vega else None
-            )
-            self.rho = (
-                quote.rho * self.quantity * self.multiplier if quote.rho else None
-            )
-            self.iv = quote.iv if quote.iv else None
+            delta_val = getattr(quote, "delta", None)
+            self.delta = delta_val * self.quantity * self.multiplier if delta_val is not None else None
+            
+            gamma_val = getattr(quote, "gamma", None)
+            self.gamma = gamma_val * self.quantity * self.multiplier if gamma_val is not None else None
+            
+            theta_val = getattr(quote, "theta", None)
+            self.theta = theta_val * self.quantity * self.multiplier if theta_val is not None else None
+            
+            vega_val = getattr(quote, "vega", None)
+            self.vega = vega_val * self.quantity * self.multiplier if vega_val is not None else None
+            
+            rho_val = getattr(quote, "rho", None)
+            self.rho = rho_val * self.quantity * self.multiplier if rho_val is not None else None
+            self.iv = getattr(quote, "iv", None)
 
     def get_close_cost(self, current_price: Optional[float] = None) -> Optional[float]:
         """Cost to close the position (negative means you receive money)."""
@@ -345,7 +344,7 @@ class Position(BaseModel):
         # Short position: buy (positive cost = pay money)
         return -price * self.quantity * self.multiplier
 
-    def simulate_close(self, current_price: Optional[float] = None) -> Dict[str, float]:
+    def simulate_close(self, current_price: Optional[float] = None) -> Dict[str, Union[float, str]]:
         """Simulate closing the position and return impact."""
         price = current_price or self.current_price
         if price is None:
@@ -353,6 +352,9 @@ class Position(BaseModel):
 
         close_cost = self.get_close_cost(price)
         realized_pnl = self.calculate_unrealized_pnl(price)
+        
+        if close_cost is None or realized_pnl is None:
+            return {"error": "Unable to calculate close cost or realized PnL"}
 
         return {
             "close_cost": close_cost,

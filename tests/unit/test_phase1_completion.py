@@ -1,6 +1,6 @@
 """
 Test suite for Phase 1 completion verification.
-Tests all enhanced models and services from paperbroker migration.
+Tests all enhanced models and services from reference implementation migration.
 """
 
 import pytest

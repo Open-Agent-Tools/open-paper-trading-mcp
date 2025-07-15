@@ -1,12 +1,11 @@
 """
-Advanced strategy grouping algorithm from paperbroker.
+Advanced strategy grouping algorithm from reference implementation.
 
 Groups positions into basic strategies for margin calculation and risk analysis.
 Special thanks to /u/EdKaim for the outline of this process.
 """
 
-from typing import List, Dict, Any
-from math import abs
+from typing import List, Dict, Any, Optional, Tuple
 
 from ..models.assets import Option, asset_factory
 from ..models.trading import Position

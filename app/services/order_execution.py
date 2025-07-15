@@ -1,5 +1,5 @@
 """
-Order execution engine adapted from paperbroker.
+Order execution engine for options trading.
 
 Handles multi-leg order execution with proper position management,
 cash balance updates, and margin calculations.
@@ -34,10 +34,10 @@ class OrderExecutionResult:
         self,
         success: bool,
         message: str = "",
-        order_id: str = None,
+        order_id: Optional[str] = None,
         cash_change: float = 0.0,
-        positions_created: List[Position] = None,
-        positions_modified: List[Position] = None,
+        positions_created: Optional[List[Position]] = None,
+        positions_modified: Optional[List[Position]] = None,
     ):
         self.success = success
         self.message = message
@@ -57,7 +57,7 @@ class OrderExecutionEngine:
     - Margin requirement updates
     """
 
-    def __init__(self, quote_service=None, margin_service=None):
+    def __init__(self, quote_service=None, margin_service=None) -> None:
         self.quote_service = quote_service
         self.margin_service = margin_service
         self.default_estimator = MidpointEstimator()
@@ -183,12 +183,12 @@ class OrderExecutionEngine:
             account_id, multi_leg, current_cash, current_positions, estimator
         )
 
-    def _validate_order(self, order: MultiLegOrder):
+    def _validate_order(self, order: MultiLegOrder) -> None:
         """Validate order structure and leg consistency."""
         if not order.legs:
             raise OrderExecutionError("Order must have at least one leg")
 
-        # Check for duplicate assets (paperbroker pattern)
+        # Check for duplicate assets
         symbols = [
             leg.asset.symbol if hasattr(leg.asset, "symbol") else str(leg.asset)
             for leg in order.legs
@@ -221,7 +221,7 @@ class OrderExecutionEngine:
             # Calculate fill price using estimator
             estimated_price = estimator.estimate(quote, leg.quantity)
 
-            # Apply proper sign based on order direction (paperbroker pattern)
+            # Apply proper sign based on order direction
             fill_price = estimated_price * copysign(1, leg.quantity)
             leg_prices[leg] = fill_price
 
@@ -274,7 +274,7 @@ class OrderExecutionEngine:
         for leg in legs:
             cost_basis = leg_prices[leg]
 
-            # Validate quantity/price signs (paperbroker validation)
+            # Validate quantity/price signs
             if leg.order_type.value.startswith("b") and (
                 leg.quantity < 0 or cost_basis < 0
             ):

@@ -1,10 +1,10 @@
 """
 Account and order validation service.
 
-Adapted from paperbroker with enhanced validation capabilities.
+Adapted from reference implementation with enhanced validation capabilities.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union, Any
 from datetime import datetime, date
 
 from ..models.trading import MultiLegOrder, Order, OrderLeg, OrderType, Position
@@ -22,7 +22,7 @@ class AccountValidator:
     Validates account state after orders and ensures trading rules compliance.
     """
 
-    def __init__(self, margin_service=None):
+    def __init__(self, margin_service: Optional[Any] = None) -> None:
         self.margin_service = margin_service
 
     def validate_account_state(
@@ -102,14 +102,14 @@ class AccountValidator:
 
         return True
 
-    def _validate_order_structure(self, order: MultiLegOrder):
+    def _validate_order_structure(self, order: MultiLegOrder) -> None:
         """Validate basic order structure."""
 
         if not order.legs:
             raise ValidationError("Order must have at least one leg")
 
         # Check for duplicate assets
-        symbols = [self._get_symbol(leg.asset) for leg in order.legs]
+        symbols = [self._get_symbol(leg.asset) if isinstance(leg.asset, Asset) else str(leg.asset) for leg in order.legs]
         if len(symbols) != len(set(symbols)):
             raise ValidationError("Duplicate assets not allowed in multi-leg orders")
 
@@ -117,7 +117,7 @@ class AccountValidator:
         for i, leg in enumerate(order.legs):
             self._validate_leg(leg, f"Leg {i + 1}")
 
-    def _validate_leg(self, leg: OrderLeg, leg_name: str):
+    def _validate_leg(self, leg: OrderLeg, leg_name: str) -> None:
         """Validate individual order leg."""
 
         if leg.quantity == 0:
@@ -146,12 +146,12 @@ class AccountValidator:
 
     def _validate_closing_positions(
         self, legs: List[OrderLeg], positions: List[Position]
-    ):
+    ) -> None:
         """Validate sufficient positions exist for closing orders."""
 
         for leg in legs:
             if leg.order_type in [OrderType.BTC, OrderType.STC]:
-                symbol = self._get_symbol(leg.asset)
+                symbol = self._get_symbol(leg.asset) if isinstance(leg.asset, Asset) else str(leg.asset)
 
                 # Find positions that can be closed by this leg
                 closable_positions = [
@@ -179,7 +179,7 @@ class AccountValidator:
                         f"Required: {required_quantity}, Available: {available_quantity}"
                     )
 
-    def _validate_options_rules(self, legs: List[OrderLeg]):
+    def _validate_options_rules(self, legs: List[OrderLeg]) -> None:
         """Validate options-specific trading rules."""
 
         for leg in legs:
@@ -307,7 +307,7 @@ class OrderValidator:
     Specialized validator for order-specific rules.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.account_validator = AccountValidator()
 
     def validate_simple_order(self, order: Order) -> bool:
@@ -353,7 +353,7 @@ class OrderValidator:
 
         return True
 
-    def _validate_multi_leg_strategy(self, order: MultiLegOrder):
+    def _validate_multi_leg_strategy(self, order: MultiLegOrder) -> None:
         """Validate multi-leg strategy makes sense."""
 
         # Basic validation - could be expanded with strategy recognition

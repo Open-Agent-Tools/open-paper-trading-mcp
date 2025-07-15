@@ -1,14 +1,14 @@
 """
 Price estimation tools for determining likely transaction prices.
 
-Adapted from paperbroker with enhanced features for realistic fill simulation.
+Adapted from reference implementation with enhanced features for realistic fill simulation.
 Includes slippage modeling, volume impact, and options-specific estimation.
 """
 
 import random
 from abc import ABC, abstractmethod
 from math import copysign, sqrt
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, Any, Tuple
 from datetime import datetime
 
 from ..models.quotes import Quote, OptionQuote
@@ -223,7 +223,7 @@ def get_default_estimator() -> PriceEstimator:
 
 
 # Factory function for creating estimators by name
-def create_estimator(estimator_type: str, **kwargs) -> PriceEstimator:
+def create_estimator(estimator_type: str, **kwargs: Any) -> PriceEstimator:
     """
     Create an estimator by type name.
 
@@ -478,7 +478,7 @@ class MultiEstimator(PriceEstimator):
     Useful for sophisticated modeling that considers multiple factors.
     """
 
-    def __init__(self, estimators: Dict[str, tuple]):
+    def __init__(self, estimators: Dict[str, Tuple[PriceEstimator, float]]) -> None:
         """
         Initialize multi-estimator.
 
@@ -516,7 +516,7 @@ class MultiEstimator(PriceEstimator):
 
 
 # Advanced factory function with presets
-def create_advanced_estimator(preset: str, **overrides) -> PriceEstimator:
+def create_advanced_estimator(preset: str, **overrides: Any) -> PriceEstimator:
     """
     Create estimator using presets for common scenarios.
 
@@ -557,10 +557,10 @@ def create_advanced_estimator(preset: str, **overrides) -> PriceEstimator:
     config.update(overrides)
 
     estimator_type = config.pop("type")
-    return create_estimator(estimator_type, **config)
+    return create_estimator(str(estimator_type), **config)
 
 
-def get_estimator_for_asset(symbol: str, **kwargs) -> PriceEstimator:
+def get_estimator_for_asset(symbol: str, **kwargs: Any) -> PriceEstimator:
     """
     Get appropriate estimator for an asset type.
 

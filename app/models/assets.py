@@ -1,11 +1,11 @@
 """
 Asset classes for different financial instruments.
 
-Adapted from paperbroker with improvements for our FastAPI/MCP architecture.
+Asset models with improvements for FastAPI/MCP architecture.
 """
 
 from datetime import datetime, date
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from pydantic import BaseModel, Field, validator
 
 
@@ -49,12 +49,12 @@ class Asset(BaseModel):
         frozen = True  # Make immutable for hashing
 
     @validator("symbol", pre=True)
-    def normalize_symbol(cls, v):
+    def normalize_symbol(cls, v: str) -> str:
         if isinstance(v, str):
             return v.upper().strip()
         return v
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """Override equality to compare symbols."""
         if isinstance(other, Asset):
             return self.symbol == other.symbol
@@ -62,39 +62,39 @@ class Asset(BaseModel):
             return self.symbol == other.upper().strip()
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.symbol)
 
 
 class Option(Asset):
     """Base class for option derivatives."""
 
-    underlying: Asset = Field(..., description="Underlying asset")
-    option_type: str = Field(..., description="Option type: 'call' or 'put'")
-    strike: float = Field(..., gt=0, description="Strike price")
-    expiration_date: date = Field(..., description="Expiration date")
+    underlying: Asset
+    option_type: str
+    strike: float
+    expiration_date: date
 
     def __init__(
         self,
-        symbol: str = None,
-        underlying: Union[str, Asset] = None,
-        option_type: str = None,
-        strike: float = None,
-        expiration_date: Union[str, date, datetime] = None,
-        **data,
-    ):
+        symbol: Optional[str] = None,
+        underlying: Optional[Union[str, Asset]] = None,
+        option_type: Optional[str] = None,
+        strike: Optional[float] = None,
+        expiration_date: Optional[Union[str, date, datetime]] = None,
+        **data: Any,
+    ) -> None:
         if symbol is not None:
             # Parse from option symbol (e.g., "AAPL240119C00195000")
             parsed = self._parse_option_symbol(symbol)
-            super().__init__(
-                symbol=symbol,
-                asset_type=parsed["option_type"],
-                underlying=Asset(symbol=parsed["underlying"], asset_type="stock"),
-                option_type=parsed["option_type"],
-                strike=parsed["strike"],
-                expiration_date=parsed["expiration_date"],
-                **data,
-            )
+            data.update({
+                "symbol": symbol,
+                "asset_type": parsed["option_type"],
+                "underlying": Asset(symbol=str(parsed["underlying"]), asset_type="stock"),
+                "option_type": parsed["option_type"],
+                "strike": parsed["strike"],
+                "expiration_date": parsed["expiration_date"],
+            })
+            super().__init__(**data)
         else:
             # Build from components
             if not underlying:
@@ -117,22 +117,24 @@ class Option(Asset):
             exp_str = exp_date.strftime("%y%m%d")
             option_char = "C" if option_type == "call" else "P"
             strike_str = f"{int(strike * 1000):08d}"
+            if underlying_asset is None:
+                raise ValueError("Option: underlying asset could not be created")
             built_symbol = (
                 f"{underlying_asset.symbol}{exp_str}{option_char}{strike_str}"
             )
 
-            super().__init__(
-                symbol=built_symbol,
-                asset_type=option_type,
-                underlying=underlying_asset,
-                option_type=option_type,
-                strike=float(strike),
-                expiration_date=exp_date,
-                **data,
-            )
+            data.update({
+                "symbol": built_symbol,
+                "asset_type": option_type,
+                "underlying": underlying_asset,
+                "option_type": option_type,
+                "strike": float(strike),
+                "expiration_date": exp_date,
+            })
+            super().__init__(**data)
 
     @staticmethod
-    def _parse_option_symbol(symbol: str) -> dict:
+    def _parse_option_symbol(symbol: str) -> dict[str, Union[str, float, date]]:
         """
         Parse option symbol like AAPL240119C00195000.
 
@@ -197,7 +199,7 @@ class Option(Asset):
         """Calculate extrinsic (time) value of the option."""
         return option_price - self.get_intrinsic_value(underlying_price)
 
-    def get_days_to_expiration(self, as_of_date: Union[date, datetime] = None) -> int:
+    def get_days_to_expiration(self, as_of_date: Optional[Union[date, datetime]] = None) -> int:
         """Calculate days until expiration."""
         if as_of_date is None:
             as_of_date = date.today()
@@ -220,12 +222,12 @@ class Call(Option):
 
     def __init__(
         self,
-        symbol: str = None,
-        underlying: Union[str, Asset] = None,
-        strike: float = None,
-        expiration_date: Union[str, date] = None,
-        **data,
-    ):
+        symbol: Optional[str] = None,
+        underlying: Optional[Union[str, Asset]] = None,
+        strike: Optional[float] = None,
+        expiration_date: Optional[Union[str, date]] = None,
+        **data: Any,
+    ) -> None:
         super().__init__(
             symbol=symbol,
             underlying=underlying,
@@ -241,12 +243,12 @@ class Put(Option):
 
     def __init__(
         self,
-        symbol: str = None,
-        underlying: Union[str, Asset] = None,
-        strike: float = None,
-        expiration_date: Union[str, date] = None,
-        **data,
-    ):
+        symbol: Optional[str] = None,
+        underlying: Optional[Union[str, Asset]] = None,
+        strike: Optional[float] = None,
+        expiration_date: Optional[Union[str, date]] = None,
+        **data: Any,
+    ) -> None:
         super().__init__(
             symbol=symbol,
             underlying=underlying,

@@ -1,4 +1,4 @@
-"""Base adapter classes for the paperbroker pattern."""
+"""Base adapter classes for the reference implementation pattern."""
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
