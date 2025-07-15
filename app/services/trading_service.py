@@ -11,15 +11,15 @@ from app.models.trading import (
     Portfolio,
     PortfolioSummary,
 )
-from app.models.assets import Asset, Option, asset_factory
+from app.models.assets import Option, asset_factory
 from app.models.quotes import Quote, OptionQuote, OptionsChain
 from app.core.exceptions import NotFoundError
 
 # Import new services
 from .order_execution import OrderExecutionEngine
 from .validation import AccountValidator
-from .strategies import StrategyRecognitionService, group_into_basic_strategies
-from .margin import MaintenanceMarginService, calculate_maintenance_margin
+from .strategies import StrategyRecognitionService
+from .margin import MaintenanceMarginService
 from .greeks import calculate_option_greeks
 from ..adapters.test_data import TestDataQuoteAdapter
 
@@ -79,7 +79,7 @@ class TradingService:
             ),
         ]
         self.cash_balance = 10000.0
-        
+
         # Enhanced services
         self.quote_adapter = TestDataQuoteAdapter()
         self.order_execution = OrderExecutionEngine()
@@ -173,16 +173,18 @@ class TradingService:
         raise NotFoundError(f"Position for symbol {symbol} not found")
 
     # Enhanced Options Trading Methods
-    
-    def get_enhanced_quote(self, symbol: str, underlying_price: Optional[float] = None) -> Union[Quote, OptionQuote]:
+
+    def get_enhanced_quote(
+        self, symbol: str, underlying_price: Optional[float] = None
+    ) -> Union[Quote, OptionQuote]:
         """Get enhanced quote with Greeks for options."""
         asset = asset_factory(symbol)
-        
+
         # Try test data adapter first
         quote = self.quote_adapter.get_quote(asset)
         if quote:
             return quote
-        
+
         # Fallback to legacy data for stocks
         if not isinstance(asset, Option) and symbol.upper() in self.mock_quotes:
             legacy_quote = self.mock_quotes[symbol.upper()]
@@ -192,38 +194,42 @@ class TradingService:
                 price=legacy_quote.price,
                 bid=legacy_quote.price - 0.01,
                 ask=legacy_quote.price + 0.01,
-                volume=legacy_quote.volume
+                volume=legacy_quote.volume,
             )
-        
+
         raise NotFoundError(f"No quote available for {symbol}")
-    
-    def get_options_chain(self, underlying: str, expiration_date: Optional[date] = None) -> OptionsChain:
+
+    def get_options_chain(
+        self, underlying: str, expiration_date: Optional[date] = None
+    ) -> OptionsChain:
         """Get complete options chain for an underlying."""
         return self.quote_adapter.get_options_chain(underlying, expiration_date)
-    
-    def calculate_greeks(self, option_symbol: str, underlying_price: Optional[float] = None) -> Dict[str, float]:
+
+    def calculate_greeks(
+        self, option_symbol: str, underlying_price: Optional[float] = None
+    ) -> Dict[str, float]:
         """Calculate option Greeks."""
         option = asset_factory(option_symbol)
         if not isinstance(option, Option):
             raise ValueError(f"{option_symbol} is not an option")
-        
+
         # Get quotes
         option_quote = self.get_enhanced_quote(option_symbol)
         if underlying_price is None:
             underlying_quote = self.get_enhanced_quote(option.underlying.symbol)
             underlying_price = underlying_quote.price
-        
+
         if not option_quote.price or not underlying_price:
             raise ValueError("Insufficient pricing data for Greeks calculation")
-        
+
         return calculate_option_greeks(
             option_type=option.option_type,
             strike=option.strike,
             underlying_price=underlying_price,
             days_to_expiration=option.get_days_to_expiration(datetime.now().date()),
-            option_price=option_quote.price
+            option_price=option_quote.price,
         )
-    
+
     def analyze_portfolio_strategies(self) -> Dict[str, Any]:
         """Analyze portfolio for trading strategies."""
         # Convert legacy positions to enhanced Position objects
@@ -231,55 +237,77 @@ class TradingService:
         for pos in self.portfolio_positions:
             # This is a simplified conversion - in real implementation would need proper Position model
             enhanced_positions.append(pos)
-        
-        strategies = self.strategy_recognition.group_positions_by_strategy(enhanced_positions)
+
+        strategies = self.strategy_recognition.group_positions_by_strategy(
+            enhanced_positions
+        )
         summary = self.strategy_recognition.get_strategy_summary(strategies)
-        
+
         return {
             "strategies": [strategy.dict() for strategy in strategies],
             "summary": summary,
             "total_positions": len(enhanced_positions),
-            "total_strategies": len(strategies)
+            "total_strategies": len(strategies),
         }
-    
+
     def calculate_margin_requirement(self) -> Dict[str, Any]:
         """Calculate current portfolio margin requirement."""
         # Convert legacy positions to enhanced Position objects
         enhanced_positions = []
         for pos in self.portfolio_positions:
             enhanced_positions.append(pos)
-        
+
         return self.margin_service.get_portfolio_margin_breakdown(
-            enhanced_positions, 
-            self.quote_adapter
+            enhanced_positions, self.quote_adapter
         )
-    
+
     def validate_account_state(self) -> Dict[str, Any]:
         """Validate current account state."""
         # Mock account data for validation
         account_data = {
             "cash_balance": self.cash_balance,
             "positions": self.portfolio_positions,
-            "orders": self.orders
+            "orders": self.orders,
         }
-        
+
         return self.account_validation.validate_account_state(account_data)
-    
+
     def get_test_scenarios(self) -> Dict[str, Any]:
         """Get available test scenarios for development."""
         return self.quote_adapter.get_test_scenarios()
-    
+
     def set_test_date(self, date_str: str):
         """Set test data date for historical scenarios."""
         self.quote_adapter.set_date(date_str)
-    
+
     def get_available_symbols(self) -> List[str]:
         """Get all available symbols in test data."""
         return self.quote_adapter.get_available_symbols()
-    
+
     def get_sample_data_info(self) -> Dict[str, Any]:
         """Get information about sample data."""
         return self.quote_adapter.get_sample_data_info()
+
+    def get_expiration_dates(self, underlying: str) -> List[date]:
+        """Get available expiration dates for an underlying symbol."""
+        return self.quote_adapter.get_expiration_dates(underlying)
+
+    def create_multi_leg_order(self, order_data) -> Order:
+        """Create a multi-leg order."""
+        # For now, create a simple order representation
+        # In a real implementation, this would handle complex multi-leg orders
+        order = Order(
+            id=str(uuid4()),
+            symbol=f"MULTI_LEG_{len(order_data.legs)}_LEGS",
+            order_type=order_data.legs[0].order_type if order_data.legs else "buy",
+            quantity=sum(leg.quantity for leg in order_data.legs),
+            price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
+            status=OrderStatus.FILLED,
+            created_at=datetime.now(),
+            filled_at=datetime.now(),
+        )
+        self.orders.append(order)
+        return order
 
 
 # Global service instance

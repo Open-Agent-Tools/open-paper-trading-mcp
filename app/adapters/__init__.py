@@ -10,7 +10,7 @@ from .base import (
     AdapterConfig,
     AdapterRegistry,
     adapter_registry,
-    get_adapter_registry
+    get_adapter_registry,
 )
 
 from .cache import (
@@ -18,7 +18,7 @@ from .cache import (
     CacheEntry,
     CachedQuoteAdapter,
     get_global_cache,
-    cached_adapter
+    cached_adapter,
 )
 
 from .config import (
@@ -26,48 +26,41 @@ from .config import (
     AdapterFactoryConfig,
     get_adapter_factory,
     configure_default_registry,
-    create_test_adapter
+    create_test_adapter,
 )
 
-from .test_data import (
-    TestDataQuoteAdapter,
-    TestDataError,
-    get_test_adapter
-)
+from .test_data import TestDataQuoteAdapter, TestDataError, get_test_adapter
 
 __all__ = [
     # Base classes
-    'QuoteAdapter',
-    'AdapterConfig', 
-    'AdapterRegistry',
-    'adapter_registry',
-    'get_adapter_registry',
-    
+    "QuoteAdapter",
+    "AdapterConfig",
+    "AdapterRegistry",
+    "adapter_registry",
+    "get_adapter_registry",
     # Caching
-    'QuoteCache',
-    'CacheEntry',
-    'CachedQuoteAdapter',
-    'get_global_cache',
-    'cached_adapter',
-    
+    "QuoteCache",
+    "CacheEntry",
+    "CachedQuoteAdapter",
+    "get_global_cache",
+    "cached_adapter",
     # Configuration
-    'AdapterFactory',
-    'AdapterFactoryConfig',
-    'get_adapter_factory',
-    'configure_default_registry',
-    'create_test_adapter',
-    
+    "AdapterFactory",
+    "AdapterFactoryConfig",
+    "get_adapter_factory",
+    "configure_default_registry",
+    "create_test_adapter",
     # Test data
-    'TestDataQuoteAdapter',
-    'TestDataError',
-    'get_test_adapter'
+    "TestDataQuoteAdapter",
+    "TestDataError",
+    "get_test_adapter",
 ]
 
 
 def initialize_adapters():
     """
     Initialize the adapter system with default configuration.
-    
+
     This function sets up the global adapter registry with available
     adapters and caching enabled.
     """

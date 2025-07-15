@@ -29,6 +29,7 @@ def initialize_database():
         print(f"Database initialization failed: {e}")
         # Continue anyway for development
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup

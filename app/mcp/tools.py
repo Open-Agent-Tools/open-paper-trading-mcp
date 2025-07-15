@@ -1,9 +1,26 @@
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 import json
+from datetime import date, datetime
+from typing import Optional, List, Dict, Any
 
 from app.services.trading_service import trading_service
-from app.models.trading import OrderCreate, OrderType
+from app.models.trading import (
+    OrderCreate,
+    OrderType,
+    MultiLegOrderCreate,
+    OrderLegCreate,
+)
+from app.models.assets import asset_factory, Option
+from app.services.strategies import (
+    analyze_advanced_strategy_pnl,
+    aggregate_portfolio_greeks,
+    detect_complex_strategies,
+    get_portfolio_optimization_recommendations,
+)
+from app.services.expiration import OptionsExpirationEngine
+from app.services.pre_trade_risk import analyze_pre_trade_risk, quick_risk_check
+from app.services.advanced_validation import create_default_account_limits
 
 
 # Initialize FastMCP
@@ -74,9 +91,9 @@ def create_buy_order(args: CreateOrderArgs) -> str:
                 "quantity": order.quantity,
                 "price": order.price,
                 "status": order.status,
-                "created_at": order.created_at.isoformat()
-                if order.created_at
-                else None,
+                "created_at": (
+                    order.created_at.isoformat() if order.created_at else None
+                ),
             },
             indent=2,
         )
@@ -103,9 +120,9 @@ def create_sell_order(args: CreateOrderArgs) -> str:
                 "quantity": order.quantity,
                 "price": order.price,
                 "status": order.status,
-                "created_at": order.created_at.isoformat()
-                if order.created_at
-                else None,
+                "created_at": (
+                    order.created_at.isoformat() if order.created_at else None
+                ),
             },
             indent=2,
         )
@@ -128,12 +145,12 @@ def get_all_orders() -> str:
                     "quantity": order.quantity,
                     "price": order.price,
                     "status": order.status,
-                    "created_at": order.created_at.isoformat()
-                    if order.created_at
-                    else None,
-                    "filled_at": order.filled_at.isoformat()
-                    if order.filled_at
-                    else None,
+                    "created_at": (
+                        order.created_at.isoformat() if order.created_at else None
+                    ),
+                    "filled_at": (
+                        order.filled_at.isoformat() if order.filled_at else None
+                    ),
                 }
             )
         return json.dumps(orders_data, indent=2)
@@ -154,9 +171,9 @@ def get_order(args: GetOrderArgs) -> str:
                 "quantity": order.quantity,
                 "price": order.price,
                 "status": order.status,
-                "created_at": order.created_at.isoformat()
-                if order.created_at
-                else None,
+                "created_at": (
+                    order.created_at.isoformat() if order.created_at else None
+                ),
                 "filled_at": order.filled_at.isoformat() if order.filled_at else None,
             },
             indent=2,
@@ -268,3 +285,600 @@ def get_position(args: GetPositionArgs) -> str:
         )
     except Exception as e:
         return f"Error getting position: {str(e)}"
+
+
+# ============================================================================
+# PHASE 4: OPTIONS-SPECIFIC MCP TOOLS
+# ============================================================================
+
+
+class GetOptionsChainArgs(BaseModel):
+    symbol: str = Field(..., description="Underlying symbol (e.g., AAPL)")
+    expiration_date: Optional[str] = Field(
+        None, description="Expiration date (YYYY-MM-DD), None for all"
+    )
+    min_strike: Optional[float] = Field(None, description="Minimum strike price filter")
+    max_strike: Optional[float] = Field(None, description="Maximum strike price filter")
+
+
+class GetExpirationDatesArgs(BaseModel):
+    symbol: str = Field(..., description="Underlying symbol (e.g., AAPL)")
+
+
+class CreateMultiLegOrderArgs(BaseModel):
+    legs: List[Dict[str, Any]] = Field(
+        ..., description="Order legs with symbol, quantity, order_type, price"
+    )
+    order_type: str = Field("limit", description="Order type (limit, market)")
+
+
+class CalculateGreeksArgs(BaseModel):
+    option_symbol: str = Field(
+        ..., description="Option symbol (e.g., AAPL240119C00195000)"
+    )
+    underlying_price: Optional[float] = Field(
+        None, description="Underlying price override"
+    )
+
+
+class GetStrategyAnalysisArgs(BaseModel):
+    include_greeks: bool = Field(True, description="Include Greeks aggregation")
+    include_pnl: bool = Field(True, description="Include P&L analysis")
+    include_recommendations: bool = Field(
+        True, description="Include optimization recommendations"
+    )
+
+
+class SimulateExpirationArgs(BaseModel):
+    processing_date: Optional[str] = Field(
+        None, description="Expiration processing date (YYYY-MM-DD)"
+    )
+    dry_run: bool = Field(True, description="Dry run mode (don't modify account)")
+
+
+class PreTradeAnalysisArgs(BaseModel):
+    order_data: Dict[str, Any] = Field(..., description="Order data to analyze")
+    include_scenarios: bool = Field(True, description="Include scenario stress testing")
+    options_level: int = Field(2, description="Account options trading level")
+
+
+@mcp.tool()
+def get_options_chain(args: GetOptionsChainArgs) -> str:
+    """Get options chain for an underlying symbol with filtering capabilities."""
+    try:
+        # Parse expiration date if provided
+        expiration = None
+        if args.expiration_date:
+            expiration = datetime.strptime(args.expiration_date, "%Y-%m-%d").date()
+
+        # Get options chain
+        chain = trading_service.get_options_chain(args.symbol)
+
+        if chain is None:
+            return json.dumps(
+                {"error": f"No options chain found for {args.symbol}"}, indent=2
+            )
+
+        # Apply filters
+        if args.min_strike or args.max_strike or expiration:
+            chain = chain.filter_by_strike_range(args.min_strike, args.max_strike)
+
+        # Convert to JSON-serializable format
+        calls_data = []
+        for call in chain.calls:
+            calls_data.append(
+                {
+                    "symbol": call.asset.symbol,
+                    "strike": call.asset.strike,
+                    "expiration": call.asset.expiration_date.isoformat(),
+                    "bid": call.bid,
+                    "ask": call.ask,
+                    "price": call.price,
+                    "volume": getattr(call, "volume", None),
+                    "open_interest": getattr(call, "open_interest", None),
+                    "delta": getattr(call, "delta", None),
+                    "gamma": getattr(call, "gamma", None),
+                    "theta": getattr(call, "theta", None),
+                    "vega": getattr(call, "vega", None),
+                    "iv": getattr(call, "iv", None),
+                }
+            )
+
+        puts_data = []
+        for put in chain.puts:
+            puts_data.append(
+                {
+                    "symbol": put.asset.symbol,
+                    "strike": put.asset.strike,
+                    "expiration": put.asset.expiration_date.isoformat(),
+                    "bid": put.bid,
+                    "ask": put.ask,
+                    "price": put.price,
+                    "volume": getattr(put, "volume", None),
+                    "open_interest": getattr(put, "open_interest", None),
+                    "delta": getattr(put, "delta", None),
+                    "gamma": getattr(put, "gamma", None),
+                    "theta": getattr(put, "theta", None),
+                    "vega": getattr(put, "vega", None),
+                    "iv": getattr(put, "iv", None),
+                }
+            )
+
+        return json.dumps(
+            {
+                "underlying_symbol": chain.underlying_symbol,
+                "underlying_price": chain.underlying_price,
+                "expiration_date": (
+                    chain.expiration_date.isoformat() if chain.expiration_date else None
+                ),
+                "quote_time": chain.quote_time.isoformat(),
+                "calls": calls_data,
+                "puts": puts_data,
+                "summary": chain.get_summary_stats(),
+            },
+            indent=2,
+        )
+
+    except Exception as e:
+        return f"Error getting options chain: {str(e)}"
+
+
+@mcp.tool()
+def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
+    """Get available expiration dates for an underlying symbol."""
+    try:
+        dates = trading_service.get_expiration_dates(args.symbol)
+        dates_data = [d.isoformat() for d in dates]
+
+        return json.dumps(
+            {
+                "underlying_symbol": args.symbol,
+                "expiration_dates": dates_data,
+                "count": len(dates_data),
+            },
+            indent=2,
+        )
+
+    except Exception as e:
+        return f"Error getting expiration dates: {str(e)}"
+
+
+@mcp.tool()
+def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
+    """Create a multi-leg options order (spreads, straddles, etc.)."""
+    try:
+        # Convert legs to OrderLegCreate objects
+        order_legs = []
+        for leg_data in args.legs:
+            asset = asset_factory(leg_data["symbol"])
+            leg = OrderLegCreate(
+                asset=asset,
+                quantity=leg_data["quantity"],
+                order_type=OrderType(leg_data["order_type"]),
+                price=leg_data.get("price"),
+            )
+            order_legs.append(leg)
+
+        # Create multi-leg order
+        order_data = MultiLegOrderCreate(legs=order_legs, order_type=args.order_type)
+
+        order = trading_service.create_multi_leg_order(order_data)
+
+        # Convert legs for response
+        legs_data = []
+        for leg in order.legs:
+            legs_data.append(
+                {
+                    "symbol": leg.asset.symbol,
+                    "quantity": leg.quantity,
+                    "order_type": leg.order_type,
+                    "price": leg.price,
+                }
+            )
+
+        return json.dumps(
+            {
+                "id": order.id,
+                "legs": legs_data,
+                "net_price": order.net_price,
+                "status": order.status,
+                "created_at": (
+                    order.created_at.isoformat() if order.created_at else None
+                ),
+            },
+            indent=2,
+        )
+
+    except Exception as e:
+        return f"Error creating multi-leg order: {str(e)}"
+
+
+@mcp.tool()
+def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
+    """Calculate Greeks for an option symbol."""
+    try:
+        greeks = trading_service.calculate_greeks(
+            args.option_symbol, underlying_price=args.underlying_price
+        )
+
+        # Add option details
+        asset = asset_factory(args.option_symbol)
+        if isinstance(asset, Option):
+            greeks.update(
+                {
+                    "option_symbol": args.option_symbol,
+                    "underlying_symbol": asset.underlying.symbol,
+                    "strike": asset.strike,
+                    "expiration_date": asset.expiration_date.isoformat(),
+                    "option_type": asset.option_type,
+                    "days_to_expiration": asset.get_days_to_expiration(),
+                }
+            )
+
+        return json.dumps(greeks, indent=2)
+
+    except Exception as e:
+        return f"Error calculating Greeks: {str(e)}"
+
+
+@mcp.tool()
+def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
+    """Get comprehensive strategy analysis for current portfolio."""
+    try:
+        portfolio = trading_service.get_portfolio()
+        positions = portfolio.positions
+
+        analysis_result = {
+            "timestamp": datetime.now().isoformat(),
+            "total_positions": len(positions),
+        }
+
+        # Get current quotes for analysis
+        symbols = [pos.symbol for pos in positions]
+        current_quotes = {}
+        for symbol in symbols:
+            try:
+                quote = trading_service.get_enhanced_quote(symbol)
+                current_quotes[symbol] = quote
+            except Exception:
+                continue
+
+        # Portfolio Greeks aggregation
+        if args.include_greeks and current_quotes:
+            try:
+                portfolio_greeks = aggregate_portfolio_greeks(positions, current_quotes)
+                analysis_result["portfolio_greeks"] = {
+                    "delta": portfolio_greeks.delta,
+                    "gamma": portfolio_greeks.gamma,
+                    "theta": portfolio_greeks.theta,
+                    "vega": portfolio_greeks.vega,
+                    "rho": portfolio_greeks.rho,
+                    "delta_normalized": portfolio_greeks.delta_normalized,
+                    "delta_dollars": portfolio_greeks.delta_dollars,
+                    "theta_dollars": portfolio_greeks.theta_dollars,
+                }
+            except Exception as e:
+                analysis_result["greeks_error"] = str(e)
+
+        # Strategy P&L analysis
+        if args.include_pnl and current_quotes:
+            try:
+                strategy_pnls = analyze_advanced_strategy_pnl(positions, current_quotes)
+                pnl_data = []
+                for pnl in strategy_pnls:
+                    pnl_data.append(
+                        {
+                            "strategy_type": pnl.strategy_type,
+                            "strategy_name": pnl.strategy_name,
+                            "unrealized_pnl": pnl.unrealized_pnl,
+                            "realized_pnl": pnl.realized_pnl,
+                            "total_pnl": pnl.total_pnl,
+                            "pnl_percent": pnl.pnl_percent,
+                            "cost_basis": pnl.cost_basis,
+                            "market_value": pnl.market_value,
+                            "days_held": pnl.days_held,
+                            "annualized_return": pnl.annualized_return,
+                        }
+                    )
+                analysis_result["strategy_pnl"] = pnl_data
+            except Exception as e:
+                analysis_result["pnl_error"] = str(e)
+
+        # Complex strategy detection
+        try:
+            complex_strategies = detect_complex_strategies(positions)
+            complex_data = []
+            for strategy in complex_strategies:
+                complex_data.append(
+                    {
+                        "complex_type": strategy.complex_type,
+                        "underlying_symbol": strategy.underlying_symbol,
+                        "leg_count": len(strategy.legs),
+                        "net_credit": strategy.net_credit,
+                        "max_profit": strategy.max_profit,
+                        "max_loss": strategy.max_loss,
+                    }
+                )
+            analysis_result["complex_strategies"] = complex_data
+        except Exception as e:
+            analysis_result["complex_strategies_error"] = str(e)
+
+        # Optimization recommendations
+        if args.include_recommendations and current_quotes:
+            try:
+                recommendations = get_portfolio_optimization_recommendations(
+                    positions, current_quotes
+                )
+                analysis_result["recommendations"] = recommendations
+            except Exception as e:
+                analysis_result["recommendations_error"] = str(e)
+
+        return json.dumps(analysis_result, indent=2)
+
+    except Exception as e:
+        return f"Error in strategy analysis: {str(e)}"
+
+
+@mcp.tool()
+def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
+    """Simulate option expiration processing for current portfolio."""
+    try:
+        # Get current account data
+        portfolio = trading_service.get_portfolio()
+        account_data = {
+            "cash_balance": portfolio.cash_balance,
+            "positions": portfolio.positions,
+        }
+
+        # Parse processing date
+        processing_date = date.today()
+        if args.processing_date:
+            processing_date = datetime.strptime(args.processing_date, "%Y-%m-%d").date()
+
+        # Get quote adapter for current prices
+        quote_adapter = trading_service.quote_adapter
+
+        # Run expiration simulation
+        expiration_engine = OptionsExpirationEngine()
+        result = expiration_engine.process_account_expirations(
+            account_data, quote_adapter, processing_date
+        )
+
+        # Convert result to JSON-serializable format
+        expired_data = []
+        for pos in result.expired_positions:
+            expired_data.append(
+                {
+                    "symbol": pos.symbol,
+                    "quantity": pos.quantity,
+                    "avg_price": pos.avg_price,
+                    "current_price": pos.current_price,
+                }
+            )
+
+        new_positions_data = []
+        for pos in result.new_positions:
+            new_positions_data.append(
+                {
+                    "symbol": pos.symbol,
+                    "quantity": pos.quantity,
+                    "avg_price": pos.avg_price,
+                    "current_price": pos.current_price,
+                }
+            )
+
+        return json.dumps(
+            {
+                "processing_date": processing_date.isoformat(),
+                "dry_run": args.dry_run,
+                "expired_positions": expired_data,
+                "new_positions": new_positions_data,
+                "cash_impact": result.cash_impact,
+                "assignments": result.assignments,
+                "exercises": result.exercises,
+                "worthless_expirations": result.worthless_expirations,
+                "warnings": result.warnings,
+                "errors": result.errors,
+            },
+            indent=2,
+        )
+
+    except Exception as e:
+        return f"Error simulating option expiration: {str(e)}"
+
+
+@mcp.tool()
+def analyze_pre_trade_risk_advanced(args: PreTradeAnalysisArgs) -> str:
+    """Perform comprehensive pre-trade risk analysis for an order."""
+    try:
+        # Get current account data
+        portfolio = trading_service.get_portfolio()
+        account_data = {
+            "cash_balance": portfolio.cash_balance,
+            "positions": portfolio.positions,
+        }
+
+        # Create order object from data
+        order_data = args.order_data
+        if "legs" in order_data:
+            # Multi-leg order
+            legs = []
+            for leg_data in order_data["legs"]:
+                asset = asset_factory(leg_data["symbol"])
+                leg = OrderLegCreate(
+                    asset=asset,
+                    quantity=leg_data["quantity"],
+                    order_type=OrderType(leg_data["order_type"]),
+                    price=leg_data.get("price"),
+                )
+                legs.append(leg)
+
+            order = MultiLegOrderCreate(legs=legs)
+        else:
+            # Single order
+            order = OrderCreate(
+                symbol=order_data["symbol"],
+                order_type=OrderType(order_data["order_type"]),
+                quantity=order_data["quantity"],
+                price=order_data.get("price"),
+            )
+
+        # Get current quotes
+        symbols = []
+        if hasattr(order, "symbol"):
+            symbols = [order.symbol]
+        elif hasattr(order, "legs"):
+            symbols = [leg.asset.symbol for leg in order.legs]
+
+        current_quotes = {}
+        for symbol in symbols:
+            try:
+                quote = trading_service.get_enhanced_quote(symbol)
+                current_quotes[symbol] = quote
+            except Exception:
+                continue
+
+        # Create account limits
+        account_limits = create_default_account_limits(options_level=args.options_level)
+
+        # Perform analysis
+        analysis = analyze_pre_trade_risk(
+            account_data, order, current_quotes, account_limits
+        )
+
+        # Convert to JSON-serializable format
+        validation_messages = []
+        for msg in analysis.validation_result.messages:
+            validation_messages.append(
+                {
+                    "rule": msg.rule,
+                    "severity": msg.severity,
+                    "code": msg.code,
+                    "message": msg.message,
+                    "details": msg.details,
+                    "suggested_action": msg.suggested_action,
+                }
+            )
+
+        scenario_data = []
+        for scenario in analysis.scenario_results:
+            scenario_data.append(
+                {
+                    "scenario_type": scenario.scenario.scenario_type,
+                    "description": scenario.scenario.description,
+                    "portfolio_pnl": scenario.portfolio_pnl,
+                    "order_pnl": scenario.order_pnl,
+                    "combined_pnl": scenario.combined_pnl,
+                    "max_loss": scenario.max_loss,
+                    "margin_call_risk": scenario.margin_call_risk,
+                }
+            )
+
+        return json.dumps(
+            {
+                "analysis_timestamp": datetime.now().isoformat(),
+                "should_execute": analysis.should_execute,
+                "execution_recommendation": analysis.execution_recommendation,
+                "confidence_level": analysis.confidence_level,
+                "validation": {
+                    "is_valid": analysis.validation_result.is_valid,
+                    "can_execute": analysis.validation_result.can_execute,
+                    "risk_score": analysis.validation_result.risk_score,
+                    "estimated_cost": analysis.validation_result.estimated_cost,
+                    "messages": validation_messages,
+                },
+                "risk_metrics": {
+                    "overall_risk_level": analysis.risk_metrics.overall_risk_level,
+                    "risk_score": analysis.risk_metrics.risk_score,
+                    "order_max_loss": analysis.risk_metrics.order_max_loss,
+                    "concentration_risk": analysis.risk_metrics.concentration_risk,
+                    "delta_risk": analysis.risk_metrics.delta_risk,
+                    "theta_risk": analysis.risk_metrics.theta_risk,
+                    "days_to_next_expiration": analysis.risk_metrics.days_to_next_expiration,
+                },
+                "portfolio_greeks": {
+                    "current_delta": analysis.portfolio_greeks.delta,
+                    "current_theta": analysis.portfolio_greeks.theta,
+                    "projected_delta": analysis.projected_greeks.delta,
+                    "projected_theta": analysis.projected_greeks.theta,
+                    "delta_change": analysis.projected_greeks.delta
+                    - analysis.portfolio_greeks.delta,
+                    "theta_change": analysis.projected_greeks.theta
+                    - analysis.portfolio_greeks.theta,
+                },
+                "scenarios": scenario_data,
+                "worst_case_loss": analysis.worst_case_loss,
+                "best_case_gain": analysis.best_case_gain,
+                "recommendations": analysis.recommendations,
+                "alternative_strategies": analysis.alternative_strategies,
+            },
+            indent=2,
+        )
+
+    except Exception as e:
+        return f"Error in pre-trade analysis: {str(e)}"
+
+
+@mcp.tool()
+def quick_order_risk_check(args: PreTradeAnalysisArgs) -> str:
+    """Perform quick risk assessment for an order without full analysis."""
+    try:
+        # Create order object from data
+        order_data = args.order_data
+        if "legs" in order_data:
+            # Multi-leg order
+            legs = []
+            for leg_data in order_data["legs"]:
+                asset = asset_factory(leg_data["symbol"])
+                leg = OrderLegCreate(
+                    asset=asset,
+                    quantity=leg_data["quantity"],
+                    order_type=OrderType(leg_data["order_type"]),
+                    price=leg_data.get("price"),
+                )
+                legs.append(leg)
+
+            order = MultiLegOrderCreate(legs=legs)
+        else:
+            # Single order
+            order = OrderCreate(
+                symbol=order_data["symbol"],
+                order_type=OrderType(order_data["order_type"]),
+                quantity=order_data["quantity"],
+                price=order_data.get("price"),
+            )
+
+        # Get current quotes
+        symbols = []
+        if hasattr(order, "symbol"):
+            symbols = [order.symbol]
+        elif hasattr(order, "legs"):
+            symbols = [leg.asset.symbol for leg in order.legs]
+
+        current_quotes = {}
+        for symbol in symbols:
+            try:
+                quote = trading_service.get_enhanced_quote(symbol)
+                current_quotes[symbol] = quote
+            except Exception:
+                continue
+
+        # Quick risk check
+        risk_check = quick_risk_check(order, current_quotes)
+
+        return json.dumps(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "risk_level": risk_check["risk_level"],
+                "risk_score": risk_check["risk_score"],
+                "can_execute": risk_check["can_execute"],
+                "key_warnings": risk_check["key_warnings"],
+                "recommendation": (
+                    "proceed" if risk_check["can_execute"] else "review_risks"
+                ),
+            },
+            indent=2,
+        )
+
+    except Exception as e:
+        return f"Error in quick risk check: {str(e)}"
