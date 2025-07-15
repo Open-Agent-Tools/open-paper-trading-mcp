@@ -1,347 +1,103 @@
-"""
-Base adapter interfaces for pluggable market data sources.
-"""
+"""Base adapter classes for the paperbroker pattern."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime, date
-from typing import List, Dict, Optional, Union, Any
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 
-from app.models.quotes import Quote, OptionQuote, OptionsChain
+from app.models.accounts import Account
+from app.models.orders import Order
+from app.models.quotes import Quote
+from app.models.assets import Asset
 
 
-@dataclass
-class AdapterConfig:
-    """Configuration for quote adapters."""
+class AccountAdapter(ABC):
+    """Abstract base class for account storage adapters."""
 
-    name: str
-    enabled: bool = True
-    priority: int = 100
-    timeout: float = 5.0
-    cache_ttl: float = 60.0
-    config: Dict[str, Any] = None
+    @abstractmethod
+    def get_account(self, account_id: str) -> Optional[Account]:
+        """Retrieve an account by ID."""
+        pass
 
-    def __post_init__(self):
-        if self.config is None:
-            self.config = {}
+    @abstractmethod
+    def put_account(self, account: Account) -> None:
+        """Store or update an account."""
+        pass
+
+    @abstractmethod
+    def get_account_ids(self) -> List[str]:
+        """Get all account IDs."""
+        pass
+
+    @abstractmethod
+    def account_exists(self, account_id: str) -> bool:
+        """Check if an account exists."""
+        pass
+
+    @abstractmethod
+    def delete_account(self, account_id: str) -> bool:
+        """Delete an account."""
+        pass
+
+
+class MarketAdapter(ABC):
+    """Abstract base class for market simulation adapters."""
+
+    def __init__(self, quote_adapter: "QuoteAdapter"):
+        self.quote_adapter = quote_adapter
+        self.pending_orders: List[Order] = []
+
+    @abstractmethod
+    def submit_order(self, order: Order) -> Order:
+        """Submit an order to the market."""
+        pass
+
+    @abstractmethod
+    def cancel_order(self, order_id: str) -> bool:
+        """Cancel a pending order."""
+        pass
+
+    @abstractmethod
+    def get_pending_orders(self, account_id: Optional[str] = None) -> List[Order]:
+        """Get pending orders, optionally filtered by account."""
+        pass
+
+    @abstractmethod
+    def simulate_order(self, order: Order) -> Dict[str, Any]:
+        """Simulate order execution without actually executing."""
+        pass
+
+    @abstractmethod
+    def process_pending_orders(self) -> List[Order]:
+        """Process all pending orders and return filled orders."""
+        pass
 
 
 class QuoteAdapter(ABC):
-    """
-    Abstract base class for market data adapters.
-
-    All quote adapters must implement these methods to provide
-    market data for stocks and options.
-    """
-
-    def __init__(self, config: AdapterConfig):
-        self.config = config
-        self.name = config.name
-        self.enabled = config.enabled
-        self.timeout = config.timeout
+    """Abstract base class for market data adapters."""
 
     @abstractmethod
-    def get_quote(self, symbol: str) -> Optional[Union[Quote, OptionQuote]]:
-        """
-        Get current quote for a symbol.
-
-        Args:
-            symbol: Stock symbol (AAPL) or option symbol (AAPL240119C00195000)
-
-        Returns:
-            Quote for stocks or OptionQuote for options, None if not found
-        """
+    def get_quote(self, asset: Asset) -> Optional[Quote]:
+        """Get a single quote for an asset."""
         pass
 
     @abstractmethod
-    def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
-        """
-        Get quotes for multiple symbols.
-
-        Args:
-            symbols: List of symbols to quote
-
-        Returns:
-            Dictionary mapping symbols to their quotes
-        """
+    def get_quotes(self, assets: List[Asset]) -> Dict[Asset, Quote]:
+        """Get quotes for multiple assets."""
         pass
 
     @abstractmethod
-    def get_options_chain(
-        self, underlying: str, expiration: Optional[date] = None
-    ) -> Optional[OptionsChain]:
-        """
-        Get options chain for an underlying symbol.
-
-        Args:
-            underlying: Underlying stock symbol (e.g., 'AAPL')
-            expiration: Optional specific expiration date
-
-        Returns:
-            OptionsChain containing calls and puts, None if not available
-        """
-        pass
-
-    @abstractmethod
-    def get_expiration_dates(self, underlying: str) -> List[date]:
-        """
-        Get available expiration dates for an underlying.
-
-        Args:
-            underlying: Underlying stock symbol
-
-        Returns:
-            List of available expiration dates
-        """
+    def get_chain(
+        self, underlying: str, expiration_date: Optional[datetime] = None
+    ) -> List[Asset]:
+        """Get option chain for an underlying."""
         pass
 
     @abstractmethod
     def is_market_open(self) -> bool:
-        """
-        Check if the market is currently open.
-
-        Returns:
-            True if market is open, False otherwise
-        """
+        """Check if the market is currently open."""
         pass
 
     @abstractmethod
-    def get_market_hours(self) -> Dict[str, datetime]:
-        """
-        Get current market hours.
-
-        Returns:
-            Dictionary with 'open' and 'close' times for today
-        """
+    def get_market_hours(self) -> Dict[str, Any]:
+        """Get market hours information."""
         pass
-
-    def supports_symbol(self, symbol: str) -> bool:
-        """
-        Check if this adapter supports the given symbol.
-
-        Args:
-            symbol: Symbol to check
-
-        Returns:
-            True if supported, False otherwise
-        """
-        # Default implementation - override for specific logic
-        return True
-
-    def get_last_updated(self, symbol: str) -> Optional[datetime]:
-        """
-        Get the last update time for a symbol's quote.
-
-        Args:
-            symbol: Symbol to check
-
-        Returns:
-            Last update timestamp, None if unknown
-        """
-        # Default implementation - override for tracking
-        return None
-
-    def health_check(self) -> Dict[str, Any]:
-        """
-        Perform health check on the adapter.
-
-        Returns:
-            Dictionary with health status and metrics
-        """
-        return {
-            "name": self.name,
-            "enabled": self.enabled,
-            "status": "healthy" if self.enabled else "disabled",
-            "last_check": datetime.now(),
-        }
-
-
-class AdapterRegistry:
-    """
-    Registry for managing multiple quote adapters with fallback support.
-    """
-
-    def __init__(self):
-        self.adapters: List[QuoteAdapter] = []
-        self.adapter_map: Dict[str, QuoteAdapter] = {}
-
-    def register(self, adapter: QuoteAdapter) -> None:
-        """
-        Register a quote adapter.
-
-        Args:
-            adapter: Adapter to register
-        """
-        if adapter.name in self.adapter_map:
-            # Replace existing adapter
-            self.remove(adapter.name)
-
-        self.adapters.append(adapter)
-        self.adapter_map[adapter.name] = adapter
-
-        # Sort by priority (lower numbers = higher priority)
-        self.adapters.sort(key=lambda a: a.config.priority)
-
-    def remove(self, name: str) -> None:
-        """
-        Remove an adapter by name.
-
-        Args:
-            name: Name of adapter to remove
-        """
-        if name in self.adapter_map:
-            adapter = self.adapter_map[name]
-            self.adapters.remove(adapter)
-            del self.adapter_map[name]
-
-    def get_adapter(self, name: str) -> Optional[QuoteAdapter]:
-        """
-        Get a specific adapter by name.
-
-        Args:
-            name: Adapter name
-
-        Returns:
-            Adapter instance or None if not found
-        """
-        return self.adapter_map.get(name)
-
-    def get_enabled_adapters(self) -> List[QuoteAdapter]:
-        """
-        Get all enabled adapters in priority order.
-
-        Returns:
-            List of enabled adapters
-        """
-        return [a for a in self.adapters if a.enabled]
-
-    def get_quote(self, symbol: str) -> Optional[Union[Quote, OptionQuote]]:
-        """
-        Get quote using adapter fallback chain.
-
-        Args:
-            symbol: Symbol to quote
-
-        Returns:
-            Quote from first adapter that provides it
-        """
-        for adapter in self.get_enabled_adapters():
-            if adapter.supports_symbol(symbol):
-                try:
-                    quote = adapter.get_quote(symbol)
-                    if quote is not None:
-                        return quote
-                except Exception as e:
-                    # Log error and try next adapter
-                    print(f"Adapter {adapter.name} failed for {symbol}: {e}")
-                    continue
-
-        return None
-
-    def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
-        """
-        Get quotes for multiple symbols using fallback chain.
-
-        Args:
-            symbols: List of symbols
-
-        Returns:
-            Dictionary of symbol -> quote mappings
-        """
-        results = {}
-        remaining_symbols = symbols.copy()
-
-        for adapter in self.get_enabled_adapters():
-            if not remaining_symbols:
-                break
-
-            # Filter symbols this adapter supports
-            supported_symbols = [
-                s for s in remaining_symbols if adapter.supports_symbol(s)
-            ]
-            if not supported_symbols:
-                continue
-
-            try:
-                quotes = adapter.get_quotes(supported_symbols)
-                for symbol, quote in quotes.items():
-                    if quote is not None:
-                        results[symbol] = quote
-                        if symbol in remaining_symbols:
-                            remaining_symbols.remove(symbol)
-            except Exception as e:
-                print(f"Adapter {adapter.name} failed for batch quotes: {e}")
-                continue
-
-        return results
-
-    def get_options_chain(
-        self, underlying: str, expiration: Optional[date] = None
-    ) -> Optional[OptionsChain]:
-        """
-        Get options chain using adapter fallback.
-
-        Args:
-            underlying: Underlying symbol
-            expiration: Optional expiration date
-
-        Returns:
-            OptionsChain from first adapter that provides it
-        """
-        for adapter in self.get_enabled_adapters():
-            try:
-                chain = adapter.get_options_chain(underlying, expiration)
-                if chain is not None:
-                    return chain
-            except Exception as e:
-                print(
-                    f"Adapter {adapter.name} failed for options chain {underlying}: {e}"
-                )
-                continue
-
-        return None
-
-    def get_expiration_dates(self, underlying: str) -> List[date]:
-        """
-        Get expiration dates using adapter fallback.
-
-        Args:
-            underlying: Underlying symbol
-
-        Returns:
-            List of expiration dates from first successful adapter
-        """
-        for adapter in self.get_enabled_adapters():
-            try:
-                dates = adapter.get_expiration_dates(underlying)
-                if dates:
-                    return dates
-            except Exception as e:
-                print(
-                    f"Adapter {adapter.name} failed for expiration dates {underlying}: {e}"
-                )
-                continue
-
-        return []
-
-    def health_check(self) -> Dict[str, Any]:
-        """
-        Perform health check on all adapters.
-
-        Returns:
-            Health status for all adapters
-        """
-        return {
-            "total_adapters": len(self.adapters),
-            "enabled_adapters": len(self.get_enabled_adapters()),
-            "adapters": [adapter.health_check() for adapter in self.adapters],
-        }
-
-
-# Global adapter registry instance
-adapter_registry = AdapterRegistry()
-
-
-def get_adapter_registry() -> AdapterRegistry:
-    """Get the global adapter registry."""
-    return adapter_registry
