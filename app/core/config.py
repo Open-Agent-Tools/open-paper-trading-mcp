@@ -1,11 +1,11 @@
-from pydantic_settings import BaseSettings
-from pydantic import field_validator, ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 from typing import List, Union
 import os
 
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     PROJECT_NAME: str = "Open Paper Trading MCP"
     API_V1_STR: str = "/api/v1"

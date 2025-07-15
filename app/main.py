@@ -5,6 +5,7 @@ import uvicorn
 import os
 import threading
 from contextlib import asynccontextmanager
+from typing import Dict, Any, AsyncGenerator
 
 from app.api.routes import api_router
 from app.core.config import settings
@@ -19,7 +20,7 @@ except ImportError:
     mcp = None
 
 
-def initialize_database():
+def initialize_database() -> None:
     """Initialize database tables synchronously."""
     print("Initializing database...")
     try:
@@ -31,7 +32,7 @@ def initialize_database():
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     print("Starting up FastAPI server...")
     initialize_database()
@@ -60,7 +61,7 @@ if settings.BACKEND_CORS_ORIGINS:
 
 
 @app.exception_handler(CustomException)
-async def custom_exception_handler(request: Request, exc: CustomException):
+async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
@@ -68,7 +69,7 @@ async def custom_exception_handler(request: Request, exc: CustomException):
 
 
 @app.get("/")
-async def root():
+async def root() -> Dict[str, Any]:
     return {
         "message": "Welcome to Open Paper Trading MCP API",
         "endpoints": {
@@ -85,7 +86,7 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     return {"status": "healthy", "servers": ["fastapi", "mcp"]}
 
 
