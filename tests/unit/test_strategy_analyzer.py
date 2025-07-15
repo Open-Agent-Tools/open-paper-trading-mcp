@@ -4,7 +4,7 @@ Tests for the advanced strategy analyzer in app/services/strategies/analyzer.py.
 import pytest
 from app.services.strategies.analyzer import AdvancedStrategyAnalyzer
 from app.models.trading import Position
-from app.models.assets import Stock, Option
+from app.models.assets import Asset, Option
 from app.models.quotes import Quote, OptionQuote
 from datetime import datetime
 

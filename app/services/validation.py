@@ -7,7 +7,8 @@ Adapted from reference implementation with enhanced validation capabilities.
 from typing import List, Optional, Union, Any
 from datetime import datetime, date
 
-from ..models.trading import MultiLegOrder, Order, OrderLeg, OrderType, Position
+from ..schemas.orders import MultiLegOrder, Order, OrderLeg, OrderType
+from ..models.trading import Position
 from ..models.assets import Asset, Option
 
 

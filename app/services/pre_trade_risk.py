@@ -12,7 +12,8 @@ from pydantic import BaseModel, Field
 import numpy as np
 
 from app.models.assets import Option, asset_factory
-from app.models.trading import Order, MultiLegOrder, OrderType, Position
+from app.schemas.orders import Order, MultiLegOrder, OrderType
+from app.models.trading import Position
 from app.models.quotes import Quote, OptionQuote
 from app.services.advanced_validation import (
     AdvancedOrderValidator,

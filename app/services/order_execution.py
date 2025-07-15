@@ -9,13 +9,13 @@ from typing import List, Dict, Optional
 from math import copysign
 from datetime import datetime
 
-from ..models.trading import (
+from ..schemas.orders import (
     MultiLegOrder,
     Order,
     OrderLeg,
     OrderType,
-    Position,
 )
+from ..models.trading import Position
 from ..models.assets import Option
 from ..models.quotes import Quote
 from .estimators import PriceEstimator, MidpointEstimator
@@ -372,3 +372,7 @@ class OrderExecutionEngine:
             modified_positions.append(position)
 
         return modified_positions
+
+
+# Alias for backwards compatibility
+OrderExecutionService = OrderExecutionEngine

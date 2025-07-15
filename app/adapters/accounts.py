@@ -9,8 +9,8 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.adapters.base import AccountAdapter
-from app.models.accounts import Account
-from app.models.database.trading import DBAccount
+from app.schemas.accounts import Account
+from app.models.database.trading import Account as DBAccount
 from app.storage.database import SessionLocal
 
 

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from app.models.trading import Order, OrderCreate, StockQuote, MultiLegOrderCreate
+from app.schemas.orders import Order, OrderCreate, MultiLegOrderCreate
+from app.models.trading import StockQuote
 from app.services.trading_service import trading_service
 from app.core.exceptions import NotFoundError, ValidationError
 

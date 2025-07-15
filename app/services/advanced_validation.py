@@ -11,7 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 from app.models.assets import Option, asset_factory
-from app.models.trading import Order, MultiLegOrder, OrderType
+from app.schemas.orders import Order, MultiLegOrder, OrderType
 from app.models.quotes import Quote, OptionQuote
 from app.services.validation import AccountValidator
 from app.services.strategies import AdvancedStrategyAnalyzer

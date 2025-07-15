@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional
 from datetime import date, datetime
 from pydantic import BaseModel, Field
 
-from app.models.trading import MultiLegOrderCreate, OrderLegCreate, OrderType
+from app.schemas.orders import MultiLegOrderCreate, OrderLegCreate, OrderType
 from app.models.assets import asset_factory, Option
 from app.services.trading_service import trading_service
 from app.services.strategies import (
@@ -517,7 +517,7 @@ async def analyze_pre_trade_risk_endpoint(request: PreTradeRiskRequest):
             order = MultiLegOrderCreate(legs=legs)
         else:
             # Single order
-            from app.models.trading import OrderCreate
+            from app.schemas.orders import OrderCreate
 
             order = OrderCreate(
                 symbol=order_data["symbol"],
@@ -747,7 +747,7 @@ async def quick_risk_check_endpoint(order_data: Dict[str, Any]):
             order = MultiLegOrderCreate(legs=legs)
         else:
             # Single order
-            from app.models.trading import OrderCreate
+            from app.schemas.orders import OrderCreate
 
             order = OrderCreate(
                 symbol=order_data["symbol"],

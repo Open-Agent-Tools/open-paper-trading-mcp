@@ -3,11 +3,39 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from datetime import datetime
+from pydantic import BaseModel
 
-from app.models.accounts import Account
-from app.models.orders import Order
+from app.schemas.accounts import Account
+from app.schemas.orders import Order
 from app.models.quotes import Quote
 from app.models.assets import Asset
+
+
+class AdapterConfig(BaseModel):
+    """Base configuration for adapters."""
+    enabled: bool = True
+    api_key: Optional[str] = None
+    api_secret: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+class AdapterRegistry:
+    """Registry for managing and accessing adapters."""
+    def __init__(self):
+        self.adapters: Dict[str, Any] = {}
+
+    def register(self, name: str, adapter_instance: Any):
+        self.adapters[name] = adapter_instance
+
+    def get(self, name: str) -> Optional[Any]:
+        return self.adapters.get(name)
+
+# Global registry instance
+adapter_registry = AdapterRegistry()
+
+def get_adapter_registry() -> AdapterRegistry:
+    return adapter_registry
+
 
 
 class AccountAdapter(ABC):

@@ -4,7 +4,7 @@ Tests for the strategy recognition service in app/services/strategies/recognitio
 import pytest
 from app.services.strategies.recognition import StrategyRecognitionService
 from app.models.trading import Position
-from app.models.assets import Stock, Option
+from app.models.assets import Asset, Option
 
 @pytest.fixture
 def recognition_service():

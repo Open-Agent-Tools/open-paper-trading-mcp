@@ -10,9 +10,12 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.models.database.trading import Account, Order, Position, Transaction, OptionQuote, OrderLeg
-from app.models.trading import OrderType, OrderSide, OrderStatus, OrderCondition
-from app.storage.database import get_async_session, init_db
+from app.models.database.trading import Account, Position, Transaction
+from app.schemas.orders import Order, OrderLeg
+from app.models.quotes import OptionQuote
+from app.models.trading import OrderType, OrderStatus, OrderCondition
+from app.storage.database import init_db, get_async_session
+
 
 
 @pytest.fixture

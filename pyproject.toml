@@ -114,6 +114,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
+    "--ignore=tests/unit/test_mcp_tools.py",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

@@ -2,15 +2,8 @@ from datetime import datetime, date
 from typing import List, Dict, Optional, Union, Any
 from uuid import uuid4
 
-from app.models.trading import (
-    Order,
-    OrderCreate,
-    OrderStatus,
-    StockQuote,
-    Position,
-    Portfolio,
-    PortfolioSummary,
-)
+from app.schemas.orders import Order, OrderCreate, OrderStatus
+from app.models.trading import StockQuote, Position, Portfolio, PortfolioSummary
 from app.models.assets import Option, asset_factory
 from app.models.quotes import Quote, OptionQuote, OptionsChain
 from app.core.exceptions import NotFoundError

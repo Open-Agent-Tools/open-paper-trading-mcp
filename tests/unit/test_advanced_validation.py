@@ -3,7 +3,8 @@ Tests for the advanced validation service in app/services/advanced_validation.py
 """
 import pytest
 from app.services.advanced_validation import AdvancedOrderValidator, AccountLimits, ValidationSeverity
-from app.models.trading import Order, OrderType, Position
+from app.schemas.orders import Order, OrderType
+from app.models.trading import Position
 from app.models.assets import Stock, Option
 from app.models.quotes import Quote, OptionQuote
 from datetime import datetime, date, timedelta

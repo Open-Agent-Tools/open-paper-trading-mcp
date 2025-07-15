@@ -66,6 +66,13 @@ class Asset(BaseModel):
         return hash(self.symbol)
 
 
+class Stock(Asset):
+    """Stock asset class for specific stock instruments."""
+    
+    def __init__(self, symbol: str, **data):
+        super().__init__(symbol=symbol, asset_type="stock", **data)
+
+
 class Option(Asset):
     """Base class for option derivatives."""
 

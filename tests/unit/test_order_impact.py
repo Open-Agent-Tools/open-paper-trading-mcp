@@ -9,7 +9,8 @@ from app.services.order_impact import (
     OrderImpactAnalysis,
     AccountSnapshot,
 )
-from app.models.trading import Order, MultiLegOrder, OrderType, Position
+from app.schemas.orders import Order, MultiLegOrder, OrderType
+from app.models.trading import Position
 from app.models.assets import asset_factory
 
 

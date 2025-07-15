@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.sql import func
 from app.models.database.base import Base
-from app.models.trading import OrderStatus, OrderType
+from app.schemas.orders import OrderStatus, OrderType
 
 
 class Account(Base):

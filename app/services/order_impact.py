@@ -10,13 +10,13 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from copy import deepcopy
 
-from ..models.trading import (
+from ..schemas.orders import (
     Order,
     MultiLegOrder,
     OrderLeg,
-    Position,
     OrderType,
 )
+from ..models.trading import Position
 from ..models.assets import Asset, Option
 from .margin import MaintenanceMarginService
 from .validation import AccountValidator

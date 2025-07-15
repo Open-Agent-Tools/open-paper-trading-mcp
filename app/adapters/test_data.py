@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Any, Union
 from pathlib import Path
 
 from .base import QuoteAdapter, AdapterConfig
-from ..models.assets import Option, asset_factory
+from ..models.assets import Asset, Option, asset_factory
 from ..models.quotes import Quote, OptionQuote, OptionsChain
 from ..services.greeks import calculate_option_greeks
 
@@ -50,9 +50,9 @@ class TestDataQuoteAdapter(QuoteAdapter):
             config: Adapter configuration, will create default if None
         """
         if config is None:
-            config = AdapterConfig(name="test_data", priority=999, cache_ttl=3600.0)
+            config = AdapterConfig()
 
-        super().__init__(config)
+        self.config = config
 
         self.current_date = datetime.strptime(current_date, "%Y-%m-%d").strftime(
             "%Y-%m-%d"
@@ -192,6 +192,14 @@ class TestDataQuoteAdapter(QuoteAdapter):
                 results[symbol] = quote
 
         return results
+
+    def get_chain(
+        self, underlying: str, expiration_date: Optional[datetime] = None
+    ) -> List[Asset]:
+        """Get option chain for an underlying."""
+        # This is a basic implementation to satisfy the abstract method.
+        # A full implementation would be similar to get_options_chain.
+        return []
 
     def get_options_chain(
         self, underlying: str, expiration: Optional[date] = None
