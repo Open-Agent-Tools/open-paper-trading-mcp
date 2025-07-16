@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from threading import RLock
 
 from app.models.quotes import Quote, OptionQuote, OptionsChain
+from app.adapters.base import QuoteAdapter
 
 
 @dataclass
@@ -241,7 +242,7 @@ class CachedQuoteAdapter:
     Wrapper that adds caching to any QuoteAdapter.
     """
 
-    def __init__(self, adapter: Any, cache: Optional[QuoteCache] = None) -> None:
+    def __init__(self, adapter: QuoteAdapter, cache: Optional[QuoteCache] = None) -> None:
         """
         Initialize cached adapter.
 
@@ -263,10 +264,11 @@ class CachedQuoteAdapter:
 
         # Fetch from adapter
         quote = self.adapter.get_quote(symbol)
-        if quote is not None:
+        if quote is not None and isinstance(quote, (Quote, OptionQuote)):
             self.cache.put(cache_key, quote)
-
-        return quote
+            return quote
+        
+        return None
 
     def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
         """Get multiple quotes with caching."""
@@ -306,12 +308,13 @@ class CachedQuoteAdapter:
 
         # Fetch from adapter
         chain = self.adapter.get_options_chain(underlying, expiration)
-        if chain is not None:
+        if chain is not None and isinstance(chain, OptionsChain):
             # Use shorter TTL for options chains as they change more frequently
             ttl = min(self.cache.default_ttl, 30.0)  # Max 30 seconds for chains
             self.cache.put(cache_key, chain, ttl)
+            return chain
 
-        return chain
+        return None
 
     def get_expiration_dates(self, underlying: str) -> List[Any]:
         """Get expiration dates with caching."""
@@ -324,12 +327,13 @@ class CachedQuoteAdapter:
 
         # Fetch from adapter
         dates = self.adapter.get_expiration_dates(underlying)
-        if dates:
+        if dates and isinstance(dates, list):
             # Cache for longer as expiration dates don't change often
             ttl = max(self.cache.default_ttl, 300.0)  # Min 5 minutes
             self.cache.put(cache_key, dates, ttl)
+            return dates
 
-        return dates
+        return []
 
     def clear_cache(self) -> None:
         """Clear all cached data."""

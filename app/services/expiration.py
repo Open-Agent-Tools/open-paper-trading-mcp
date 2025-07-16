@@ -83,7 +83,7 @@ class OptionsExpirationEngine:
 
         # Make a copy to avoid modifying original
         account = copy.deepcopy(account_data)
-        result = ExpirationResult()
+        result = ExpirationResult(cash_impact=0.0)
 
         if not account.get("positions"):
             return result
@@ -184,7 +184,7 @@ class OptionsExpirationEngine:
         quote_adapter: QuoteAdapter,
     ) -> ExpirationResult:
         """Process expirations for a specific underlying."""
-        result = ExpirationResult()
+        result = ExpirationResult(cash_impact=0.0)
 
         # Get current underlying quote
         try:
@@ -262,7 +262,7 @@ class OptionsExpirationEngine:
         short_equity: int,
     ) -> ExpirationResult:
         """Process a single expired option position."""
-        result = ExpirationResult()
+        result = ExpirationResult(cash_impact=0.0)
 
         # Extract position data
         symbol = position.get("symbol", "")
@@ -579,7 +579,11 @@ class OptionsExpirationEngine:
             if abs(remaining_quantity) <= abs(pos_quantity):
                 # This position has enough to complete the drain
                 if isinstance(position, dict):
-                    position["quantity"] = int(position["quantity"]) + remaining_quantity
+                    current_qty = position["quantity"]
+                    if isinstance(current_qty, (int, float, str)):
+                        position["quantity"] = int(current_qty) + remaining_quantity
+                    else:
+                        position["quantity"] = remaining_quantity
                 else:
                     position.quantity += remaining_quantity
                 remaining_quantity = 0

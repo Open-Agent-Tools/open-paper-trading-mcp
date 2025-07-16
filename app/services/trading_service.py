@@ -123,7 +123,7 @@ class TradingService:
     def get_portfolio(self) -> Portfolio:
         """Get complete portfolio information."""
         total_invested = sum(
-            pos.quantity * pos.current_price for pos in self.portfolio_positions
+            pos.quantity * (pos.current_price or 0) for pos in self.portfolio_positions
         )
         total_value = self.cash_balance + total_invested
         total_pnl = sum(pos.unrealized_pnl for pos in self.portfolio_positions)
@@ -139,7 +139,7 @@ class TradingService:
     def get_portfolio_summary(self) -> PortfolioSummary:
         """Get portfolio summary."""
         invested_value = sum(
-            pos.quantity * pos.current_price for pos in self.portfolio_positions
+            pos.quantity * (pos.current_price or 0) for pos in self.portfolio_positions
         )
         total_value = self.cash_balance + invested_value
         total_pnl = sum(pos.unrealized_pnl for pos in self.portfolio_positions)

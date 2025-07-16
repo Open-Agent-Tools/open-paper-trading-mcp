@@ -345,11 +345,14 @@ class AdvancedOrderValidator:
             return
 
         underlying_price = underlying_quote.price
-        if underlying_price <= 0:
+        if underlying_price is None or underlying_price <= 0:
             return
 
         # Calculate strike distance from ATM
-        strike_distance = abs(option.strike - underlying_price) / underlying_price
+        option_strike = option.strike
+        if option_strike is None:
+            return
+        strike_distance = abs(option_strike - underlying_price) / underlying_price
 
         # Check maximum strike distance
         if strike_distance > account_limits.max_strike_distance:
@@ -460,7 +463,7 @@ class AdvancedOrderValidator:
                     details={
                         "symbol": option.symbol,
                         "days_to_expiration": days_to_expiration,
-                        "distance_from_strike": abs(underlying_price - option.strike),
+                        "distance_from_strike": abs(underlying_price - option_strike) if option_strike is not None else 0.0,
                     },
                     suggested_action="Consider rolling or closing position",
                 )
@@ -677,7 +680,7 @@ class AdvancedOrderValidator:
                 and quote.ask
             ):
                 spread_percent = (
-                    (quote.ask - quote.bid) / quote.price if quote.price > 0 else 0
+                    (quote.ask - quote.bid) / quote.price if quote.price and quote.price > 0 else 0
                 )
 
                 if spread_percent > 0.1:  # Spread wider than 10%
@@ -754,7 +757,8 @@ class AdvancedOrderValidator:
                 asset = asset_factory(order.symbol)
                 multiplier = 100 if isinstance(asset, Option) else 1
                 price = order.price if order.price else quote.price
-                total_cost = abs(order.quantity) * price * multiplier
+                if price is not None:
+                    total_cost = abs(order.quantity) * price * multiplier
 
         elif isinstance(order, MultiLegOrder):
             for leg in order.legs:
@@ -762,7 +766,8 @@ class AdvancedOrderValidator:
                 if quote:
                     multiplier = 100 if isinstance(leg.asset, Option) else 1
                     price = leg.price if leg.price else quote.price
-                    total_cost += abs(leg.quantity) * price * multiplier
+                    if price is not None:
+                        total_cost += abs(leg.quantity) * price * multiplier
 
         return total_cost
 

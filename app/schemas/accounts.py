@@ -15,10 +15,16 @@ class Account(BaseModel):
     """
     Represents a trading account.
     """
-    id: UUID = Field(default_factory=uuid4, description="Unique account identifier")
+    id: str = Field(..., description="Unique account identifier")
     cash_balance: float = Field(..., description="Available cash balance")
     positions: List[Position] = Field(default_factory=list, description="Current positions held in the account")
-    # In a real system, you'd have owner_id, account_type, etc.
+    name: Optional[str] = Field(None, description="Account name")
+    owner: Optional[str] = Field(None, description="Account owner")
+    
+    # Alias for backward compatibility
+    @property
+    def cash(self) -> float:
+        return self.cash_balance
 
     class Config:
         orm_mode = True

@@ -35,12 +35,8 @@ class DatabaseAccountAdapter(AccountAdapter):
 
         return Account(
             id=db_account.id,
-            name=db_account.name,
-            owner=db_account.owner,
-            cash=float(db_account.cash),
+            cash_balance=float(db_account.cash_balance),
             positions=[],  # Positions loaded separately
-            orders=[],  # Orders loaded separately
-            transactions=[],  # Transactions loaded separately
         )
 
     def put_account(self, account: Account) -> None:
@@ -49,17 +45,16 @@ class DatabaseAccountAdapter(AccountAdapter):
 
         if db_account:
             # Update existing
-            db_account.name = account.name
-            db_account.owner = account.owner
-            db_account.cash = account.cash
+            if account.owner:
+                db_account.owner = account.owner
+            db_account.cash_balance = account.cash_balance
             db_account.updated_at = datetime.utcnow()
         else:
             # Create new
             db_account = DBAccount(
                 id=account.id,
-                name=account.name,
-                owner=account.owner,
-                cash=account.cash,
+                owner=account.owner or "default",
+                cash_balance=account.cash_balance,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
@@ -150,10 +145,6 @@ def account_factory(
 
     return Account(
         id=account_id,
-        name=name,
-        owner=owner,
-        cash=cash,
+        cash_balance=cash,
         positions=[],
-        orders=[],
-        transactions=[],
     )

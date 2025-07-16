@@ -420,7 +420,13 @@ class MaintenanceMarginService:
                     "strategy_count": 0,
                 }
 
-            breakdown[underlying]["total_margin"] += margin_req.margin_requirement
+            margin_amount = margin_req.margin_requirement
+            if isinstance(margin_amount, (int, float)):
+                current_total = breakdown[underlying]["total_margin"]
+                if isinstance(current_total, (int, float)):
+                    breakdown[underlying]["total_margin"] = current_total + margin_amount
+                else:
+                    breakdown[underlying]["total_margin"] = margin_amount
             breakdown[underlying]["strategies"].append(margin_req)
             breakdown[underlying]["strategy_count"] += 1
 

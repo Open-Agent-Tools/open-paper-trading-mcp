@@ -236,7 +236,7 @@ class StrategyRecognitionService:
 
     def get_strategy_summary(self, strategies: List[BasicStrategy]) -> Dict[str, Any]:
         """Generate summary statistics for a list of strategies."""
-        summary = {
+        summary: Dict[str, Any] = {
             "total_strategies": len(strategies),
             "strategy_counts": {"asset": 0, "offset": 0, "spread": 0, "covered": 0},
             "spread_details": {

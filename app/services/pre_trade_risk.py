@@ -698,11 +698,12 @@ class PreTradeRiskAnalyzer:
             quote = quotes.get(leg.asset.symbol)
             if quote:
                 price = leg.price or quote.price
-                # Positive for credit (selling), negative for debit (buying)
-                if leg.order_type in [OrderType.SELL, OrderType.STO]:
-                    net += price * abs(leg.quantity)
-                else:
-                    net -= price * abs(leg.quantity)
+                if price is not None:
+                    # Positive for credit (selling), negative for debit (buying)
+                    if leg.order_type in [OrderType.SELL, OrderType.STO]:
+                        net += price * abs(leg.quantity)
+                    else:
+                        net -= price * abs(leg.quantity)
         return net
 
     def _check_expiration_consistency(self, order: MultiLegOrder) -> bool:

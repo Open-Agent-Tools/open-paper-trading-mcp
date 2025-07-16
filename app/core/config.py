@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
     # MCP Server Configuration
     MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "2081"))

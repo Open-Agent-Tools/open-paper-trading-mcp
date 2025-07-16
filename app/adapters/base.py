@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.accounts import Account
 from app.schemas.orders import Order
@@ -17,6 +17,11 @@ class AdapterConfig(BaseModel):
     api_key: Optional[str] = None
     api_secret: Optional[str] = None
     base_url: Optional[str] = None
+    name: Optional[str] = None
+    priority: int = 0
+    timeout: float = 30.0
+    cache_ttl: float = 60.0
+    config: Dict[str, Any] = Field(default_factory=dict)
 
 
 class AdapterRegistry:

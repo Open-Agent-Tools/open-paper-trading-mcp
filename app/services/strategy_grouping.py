@@ -118,10 +118,10 @@ def _group_into_basic_strategies_in_underlying(
                         long_puts.append(AssetStrategy(asset=asset, quantity=1))
 
     # Sort by strike for optimal pairing
-    short_calls.sort(key=lambda x: x.asset.strike)
-    long_calls.sort(key=lambda x: x.asset.strike)
-    short_puts.sort(key=lambda x: x.asset.strike, reverse=True)
-    long_puts.sort(key=lambda x: x.asset.strike, reverse=True)
+    short_calls.sort(key=lambda x: getattr(x.asset, 'strike', 0))
+    long_calls.sort(key=lambda x: getattr(x.asset, 'strike', 0))
+    short_puts.sort(key=lambda x: getattr(x.asset, 'strike', 0), reverse=True)
+    long_puts.sort(key=lambda x: getattr(x.asset, 'strike', 0), reverse=True)
 
     # Process short calls
     for short_call in short_calls:
@@ -255,7 +255,7 @@ def normalize_strategy_quantities(
     grouped = {}
 
     for strategy in strategies:
-        if strategy.strategy_type == StrategyType.ASSET:
+        if strategy.strategy_type == StrategyType.ASSET and hasattr(strategy, 'asset'):
             key = (strategy.strategy_type, strategy.asset.symbol)
         elif strategy.strategy_type == StrategyType.SPREAD:
             key = (

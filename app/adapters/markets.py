@@ -7,6 +7,7 @@ import uuid
 from app.adapters.base import MarketAdapter, QuoteAdapter
 from app.schemas.orders import Order, OrderStatus, OrderType, OrderCondition
 from app.services.estimators import MidpointEstimator, MarketEstimator
+from app.models.assets import asset_factory
 
 
 class OrderImpact:
@@ -26,10 +27,10 @@ class OrderImpact:
     ) -> Dict[str, float]:
         """Calculate the full impact of the order."""
         # Calculate executed price based on order type
-        if self.order.order_type == OrderType.MARKET:
+        if self.order.condition == OrderCondition.MARKET:
             # Market orders get slight slippage
             slippage_mult = 1 + (slippage_bps / 10000)
-            if self.order.action in [
+            if self.order.order_type in [
                 OrderType.BUY,
                 OrderType.BTO,
                 OrderType.BTC,
@@ -39,7 +40,7 @@ class OrderImpact:
                 self.executed_price = self.current_price / slippage_mult
         else:
             # Limit orders execute at limit price or better
-            self.executed_price = self.order.limit_price or self.current_price
+            self.executed_price = self.order.price or self.current_price
 
         # Calculate costs
         self.slippage = (
@@ -125,7 +126,10 @@ class PaperMarketAdapter(MarketAdapter):
     def simulate_order(self, order: Order) -> Dict[str, Any]:
         """Simulate order execution without actually executing."""
         # Get current quote
-        quote = self.quote_adapter.get_quote(order.symbol)
+        asset = asset_factory(order.symbol)
+        if not asset:
+            return {"success": False, "reason": "Invalid symbol", "impact": None}
+        quote = self.quote_adapter.get_quote(asset)
         if not quote:
             return {"success": False, "reason": "No quote available", "impact": None}
 
@@ -176,7 +180,10 @@ class PaperMarketAdapter(MarketAdapter):
     def _try_fill_order(self, order: Order) -> bool:
         """Try to fill an order based on current market conditions."""
         # Get current quote
-        quote = self.quote_adapter.get_quote(order.symbol)
+        asset = asset_factory(order.symbol)
+        if not asset:
+            return False
+        quote = self.quote_adapter.get_quote(asset)
         if not quote:
             return False
 
@@ -192,9 +199,9 @@ class PaperMarketAdapter(MarketAdapter):
                 OrderType.BTO,
                 OrderType.BTC,
             ]:
-                fill_price = quote.ask or quote.last or 0.0
+                fill_price = quote.ask or quote.price or 0.0
             else:
-                fill_price = quote.bid or quote.last or 0.0
+                fill_price = quote.bid or quote.price or 0.0
 
         elif order.condition == OrderCondition.LIMIT and order.price:
             # Limit orders fill if price is favorable
@@ -218,13 +225,13 @@ class PaperMarketAdapter(MarketAdapter):
                 OrderType.BTO,
                 OrderType.BTC,
             ]:
-                if quote.last and quote.last >= order.price:
+                if quote.price and quote.price >= order.price:
                     can_fill = True
-                    fill_price = quote.ask or quote.last or 0.0
+                    fill_price = quote.ask or quote.price or 0.0
             else:
-                if quote.last and quote.last <= order.price:
+                if quote.price and quote.price <= order.price:
                     can_fill = True
-                    fill_price = quote.bid or quote.last or 0.0
+                    fill_price = quote.bid or quote.price or 0.0
 
         # Fill the order if possible
         if can_fill and fill_price > 0:
