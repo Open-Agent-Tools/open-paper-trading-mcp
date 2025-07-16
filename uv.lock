@@ -1335,6 +1335,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "redis", specifier = ">=5.0.0" },
     { name = "robin-stocks", specifier = ">=2.0.0" },
+    { name = "robin-stocks", specifier = ">=3.0.0" },
     { name = "scipy", specifier = ">=1.15.3" },
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },

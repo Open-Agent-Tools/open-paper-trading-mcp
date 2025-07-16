@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional, List
 from sqlalchemy import (
     Column,
     String,
@@ -13,7 +14,7 @@ from sqlalchemy import (
     Text,
     Index,
 )
-from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.models.database.base import Base
 from app.schemas.orders import OrderStatus, OrderType
@@ -21,61 +22,69 @@ from app.schemas.orders import OrderStatus, OrderType
 
 class Account(Base):
     __tablename__ = "accounts"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    owner = Column(String, index=True, unique=True, nullable=False)
-    cash_balance = Column(Float, nullable=False, default=100000.0)
-    created_at = Column(DateTime, server_default=func.now())
+    
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner: Mapped[str] = mapped_column(String, index=True, unique=True)
+    cash_balance: Mapped[float] = mapped_column(Float, default=100000.0)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
-    positions = relationship("Position", back_populates="account")
-    orders = relationship("Order", back_populates="account")
-    transactions = relationship("Transaction", back_populates="account")
-    multi_leg_orders = relationship("MultiLegOrder", back_populates="account")
-    recognized_strategies = relationship("RecognizedStrategy", back_populates="account")
-    greeks_snapshots = relationship("PortfolioGreeksSnapshot", back_populates="account")
+    # Relationships
+    positions: Mapped[List["Position"]] = relationship("Position", back_populates="account")
+    orders: Mapped[List["Order"]] = relationship("Order", back_populates="account")
+    transactions: Mapped[List["Transaction"]] = relationship("Transaction", back_populates="account")
+    multi_leg_orders: Mapped[List["MultiLegOrder"]] = relationship("MultiLegOrder", back_populates="account")
+    recognized_strategies: Mapped[List["RecognizedStrategy"]] = relationship("RecognizedStrategy", back_populates="account")
+    greeks_snapshots: Mapped[List["PortfolioGreeksSnapshot"]] = relationship("PortfolioGreeksSnapshot", back_populates="account")
 
 
 class Position(Base):
     __tablename__ = "positions"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id = Column(String, ForeignKey("accounts.id"), nullable=False)
-    symbol = Column(String, index=True, nullable=False)
-    quantity = Column(Integer, nullable=False)
-    avg_price = Column(Float, nullable=False)
+    
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    avg_price: Mapped[float] = mapped_column(Float)
 
-    account = relationship("Account", back_populates="positions")
+    # Relationships
+    account: Mapped["Account"] = relationship("Account", back_populates="positions")
 
 
 class Order(Base):
     __tablename__ = "orders"
-    id = Column(
+    
+    id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: f"order_{uuid.uuid4().hex[:8]}"
     )
-    account_id = Column(String, ForeignKey("accounts.id"), nullable=False)
-    symbol = Column(String, index=True, nullable=False)
-    order_type: Mapped[OrderType] = Column(Enum(OrderType), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    price = Column(Float, nullable=True)  # Null for market orders
-    status: Mapped[OrderStatus] = Column(
-        Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING
+    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    order_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
+    quantity: Mapped[int] = mapped_column(Integer)
+    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Null for market orders
+    status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus), default=OrderStatus.PENDING
     )
-    created_at = Column(DateTime, server_default=func.now())
-    filled_at = Column(DateTime, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+    filled_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
 
-    account = relationship("Account", back_populates="orders")
+    # Relationships
+    account: Mapped["Account"] = relationship("Account", back_populates="orders")
 
 
 class Transaction(Base):
     __tablename__ = "transactions"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id = Column(String, ForeignKey("accounts.id"), nullable=False)
-    order_id = Column(String, ForeignKey("orders.id"), nullable=True)
-    symbol = Column(String, index=True, nullable=False)
-    quantity = Column(Integer, nullable=False)
-    price = Column(Float, nullable=False)
-    transaction_type: Mapped[OrderType] = Column(Enum(OrderType), nullable=False)
-    timestamp = Column(DateTime, server_default=func.now())
+    
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    order_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("orders.id"), nullable=True)
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    price: Mapped[float] = mapped_column(Float)
+    transaction_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
+    timestamp: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
-    account = relationship("Account", back_populates="transactions")
+    # Relationships
+    account: Mapped["Account"] = relationship("Account", back_populates="transactions")
 
 
 # ============================================================================
@@ -88,42 +97,42 @@ class OptionQuoteHistory(Base):
 
     __tablename__ = "option_quotes"
 
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    symbol = Column(String, index=True, nullable=False)
-    underlying_symbol = Column(String, index=True, nullable=False)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    underlying_symbol: Mapped[str] = mapped_column(String, index=True)
 
     # Option details
-    strike = Column(Float, nullable=False)
-    expiration_date = Column(Date, nullable=False, index=True)
-    option_type = Column(String, nullable=False)  # 'call' or 'put'
+    strike: Mapped[float] = mapped_column(Float)
+    expiration_date: Mapped[Date] = mapped_column(Date, index=True)
+    option_type: Mapped[str] = mapped_column(String)  # 'call' or 'put'
 
     # Quote data
-    bid = Column(Float, nullable=True)
-    ask = Column(Float, nullable=True)
-    price = Column(Float, nullable=False)
-    volume = Column(Integer, nullable=True)
-    open_interest = Column(Integer, nullable=True)
+    bid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ask: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price: Mapped[float] = mapped_column(Float)
+    volume: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    open_interest: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Greeks
-    delta = Column(Float, nullable=True)
-    gamma = Column(Float, nullable=True)
-    theta = Column(Float, nullable=True)
-    vega = Column(Float, nullable=True)
-    rho = Column(Float, nullable=True)
+    delta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    gamma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    theta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    vega: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    rho: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Advanced Greeks
-    charm = Column(Float, nullable=True)
-    vanna = Column(Float, nullable=True)
-    speed = Column(Float, nullable=True)
-    zomma = Column(Float, nullable=True)
-    color = Column(Float, nullable=True)
+    charm: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    vanna: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    speed: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    zomma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    color: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Market data
-    implied_volatility = Column(Float, nullable=True)
-    underlying_price = Column(Float, nullable=True)
-    quote_time = Column(DateTime, nullable=False, index=True)
+    implied_volatility: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    underlying_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    quote_time: Mapped[DateTime] = mapped_column(DateTime, index=True)
 
-    created_at = Column(DateTime, server_default=func.now())
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
 
 class MultiLegOrder(Base):
@@ -131,27 +140,27 @@ class MultiLegOrder(Base):
 
     __tablename__ = "multi_leg_orders"
 
-    id = Column(String, primary_key=True, default=lambda: f"mlo_{uuid.uuid4().hex[:8]}")
-    account_id = Column(String, ForeignKey("accounts.id"), nullable=False)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: f"mlo_{uuid.uuid4().hex[:8]}")
+    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
 
     # Order details
-    order_type = Column(String, nullable=False, default="limit")  # limit, market
-    net_price = Column(Float, nullable=True)
-    status: Mapped[OrderStatus] = Column(
-        Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING
+    order_type: Mapped[str] = mapped_column(String, default="limit")  # limit, market
+    net_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus), default=OrderStatus.PENDING
     )
 
     # Strategy identification
-    strategy_type = Column(String, nullable=True)  # spread, straddle, etc.
-    underlying_symbol = Column(String, nullable=True, index=True)
+    strategy_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # spread, straddle, etc.
+    underlying_symbol: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
 
     # Metadata
-    created_at = Column(DateTime, server_default=func.now())
-    filled_at = Column(DateTime, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+    filled_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
-    account = relationship("Account", back_populates="multi_leg_orders")
-    legs = relationship(
+    account: Mapped["Account"] = relationship("Account", back_populates="multi_leg_orders")
+    legs: Mapped[List["OrderLeg"]] = relationship(
         "OrderLeg", back_populates="multi_leg_order", cascade="all, delete-orphan"
     )
 
@@ -161,32 +170,32 @@ class OrderLeg(Base):
 
     __tablename__ = "order_legs"
 
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    multi_leg_order_id = Column(
-        String, ForeignKey("multi_leg_orders.id"), nullable=False
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    multi_leg_order_id: Mapped[str] = mapped_column(
+        String, ForeignKey("multi_leg_orders.id")
     )
 
     # Asset details
-    symbol = Column(String, nullable=False, index=True)
-    asset_type = Column(String, nullable=False)  # 'stock' or 'option'
+    symbol: Mapped[str] = mapped_column(String, index=True)
+    asset_type: Mapped[str] = mapped_column(String)  # 'stock' or 'option'
 
     # Order details
-    quantity = Column(Integer, nullable=False)
-    order_type: Mapped[OrderType] = Column(Enum(OrderType), nullable=False)
-    price = Column(Float, nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    order_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
+    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Option-specific fields (null for stocks)
-    strike = Column(Float, nullable=True)
-    expiration_date = Column(Date, nullable=True)
-    option_type = Column(String, nullable=True)  # 'call' or 'put'
-    underlying_symbol = Column(String, nullable=True)
+    strike: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    expiration_date: Mapped[Optional[Date]] = mapped_column(Date, nullable=True)
+    option_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # 'call' or 'put'
+    underlying_symbol: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Execution details
-    filled_quantity = Column(Integer, nullable=False, default=0)
-    filled_price = Column(Float, nullable=True)
+    filled_quantity: Mapped[int] = mapped_column(Integer, default=0)
+    filled_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Relationships
-    multi_leg_order = relationship("MultiLegOrder", back_populates="legs")
+    multi_leg_order: Mapped["MultiLegOrder"] = relationship("MultiLegOrder", back_populates="legs")
 
 
 class RecognizedStrategy(Base):
@@ -194,33 +203,33 @@ class RecognizedStrategy(Base):
 
     __tablename__ = "recognized_strategies"
 
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id = Column(String, ForeignKey("accounts.id"), nullable=False)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
 
     # Strategy details
-    strategy_type = Column(String, nullable=False)  # spread, covered_call, etc.
-    strategy_name = Column(String, nullable=False)
-    underlying_symbol = Column(String, nullable=False, index=True)
+    strategy_type: Mapped[str] = mapped_column(String)  # spread, covered_call, etc.
+    strategy_name: Mapped[str] = mapped_column(String)
+    underlying_symbol: Mapped[str] = mapped_column(String, index=True)
 
     # Financial metrics
-    cost_basis = Column(Float, nullable=False, default=0.0)
-    max_profit = Column(Float, nullable=True)
-    max_loss = Column(Float, nullable=True)
-    breakeven_points = Column(JSON, nullable=True)  # List of breakeven prices
+    cost_basis: Mapped[float] = mapped_column(Float, default=0.0)
+    max_profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    max_loss: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    breakeven_points: Mapped[Optional[str]] = mapped_column(JSON, nullable=True)  # List of breakeven prices
 
     # Risk metrics
-    net_delta = Column(Float, nullable=True)
-    net_gamma = Column(Float, nullable=True)
-    net_theta = Column(Float, nullable=True)
-    net_vega = Column(Float, nullable=True)
+    net_delta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    net_gamma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    net_theta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    net_vega: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Position tracking
-    position_ids = Column(JSON, nullable=False)  # List of position IDs in strategy
-    is_active = Column(Boolean, nullable=False, default=True)
+    position_ids: Mapped[str] = mapped_column(JSON)  # List of position IDs in strategy
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Metadata
-    detected_at = Column(DateTime, server_default=func.now())
-    last_updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    detected_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+    last_updated: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     account = relationship("Account", back_populates="recognized_strategies")

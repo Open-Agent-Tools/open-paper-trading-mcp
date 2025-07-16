@@ -71,7 +71,7 @@ class TestOptionSymbolParsing:
     
     def test_standard_option_parsing(self):
         """Test parsing standard option symbols (AAPL240119C00195000)."""
-        option = Option("AAPL240119C00195000")
+        option = Option.from_symbol("AAPL240119C00195000")
         
         assert option.underlying == "AAPL"
         assert option.expiration_date == date(2024, 1, 19)
@@ -81,39 +81,39 @@ class TestOptionSymbolParsing:
     def test_different_strikes(self):
         """Test parsing options with different strike prices."""
         # Low strike
-        option1 = Option("AAPL240119C00050000")
+        option1 = Option.from_symbol("AAPL240119C00050000")
         assert option1.strike == Decimal("50.00")
         
         # High strike
-        option2 = Option("AAPL240119C00500000")
+        option2 = Option.from_symbol("AAPL240119C00500000")
         assert option2.strike == Decimal("500.00")
         
         # Fractional strike
-        option3 = Option("AAPL240119C00195500")
+        option3 = Option.from_symbol("AAPL240119C00195500")
         assert option3.strike == Decimal("195.50")
         
     def test_different_expirations(self):
         """Test parsing options with different expiration dates."""
         # Near-term expiration
-        option1 = Option("AAPL241220C00195000")
+        option1 = Option.from_symbol("AAPL241220C00195000")
         assert option1.expiration_date == date(2024, 12, 20)
         
         # Far-term expiration
-        option2 = Option("AAPL260116C00195000")
+        option2 = Option.from_symbol("AAPL260116C00195000")
         assert option2.expiration_date == date(2026, 1, 16)
         
     def test_different_underlyings(self):
         """Test parsing options with different underlying symbols."""
         # Single letter
-        option1 = Option("F240119C00195000")
+        option1 = Option.from_symbol("F240119C00195000")
         assert option1.underlying == "F"
         
         # Multiple letters
-        option2 = Option("GOOGL240119C00195000")
+        option2 = Option.from_symbol("GOOGL240119C00195000")
         assert option2.underlying == "GOOGL"
         
         # With numbers
-        option3 = Option("BRK240119C00195000")
+        option3 = Option.from_symbol("BRK240119C00195000")
         assert option3.underlying == "BRK"
         
     def test_invalid_option_symbols(self):
@@ -257,7 +257,7 @@ class TestDaysToExpiration:
     
     def test_days_to_expiration_future(self):
         """Test days to expiration for future dates."""
-        option = Option("AAPL240119C00195000")  # Jan 19, 2024
+        option = Option.from_symbol("AAPL240119C00195000")  # Jan 19, 2024
         
         # Test from Jan 1, 2024 (18 days before)
         current_date = date(2024, 1, 1)
@@ -271,14 +271,14 @@ class TestDaysToExpiration:
         
     def test_days_to_expiration_same_day(self):
         """Test days to expiration on expiration day."""
-        option = Option("AAPL240119C00195000")
+        option = Option.from_symbol("AAPL240119C00195000")
         current_date = date(2024, 1, 19)
         days = option.days_to_expiration(current_date)
         assert days == 0
         
     def test_days_to_expiration_past(self):
         """Test days to expiration for expired options."""
-        option = Option("AAPL240119C00195000")
+        option = Option.from_symbol("AAPL240119C00195000")
         current_date = date(2024, 1, 25)  # 6 days after expiration
         days = option.days_to_expiration(current_date)
         assert days == -6
@@ -303,16 +303,16 @@ class TestOptionEdgeCases:
     def test_zero_strike_option(self):
         """Test option with zero strike (should be invalid)."""
         with pytest.raises(ValueError, match="Invalid option symbol format"):
-            Option("AAPL240119C00000000")
+            Option.from_symbol("AAPL240119C00000000")
             
     def test_very_high_strike(self):
         """Test option with very high strike."""
-        option = Option("AAPL240119C09999900")
+        option = Option.from_symbol("AAPL240119C09999900")
         assert option.strike == Decimal("99999.00")
         
     def test_leap_year_expiration(self):
         """Test option expiring on leap year date."""
-        option = Option("AAPL240229C00195000")  # Feb 29, 2024 (leap year)
+        option = Option.from_symbol("AAPL240229C00195000")  # Feb 29, 2024 (leap year)
         assert option.expiration_date == date(2024, 2, 29)
         
     def test_option_repr(self):

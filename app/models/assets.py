@@ -69,7 +69,7 @@ class Asset(BaseModel):
 class Stock(Asset):
     """Stock asset class for specific stock instruments."""
     
-    def __init__(self, symbol: str, **data):
+    def __init__(self, symbol: str, **data: object) -> None:
         super().__init__(symbol=symbol, asset_type="stock", **data)
 
 

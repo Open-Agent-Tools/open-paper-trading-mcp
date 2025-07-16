@@ -21,10 +21,10 @@ class AdapterConfig(BaseModel):
 
 class AdapterRegistry:
     """Registry for managing and accessing adapters."""
-    def __init__(self):
+    def __init__(self) -> None:
         self.adapters: Dict[str, Any] = {}
 
-    def register(self, name: str, adapter_instance: Any):
+    def register(self, name: str, adapter_instance: Any) -> None:
         self.adapters[name] = adapter_instance
 
     def get(self, name: str) -> Optional[Any]:

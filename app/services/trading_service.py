@@ -187,6 +187,8 @@ class TradingService:
                 price=legacy_quote.price,
                 bid=legacy_quote.price - 0.01,
                 ask=legacy_quote.price + 0.01,
+                bid_size=100,
+                ask_size=100,
                 volume=legacy_quote.volume,
             )
 

@@ -43,6 +43,7 @@ dependencies = [
     "robin-stocks>=2.0.0",
     "numpy>=2.2.6",
     "scipy>=1.15.3",
+    "robin-stocks>=3.0.0",
 ]
 
 [project.optional-dependencies]

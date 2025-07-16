@@ -36,7 +36,7 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-async def get_async_session():
+async def get_async_session() -> object:
     """
     Get an async database session (placeholder for async functionality).
     Note: This is a placeholder implementation. For true async support,
@@ -51,7 +51,7 @@ async def get_async_session():
         db.close()
 
 
-async def init_db():
+async def init_db() -> None:
     """
     Initialize the database (create tables, etc.).
     """

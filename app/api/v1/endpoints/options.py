@@ -26,21 +26,55 @@ from app.services.strategies import (
 from app.services.expiration import OptionsExpirationEngine
 from app.services.pre_trade_risk import analyze_pre_trade_risk
 from app.services.advanced_validation import create_default_account_limits
-from app.core.exceptions import NotFoundError, ValidationError
+from app.mcp.options_tools import (
+    # TODO: get_options_chains not implemented yet
+    # get_options_chains as mcp_get_options_chains, GetOptionsChainsArgs,
+    # TODO: find_tradable_options was removed
+    # find_tradable_options as mcp_find_tradable_options, FindTradableOptionsArgs
+    get_option_market_data, GetOptionMarketDataArgs
+)
 
 router = APIRouter()
 
+# TODO: Restore when find_tradable_options is re-implemented
+# @router.get("/{symbol}/live-chain/search")
+# async def find_live_tradable_options(
+#     symbol: str,
+#     expiration_date: Optional[str] = Query(None, description="Expiration date in YYYY-MM-DD format"),
+#     option_type: Optional[str] = Query(None, description="Option type: 'call' or 'put'")
+# ):
+#     """
+#     Find live tradable options for a symbol with optional filtering.
+#     """
+#     try:
+#         args = FindTradableOptionsArgs(
+#             symbol=symbol,
+#             expiration_date=expiration_date,
+#             option_type=option_type
+#         )
+#         result = await mcp_find_tradable_options(args)
+#         if "error" in result:
+#             raise HTTPException(status_code=500, detail=result["error"])
+#         return result
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error finding tradable options: {str(e)}")
 
-# Request/Response Models
-class OptionsChainRequest(BaseModel):
-    """Request model for options chain query."""
 
-    expiration_date: Optional[str] = Field(
-        None, description="Expiration date filter (YYYY-MM-DD)"
-    )
-    min_strike: Optional[float] = Field(None, description="Minimum strike price")
-    max_strike: Optional[float] = Field(None, description="Maximum strike price")
-    include_greeks: bool = Field(True, description="Include Greeks in response")
+
+@router.get("/market-data/{option_id}")
+async def get_live_option_market_data(option_id: str):
+    """
+    Get live market data for a specific option contract by ID.
+    """
+    try:
+        from app.mcp.options_tools import get_option_market_data, GetOptionMarketDataArgs
+        args = GetOptionMarketDataArgs(option_id=option_id)
+        result = await get_option_market_data(args)
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting option market data: {str(e)}")
 
 
 class OptionsChainResponse(BaseModel):

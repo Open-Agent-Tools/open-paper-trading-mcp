@@ -3,7 +3,7 @@ Tests for the pre-trade risk analyzer in app/services/pre_trade_risk.py.
 """
 import pytest
 from app.services.pre_trade_risk import PreTradeRiskAnalyzer, RiskLevel, PreTradeAnalysis
-from app.schemas.orders import Order, OrderType, MultiLegOrder
+from app.schemas.orders import Order, OrderType, MultiLegOrder, OrderLeg
 from app.models.assets import Stock, Option, asset_factory
 from app.models.quotes import Quote, OptionQuote
 from datetime import datetime
@@ -89,8 +89,8 @@ class TestPreTradeRiskAnalyzer:
     def test_analysis_with_multi_leg_order(self, analyzer, sample_account, sample_quotes):
         """Tests that analysis runs correctly for a multi-leg order."""
         order = MultiLegOrder(legs=[
-            Order(asset=asset_factory("SPY251219C00500000"), quantity=1, order_type=OrderType.BTO).to_leg(),
-            Order(asset=asset_factory("SPY251219C00510000"), quantity=-1, order_type=OrderType.STO).to_leg()
+            OrderLeg(asset=asset_factory("SPY251219C00500000"), quantity=1, order_type=OrderType.BTO),
+            OrderLeg(asset=asset_factory("SPY251219C00510000"), quantity=1, order_type=OrderType.STO)
         ])
         analysis = analyzer.analyze_order(sample_account, order, sample_quotes)
         assert isinstance(analysis, PreTradeAnalysis)

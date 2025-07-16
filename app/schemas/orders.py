@@ -49,14 +49,17 @@ class OrderSide(str, Enum):
 
 class OrderLeg(BaseModel):
     """Single leg of a potentially multi-leg order."""
-    asset: Union[str, Asset] = Field(..., description="Asset symbol or Asset object")
+    asset: Asset = Field(..., description="Asset symbol or Asset object")
     quantity: int = Field(..., description="Quantity (positive for buy, negative for sell)")
     order_type: OrderType = Field(..., description="Order type (BTO/STO/BTC/STC for options)")
     price: Optional[float] = Field(None, description="Price per share/contract (None for market orders)")
 
     @validator("asset", pre=True)
-    def normalize_asset(cls, v: Union[str, Asset]) -> Optional[Asset]:
-        return asset_factory(v) if isinstance(v, str) else v
+    def normalize_asset(cls, v: Union[str, Asset]) -> Asset:
+        result = asset_factory(v) if isinstance(v, str) else v
+        if result is None:
+            raise ValueError(f"Invalid asset: {v}")
+        return result
 
     @validator("quantity")
     def set_quantity_sign(cls, v: int, values: Dict[str, object]) -> int:
@@ -91,7 +94,7 @@ class Order(BaseModel):
 
     def to_leg(self) -> OrderLeg:
         return OrderLeg(
-            asset=self.symbol,
+            asset=self.symbol,  # type: ignore[arg-type]  # Validator will convert str to Asset
             quantity=self.quantity,
             order_type=self.order_type,
             price=self.price,
@@ -116,7 +119,7 @@ class MultiLegOrder(BaseModel):
         return v
 
     def add_leg(self, asset: Union[str, Asset], quantity: int, order_type: OrderType, price: Optional[float] = None) -> "MultiLegOrder":
-        new_leg = OrderLeg(asset=asset, quantity=quantity, order_type=order_type, price=price)
+        new_leg = OrderLeg(asset=asset, quantity=quantity, order_type=order_type, price=price)  # type: ignore[arg-type]  # Validator will convert Union to Asset
         self.legs.append(new_leg)
         return self
 

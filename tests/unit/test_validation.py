@@ -4,7 +4,7 @@ Tests for the validation service in app/services/validation.py.
 import pytest
 from datetime import date
 from app.services.validation import AccountValidator, OrderValidator, ValidationError
-from app.schemas.orders import Order, OrderType, MultiLegOrder
+from app.schemas.orders import Order, OrderType, MultiLegOrder, OrderLeg
 from app.models.trading import Position
 from app.models.assets import Stock, Call
 
@@ -52,7 +52,7 @@ class TestAccountValidator:
     def test_validate_closing_positions_insufficient(self, validator, sample_positions):
         """Tests validation for closing a position with insufficient quantity."""
         order = MultiLegOrder(legs=[
-            Order(asset=Stock(symbol="AAPL"), quantity=-150, order_type=OrderType.SELL).to_leg()
+            OrderLeg(asset="AAPL", quantity=150, order_type=OrderType.SELL)
         ])
         # This test needs to be more robust, but for now, we check the internal method
         with pytest.raises(ValidationError, match="Insufficient position quantity to close"):
@@ -60,17 +60,18 @@ class TestAccountValidator:
 
     def test_validate_options_rules_expired(self, validator):
         """Tests validation for an expired option."""
-        expired_option = Call(underlying_symbol="SPY", expiration_date=date(2020, 1, 1), strike=400.0)
+        expired_option = Call(underlying=Stock(symbol="SPY"), expiration_date=date(2020, 1, 1), strike=400.0)
         order = MultiLegOrder(legs=[
-            Order(asset=expired_option, quantity=1, order_type=OrderType.BTO, price=1.0).to_leg()
+            OrderLeg(asset=expired_option, quantity=1, order_type=OrderType.BTO, price=1.0)
         ])
         with pytest.raises(ValidationError, match="Cannot trade expired option"):
             validator._validate_options_rules(order.legs)
 
     def test_validate_position_limits_exceeded(self, validator, sample_positions):
         """Tests validation for position size limits."""
-        for pos in sample_positions:
-            pos.market_value = pos.quantity * pos.current_price
+        # market_value is a computed property, no need to set it manually
+        # for pos in sample_positions:
+        #     pos.market_value = pos.quantity * pos.current_price
         with pytest.raises(ValidationError, match="Position size limit exceeded"):
             validator.validate_position_limits(sample_positions, max_position_size=10000.0)
 
@@ -80,6 +81,7 @@ class TestAccountValidator:
 
     def test_validate_risk_limits_delta_exceeded(self, validator, sample_positions):
         """Tests validation for portfolio delta risk limits."""
+        # Note: delta might be a computed property, this test may need updating
         for pos in sample_positions:
             pos.delta = 60  # High delta for testing
         with pytest.raises(ValidationError, match="Portfolio delta limit exceeded"):

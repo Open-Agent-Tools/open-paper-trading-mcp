@@ -5,7 +5,7 @@ Handles multi-leg order execution with proper position management,
 cash balance updates, and margin calculations.
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Protocol
 from math import copysign
 from datetime import datetime
 
@@ -15,10 +15,16 @@ from ..schemas.orders import (
     OrderLeg,
     OrderType,
 )
-from ..models.trading import Position
+from ..schemas.positions import Position
 from ..models.assets import Option
 from ..models.quotes import Quote
 from .estimators import PriceEstimator, MidpointEstimator
+
+
+class QuoteServiceProtocol(Protocol):
+    """Protocol for quote service."""
+    async def get_quote(self, asset: object) -> Quote:
+        ...
 
 
 class OrderExecutionError(Exception):
@@ -57,7 +63,7 @@ class OrderExecutionEngine:
     - Margin requirement updates
     """
 
-    def __init__(self, quote_service=None, margin_service=None) -> None:
+    def __init__(self, quote_service: Optional[QuoteServiceProtocol] = None, margin_service: Optional[object] = None) -> None:
         self.quote_service = quote_service
         self.margin_service = margin_service
         self.default_estimator = MidpointEstimator()
@@ -216,6 +222,9 @@ class OrderExecutionEngine:
                     price=leg.price if leg.price else 100.0,  # Mock price
                     bid=95.0,
                     ask=105.0,
+                    bid_size=100,
+                    ask_size=100,
+                    volume=1000,
                 )
 
             # Calculate fill price using estimator
@@ -237,7 +246,7 @@ class OrderExecutionEngine:
 
     def _validate_closing_positions(
         self, legs: List[OrderLeg], current_positions: List[Position]
-    ):
+    ) -> None:
         """Validate that sufficient positions exist for closing orders."""
         for leg in legs:
             if leg.order_type in [OrderType.BTC, OrderType.STC]:
@@ -322,7 +331,7 @@ class OrderExecutionEngine:
             position.underlying_symbol = leg.asset.underlying.symbol
 
         # Update with market data and Greeks if available
-        if quote:
+        if quote and quote.price is not None:
             position.update_market_data(quote.price, quote)
 
         return position
@@ -351,10 +360,10 @@ class OrderExecutionEngine:
                 break
 
             quantity_can_close = abs(position.quantity)
-            quantity_to_close = min(quantity_to_close_remaining, quantity_can_close)
+            quantity_to_close = int(min(quantity_to_close_remaining, quantity_can_close))
 
             # Reduce position quantity
-            position.quantity += copysign(1, position.quantity) * -1 * quantity_to_close
+            position.quantity += int(copysign(1, position.quantity) * -1 * quantity_to_close)
             quantity_to_close_remaining -= quantity_to_close
 
             # Calculate realized P&L for the closed portion

@@ -53,6 +53,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
             config = AdapterConfig()
 
         self.config = config
+        self.name = "TestDataQuoteAdapter"
+        self.enabled = True
 
         self.current_date = datetime.strptime(current_date, "%Y-%m-%d").strftime(
             "%Y-%m-%d"
@@ -63,7 +65,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         if not self._data_file.exists():
             raise TestDataError(f"Test data file not found: {self._data_file}")
 
-    def set_date(self, date_str: str):
+    def set_date(self, date_str: str) -> None:
         """Set the current date for quote retrieval."""
         self.current_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%Y-%m-%d")
 
@@ -141,11 +143,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
                     else:
                         # Create stock quote with calculated price
                         price = (bid + ask) / 2 if bid > 0 and ask > 0 else None
+                        if asset is None:
+                            continue
                         stock_quote = Quote(
                             quote_date=datetime.strptime(quote_date, "%Y-%m-%d"),
                             asset=asset,
                             bid=bid,
                             ask=ask,
+                            bid_size=100,
+                            ask_size=100,
+                            volume=1000,
                             price=price,
                         )
                         self._cache[cache_key] = stock_quote
@@ -155,41 +162,39 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         return self._cache
 
-    def get_quote(self, symbol: str) -> Optional[Union[Quote, OptionQuote]]:
+    def get_quote(self, asset: Asset) -> Optional[Quote]:
         """
         Get quote for a symbol on the current date.
 
         Args:
-            symbol: Asset symbol string
+            asset: Asset object
 
         Returns:
             Quote object or None if not found
         """
-        asset_obj = asset_factory(symbol)
-        cache_key = asset_obj.symbol + self.current_date
+        cache_key = asset.symbol + self.current_date
 
         cache = self.load_test_data()
         return cache.get(cache_key)
 
-    def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
+    def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
         """
         Get quotes for multiple symbols.
 
         Args:
-            symbols: List of symbols to quote
+            assets: List of assets to quote
 
         Returns:
-            Dictionary mapping symbols to their quotes
+            Dictionary mapping assets to their quotes
         """
         results = {}
         cache = self.load_test_data()
 
-        for symbol in symbols:
-            asset_obj = asset_factory(symbol)
-            cache_key = asset_obj.symbol + self.current_date
+        for asset in assets:
+            cache_key = asset.symbol + self.current_date
             quote = cache.get(cache_key)
             if quote is not None:
-                results[symbol] = quote
+                results[asset] = quote
 
         return results
 
@@ -215,10 +220,12 @@ class TestDataQuoteAdapter(QuoteAdapter):
             OptionsChain object with calls and puts, or None if not available
         """
         underlying_asset = asset_factory(underlying)
+        if underlying_asset is None:
+            return None
         cache = self.load_test_data()
 
         # Get underlying quote
-        underlying_quote = self.get_quote(underlying)
+        underlying_quote = self.get_quote(underlying_asset)
         underlying_price = underlying_quote.price if underlying_quote else None
 
         # Filter options for this underlying and date
@@ -227,7 +234,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
             if (
                 isinstance(quote, OptionQuote)
                 and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
-                and hasattr(quote.asset, "underlying")
+                and isinstance(quote.asset, Option)
                 and quote.asset.underlying.symbol == underlying_asset.symbol
             ):
                 if expiration is None or quote.asset.expiration_date == expiration:
@@ -237,16 +244,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
             return None
 
         # Separate calls and puts
-        calls = [opt for opt in all_options if opt.asset.option_type == "call"]
-        puts = [opt for opt in all_options if opt.asset.option_type == "put"]
+        calls = [opt for opt in all_options if isinstance(opt.asset, Option) and opt.asset.option_type == "call"]
+        puts = [opt for opt in all_options if isinstance(opt.asset, Option) and opt.asset.option_type == "put"]
 
         # Sort by strike price
-        calls.sort(key=lambda x: x.asset.strike)
-        puts.sort(key=lambda x: x.asset.strike)
+        calls.sort(key=lambda x: x.asset.strike if isinstance(x.asset, Option) else 0)
+        puts.sort(key=lambda x: x.asset.strike if isinstance(x.asset, Option) else 0)
 
         # Determine expiration date
         exp_date = expiration
-        if exp_date is None and all_options:
+        if exp_date is None and all_options and isinstance(all_options[0].asset, Option):
             exp_date = all_options[0].asset.expiration_date
 
         return OptionsChain(
@@ -269,6 +276,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
             List of expiration dates
         """
         underlying_asset = asset_factory(underlying)
+        if underlying_asset is None:
+            return []
         cache = self.load_test_data()
 
         expiration_dates = set()
@@ -276,7 +285,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
             if (
                 isinstance(quote, OptionQuote)
                 and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
-                and hasattr(quote.asset, "underlying")
+                and isinstance(quote.asset, Option)
                 and quote.asset.underlying.symbol == underlying_asset.symbol
             ):
                 expiration_dates.add(quote.asset.expiration_date)
@@ -317,6 +326,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
         try:
             cache = self.load_test_data()
             asset_obj = asset_factory(symbol)
+            if asset_obj is None:
+                return False
             cache_key = asset_obj.symbol + self.current_date
             return cache_key in cache
         except Exception:
@@ -350,7 +361,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
                 set(
                     quote.asset.symbol
                     for quote in cache.values()
-                    if quote.quote_date.strftime("%Y-%m-%d") == self.current_date
+                    if quote.asset is not None and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
                 )
             )
 

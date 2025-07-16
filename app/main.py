@@ -15,9 +15,19 @@ from app.models.database.base import Base
 from app.auth.robinhood_auth import get_robinhood_client
 from app.core.logging import setup_logging
 
-# Import MCP tools only when not in test mode
+# Import all MCP tool instances
 try:
-    from app.mcp.tools import mcp
+    from app.mcp.tools import mcp as paper_trading_mcp
+    from app.mcp.market_data_tools import mcp as market_data_mcp
+    from app.mcp.options_tools import mcp as options_mcp
+    from fastmcp import FastMCP
+
+    # Merge all MCP instances into a single one
+    mcp = FastMCP("Open Paper Trading MCP")
+    mcp.tools.update(paper_trading_mcp.tools)
+    mcp.tools.update(market_data_mcp.tools)
+    mcp.tools.update(options_mcp.tools)
+
 except ImportError:
     mcp = None
 

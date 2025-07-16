@@ -18,28 +18,28 @@ class Position(BaseModel):
     symbol: str = Field(..., description="Asset symbol")
     quantity: int = Field(..., description="Number of shares/contracts owned")
     avg_price: float = Field(..., description="Average purchase price (cost basis)")
-    current_price: Optional[float] = Field(None, description="Current market price")
-    unrealized_pnl: Optional[float] = Field(None, description="Unrealized profit/loss")
+    current_price: Optional[float] = Field(default=None, description="Current market price")
+    unrealized_pnl: Optional[float] = Field(default=None, description="Unrealized profit/loss")
     realized_pnl: float = Field(default=0.0, description="Realized profit/loss")
 
     # Asset information
-    asset: Optional[Asset] = Field(None, description="Asset object with details")
+    asset: Optional[Asset] = Field(default=None, description="Asset object with details")
 
     # Options-specific fields (None for stocks)
-    option_type: Optional[str] = Field(None, description="Option type: call or put")
-    strike: Optional[float] = Field(None, description="Strike price")
-    expiration_date: Optional[date] = Field(None, description="Expiration date")
+    option_type: Optional[str] = Field(default=None, description="Option type: call or put")
+    strike: Optional[float] = Field(default=None, description="Strike price")
+    expiration_date: Optional[date] = Field(default=None, description="Expiration date")
     underlying_symbol: Optional[str] = Field(
-        None, description="Underlying asset symbol"
+        default=None, description="Underlying asset symbol"
     )
 
     # Greeks (for options positions)
-    delta: Optional[float] = Field(None, description="Position delta")
-    gamma: Optional[float] = Field(None, description="Position gamma")
-    theta: Optional[float] = Field(None, description="Position theta")
-    vega: Optional[float] = Field(None, description="Position vega")
-    rho: Optional[float] = Field(None, description="Position rho")
-    iv: Optional[float] = Field(None, description="Implied volatility")
+    delta: Optional[float] = Field(default=None, description="Position delta")
+    gamma: Optional[float] = Field(default=None, description="Position gamma")
+    theta: Optional[float] = Field(default=None, description="Position theta")
+    vega: Optional[float] = Field(default=None, description="Position vega")
+    rho: Optional[float] = Field(default=None, description="Position rho")
+    iv: Optional[float] = Field(default=None, description="Implied volatility")
 
     @validator("asset", pre=True)
     def normalize_asset(cls, v: Union[str, Asset]) -> Optional[Asset]:

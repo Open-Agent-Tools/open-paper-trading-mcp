@@ -2,122 +2,117 @@
 
 This document tracks the implementation progress and upcoming tasks for the paper trading simulator with dual REST API and MCP interfaces.
 
+## 🧭 Architectural Strategy
+The core principle of this platform is the separation of concerns between the **internal state** and **external data**.
+
+- **Paper Trading System (Internal):** Manages all stateful information, including user accounts, portfolios, positions, orders, and trading history. This is the single source of truth for the user's paper trading activity.
+- **Live Data Integration (External):** Provides real-time and historical market data for stocks and options. This data is used to enrich the user's portfolio with live pricing and to provide broad market context. It is read-only and does not affect the internal state.
+
+---
+
 ## ✅ COMPLETED
 
-### Phase 0: Infrastructure & Setup
-- [x] Docker containerization with PostgreSQL
-- [x] Database models and schema
-- [x] ADK test runner integration
-- [x] Both FastAPI and FastMCP servers running
+### Phase 0: Initial Setup & Core Engine
+- [x] **Infrastructure:** Docker containerization with PostgreSQL and ADK test runner.
+- [x] **Core Trading Engine:** All fundamental options trading logic, including asset modeling, order execution, account validation, margin calculations, strategy recognition, Greeks, and expiration processing.
+- [x] **Dual-Interface:** Both FastAPI (REST) and FastMCP (AI Agent) servers are operational.
 
-### Phase 1: Core Functionality Migration
-- [x] All core options trading functionality has been successfully implemented, including:
-  - Complete asset models with options support
-  - Order execution engine with multi-leg support  
-  - Account validation and margin calculations
-  - Strategy recognition and complex strategy detection
-  - Greeks calculation and risk analysis
-  - Options expiration processing
-  - Advanced order validation
-  - Complete REST API and MCP tool integration
+---
 
 ## 🚧 CURRENT PRIORITY
 
-### Phase 2: Architectural & MyPy Refactoring
-**Goal**: Address significant architectural and type-safety issues to establish a robust and maintainable foundation before proceeding with new features.
+### Phase 1: Codebase Refactoring & Stabilization
+**Goal:** Address significant architectural debt and type-safety issues to create a robust, maintainable foundation before adding new features. This involves a full MyPy-driven refactoring to improve data consistency and reduce runtime errors.
 
 **A comprehensive, multi-phase plan for this effort is documented in `REFACTORING_TODO.md`. This is the next priority and must be completed before work on other phases continues.**
 
+---
+
 ## 🚀 PLANNED PHASES
 
-### Phase 3: Testing, Validation, and Performance
-**Goal:** Ensure all migrated and refactored functionality is robust, correct, and performant through comprehensive testing.
+### Phase 2: Live Market Data Integration
+**Goal:** Integrate a live, read-only data source (e.g., Robinhood via `open-stocks-mcp`) to provide real-time market context and historical data.
 
-#### 3.1 Comprehensive Unit & Integration Tests
-- [ ] **Asset Models Testing** (`tests/unit/test_assets.py`): Symbol parsing, factory creation, value calculations, edge cases.
-- [ ] **Greeks Calculation Testing** (`tests/unit/test_greeks.py`): Black-Scholes accuracy, IV convergence, edge cases.
-- [ ] **Order Execution Testing** (`tests/unit/test_order_execution.py`): Multi-leg logic, position handling (BTO/STO/BTC/STC), FIFO closing.
-- [ ] **Risk Management Testing** (`tests/unit/test_risk.py`): Strategy recognition, margin calculation, validation logic.
-- [ ] **Database Integration Testing** (`tests/integration/test_database.py`): Persistence, updates, transactions, data integrity.
-- [ ] **Reference Validation Testing**: Validate calculations against known reference values and financial formulas.
+#### 2.1 Foundational Integration
+- [ ] **MCP Transport Layer:** Implement the MCP server with an HTTP/SSE (Server-Sent Events) transport to support asynchronous, long-running data lookups for market data tools.
+- [ ] **Session Management:** Implement a robust session manager for the live data connection, including authentication and token persistence.
+- [ ] **Data Source Abstraction:** Create a clear abstraction layer to cleanly separate live market data queries from internal paper trading data.
+- [ ] **Resilience:** Implement consistent error handling, API retries, and rate limiting for the external data source.
 
-#### 3.2 Test Data and Examples
-- [ ] **Test Data Enhancement** (`app/adapters/test_data.py`): Expand historical data, add diverse scenarios (earnings, dividends), and create stress test datasets.
-- [ ] **Educational & API Examples** (`examples/`):
-  - Create examples for common options strategies (covered calls, spreads).
-  - Document multi-leg order construction and Greeks analysis workflows.
-  - Provide usage examples for all FastAPI endpoints and MCP tools.
+#### 2.2 MCP & API Tool Implementation
+- [ ] **Market Data Tools (Live Source):**
+  - [x] `get_stock_info`
+  - [x] `get_price_history`
+  - [x] `get_stock_news`
+  - [x] `get_top_movers`
+  - [x] `search_stocks`
+  - [ ] `get_top_100`, `get_stocks_by_tag`
+  - [ ] `get_stock_earnings`, `get_stock_ratings`
+- [ ] **Options Data Tools (Live Source):**
+  - [x] `get_options_chains`
+  - [x] `find_tradable_options`
+  - [x] `get_option_market_data`
+  - [ ] `get_option_historicals`
+- [ ] **API Endpoints:**
+  - [x] `GET /api/v1/market/info/{symbol}`
+  - [x] `GET /api/v1/market/history/{symbol}`
+  - [x] `GET /api/v1/market/news/{symbol}`
+  - [x] `GET /api/v1/market/movers`
+  - [x] `GET /api/v1/market/search`
+  - [x] `GET /api/v1/options/{symbol}/live-chain`
+  - [x] `GET /api/v1/options/{symbol}/live-chain/search`
+  - [x] `GET /api/v1/options/market-data/{option_id}`
+  - [ ] Create corresponding REST endpoints for all new market and options data tools.
+  - [ ] Update existing portfolio and position endpoints to enrich them with live market prices.
 
-#### 3.3 Performance and Load Testing
-- [ ] **Greeks Calculation Performance**: Benchmark calculation speed and memory usage for large portfolios.
-- [ ] **Database Performance**: Optimize queries and test transaction throughput under load.
-- [ ] **API Response Times**: Benchmark REST endpoint and MCP tool performance.
+### Phase 3: Comprehensive Testing & Validation
+**Goal:** Ensure all existing and newly integrated functionality is robust, correct, and performant through comprehensive testing.
 
-### Phase 4: Live Market Data Integration
-**Goal:** Integrate real-time market data for a live trading simulation experience.
+- [ ] **Unit & Integration Testing:**
+  - [ ] Write tests for all new live data tools and API endpoints.
+  - [ ] Enhance existing tests for the core trading engine (Greeks, order execution, risk management).
+  - [ ] Validate all calculations against known financial formulas and reference values.
+- [ ] **Test Data & Scenarios:**
+  - [ ] Expand test data to include more diverse scenarios (e.g., earnings, dividends, market volatility).
+  - [ ] Create examples and documentation for all major API and MCP workflows.
+- [ ] **Performance Testing:**
+  - [ ] Benchmark API response times and database query performance under load.
+  - [ ] Profile critical components like the Greeks calculator for performance bottlenecks.
 
-#### 4.1 Quote Adapter Framework
-- [ ] **Base Adapter Interface** (`app/adapters/base.py`): Define a standardized interface for all data providers.
-- [ ] **Adapter Registry** (`app/adapters/registry.py`): Implement dynamic, configuration-driven adapter selection with failover.
-- [ ] **API Management**: Implement rate limiting, API key management, and error handling for external providers.
-- [ ] **Caching Layer** (`app/adapters/cache.py`): Add a Redis-backed cache for quotes to improve performance and reduce API calls.
-
-#### 4.2 Provider Integration
-- [ ] **Robinhood/Robin-Stocks Integration** (`app/adapters/robinhood.py`): Implement as the primary provider for stock and options data.
-- [ ] **Alternative Data Sources**:
-  - **Yahoo Finance**: Implement as a free, key-less backup source.
-  - **Alpha Vantage / IEX Cloud**: Plan for integration as alternative paid/institutional sources.
-
-#### 4.3 Data Quality and Management
-- [ ] **Data Quality Monitoring**: Implement cross-validation between sources, stale data detection, and price reasonableness checks.
-- [ ] **Market Hours and Calendar**: Integrate trading holiday schedules and manage pre/post-market data handling.
-- [ ] **Historical Data Management**: Design for efficient storage and backfill capabilities.
-
-### Phase 5: Backtesting Framework
+### Phase 4: Backtesting Framework
 **Goal:** Build a robust framework for strategy development and historical performance analysis.
 
-- [ ] **Historical Data Infrastructure**: Utilize the data integration framework from Phase 3 to set up and manage historical time-series data.
-- [ ] **Strategy Engine**: Design a plugin architecture for custom strategies with support for parameter optimization.
-- [ ] **Backtesting Analytics**: Calculate comprehensive performance metrics (Sharpe, Sortino, etc.), drawdown analysis, and generate visual reports.
-- [ ] **Simulation Quality**: Model realistic market conditions, including bid-ask spreads, slippage, commissions, and corporate actions.
+- [ ] **Historical Data Engine:** Utilize the live data integration to fetch and store historical time-series data efficiently.
+- [ ] **Strategy Runner:** Design a plugin architecture to allow for the development and execution of custom trading strategies against historical data.
+- [ ] **Performance Analytics:** Implement a suite of backtesting metrics (Sharpe Ratio, Sortino Ratio, max drawdown, etc.) and reporting tools.
+- [ ] **Simulation Realism:** Model realistic market conditions, including bid-ask spreads, slippage, and commissions.
 
-### Phase 6: Advanced Features & UI
-**Goal:** Enhance the platform with a user-facing dashboard and more sophisticated trading tools.
+### Phase 5: Advanced Features & User Interface
+**Goal:** Enhance the platform with a user-facing dashboard and more sophisticated trading tools. This phase will likely be split into sub-projects.
 
-- [ ] **Frontend Dashboard**: Create a React/Vue.js SPA for portfolio visualization, interactive charts, and real-time updates via WebSockets.
-- [ ] **Advanced MCP Tools**:
-  - `get_market_status`, `get_technical_indicators`, `search_symbols`, `get_news_sentiment`, `set_price_alert`, `scan_market`.
-- [ ] **Advanced Risk Management & Analytics**:
-  - [ ] **Pre-Trade Risk Analysis**: Implement order impact simulation (cash, margin, Greeks) and checks for position concentration and liquidity.
-  - [ ] **Strategy-Based Validation**: Enforce correct leg ratios for standard strategies and implement strategy-specific capital limits.
-  - [ ] **Market-Aware Validation**: Validate limit prices against the current market and reject orders outside of trading hours.
-  - [ ] **Compliance Rules (Future)**: Implement Pattern Day Trader (PDT) tracking, options approval level checks, and wash sale rule detection.
-  - [ ] Implement position sizing calculators (e.g., Kelly criterion), stop-loss/take-profit orders, and VaR calculations.
-- [ ] **Machine Learning Integration**: Add pipelines for price prediction, sentiment analysis, and anomaly detection.
+- [ ] **Frontend Dashboard:** Develop a web-based UI (React/Vue) for portfolio visualization, interactive charting, and real-time updates.
+- [ ] **Advanced MCP Tools:** Implement tools for more complex analysis, such as `get_market_status`, `get_technical_indicators`, and `scan_market`.
+- [ ] **Advanced Risk Management:**
+  - [ ] Implement pre-trade risk analysis (order impact simulation).
+  - [ ] Add compliance rules like Pattern Day Trader (PDT) tracking.
+  - [ ] Introduce position sizing calculators and advanced order types (stop-loss, etc.).
 
-### Phase 7: Educational & Community
-**Goal:** Build features to support learning, collaboration, and research.
+---
 
-- [ ] **Educational Platform**: Create interactive trading tutorials, guided lessons, and achievement systems.
-- [ ] **Community Features**: Implement paper trading competitions, leaderboards, and a strategy-sharing marketplace.
-- [ ] **Research & Academic Tools**: Add data export capabilities and statistical testing frameworks for academic use.
+## 🔭 FUTURE VISION
 
-## 🏢 FUTURE
+### Phase 6: Educational & Community Features
+- [ ] **Interactive Learning:** Create guided trading tutorials, paper trading competitions, and leaderboards.
+- [ ] **Collaboration:** Build a strategy-sharing marketplace for users to exchange ideas.
 
-### Phase 8: Production & Enterprise
-**Goal:** Prepare the platform for high-availability, multi-tenant, and enterprise use cases.
+### Phase 7: Production & Enterprise Readiness
+- [ ] **Scalability & Observability:** Implement horizontal scaling, database read replicas, and a full observability stack (Prometheus, Grafana, OpenTelemetry).
+- [ ] **Enterprise Features:** Add multi-tenancy, Role-Based Access Control (RBAC), and audit logging.
 
-- [ ] **Performance & Scaling**: Implement database read replicas, horizontal scaling, and load test for 1000+ concurrent users.
-- [ ] **Observability**: Set up Prometheus metrics, distributed tracing (OpenTelemetry), and Grafana dashboards.
-- [ ] **Enterprise Features**: Add multi-tenant architecture, RBAC, audit logging, and SSO integration.
-- [ ] **Global Markets**: Introduce support for multiple currencies and asset classes (Forex, Crypto).
+---
 
 ## 🎯 QUICK WINS
 *Small, high-impact tasks that can be implemented at any time.*
 
-- [ ] **Developer Experience**:
-  - [ ] Set up pre-commit hooks for automated code quality checks.
-  - [ ] Add Swagger/OpenAPI client generation capabilities.
-  - [ ] Create Docker health checks for services.
-- [ ] **Tools**:
-  - [ ] Create a CLI for simplified account management and administration.
+- [ ] **Developer Experience:** Set up pre-commit hooks, add OpenAPI client generation, and create Docker health checks.
+- [ ] **Administration:** Create a CLI for simplified account management and system administration.

@@ -521,7 +521,7 @@ class OrderImpactService:
         try:
             # Use existing validator if available
             validation_result = self.validator.validate_account_state(account_data)
-            if validation_result.get("errors"):
+            if isinstance(validation_result, dict) and validation_result.get("errors"):
                 return validation_result["errors"]
         except Exception as e:
             return [f"Validation error: {str(e)}"]
@@ -543,6 +543,7 @@ class OrderImpactService:
             # Check for covering option position
             if (
                 pos.is_option
+                and pos.asset is not None
                 and hasattr(pos.asset, "underlying")
                 and pos.asset.underlying.symbol == option.underlying.symbol
             ):

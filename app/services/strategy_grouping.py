@@ -35,6 +35,8 @@ def group_into_basic_strategies(positions: List[Position]) -> List[BasicStrategy
     underlyings = set()
     for position in positions:
         asset = asset_factory(position.symbol)
+        if asset is None:
+            continue
         if isinstance(asset, Option):
             underlyings.add(asset.underlying.symbol)
         else:
@@ -59,6 +61,8 @@ def _group_into_basic_strategies_in_underlying(
     underlying_positions = []
     for position in positions:
         asset = asset_factory(position.symbol)
+        if asset is None:
+            continue
         if isinstance(asset, Option):
             if asset.underlying.symbol == underlying:
                 underlying_positions.append(position)
@@ -188,6 +192,8 @@ def create_asset_strategies(
     filtered_positions = []
     for position in positions:
         asset = asset_factory(position.symbol)
+        if asset is None:
+            continue
         if isinstance(asset, Option):
             if asset.underlying.symbol == underlying:
                 filtered_positions.append(position)

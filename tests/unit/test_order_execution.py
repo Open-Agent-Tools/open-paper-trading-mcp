@@ -4,7 +4,7 @@ Tests for the order execution engine in app/services/order_execution.py.
 import pytest
 from unittest.mock import Mock
 from app.services.order_execution import OrderExecutionEngine, OrderExecutionError, OrderExecutionResult
-from app.schemas.orders import Order, OrderType, MultiLegOrder
+from app.schemas.orders import Order, OrderType, MultiLegOrder, OrderLeg
 from app.models.trading import Position
 from app.models.assets import Stock, asset_factory
 
@@ -30,14 +30,14 @@ class TestOrderExecutionEngine:
     def sample_bto_order(self):
         """Provides a sample Buy-To-Open order."""
         return MultiLegOrder(legs=[
-            Order(symbol="AAPL", quantity=10, order_type=OrderType.BTO, price=150.0).to_leg()
+            OrderLeg(asset="AAPL", quantity=10, order_type=OrderType.BTO, price=150.0)
         ])
 
     @pytest.fixture
     def sample_stc_order(self):
         """Provides a sample Sell-To-Close order."""
         return MultiLegOrder(legs=[
-            Order(asset=Stock(symbol="GOOGL"), quantity=-10, order_type=OrderType.STC).to_leg()
+            OrderLeg(asset="GOOGL", quantity=10, order_type=OrderType.STC)
         ])
 
     @pytest.fixture

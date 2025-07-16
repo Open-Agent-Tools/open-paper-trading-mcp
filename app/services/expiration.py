@@ -7,39 +7,39 @@ Handles automatic ITM/OTM option processing, assignment, and exercise simulation
 
 import copy
 from datetime import date
-from typing import List, Dict, Optional, Any
+from typing import Optional, Any
 from math import copysign
 
 from pydantic import BaseModel, Field
 
 from app.models.assets import Option, Call, Put, asset_factory
-from app.models.trading import Position
+from app.schemas.positions import Position
 from app.adapters.base import QuoteAdapter
 
 
 class ExpirationResult(BaseModel):
     """Result of options expiration processing."""
 
-    expired_positions: List[Position] = Field(
+    expired_positions: list[Position] = Field(
         default_factory=list, description="Positions that expired"
     )
-    new_positions: List[Position] = Field(
+    new_positions: list[Position] = Field(
         default_factory=list, description="New positions created from expiration"
     )
     cash_impact: float = Field(0.0, description="Net cash impact from expiration")
-    assignments: List[Dict[str, Any]] = Field(
+    assignments: list[dict[str, Any]] = Field(
         default_factory=list, description="Assignment details"
     )
-    exercises: List[Dict[str, Any]] = Field(
+    exercises: list[dict[str, Any]] = Field(
         default_factory=list, description="Exercise details"
     )
-    worthless_expirations: List[Dict[str, Any]] = Field(
+    worthless_expirations: list[dict[str, Any]] = Field(
         default_factory=list, description="Options expired worthless"
     )
-    warnings: List[str] = Field(
+    warnings: list[str] = Field(
         default_factory=list, description="Warnings during processing"
     )
-    errors: List[str] = Field(
+    errors: list[str] = Field(
         default_factory=list, description="Errors during processing"
     )
 
@@ -56,12 +56,12 @@ class OptionsExpirationEngine:
     - Warning generation for insufficient underlying positions
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_date: Optional[date] = None
 
     def process_account_expirations(
         self,
-        account_data: Dict[str, Any],
+        account_data: dict[str, Any],
         quote_adapter: QuoteAdapter,
         processing_date: Optional[date] = None,
     ) -> ExpirationResult:
@@ -132,15 +132,16 @@ class OptionsExpirationEngine:
 
         return result
 
-    def _find_expired_positions(self, positions: List, processing_date: date) -> List:
+    def _find_expired_positions(self, positions: list[dict[str, object]], processing_date: date) -> list[dict[str, object]]:
         """Find all expired option positions."""
         expired = []
 
         for position in positions:
             # Handle both dict and Position object
             if isinstance(position, dict):
-                symbol = position.get("symbol", "")
-                quantity = position.get("quantity", 0)
+                symbol = str(position.get("symbol", ""))
+                quantity_val = position.get("quantity", 0)
+                quantity = int(quantity_val) if isinstance(quantity_val, (int, float, str)) else 0
             else:
                 symbol = position.symbol
                 quantity = position.quantity
@@ -156,13 +157,13 @@ class OptionsExpirationEngine:
 
         return expired
 
-    def _group_by_underlying(self, expired_positions: List) -> Dict[str, List]:
+    def _group_by_underlying(self, expired_positions: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
         """Group expired positions by underlying symbol."""
-        groups = {}
+        groups: dict[str, list[dict[str, object]]] = {}
 
         for position in expired_positions:
             if isinstance(position, dict):
-                symbol = position.get("symbol", "")
+                symbol = str(position.get("symbol", ""))
             else:
                 symbol = position.symbol
 
@@ -177,9 +178,9 @@ class OptionsExpirationEngine:
 
     def _process_underlying_expirations(
         self,
-        account: Dict[str, Any],
+        account: dict[str, Any],
         underlying_symbol: str,
-        expired_positions: List,
+        expired_positions: list[dict[str, object]],
         quote_adapter: QuoteAdapter,
     ) -> ExpirationResult:
         """Process expirations for a specific underlying."""
@@ -187,12 +188,19 @@ class OptionsExpirationEngine:
 
         # Get current underlying quote
         try:
-            underlying_quote = quote_adapter.get_quote(underlying_symbol)
+            underlying_asset = asset_factory(underlying_symbol)
+            if underlying_asset is None:
+                result.errors.append(f"Could not create asset for {underlying_symbol}")
+                return result
+            underlying_quote = quote_adapter.get_quote(underlying_asset)
             if underlying_quote is None:
                 result.errors.append(f"Could not get quote for {underlying_symbol}")
                 return result
 
             underlying_price = underlying_quote.price
+            if underlying_price is None:
+                result.errors.append(f"Quote for {underlying_symbol} has no price")
+                return result
 
         except Exception as e:
             result.errors.append(
@@ -205,10 +213,12 @@ class OptionsExpirationEngine:
             account["positions"], underlying_symbol
         )
         long_equity = sum(
-            pos["quantity"] for pos in equity_positions if pos["quantity"] > 0
+            int(pos["quantity"]) for pos in equity_positions 
+            if isinstance(pos["quantity"], (int, float)) and int(pos["quantity"]) > 0
         )
         short_equity = sum(
-            pos["quantity"] for pos in equity_positions if pos["quantity"] < 0
+            int(pos["quantity"]) for pos in equity_positions 
+            if isinstance(pos["quantity"], (int, float)) and int(pos["quantity"]) < 0
         )
 
         # Process each expired position
@@ -245,8 +255,8 @@ class OptionsExpirationEngine:
 
     def _process_single_expiration(
         self,
-        account: Dict[str, Any],
-        position: Dict[str, Any],
+        account: dict[str, Any],
+        position: dict[str, Any],
         underlying_price: float,
         long_equity: int,
         short_equity: int,
@@ -337,12 +347,12 @@ class OptionsExpirationEngine:
 
     def _exercise_long_call(
         self,
-        account: Dict[str, Any],
+        account: dict[str, Any],
         call: Call,
         quantity: int,
         cost_basis: float,
         underlying_price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Exercise long call options."""
         # Buy shares at strike price
         cash_cost = call.strike * abs(quantity) * 100
@@ -371,12 +381,12 @@ class OptionsExpirationEngine:
 
     def _assign_short_call(
         self,
-        account: Dict[str, Any],
+        account: dict[str, Any],
         call: Call,
         quantity: int,
         underlying_price: float,
         long_equity: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Assign short call options."""
         shares_needed = abs(quantity) * 100
         cash_received = call.strike * abs(quantity) * 100
@@ -425,12 +435,12 @@ class OptionsExpirationEngine:
 
     def _exercise_long_put(
         self,
-        account: Dict[str, Any],
+        account: dict[str, Any],
         put: Put,
         quantity: int,
         cost_basis: float,
         underlying_price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Exercise long put options."""
         # Sell shares at strike price (create short position)
         cash_received = put.strike * abs(quantity) * 100
@@ -457,12 +467,12 @@ class OptionsExpirationEngine:
 
     def _assign_short_put(
         self,
-        account: Dict[str, Any],
+        account: dict[str, Any],
         put: Put,
         quantity: int,
         underlying_price: float,
         short_equity: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Assign short put options."""
         shares_to_buy = abs(quantity) * 100
         cash_paid = put.strike * abs(quantity) * 100
@@ -505,14 +515,15 @@ class OptionsExpirationEngine:
                 "shares_destination": "new_long_position",
             }
 
-    def _get_equity_positions(self, positions: List, underlying_symbol: str) -> List:
+    def _get_equity_positions(self, positions: list[dict[str, object]], underlying_symbol: str) -> list[dict[str, object]]:
         """Get non-option positions for an underlying."""
         equity_positions = []
 
         for position in positions:
             if isinstance(position, dict):
-                symbol = position.get("symbol", "")
-                quantity = position.get("quantity", 0)
+                symbol = str(position.get("symbol", ""))
+                quantity_val = position.get("quantity", 0)
+                quantity = int(quantity_val) if isinstance(quantity_val, (int, float, str)) else 0
             else:
                 symbol = position.symbol
                 quantity = position.quantity
@@ -522,12 +533,12 @@ class OptionsExpirationEngine:
                 continue
 
             asset = asset_factory(symbol)
-            if not isinstance(asset, Option) and asset.symbol == underlying_symbol:
+            if asset is not None and not isinstance(asset, Option) and asset.symbol == underlying_symbol:
                 equity_positions.append(position)
 
         return equity_positions
 
-    def _drain_asset(self, positions: List, symbol: str, quantity: int) -> int:
+    def _drain_asset(self, positions: list[dict[str, object]], symbol: str, quantity: int) -> int:
         """
         Reduce asset quantities across positions (FIFO).
 
@@ -545,8 +556,9 @@ class OptionsExpirationEngine:
         target_positions = []
         for pos in positions:
             if isinstance(pos, dict):
-                pos_symbol = pos.get("symbol", "")
-                pos_quantity = pos.get("quantity", 0)
+                pos_symbol = str(pos.get("symbol", ""))
+                pos_quantity_val = pos.get("quantity", 0)
+                pos_quantity = int(pos_quantity_val) if isinstance(pos_quantity_val, (int, float, str)) else 0
             else:
                 pos_symbol = pos.symbol
                 pos_quantity = pos.quantity
@@ -559,14 +571,15 @@ class OptionsExpirationEngine:
         # Drain quantities FIFO
         for position in target_positions:
             if isinstance(position, dict):
-                pos_quantity = position.get("quantity", 0)
+                pos_quantity_val = position.get("quantity", 0)
+                pos_quantity = int(pos_quantity_val) if isinstance(pos_quantity_val, (int, float, str)) else 0
             else:
                 pos_quantity = position.quantity
 
             if abs(remaining_quantity) <= abs(pos_quantity):
                 # This position has enough to complete the drain
                 if isinstance(position, dict):
-                    position["quantity"] += remaining_quantity
+                    position["quantity"] = int(position["quantity"]) + remaining_quantity
                 else:
                     position.quantity += remaining_quantity
                 remaining_quantity = 0
@@ -582,8 +595,8 @@ class OptionsExpirationEngine:
         return remaining_quantity
 
     def _add_position(
-        self, account: Dict[str, Any], symbol: str, quantity: int, cost_basis: float
-    ):
+        self, account: dict[str, Any], symbol: str, quantity: int, cost_basis: float
+    ) -> None:
         """Add quantity to existing position or create new one."""
         # Find existing position
         for position in account.get("positions", []):

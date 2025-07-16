@@ -2,7 +2,7 @@
 FROM open-paper-trading-mcp_app:latest
 
 # Install ADK and its dependencies
-RUN pip install google-generativeai "google-ai-generativelanguage==0.7.0"
+RUN pip install google-generativeai
 
 # Set the working directory
 WORKDIR /app

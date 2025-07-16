@@ -23,7 +23,7 @@ class UserInDB(User):
     hashed_password: str
 
 
-def fake_hash_password(password: str):
+def fake_hash_password(password: str) -> str:
     return "fakehashed" + password
 
 
@@ -37,13 +37,14 @@ fake_users_db = {
 }
 
 
-def get_user(username: str):
+def get_user(username: str) -> Optional[UserInDB]:
     if username in fake_users_db:
         user_dict = fake_users_db[username]
         return UserInDB(**user_dict)
+    return None
 
 
-def authenticate_user(username: str, password: str):
+def authenticate_user(username: str, password: str) -> Union[UserInDB, bool]:
     user = get_user(username)
     if not user:
         return False

@@ -5,7 +5,7 @@ import pytest
 from app.services.advanced_validation import AdvancedOrderValidator, AccountLimits, ValidationSeverity
 from app.schemas.orders import Order, OrderType
 from app.models.trading import Position
-from app.models.assets import Stock, Option
+from app.models.assets import Stock, Option, asset_factory
 from app.models.quotes import Quote, OptionQuote
 from datetime import datetime, date, timedelta
 
@@ -30,7 +30,7 @@ def sample_quotes():
     return {
         "AAPL": Quote(asset=Stock(symbol="AAPL"), quote_date=datetime.now(), price=155.0),
         "SPY251219C00500000": OptionQuote(
-            asset=Option("SPY251219C00500000"),
+            asset=asset_factory("SPY251219C00500000"),
             quote_date=datetime.now(),
             price=10.0,
             underlying_price=500.0,
@@ -50,7 +50,7 @@ def test_validate_expiration_date_too_close(advanced_validator, sample_account_d
     today = date.today()
     yesterday_str = (today - timedelta(days=1)).strftime("%y%m%d")
     expired_option_symbol = f"SPY{yesterday_str}C00500000"
-    expired_option = Option.from_symbol(expired_option_symbol)
+    expired_option = asset_factory(expired_option_symbol)
     
     order = Order(symbol=expired_option_symbol, quantity=1, order_type=OrderType.BTO, price=0.01)
     
