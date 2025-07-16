@@ -2,7 +2,7 @@ from datetime import datetime, date
 from typing import List, Dict, Optional, Union, Any
 from uuid import uuid4
 
-from app.schemas.orders import Order, OrderCreate, OrderStatus
+from app.schemas.orders import Order, OrderCreate, OrderStatus, OrderCondition, OrderType
 from app.models.trading import StockQuote, Position, Portfolio, PortfolioSummary
 from app.models.assets import Option, asset_factory
 from app.models.quotes import Quote, OptionQuote, OptionsChain
@@ -97,6 +97,7 @@ class TradingService:
             order_type=order_data.order_type,
             quantity=order_data.quantity,
             price=order_data.price,
+            condition=order_data.condition if hasattr(order_data, 'condition') else OrderCondition.MARKET,
             created_at=datetime.now(),
         )
 
@@ -126,7 +127,7 @@ class TradingService:
             pos.quantity * (pos.current_price or 0) for pos in self.portfolio_positions
         )
         total_value = self.cash_balance + total_invested
-        total_pnl = sum(pos.unrealized_pnl for pos in self.portfolio_positions)
+        total_pnl = sum(pos.unrealized_pnl or 0 for pos in self.portfolio_positions)
 
         return Portfolio(
             cash_balance=self.cash_balance,
@@ -142,7 +143,7 @@ class TradingService:
             pos.quantity * (pos.current_price or 0) for pos in self.portfolio_positions
         )
         total_value = self.cash_balance + invested_value
-        total_pnl = sum(pos.unrealized_pnl for pos in self.portfolio_positions)
+        total_pnl = sum(pos.unrealized_pnl or 0 for pos in self.portfolio_positions)
 
         return PortfolioSummary(
             total_value=total_value,
@@ -172,6 +173,8 @@ class TradingService:
     ) -> Union[Quote, OptionQuote]:
         """Get enhanced quote with Greeks for options."""
         asset = asset_factory(symbol)
+        if asset is None:
+            raise NotFoundError(f"Invalid symbol: {symbol}")
 
         # Try test data adapter first
         quote = self.quote_adapter.get_quote(asset)
@@ -198,11 +201,14 @@ class TradingService:
         self, underlying: str, expiration_date: Optional[date] = None
     ) -> OptionsChain:
         """Get complete options chain for an underlying."""
-        return self.quote_adapter.get_options_chain(underlying, expiration_date)
+        chain = self.quote_adapter.get_options_chain(underlying, expiration_date)
+        if chain is None:
+            raise NotFoundError(f"No options chain found for {underlying}")
+        return chain
 
     def calculate_greeks(
         self, option_symbol: str, underlying_price: Optional[float] = None
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Optional[float]]:
         """Calculate option Greeks."""
         option = asset_factory(option_symbol)
         if not isinstance(option, Option):
@@ -256,22 +262,18 @@ class TradingService:
             enhanced_positions, self.quote_adapter
         )
 
-    def validate_account_state(self) -> Dict[str, Any]:
+    def validate_account_state(self) -> bool:
         """Validate current account state."""
-        # Mock account data for validation
-        account_data = {
-            "cash_balance": self.cash_balance,
-            "positions": self.portfolio_positions,
-            "orders": self.orders,
-        }
-
-        return self.account_validation.validate_account_state(account_data)
+        return self.account_validation.validate_account_state(
+            cash_balance=self.cash_balance,
+            positions=self.portfolio_positions
+        )
 
     def get_test_scenarios(self) -> Dict[str, Any]:
         """Get available test scenarios for development."""
         return self.quote_adapter.get_test_scenarios()
 
-    def set_test_date(self, date_str: str):
+    def set_test_date(self, date_str: str) -> None:
         """Set test data date for historical scenarios."""
         self.quote_adapter.set_date(date_str)
 
@@ -287,16 +289,17 @@ class TradingService:
         """Get available expiration dates for an underlying symbol."""
         return self.quote_adapter.get_expiration_dates(underlying)
 
-    def create_multi_leg_order(self, order_data) -> Order:
+    def create_multi_leg_order(self, order_data: Any) -> Order:
         """Create a multi-leg order."""
         # For now, create a simple order representation
         # In a real implementation, this would handle complex multi-leg orders
         order = Order(
             id=str(uuid4()),
             symbol=f"MULTI_LEG_{len(order_data.legs)}_LEGS",
-            order_type=order_data.legs[0].order_type if order_data.legs else "buy",
+            order_type=order_data.legs[0].order_type if order_data.legs else OrderType.BUY,
             quantity=sum(leg.quantity for leg in order_data.legs),
             price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
+            condition=getattr(order_data, 'condition', OrderCondition.MARKET),
             status=OrderStatus.FILLED,
             created_at=datetime.now(),
             filled_at=datetime.now(),

@@ -5,11 +5,11 @@ Groups positions into basic strategies for margin calculation and risk analysis.
 Special thanks to /u/EdKaim for the outline of this process.
 """
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Union, cast
 
 from ..models.assets import Option, asset_factory
 from ..models.trading import Position
-from .strategies import (
+from .strategies.models import (
     BasicStrategy,
     AssetStrategy,
     SpreadStrategy,
@@ -72,7 +72,7 @@ def _group_into_basic_strategies_in_underlying(
     if not underlying_positions:
         return []
 
-    strategies = []
+    strategies: List[BasicStrategy] = []
 
     # Calculate equity positions
     long_equity_quantity = sum(
@@ -129,7 +129,7 @@ def _group_into_basic_strategies_in_underlying(
             # Covered call strategy
             strategies.append(
                 CoveredStrategy(
-                    asset=underlying, sell_option=short_call.asset, quantity=1
+                    asset=underlying, sell_option=cast(Option, short_call.asset), quantity=1
                 )
             )
             long_equity.quantity -= 100
@@ -138,7 +138,7 @@ def _group_into_basic_strategies_in_underlying(
             long_call = long_calls.pop(0)
             strategies.append(
                 SpreadStrategy(
-                    buy_option=long_call.asset, sell_option=short_call.asset, quantity=1
+                    buy_option=cast(Option, long_call.asset), sell_option=cast(Option, short_call.asset), quantity=1
                 )
             )
         else:
@@ -151,7 +151,7 @@ def _group_into_basic_strategies_in_underlying(
             # Covered put strategy (short stock covers short put)
             strategies.append(
                 CoveredStrategy(
-                    asset=underlying, sell_option=short_put.asset, quantity=1
+                    asset=underlying, sell_option=cast(Option, short_put.asset), quantity=1
                 )
             )
             short_equity.quantity += 100  # Reduce short position
@@ -160,7 +160,7 @@ def _group_into_basic_strategies_in_underlying(
             long_put = long_puts.pop(0)
             strategies.append(
                 SpreadStrategy(
-                    buy_option=long_put.asset, sell_option=short_put.asset, quantity=1
+                    buy_option=cast(Option, long_put.asset), sell_option=cast(Option, short_put.asset), quantity=1
                 )
             )
         else:
@@ -252,18 +252,19 @@ def normalize_strategy_quantities(
         return []
 
     # Group strategies by type and asset
-    grouped = {}
+    grouped: Dict[Any, List[BasicStrategy]] = {}
 
     for strategy in strategies:
-        if strategy.strategy_type == StrategyType.ASSET and hasattr(strategy, 'asset'):
+        key: Any
+        if isinstance(strategy, AssetStrategy):
             key = (strategy.strategy_type, strategy.asset.symbol)
-        elif strategy.strategy_type == StrategyType.SPREAD:
+        elif isinstance(strategy, SpreadStrategy):
             key = (
                 strategy.strategy_type,
                 strategy.sell_option.symbol,
                 strategy.buy_option.symbol,
             )
-        elif strategy.strategy_type == StrategyType.COVERED:
+        elif isinstance(strategy, CoveredStrategy):
             key = (
                 strategy.strategy_type,
                 strategy.asset.symbol,
@@ -296,7 +297,7 @@ def normalize_strategy_quantities(
 
 def identify_complex_strategies(
     strategies: List[BasicStrategy],
-) -> Dict[str, List[BasicStrategy]]:
+) -> Dict[str, List[Dict[str, Any]]]:
     """
     Identify complex multi-leg strategies from basic strategies.
 
@@ -335,7 +336,7 @@ def _find_iron_condors(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
         s
         for s in strategies
         if (
-            s.strategy_type == StrategyType.SPREAD
+            isinstance(s, SpreadStrategy)
             and s.sell_option.option_type == "call"
         )
     ]
@@ -344,7 +345,7 @@ def _find_iron_condors(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
         s
         for s in strategies
         if (
-            s.strategy_type == StrategyType.SPREAD
+            isinstance(s, SpreadStrategy)
             and s.sell_option.option_type == "put"
         )
     ]
@@ -373,7 +374,7 @@ def _find_iron_condors(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
 
 def _find_butterflies(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
     """Find butterfly strategies."""
-    butterflies = []
+    butterflies: List[Dict[str, Any]] = []
 
     # Butterfly = buy 2 middle strikes, sell 1 lower + 1 higher
     # This is complex to detect from spreads, would need position-level analysis
@@ -386,26 +387,29 @@ def _find_straddles_strangles(strategies: List[BasicStrategy]) -> List[Dict[str,
     straddles_strangles = []
 
     # Group option strategies by expiration and underlying
-    option_groups = {}
+    option_groups: Dict[Tuple[str, str], List[AssetStrategy]] = {}
 
     for strategy in strategies:
-        if strategy.strategy_type == StrategyType.ASSET and isinstance(
+        if isinstance(strategy, AssetStrategy) and isinstance(
             strategy.asset, Option
         ):
-            key = (strategy.asset.underlying.symbol, strategy.asset.expiration_date)
+            option = strategy.asset  # Already confirmed to be Option via isinstance
+            key = (option.underlying.symbol, option.expiration_date.isoformat())
             if key not in option_groups:
                 option_groups[key] = []
             option_groups[key].append(strategy)
 
     # Look for straddles (same strike) and strangles (different strikes)
     for key, group in option_groups.items():
-        calls = [s for s in group if s.asset.option_type == "call"]
-        puts = [s for s in group if s.asset.option_type == "put"]
+        calls = [s for s in group if cast(Option, s.asset).option_type == "call"]
+        puts = [s for s in group if cast(Option, s.asset).option_type == "put"]
 
         for call in calls:
             for put in puts:
+                call_option = cast(Option, call.asset)
+                put_option = cast(Option, put.asset)
                 if call.quantity == put.quantity and call.quantity > 0:  # Both long
-                    if call.asset.strike == put.asset.strike:
+                    if call_option.strike == put_option.strike:
                         # Long straddle
                         straddles_strangles.append(
                             {
@@ -413,7 +417,7 @@ def _find_straddles_strangles(strategies: List[BasicStrategy]) -> List[Dict[str,
                                 "call": call,
                                 "put": put,
                                 "quantity": call.quantity,
-                                "strike": call.asset.strike,
+                                "strike": call_option.strike,
                             }
                         )
                     else:
@@ -424,8 +428,8 @@ def _find_straddles_strangles(strategies: List[BasicStrategy]) -> List[Dict[str,
                                 "call": call,
                                 "put": put,
                                 "quantity": call.quantity,
-                                "call_strike": call.asset.strike,
-                                "put_strike": put.asset.strike,
+                                "call_strike": call_option.strike,
+                                "put_strike": put_option.strike,
                             }
                         )
 

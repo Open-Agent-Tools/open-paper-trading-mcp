@@ -56,7 +56,7 @@ def authenticate_user(username: str, password: str) -> Union[UserInDB, bool]:
 @router.post("/token", response_model=Token, deprecated=True)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()) -> dict[str, str]:
     user = authenticate_user(form_data.username, form_data.password)
-    if not user:
+    if not user or user is True:  # user can be True from authenticate_user
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

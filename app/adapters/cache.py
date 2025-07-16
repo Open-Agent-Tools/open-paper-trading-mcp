@@ -251,11 +251,13 @@ class CachedQuoteAdapter:
             cache: Cache instance, creates new one if None
         """
         self.adapter = adapter
-        self.cache = cache or QuoteCache(default_ttl=adapter.config.cache_ttl)
+        config = getattr(adapter, 'config', None)
+        cache_ttl = config.cache_ttl if config and hasattr(config, 'cache_ttl') else 300.0
+        self.cache = cache or QuoteCache(default_ttl=cache_ttl)
 
     def get_quote(self, symbol: str) -> Optional[Union[Quote, OptionQuote]]:
         """Get quote with caching."""
-        cache_key = f"quote:{symbol}:{self.adapter.name}"
+        cache_key = f"quote:{symbol}:{getattr(self.adapter, 'name', 'unknown')}"
 
         # Try cache first
         cached_quote = self.cache.get(cache_key)
@@ -263,7 +265,11 @@ class CachedQuoteAdapter:
             return cached_quote
 
         # Fetch from adapter
-        quote = self.adapter.get_quote(symbol)
+        from ..models.assets import asset_factory
+        asset = asset_factory(symbol)
+        if asset is None:
+            return None
+        quote = self.adapter.get_quote(asset)
         if quote is not None and isinstance(quote, (Quote, OptionQuote)):
             self.cache.put(cache_key, quote)
             return quote
@@ -277,7 +283,7 @@ class CachedQuoteAdapter:
 
         # Check cache for each symbol
         for symbol in symbols:
-            cache_key = f"quote:{symbol}:{self.adapter.name}"
+            cache_key = f"quote:{symbol}:{getattr(self.adapter, 'name', 'unknown')}"
             cached_quote = self.cache.get(cache_key)
             if cached_quote is not None and isinstance(cached_quote, (Quote, OptionQuote)):
                 results[symbol] = cached_quote
@@ -286,9 +292,13 @@ class CachedQuoteAdapter:
 
         # Fetch uncached symbols
         if uncached_symbols:
-            fresh_quotes = self.adapter.get_quotes(uncached_symbols)
-            for symbol, quote in fresh_quotes.items():
-                cache_key = f"quote:{symbol}:{self.adapter.name}"
+            from ..models.assets import asset_factory
+            uncached_assets = [asset_factory(symbol) for symbol in uncached_symbols]
+            valid_assets = [asset for asset in uncached_assets if asset is not None]
+            fresh_quotes = self.adapter.get_quotes(valid_assets)
+            for asset, quote in fresh_quotes.items():
+                symbol = asset.symbol if hasattr(asset, 'symbol') else str(asset)
+                cache_key = f"quote:{symbol}:{getattr(self.adapter, 'name', 'unknown')}"
                 self.cache.put(cache_key, quote)
                 results[symbol] = quote
 
@@ -299,7 +309,7 @@ class CachedQuoteAdapter:
     ) -> Optional[OptionsChain]:
         """Get options chain with caching."""
         exp_str = expiration.isoformat() if expiration else "all"
-        cache_key = f"chain:{underlying}:{exp_str}:{self.adapter.name}"
+        cache_key = f"chain:{underlying}:{exp_str}:{getattr(self.adapter, 'name', 'unknown')}"
 
         # Try cache first
         cached_chain = self.cache.get(cache_key)
@@ -307,18 +317,21 @@ class CachedQuoteAdapter:
             return cached_chain
 
         # Fetch from adapter
-        chain = self.adapter.get_options_chain(underlying, expiration)
+        if hasattr(self.adapter, 'get_options_chain'):
+            chain = self.adapter.get_options_chain(underlying, expiration)
+        else:
+            return None
         if chain is not None and isinstance(chain, OptionsChain):
             # Use shorter TTL for options chains as they change more frequently
             ttl = min(self.cache.default_ttl, 30.0)  # Max 30 seconds for chains
             self.cache.put(cache_key, chain, ttl)
-            return chain
+            return chain  # type: ignore[no-any-return]
 
         return None
 
     def get_expiration_dates(self, underlying: str) -> List[Any]:
         """Get expiration dates with caching."""
-        cache_key = f"expirations:{underlying}:{self.adapter.name}"
+        cache_key = f"expirations:{underlying}:{getattr(self.adapter, 'name', 'unknown')}"
 
         # Try cache first
         cached_dates = self.cache.get(cache_key)
@@ -326,12 +339,15 @@ class CachedQuoteAdapter:
             return cached_dates
 
         # Fetch from adapter
-        dates = self.adapter.get_expiration_dates(underlying)
+        if hasattr(self.adapter, 'get_expiration_dates'):
+            dates = self.adapter.get_expiration_dates(underlying)
+        else:
+            return []
         if dates and isinstance(dates, list):
             # Cache for longer as expiration dates don't change often
             ttl = max(self.cache.default_ttl, 300.0)  # Min 5 minutes
             self.cache.put(cache_key, dates, ttl)
-            return dates
+            return dates  # type: ignore[no-any-return]
 
         return []
 

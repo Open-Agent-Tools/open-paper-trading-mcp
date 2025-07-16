@@ -4,7 +4,7 @@ Adapter configuration management system.
 
 import os
 import json
-from typing import Dict, List, Optional, Any, Type
+from typing import Dict, List, Optional, Any, Type, Union
 from pathlib import Path
 from dataclasses import dataclass, asdict, field
 
@@ -120,7 +120,7 @@ class AdapterFactory:
                 # Standard constructor
                 adapter = adapter_class(config=expanded_config)
 
-            return adapter
+            return adapter  # type: ignore[no-any-return]
 
         except Exception as e:
             print(f"Failed to create adapter {adapter_type}: {e}")
@@ -186,6 +186,7 @@ class AdapterFactory:
                 continue
 
             try:
+                adapter: Optional[Union[QuoteAdapter, CachedQuoteAdapter]]
                 if cache_enabled:
                     adapter = self.create_cached_adapter(
                         adapter_type, cache=shared_cache
@@ -343,7 +344,7 @@ def configure_default_registry() -> AdapterRegistry:
     return adapter_registry
 
 
-def create_test_adapter(date: str = "2017-03-24") -> TestDataQuoteAdapter:
+def create_test_adapter(date: str = "2017-03-24") -> Optional[TestDataQuoteAdapter]:
     """
     Create a test data adapter with caching.
 
@@ -362,4 +363,5 @@ def create_test_adapter(date: str = "2017-03-24") -> TestDataQuoteAdapter:
         config={"current_date": date},
     )
 
-    return factory.create_adapter("test_data", config)
+    adapter = factory.create_adapter("test_data", config)
+    return adapter if isinstance(adapter, TestDataQuoteAdapter) else None

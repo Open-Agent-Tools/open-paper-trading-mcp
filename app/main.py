@@ -5,7 +5,7 @@ import uvicorn
 import os
 import threading
 from contextlib import asynccontextmanager
-from typing import Dict, Any, AsyncGenerator
+from typing import Dict, Any, AsyncGenerator, Optional
 
 from app.api.routes import api_router
 from app.core.config import settings
@@ -26,7 +26,7 @@ try:
     mcp = paper_trading_mcp
 
 except ImportError:
-    mcp = None
+    mcp: Optional[FastMCP[Any]] = None
 
 
 def initialize_database() -> None:
