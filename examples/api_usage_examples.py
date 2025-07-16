@@ -16,13 +16,13 @@ class RestApiExamples:
     
     def __init__(self, base_url: str = "http://localhost:2080"):
         self.base_url = base_url
-        self.session = None
+        self.session: aiohttp.ClientSession | None = None
         
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'RestApiExamples':
         self.session = aiohttp.ClientSession()
         return self
         
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.session:
             await self.session.close()
             
@@ -36,6 +36,7 @@ class RestApiExamples:
             "initial_cash": 50000.00
         }
         
+        assert self.session is not None
         async with self.session.post(
             f"{self.base_url}/api/v1/accounts",
             json=account_data
@@ -49,6 +50,7 @@ class RestApiExamples:
         """Example: Get account information and balances."""
         print(f"=== GET ACCOUNT INFO: {account_id} ===")
         
+        assert self.session is not None
         async with self.session.get(
             f"{self.base_url}/api/v1/accounts/{account_id}"
         ) as response:
@@ -74,6 +76,7 @@ class RestApiExamples:
             "condition": "LIMIT"
         }
         
+        assert self.session is not None
         async with self.session.post(
             f"{self.base_url}/api/v1/orders",
             json=order_data

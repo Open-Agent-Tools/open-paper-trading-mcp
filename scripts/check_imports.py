@@ -28,7 +28,7 @@ class ImportChecker:
         # Add project root to sys.path for import resolution
         sys.path.insert(0, str(project_root))
         
-    def check_all_files(self):
+    def check_all_files(self) -> None:
         """Check all Python files in the project."""
         print(f"Scanning Python files in {self.project_root}...")
         
@@ -41,7 +41,7 @@ class ImportChecker:
         
         self.print_report()
     
-    def check_file(self, file_path: Path):
+    def check_file(self, file_path: Path) -> None:
         """Check all imports in a single file."""
         self.checked_files += 1
         relative_path = file_path.relative_to(self.project_root)
@@ -114,7 +114,7 @@ class ImportChecker:
         except ValueError:
             return ''
     
-    def check_import(self, imp: dict, file_path: Path, relative_path: Path):
+    def check_import(self, imp: Dict[str, str], file_path: Path, relative_path: Path) -> None:
         """Check a single import statement."""
         line_info = f"{relative_path}:{imp['line']}"
         
@@ -252,7 +252,7 @@ class ImportChecker:
             if 'sqlalchemy' not in module_name:
                 self.warnings.append(f"{line_info}: Database model '{import_name}' should be imported from models.database or sqlalchemy")
     
-    def print_report(self):
+    def print_report(self) -> None:
         """Print the final report."""
         print(f"\n{'='*80}")
         print(f"Import Validation Report")
@@ -285,7 +285,7 @@ class ImportChecker:
         return 1 if self.errors else 0
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     project_root = Path(__file__).parent.parent
     checker = ImportChecker(project_root)

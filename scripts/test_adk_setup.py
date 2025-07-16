@@ -17,7 +17,7 @@ def check_file_exists(path: str, description: str) -> bool:
         return False
 
 
-def check_directory_structure():
+def check_directory_structure() -> bool:
     """Check if all required directories and files exist."""
     print("🔍 Checking directory structure...")
 
@@ -41,7 +41,7 @@ def check_directory_structure():
     return all_exist
 
 
-def check_test_content():
+def check_test_content() -> bool:
     """Check if test file has correct content."""
     print("\n🔍 Checking test content...")
 
@@ -97,7 +97,7 @@ def check_test_content():
         return False
 
 
-def check_mcp_server():
+def check_mcp_server() -> bool:
     """Check if MCP server can be imported."""
     print("\n🔍 Checking MCP server...")
 
@@ -122,7 +122,7 @@ def check_mcp_server():
         return False
 
 
-def check_environment():
+def check_environment() -> bool:
     """Check environment variables."""
     print("\n🔍 Checking environment...")
 
@@ -147,7 +147,7 @@ def check_environment():
     return all_good
 
 
-def main():
+def main() -> None:
     """Main test function."""
     print("🧪 Testing ADK Evaluation Setup\n")
 

@@ -14,15 +14,15 @@ from collections import defaultdict, deque
 class ImportAnalyzer(ast.NodeVisitor):
     """AST visitor to extract import information from Python files."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.imports = []
         self.from_imports = []
     
-    def visit_Import(self, node):
+    def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             self.imports.append(alias.name)
     
-    def visit_ImportFrom(self, node):
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module:
             for alias in node.names:
                 self.from_imports.append((node.module, alias.name))
@@ -82,7 +82,7 @@ def find_cycles(graph: Dict[str, Set[str]]) -> List[List[str]]:
     cycles = []
     visited = set()
     rec_stack = set()
-    path = []
+    path: List[str] = []
     
     def dfs(node: str) -> bool:
         if node in rec_stack:
@@ -114,7 +114,7 @@ def find_cycles(graph: Dict[str, Set[str]]) -> List[List[str]]:
     return cycles
 
 
-def analyze_project_dependencies():
+def analyze_project_dependencies() -> bool:
     """Analyze the entire project for circular dependencies."""
     app_root = Path('app')
     if not app_root.exists():

@@ -17,7 +17,7 @@ def fix_order_constructor_patterns(content: str) -> str:
     # Pattern to match Order with asset field and negative quantity
     pattern1 = r'Order\(asset=([^,]+),\s*quantity=(-\d+),\s*order_type=([^,)]+)([^)]*)\)\.to_leg\(\)'
     
-    def replace_order_asset_negative(match):
+    def replace_order_asset_negative(match: re.Match[str]) -> str:
         asset = match.group(1)
         quantity = abs(int(match.group(2)))  # Make positive
         order_type = match.group(3)
@@ -30,7 +30,7 @@ def fix_order_constructor_patterns(content: str) -> str:
     # Should become: OrderLeg(asset=..., quantity=..., ...)
     pattern2 = r'Order\(asset=([^,]+),\s*quantity=(\d+),\s*order_type=([^,)]+)([^)]*)\)\.to_leg\(\)'
     
-    def replace_order_asset_positive(match):
+    def replace_order_asset_positive(match: re.Match[str]) -> str:
         asset = match.group(1)
         quantity = match.group(2)
         order_type = match.group(3)
@@ -49,7 +49,7 @@ def fix_option_constructor_patterns(content: str) -> str:
     # Should become: Call(underlying_asset=Stock(symbol="SYMBOL"), ...)
     pattern = r'(Call|Put)\(underlying_symbol="([^"]+)"'
     
-    def replace_option_constructor(match):
+    def replace_option_constructor(match: re.Match[str]) -> str:
         option_type = match.group(1)
         symbol = match.group(2)
         return f'{option_type}(underlying_asset=Stock(symbol="{symbol}")'
@@ -109,7 +109,7 @@ def process_test_file(file_path: Path) -> bool:
         return False
 
 
-def main():
+def main() -> None:
     """Main function to process all test files."""
     
     test_dir = Path("tests")

@@ -15,7 +15,7 @@ class MissingClassChecker:
         self.project_root = project_root
         self.errors: List[str] = []
         
-    def check_file_imports(self, file_path: Path):
+    def check_file_imports(self, file_path: Path) -> None:
         """Check imports in a single file for missing classes/functions."""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -56,7 +56,7 @@ class MissingClassChecker:
                             f"'{alias.name}' not found in module '{module}'"
                         )
     
-    def find_module_file(self, module: str) -> Path:
+    def find_module_file(self, module: str) -> Path | None:
         """Find the file for a given module path."""
         parts = module.split('.')
         if parts[0] != 'app':
@@ -125,7 +125,7 @@ class MissingClassChecker:
             
         return False
     
-    def check_all_files(self):
+    def check_all_files(self) -> int:
         """Check all Python files in the project."""
         print(f"Checking for missing classes/functions in {self.project_root}...")
         
@@ -147,7 +147,7 @@ class MissingClassChecker:
         return len(self.errors)
 
 
-def main():
+def main() -> None:
     project_root = Path(__file__).parent.parent
     checker = MissingClassChecker(project_root)
     error_count = checker.check_all_files()
