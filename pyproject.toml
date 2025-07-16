@@ -5,3 +5,13 @@ norecursedirs = "reference_code"
 markers = [
     "asyncio"
 ]
+
+[tool.mypy]
+python_version = "3.11"
+exclude = [
+    "reference_code/",
+    "examples/",
+]
+ignore_missing_imports = true
+warn_return_any = false
+warn_unused_ignores = false
