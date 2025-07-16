@@ -7,6 +7,34 @@ This document provides project-specific context and conventions to guide Gemini'
 -   **Purpose**: A paper trading simulation platform with a dual interface: a traditional REST API (FastAPI) and an AI agent interface (FastMCP).
 -   **Architecture**: A monolithic Python application that runs both the FastAPI and FastMCP servers in the same process. This allows them to share the core business logic from the `TradingService`. The application is orchestrated with Docker Compose, which manages the app container and a dedicated PostgreSQL database container.
 
+### Architecture Diagram
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│   REST Client   │     │    AI Agent     │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│  FastAPI :2080  │     │ FastMCP :2081   │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         └───────────┬───────────┘
+                     ▼
+           ┌─────────────────┐
+           │ TradingService  │
+           │   (Shared)      │
+           └────────┬────────┘
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│   PostgreSQL    │     │   Robinhood     │
+│   Database      │     │      API        │
+│ (Trading State) │     │ (Market Data)   │
+└─────────────────┘     └─────────────────┘
+```
+
 ## 2. Development Environment
 
 -   **Primary Workflow**: The project is designed to be run with Docker Compose. The primary command to start the development environment is:

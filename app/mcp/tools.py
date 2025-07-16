@@ -1,4 +1,3 @@
-from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 import json
 from datetime import date, datetime
@@ -21,10 +20,6 @@ from app.services.strategies import (
 from app.services.expiration import OptionsExpirationEngine
 from app.services.pre_trade_risk import analyze_pre_trade_risk, quick_risk_check
 from app.services.advanced_validation import create_default_account_limits
-
-
-# Initialize FastMCP
-mcp = FastMCP("Open Paper Trading MCP")
 
 
 class GetQuoteArgs(BaseModel):
@@ -52,7 +47,6 @@ class GetPositionArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol to get position for")
 
 
-@mcp.tool()
 def get_stock_quote(args: GetQuoteArgs) -> str:
     """[DEPRECATED] Get current stock quote for a symbol."""
     try:
@@ -72,7 +66,6 @@ def get_stock_quote(args: GetQuoteArgs) -> str:
         return f"Error getting quote: {str(e)}"
 
 
-@mcp.tool()
 def create_buy_order(args: CreateOrderArgs) -> str:
     """Create a buy order for a stock."""
     try:
@@ -101,7 +94,6 @@ def create_buy_order(args: CreateOrderArgs) -> str:
         return f"Error creating buy order: {str(e)}"
 
 
-@mcp.tool()
 def create_sell_order(args: CreateOrderArgs) -> str:
     """Create a sell order for a stock."""
     try:
@@ -130,7 +122,6 @@ def create_sell_order(args: CreateOrderArgs) -> str:
         return f"Error creating sell order: {str(e)}"
 
 
-@mcp.tool()
 def get_all_orders() -> str:
     """Get all trading orders."""
     try:
@@ -158,7 +149,6 @@ def get_all_orders() -> str:
         return f"Error getting orders: {str(e)}"
 
 
-@mcp.tool()
 def get_order(args: GetOrderArgs) -> str:
     """Get a specific order by ID."""
     try:
@@ -182,7 +172,6 @@ def get_order(args: GetOrderArgs) -> str:
         return f"Error getting order: {str(e)}"
 
 
-@mcp.tool()
 def cancel_order(args: CancelOrderArgs) -> str:
     """Cancel a specific order."""
     try:
@@ -192,7 +181,6 @@ def cancel_order(args: CancelOrderArgs) -> str:
         return f"Error cancelling order: {str(e)}"
 
 
-@mcp.tool()
 def get_portfolio() -> str:
     """Get complete portfolio information."""
     try:
@@ -224,7 +212,6 @@ def get_portfolio() -> str:
         return f"Error getting portfolio: {str(e)}"
 
 
-@mcp.tool()
 def get_portfolio_summary() -> str:
     """Get portfolio summary with key metrics."""
     try:
@@ -245,7 +232,6 @@ def get_portfolio_summary() -> str:
         return f"Error getting portfolio summary: {str(e)}"
 
 
-@mcp.tool()
 def get_all_positions() -> str:
     """Get all portfolio positions."""
     try:
@@ -267,7 +253,6 @@ def get_all_positions() -> str:
         return f"Error getting positions: {str(e)}"
 
 
-@mcp.tool()
 def get_position(args: GetPositionArgs) -> str:
     """Get a specific position by symbol."""
     try:
@@ -342,7 +327,6 @@ class PreTradeAnalysisArgs(BaseModel):
     options_level: int = Field(2, description="Account options trading level")
 
 
-@mcp.tool()
 def get_options_chain(args: GetOptionsChainArgs) -> str:
     """Get options chain for an underlying symbol with filtering capabilities."""
     try:
@@ -423,7 +407,6 @@ def get_options_chain(args: GetOptionsChainArgs) -> str:
         return f"Error getting options chain: {str(e)}"
 
 
-@mcp.tool()
 def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
     """Get available expiration dates for an underlying symbol."""
     try:
@@ -443,7 +426,6 @@ def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
         return f"Error getting expiration dates: {str(e)}"
 
 
-@mcp.tool()
 def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
     """Create a multi-leg options order (spreads, straddles, etc.)."""
     try:
@@ -493,7 +475,6 @@ def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
         return f"Error creating multi-leg order: {str(e)}"
 
 
-@mcp.tool()
 def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
     """Calculate Greeks for an option symbol."""
     try:
@@ -521,7 +502,6 @@ def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
         return f"Error calculating Greeks: {str(e)}"
 
 
-@mcp.tool()
 def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
     """Get comprehensive strategy analysis for current portfolio."""
     try:
@@ -619,7 +599,6 @@ def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
         return f"Error in strategy analysis: {str(e)}"
 
 
-@mcp.tool()
 def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
     """Simulate option expiration processing for current portfolio."""
     try:
@@ -687,7 +666,6 @@ def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
         return f"Error simulating option expiration: {str(e)}"
 
 
-@mcp.tool()
 def analyze_pre_trade_risk_advanced(args: PreTradeAnalysisArgs) -> str:
     """Perform comprehensive pre-trade risk analysis for an order."""
     try:
@@ -819,7 +797,6 @@ def analyze_pre_trade_risk_advanced(args: PreTradeAnalysisArgs) -> str:
         return f"Error in pre-trade analysis: {str(e)}"
 
 
-@mcp.tool()
 def quick_order_risk_check(args: PreTradeAnalysisArgs) -> str:
     """Perform quick risk assessment for an order without full analysis."""
     try:
@@ -882,3 +859,47 @@ def quick_order_risk_check(args: PreTradeAnalysisArgs) -> str:
 
     except Exception as e:
         return f"Error in quick risk check: {str(e)}"
+
+
+class FindTradableOptionsArgs(BaseModel):
+    symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
+    expiration_date: Optional[str] = Field(
+        None, description="Expiration date in YYYY-MM-DD format"
+    )
+    option_type: Optional[str] = Field(None, description="Option type: 'call' or 'put'")
+
+
+class GetOptionMarketDataArgs(BaseModel):
+    option_id: str = Field(..., description="Option symbol or ID")
+
+
+def find_tradable_options(args: FindTradableOptionsArgs) -> str:
+    """
+    Find tradable options for a symbol with optional filtering.
+    
+    This function provides a unified interface for options discovery
+    that works with both test data and live market data.
+    """
+    try:
+        result = trading_service.find_tradable_options(
+            args.symbol, 
+            args.expiration_date, 
+            args.option_type
+        )
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return f"Error finding tradable options: {str(e)}"
+
+
+def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
+    """
+    Get market data for a specific option contract.
+    
+    Provides comprehensive option market data including Greeks,
+    pricing, and volume information.
+    """
+    try:
+        result = trading_service.get_option_market_data(args.option_id)
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return f"Error getting option market data: {str(e)}"

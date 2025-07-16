@@ -4,13 +4,10 @@ MCP tools for live options data operations.
 
 import asyncio
 from typing import Any, Dict, Optional
-from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 import robin_stocks.robinhood as rh
 from app.auth.session_manager import get_session_manager
 from app.core.logging import logger
-
-mcp = FastMCP("Options Data Tools")
 
 
 class GetOptionsChainsArgs(BaseModel):
@@ -31,7 +28,6 @@ class GetOptionMarketDataArgs(BaseModel):
     option_id: str = Field(..., description="Unique option contract ID")
 
 
-@mcp.tool()
 async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
     """
     Get complete option chains for a stock symbol.
@@ -67,7 +63,6 @@ async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-@mcp.tool()
 async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]:
     """
     Find tradable options for a symbol with optional filtering.
@@ -119,7 +114,6 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]
         return {"error": str(e)}
 
 
-@mcp.tool()
 async def get_option_market_data(args: GetOptionMarketDataArgs) -> Dict[str, Any]:
     """
     Get market data for a specific option contract by ID.

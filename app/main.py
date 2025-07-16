@@ -15,10 +15,10 @@ from app.models.database.base import Base
 from app.auth.robinhood_auth import get_robinhood_client
 from app.core.logging import setup_logging
 
-# Import all MCP tool instances
+# Import the unified MCP server instance
 mcp_instance: Optional[Any] = None
 try:
-    from app.mcp.tools import mcp as mcp_instance
+    from app.mcp.server import mcp as mcp_instance
 
 except ImportError:
     pass

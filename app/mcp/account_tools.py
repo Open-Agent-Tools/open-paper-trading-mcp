@@ -2,6 +2,4 @@
 MCP tools for paper trading account operations.
 """
 
-from fastmcp import FastMCP
-
-mcp = FastMCP("Account Tools")
+# No tools defined yet - functions will be added here as needed

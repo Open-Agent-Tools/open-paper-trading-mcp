@@ -539,3 +539,46 @@ class OptionsChain(BaseModel):
                 "avg_delta": sum(deltas) / len(deltas) if deltas else None,
             },
         }
+
+
+class OptionsChainResponse(BaseModel):
+    """API response for options chain data."""
+    
+    underlying_symbol: str = Field(..., description="Underlying asset symbol")
+    underlying_price: Optional[float] = Field(None, description="Current underlying price")
+    expiration_date: Optional[str] = Field(None, description="Expiration date (ISO format)")
+    quote_time: str = Field(..., description="Quote timestamp (ISO format)")
+    calls: List[Dict[str, Any]] = Field(default_factory=list, description="Call options data")
+    puts: List[Dict[str, Any]] = Field(default_factory=list, description="Put options data")
+    data_source: str = Field(..., description="Data source identifier")
+    cached: bool = Field(False, description="Whether data was served from cache")
+
+
+class GreeksResponse(BaseModel):
+    """API response for option Greeks data."""
+    
+    option_symbol: str = Field(..., description="Option symbol")
+    underlying_symbol: str = Field(..., description="Underlying asset symbol")
+    strike: float = Field(..., description="Strike price")
+    expiration_date: str = Field(..., description="Expiration date (ISO format)")
+    option_type: str = Field(..., description="Option type (call/put)")
+    days_to_expiration: Optional[int] = Field(None, description="Days to expiration")
+    
+    # Greeks
+    delta: Optional[float] = Field(None, description="Delta")
+    gamma: Optional[float] = Field(None, description="Gamma")
+    theta: Optional[float] = Field(None, description="Theta")
+    vega: Optional[float] = Field(None, description="Vega")
+    rho: Optional[float] = Field(None, description="Rho")
+    charm: Optional[float] = Field(None, description="Charm")
+    vanna: Optional[float] = Field(None, description="Vanna")
+    speed: Optional[float] = Field(None, description="Speed")
+    zomma: Optional[float] = Field(None, description="Zomma")
+    color: Optional[float] = Field(None, description="Color")
+    
+    # Additional data
+    implied_volatility: Optional[float] = Field(None, description="Implied volatility")
+    underlying_price: Optional[float] = Field(None, description="Underlying price")
+    option_price: Optional[float] = Field(None, description="Option price")
+    data_source: str = Field(..., description="Data source identifier")
+    cached: bool = Field(False, description="Whether data was served from cache")

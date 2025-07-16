@@ -60,6 +60,34 @@ The application runs both servers in a single Python process (`app/main.py`):
 - MCP server runs in a background thread (port 2081)
 - Both share the same `TradingService` instance in memory
 
+### Architecture Diagram
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│   REST Client   │     │    AI Agent     │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│  FastAPI :2080  │     │ FastMCP :2081   │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         └───────────┬───────────┘
+                     ▼
+           ┌─────────────────┐
+           │ TradingService  │
+           │   (Shared)      │
+           └────────┬────────┘
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐
+│   PostgreSQL    │     │   Robinhood     │
+│   Database      │     │      API        │
+│ (Trading State) │     │ (Market Data)   │
+└─────────────────┘     └─────────────────┘
+```
+
 ### Core Components
 
 1. **TradingService** (`app/services/trading_service.py`):

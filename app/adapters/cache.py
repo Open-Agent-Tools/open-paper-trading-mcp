@@ -339,7 +339,7 @@ class CachedQuoteAdapter:
             # Use shorter TTL for options chains as they change more frequently
             ttl = min(self.cache.default_ttl, 30.0)  # Max 30 seconds for chains
             self.cache.put(cache_key, chain, ttl)
-            return chain  # type: ignore[no-any-return]
+            return chain
 
         return None
 

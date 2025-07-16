@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.accounts import Account
 from app.schemas.orders import Order
-from app.models.quotes import Quote
+from app.models.quotes import Quote, OptionsChain
 from app.models.assets import Asset
 
 
@@ -126,6 +126,13 @@ class QuoteAdapter(ABC):
         self, underlying: str, expiration_date: Optional[datetime] = None
     ) -> List[Asset]:
         """Get option chain for an underlying."""
+        pass
+
+    @abstractmethod
+    def get_options_chain(
+        self, underlying: str, expiration_date: Optional[datetime] = None
+    ) -> Optional["OptionsChain"]:
+        """Get complete options chain for an underlying."""
         pass
 
     @abstractmethod
