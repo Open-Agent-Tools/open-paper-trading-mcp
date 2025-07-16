@@ -18,15 +18,23 @@ class Position(BaseModel):
     symbol: str = Field(..., description="Asset symbol")
     quantity: int = Field(..., description="Number of shares/contracts owned")
     avg_price: float = Field(..., description="Average purchase price (cost basis)")
-    current_price: Optional[float] = Field(default=None, description="Current market price")
-    unrealized_pnl: Optional[float] = Field(default=None, description="Unrealized profit/loss")
+    current_price: Optional[float] = Field(
+        default=None, description="Current market price"
+    )
+    unrealized_pnl: Optional[float] = Field(
+        default=None, description="Unrealized profit/loss"
+    )
     realized_pnl: float = Field(default=0.0, description="Realized profit/loss")
 
     # Asset information
-    asset: Optional[Asset] = Field(default=None, description="Asset object with details")
+    asset: Optional[Asset] = Field(
+        default=None, description="Asset object with details"
+    )
 
     # Options-specific fields (None for stocks)
-    option_type: Optional[str] = Field(default=None, description="Option type: call or put")
+    option_type: Optional[str] = Field(
+        default=None, description="Option type: call or put"
+    )
     strike: Optional[float] = Field(default=None, description="Strike price")
     expiration_date: Optional[date] = Field(default=None, description="Expiration date")
     underlying_symbol: Optional[str] = Field(
@@ -96,7 +104,9 @@ class Position(BaseModel):
         pnl = (price - self.avg_price) * self.quantity * self.multiplier
         return pnl
 
-    def update_market_data(self, current_price: float, quote: Optional[Any] = None) -> None:
+    def update_market_data(
+        self, current_price: float, quote: Optional[Any] = None
+    ) -> None:
         """Update position with current market data and Greeks."""
         self.current_price = current_price
         self.unrealized_pnl = self.calculate_unrealized_pnl(current_price)
@@ -104,19 +114,39 @@ class Position(BaseModel):
         # Update Greeks if quote provided and this is an options position
         if quote is not None and self.is_option and hasattr(quote, "delta"):
             delta_val = getattr(quote, "delta", None)
-            self.delta = delta_val * self.quantity * self.multiplier if delta_val is not None else None
-            
+            self.delta = (
+                delta_val * self.quantity * self.multiplier
+                if delta_val is not None
+                else None
+            )
+
             gamma_val = getattr(quote, "gamma", None)
-            self.gamma = gamma_val * self.quantity * self.multiplier if gamma_val is not None else None
-            
+            self.gamma = (
+                gamma_val * self.quantity * self.multiplier
+                if gamma_val is not None
+                else None
+            )
+
             theta_val = getattr(quote, "theta", None)
-            self.theta = theta_val * self.quantity * self.multiplier if theta_val is not None else None
-            
+            self.theta = (
+                theta_val * self.quantity * self.multiplier
+                if theta_val is not None
+                else None
+            )
+
             vega_val = getattr(quote, "vega", None)
-            self.vega = vega_val * self.quantity * self.multiplier if vega_val is not None else None
-            
+            self.vega = (
+                vega_val * self.quantity * self.multiplier
+                if vega_val is not None
+                else None
+            )
+
             rho_val = getattr(quote, "rho", None)
-            self.rho = rho_val * self.quantity * self.multiplier if rho_val is not None else None
+            self.rho = (
+                rho_val * self.quantity * self.multiplier
+                if rho_val is not None
+                else None
+            )
             self.iv = getattr(quote, "iv", None)
 
     def get_close_cost(self, current_price: Optional[float] = None) -> Optional[float]:
@@ -130,7 +160,9 @@ class Position(BaseModel):
         # Short position: buy (positive cost = pay money)
         return -price * self.quantity * self.multiplier
 
-    def simulate_close(self, current_price: Optional[float] = None) -> Dict[str, Union[float, str]]:
+    def simulate_close(
+        self, current_price: Optional[float] = None
+    ) -> Dict[str, Union[float, str]]:
         """Simulate closing the position and return impact."""
         price = current_price or self.current_price
         if price is None:
@@ -138,7 +170,7 @@ class Position(BaseModel):
 
         close_cost = self.get_close_cost(price)
         realized_pnl = self.calculate_unrealized_pnl(price)
-        
+
         if close_cost is None or realized_pnl is None:
             return {"error": "Unable to calculate close cost or realized PnL"}
 

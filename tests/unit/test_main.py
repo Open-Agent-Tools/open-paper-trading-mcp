@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 
-def test_root_endpoint(client: TestClient):
+def test_root_endpoint(client: TestClient) -> None:
     """Test the root endpoint."""
     response = client.get("/")
     assert response.status_code == 200
@@ -10,7 +10,7 @@ def test_root_endpoint(client: TestClient):
     assert "Open Paper Trading MCP" in data["message"]
 
 
-def test_health_check(client: TestClient):
+def test_health_check(client: TestClient) -> None:
     """Test the health check endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
@@ -18,13 +18,13 @@ def test_health_check(client: TestClient):
     assert data["status"] == "healthy"
 
 
-def test_openapi_docs(client: TestClient):
+def test_openapi_docs(client: TestClient) -> None:
     """Test that OpenAPI documentation is accessible."""
     response = client.get("/docs")
     assert response.status_code == 200
 
 
-def test_openapi_json(client: TestClient):
+def test_openapi_json(client: TestClient) -> None:
     """Test that OpenAPI JSON is accessible."""
     response = client.get("/api/v1/openapi.json")
     assert response.status_code == 200

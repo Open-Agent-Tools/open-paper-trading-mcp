@@ -332,7 +332,9 @@ def _calculate_all_greeks(
 
 # Helper function to integrate with the quote system
 def update_option_quote_with_greeks(
-    option_quote: "OptionQuote", risk_free_rate: float = 0.02, dividend_yield: float = 0.0
+    option_quote: "OptionQuote",
+    risk_free_rate: float = 0.02,
+    dividend_yield: float = 0.0,
 ) -> None:
     """Update an OptionQuote with calculated Greeks."""
     if (
@@ -348,7 +350,7 @@ def update_option_quote_with_greeks(
 
     if not isinstance(option_quote.asset, Option):
         return
-    
+
     greeks = calculate_option_greeks(
         option_type=option_quote.asset.option_type,
         strike=option_quote.asset.strike,

@@ -2,7 +2,13 @@ from datetime import datetime, date
 from typing import List, Dict, Optional, Union, Any
 from uuid import uuid4
 
-from app.schemas.orders import Order, OrderCreate, OrderStatus, OrderCondition, OrderType
+from app.schemas.orders import (
+    Order,
+    OrderCreate,
+    OrderStatus,
+    OrderCondition,
+    OrderType,
+)
 from app.models.trading import StockQuote, Position, Portfolio, PortfolioSummary
 from app.models.assets import Option, asset_factory
 from app.models.quotes import Quote, OptionQuote, OptionsChain
@@ -97,7 +103,9 @@ class TradingService:
             order_type=order_data.order_type,
             quantity=order_data.quantity,
             price=order_data.price,
-            condition=order_data.condition if hasattr(order_data, 'condition') else OrderCondition.MARKET,
+            condition=order_data.condition
+            if hasattr(order_data, "condition")
+            else OrderCondition.MARKET,
             created_at=datetime.now(),
         )
 
@@ -265,8 +273,7 @@ class TradingService:
     def validate_account_state(self) -> bool:
         """Validate current account state."""
         return self.account_validation.validate_account_state(
-            cash_balance=self.cash_balance,
-            positions=self.portfolio_positions
+            cash_balance=self.cash_balance, positions=self.portfolio_positions
         )
 
     def get_test_scenarios(self) -> Dict[str, Any]:
@@ -296,10 +303,12 @@ class TradingService:
         order = Order(
             id=str(uuid4()),
             symbol=f"MULTI_LEG_{len(order_data.legs)}_LEGS",
-            order_type=order_data.legs[0].order_type if order_data.legs else OrderType.BUY,
+            order_type=order_data.legs[0].order_type
+            if order_data.legs
+            else OrderType.BUY,
             quantity=sum(leg.quantity for leg in order_data.legs),
             price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
-            condition=getattr(order_data, 'condition', OrderCondition.MARKET),
+            condition=getattr(order_data, "condition", OrderCondition.MARKET),
             status=OrderStatus.FILLED,
             created_at=datetime.now(),
             filled_at=datetime.now(),

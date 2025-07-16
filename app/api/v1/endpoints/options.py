@@ -9,14 +9,23 @@ Provides comprehensive options trading functionality including:
 - Options expiration simulation
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import List, Dict, Any, Optional, Union
 from datetime import date, datetime
 from pydantic import BaseModel, Field
 
-from app.schemas.orders import MultiLegOrderCreate, OrderLegCreate, OrderType
+from app.schemas.orders import (
+    MultiLegOrderCreate,
+    OrderLegCreate,
+    OrderType,
+    OrderCreate,
+    Order,
+    OrderCondition,
+)
+from app.models.quotes import OptionsChainResponse, GreeksResponse
 from app.models.assets import asset_factory, Option
-from app.services.trading_service import trading_service
+from app.services.trading_service import trading_service, TradingService
+from app.core.exceptions import NotFoundError, ValidationError
 from app.services.strategies import (
     analyze_advanced_strategy_pnl,
     aggregate_portfolio_greeks,
@@ -24,15 +33,12 @@ from app.services.strategies import (
     get_portfolio_optimization_recommendations,
 )
 from app.services.expiration import OptionsExpirationEngine
-from app.services.pre_trade_risk import analyze_pre_trade_risk
-from app.services.advanced_validation import create_default_account_limits
-from app.mcp.options_tools import (
-    # TODO: get_options_chains not implemented yet
-    # get_options_chains as mcp_get_options_chains, GetOptionsChainsArgs,
-    # TODO: find_tradable_options was removed
-    # find_tradable_options as mcp_find_tradable_options, FindTradableOptionsArgs
-    get_option_market_data, GetOptionMarketDataArgs
+from app.services.pre_trade_risk import (
+    analyze_pre_trade_risk,
+    RiskAnalysis,
+    quick_risk_check,
 )
+from app.services.advanced_validation import create_default_account_limits
 
 router = APIRouter()
 
@@ -60,33 +66,26 @@ router = APIRouter()
 #         raise HTTPException(status_code=500, detail=f"Error finding tradable options: {str(e)}")
 
 
-
-@router.get("/market-data/{option_id}")
-async def get_live_option_market_data(option_id: str):
+@router.get("/market-data/{option_id}", response_model=Dict[str, Any])
+async def get_live_option_market_data(option_id: str) -> Dict[str, Any]:
     """
     Get live market data for a specific option contract by ID.
     """
     try:
-        from app.mcp.options_tools import get_option_market_data, GetOptionMarketDataArgs
+        from app.mcp.options_tools import (
+            get_option_market_data,
+            GetOptionMarketDataArgs,
+        )
+
         args = GetOptionMarketDataArgs(option_id=option_id)
         result = await get_option_market_data(args)
         if "error" in result:
             raise HTTPException(status_code=500, detail=result["error"])
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting option market data: {str(e)}")
-
-
-class OptionsChainResponse(BaseModel):
-    """Response model for options chain data."""
-
-    underlying_symbol: str
-    underlying_price: float
-    expiration_date: Optional[str]
-    quote_time: str
-    calls: List[Dict[str, Any]]
-    puts: List[Dict[str, Any]]
-    summary: Dict[str, Any]
+        raise HTTPException(
+            status_code=500, detail=f"Error getting option market data: {str(e)}"
+        )
 
 
 class MultiLegOrderRequest(BaseModel):
@@ -105,28 +104,6 @@ class GreeksRequest(BaseModel):
     )
     volatility: Optional[float] = Field(None, description="Override implied volatility")
     risk_free_rate: Optional[float] = Field(None, description="Override risk-free rate")
-
-
-class GreeksResponse(BaseModel):
-    """Response model for Greeks data."""
-
-    option_symbol: str
-    underlying_symbol: str
-    strike: float
-    expiration_date: str
-    option_type: str
-    days_to_expiration: int
-    delta: float
-    gamma: float
-    theta: float
-    vega: float
-    rho: float
-    # Advanced Greeks
-    charm: Optional[float] = None
-    vanna: Optional[float] = None
-    speed: Optional[float] = None
-    zomma: Optional[float] = None
-    color: Optional[float] = None
 
 
 class StrategyAnalysisRequest(BaseModel):
@@ -173,7 +150,8 @@ async def get_options_chain(
     min_strike: Optional[float] = Query(None, description="Minimum strike price"),
     max_strike: Optional[float] = Query(None, description="Maximum strike price"),
     include_greeks: bool = Query(True, description="Include Greeks in response"),
-):
+    service: TradingService = Depends(trading_service),
+) -> OptionsChainResponse:
     """
     Get options chain for an underlying symbol.
 
@@ -187,24 +165,25 @@ async def get_options_chain(
             expiration = datetime.strptime(expiration_date, "%Y-%m-%d").date()
 
         # Get options chain
-        chain = trading_service.get_options_chain(symbol)
+        chain = service.get_options_chain(symbol, expiration)
 
         if chain is None:
-            raise HTTPException(
-                status_code=404, detail=f"No options chain found for {symbol}"
-            )
+            raise NotFoundError(f"No options chain found for {symbol}")
 
         # Apply filters
-        if min_strike or max_strike or expiration:
+        if min_strike or max_strike:
             chain = chain.filter_by_strike_range(min_strike, max_strike)
 
         # Convert to response format
         calls_data = []
         for call in chain.calls:
+            asset = call.asset
+            if not isinstance(asset, Option):
+                continue
             call_data = {
-                "symbol": call.asset.symbol,
-                "strike": call.asset.strike,
-                "expiration": call.asset.expiration_date.isoformat(),
+                "symbol": asset.symbol,
+                "strike": asset.strike,
+                "expiration": asset.expiration_date.isoformat(),
                 "bid": call.bid,
                 "ask": call.ask,
                 "price": call.price,
@@ -228,10 +207,13 @@ async def get_options_chain(
 
         puts_data = []
         for put in chain.puts:
+            asset = put.asset
+            if not isinstance(asset, Option):
+                continue
             put_data = {
-                "symbol": put.asset.symbol,
-                "strike": put.asset.strike,
-                "expiration": put.asset.expiration_date.isoformat(),
+                "symbol": asset.symbol,
+                "strike": asset.strike,
+                "expiration": asset.expiration_date.isoformat(),
                 "bid": put.bid,
                 "ask": put.ask,
                 "price": put.price,
@@ -275,15 +257,17 @@ async def get_options_chain(
         )
 
 
-@router.get("/{symbol}/expirations")
-async def get_expiration_dates(symbol: str):
+@router.get("/{symbol}/expirations", response_model=Dict[str, Any])
+async def get_expiration_dates(
+    symbol: str, service: TradingService = Depends(trading_service)
+) -> Dict[str, Any]:
     """
     Get available expiration dates for an underlying symbol.
 
     Returns sorted list of expiration dates with metadata.
     """
     try:
-        dates = trading_service.get_expiration_dates(symbol)
+        dates = service.get_expiration_dates(symbol)
 
         return {
             "underlying_symbol": symbol,
@@ -302,8 +286,10 @@ async def get_expiration_dates(symbol: str):
 
 
 # Multi-leg Order Endpoints
-@router.post("/orders/multi-leg")
-async def create_multi_leg_order(request: MultiLegOrderRequest):
+@router.post("/orders/multi-leg", response_model=Order)
+async def create_multi_leg_order(
+    request: MultiLegOrderRequest, service: TradingService = Depends(trading_service)
+) -> Order:
     """
     Create a multi-leg options order.
 
@@ -313,45 +299,24 @@ async def create_multi_leg_order(request: MultiLegOrderRequest):
         # Convert legs to OrderLegCreate objects
         order_legs = []
         for leg_data in request.legs:
-            asset = asset_factory(leg_data["symbol"])
             leg = OrderLegCreate(
-                asset=asset,
+                symbol=leg_data["symbol"],
                 quantity=leg_data["quantity"],
-                order_type=OrderType(leg_data["order_type"]),
+                side=leg_data["side"],
                 price=leg_data.get("price"),
             )
             order_legs.append(leg)
 
         # Create multi-leg order
         order_data = MultiLegOrderCreate(
-            legs=order_legs, order_type=request.order_type, net_price=request.net_price
+            legs=order_legs,
+            limit_price=request.net_price,
+            condition=OrderCondition(request.order_type),
         )
 
-        order = trading_service.create_multi_leg_order(order_data)
+        order = service.create_multi_leg_order(order_data)
 
-        # Convert response
-        legs_data = []
-        for leg in order.legs:
-            legs_data.append(
-                {
-                    "symbol": leg.asset.symbol,
-                    "quantity": leg.quantity,
-                    "order_type": leg.order_type.value,
-                    "price": leg.price,
-                    "asset_type": (
-                        "option" if isinstance(leg.asset, Option) else "stock"
-                    ),
-                }
-            )
-
-        return {
-            "id": order.id,
-            "legs": legs_data,
-            "net_price": order.net_price,
-            "status": order.status,
-            "created_at": order.created_at.isoformat() if order.created_at else None,
-            "strategy_type": getattr(order, "strategy_type", None),
-        }
+        return order
 
     except (ValidationError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -374,7 +339,8 @@ async def calculate_option_greeks(
     risk_free_rate: Optional[float] = Query(
         None, description="Override risk-free rate"
     ),
-):
+    service: TradingService = Depends(trading_service),
+) -> GreeksResponse:
     """
     Calculate Greeks for a specific option symbol.
 
@@ -382,7 +348,7 @@ async def calculate_option_greeks(
     """
     try:
         # Calculate Greeks
-        greeks = trading_service.calculate_greeks(
+        greeks = service.calculate_greeks(
             option_symbol,
             underlying_price=underlying_price,
             volatility=volatility,
@@ -399,18 +365,18 @@ async def calculate_option_greeks(
             underlying_symbol=asset.underlying.symbol,
             strike=asset.strike,
             expiration_date=asset.expiration_date.isoformat(),
-            option_type=asset.option_type,
+            option_type=asset.option_type.value,
             days_to_expiration=asset.get_days_to_expiration(),
-            delta=greeks.get("delta", 0.0),
-            gamma=greeks.get("gamma", 0.0),
-            theta=greeks.get("theta", 0.0),
-            vega=greeks.get("vega", 0.0),
-            rho=greeks.get("rho", 0.0),
-            charm=greeks.get("charm"),
-            vanna=greeks.get("vanna"),
-            speed=greeks.get("speed"),
-            zomma=greeks.get("zomma"),
-            color=greeks.get("color"),
+            delta=greeks.delta,
+            gamma=greeks.gamma,
+            theta=greeks.theta,
+            vega=greeks.vega,
+            rho=greeks.rho,
+            charm=greeks.charm,
+            vanna=greeks.vanna,
+            speed=greeks.speed,
+            zomma=greeks.zomma,
+            color=greeks.color,
         )
 
     except (NotFoundError, ValueError) as e:
@@ -422,15 +388,17 @@ async def calculate_option_greeks(
 
 
 # Strategy Analysis Endpoints
-@router.post("/strategies/analyze")
-async def analyze_portfolio_strategies(request: StrategyAnalysisRequest):
+@router.post("/strategies/analyze", response_model=Dict[str, Any])
+async def analyze_portfolio_strategies(
+    request: StrategyAnalysisRequest, service: TradingService = Depends(trading_service)
+) -> Dict[str, Any]:
     """
     Perform comprehensive strategy analysis for current portfolio.
 
     Includes P&L analysis, Greeks aggregation, and optimization recommendations.
     """
     try:
-        portfolio = trading_service.get_portfolio()
+        portfolio = service.get_portfolio()
         positions = portfolio.positions
 
         # Get current quotes
@@ -438,7 +406,7 @@ async def analyze_portfolio_strategies(request: StrategyAnalysisRequest):
         current_quotes = {}
         for symbol in symbols:
             try:
-                quote = trading_service.get_enhanced_quote(symbol)
+                quote = service.get_enhanced_quote(symbol)
                 current_quotes[symbol] = quote
             except Exception:
                 continue
@@ -518,8 +486,10 @@ async def analyze_portfolio_strategies(request: StrategyAnalysisRequest):
 
 
 # Pre-trade Risk Analysis Endpoints
-@router.post("/risk/pre-trade")
-async def analyze_pre_trade_risk_endpoint(request: PreTradeRiskRequest):
+@router.post("/risk/pre-trade", response_model=RiskAnalysis)
+async def analyze_pre_trade_risk_endpoint(
+    request: PreTradeRiskRequest, service: TradingService = Depends(trading_service)
+) -> RiskAnalysis:
     """
     Perform comprehensive pre-trade risk analysis.
 
@@ -527,7 +497,7 @@ async def analyze_pre_trade_risk_endpoint(request: PreTradeRiskRequest):
     """
     try:
         # Get current account data
-        portfolio = trading_service.get_portfolio()
+        portfolio = service.get_portfolio()
         account_data = {
             "cash_balance": portfolio.cash_balance,
             "positions": portfolio.positions,
@@ -535,42 +505,45 @@ async def analyze_pre_trade_risk_endpoint(request: PreTradeRiskRequest):
 
         # Create order object from request data
         order_data = request.order_data
+        order: Union[OrderCreate, MultiLegOrderCreate]
         if "legs" in order_data:
             # Multi-leg order
             legs = []
             for leg_data in order_data["legs"]:
-                asset = asset_factory(leg_data["symbol"])
                 leg = OrderLegCreate(
-                    asset=asset,
+                    symbol=leg_data["symbol"],
                     quantity=leg_data["quantity"],
-                    order_type=OrderType(leg_data["order_type"]),
+                    side=leg_data["side"],
                     price=leg_data.get("price"),
                 )
                 legs.append(leg)
 
-            order = MultiLegOrderCreate(legs=legs)
+            order = MultiLegOrderCreate(
+                legs=legs,
+                limit_price=order_data.get("net_price"),
+                condition=OrderCondition(order_data.get("order_type", "limit")),
+            )
         else:
             # Single order
-            from app.schemas.orders import OrderCreate
-
             order = OrderCreate(
                 symbol=order_data["symbol"],
                 order_type=OrderType(order_data["order_type"]),
                 quantity=order_data["quantity"],
                 price=order_data.get("price"),
+                condition=OrderCondition(order_data.get("condition", "limit")),
             )
 
         # Get current quotes
-        symbols = []
-        if hasattr(order, "symbol"):
+        symbols: List[str] = []
+        if isinstance(order, OrderCreate):
             symbols = [order.symbol]
-        elif hasattr(order, "legs"):
-            symbols = [leg.asset.symbol for leg in order.legs]
+        elif isinstance(order, MultiLegOrderCreate):
+            symbols = [leg.symbol for leg in order.legs]
 
         current_quotes = {}
         for symbol in symbols:
             try:
-                quote = trading_service.get_enhanced_quote(symbol)
+                quote = service.get_enhanced_quote(symbol)
                 current_quotes[symbol] = quote
             except Exception:
                 continue
@@ -585,74 +558,7 @@ async def analyze_pre_trade_risk_endpoint(request: PreTradeRiskRequest):
             account_data, order, current_quotes, account_limits
         )
 
-        # Convert to response format
-        validation_messages = []
-        for msg in analysis.validation_result.messages:
-            validation_messages.append(
-                {
-                    "rule": msg.rule,
-                    "severity": msg.severity,
-                    "code": msg.code,
-                    "message": msg.message,
-                    "details": msg.details,
-                    "suggested_action": msg.suggested_action,
-                }
-            )
-
-        scenario_data = []
-        if request.include_scenarios:
-            for scenario in analysis.scenario_results:
-                scenario_data.append(
-                    {
-                        "scenario_type": scenario.scenario.scenario_type,
-                        "description": scenario.scenario.description,
-                        "portfolio_pnl": scenario.portfolio_pnl,
-                        "order_pnl": scenario.order_pnl,
-                        "combined_pnl": scenario.combined_pnl,
-                        "max_loss": scenario.max_loss,
-                        "margin_call_risk": scenario.margin_call_risk,
-                    }
-                )
-
-        return {
-            "analysis_timestamp": datetime.now().isoformat(),
-            "should_execute": analysis.should_execute,
-            "execution_recommendation": analysis.execution_recommendation,
-            "confidence_level": analysis.confidence_level,
-            "validation": {
-                "is_valid": analysis.validation_result.is_valid,
-                "can_execute": analysis.validation_result.can_execute,
-                "risk_score": analysis.validation_result.risk_score,
-                "estimated_cost": analysis.validation_result.estimated_cost,
-                "messages": validation_messages,
-            },
-            "risk_metrics": {
-                "overall_risk_level": analysis.risk_metrics.overall_risk_level,
-                "risk_score": analysis.risk_metrics.risk_score,
-                "order_max_loss": analysis.risk_metrics.order_max_loss,
-                "concentration_risk": analysis.risk_metrics.concentration_risk,
-                "delta_risk": analysis.risk_metrics.delta_risk,
-                "theta_risk": analysis.risk_metrics.theta_risk,
-                "days_to_next_expiration": analysis.risk_metrics.days_to_next_expiration,
-            },
-            "portfolio_greeks": {
-                "current_delta": analysis.portfolio_greeks.delta,
-                "current_theta": analysis.portfolio_greeks.theta,
-                "projected_delta": analysis.projected_greeks.delta,
-                "projected_theta": analysis.projected_greeks.theta,
-                "delta_change": analysis.projected_greeks.delta
-                - analysis.portfolio_greeks.delta,
-                "theta_change": analysis.projected_greeks.theta
-                - analysis.portfolio_greeks.theta,
-            },
-            "scenarios": scenario_data,
-            "worst_case_loss": analysis.worst_case_loss,
-            "best_case_gain": analysis.best_case_gain,
-            "recommendations": analysis.recommendations,
-            "alternative_strategies": (
-                analysis.alternative_strategies if request.include_alternatives else []
-            ),
-        }
+        return analysis
 
     except (ValidationError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -663,8 +569,11 @@ async def analyze_pre_trade_risk_endpoint(request: PreTradeRiskRequest):
 
 
 # Options Expiration Endpoints
-@router.post("/expiration/simulate")
-async def simulate_options_expiration(request: ExpirationSimulationRequest):
+@router.post("/expiration/simulate", response_model=Dict[str, Any])
+async def simulate_options_expiration(
+    request: ExpirationSimulationRequest,
+    service: TradingService = Depends(trading_service),
+) -> Dict[str, Any]:
     """
     Simulate options expiration processing.
 
@@ -672,7 +581,7 @@ async def simulate_options_expiration(request: ExpirationSimulationRequest):
     """
     try:
         # Get current account data
-        portfolio = trading_service.get_portfolio()
+        portfolio = service.get_portfolio()
         account_data = {
             "cash_balance": portfolio.cash_balance,
             "positions": portfolio.positions,
@@ -686,7 +595,7 @@ async def simulate_options_expiration(request: ExpirationSimulationRequest):
             ).date()
 
         # Get quote adapter
-        quote_adapter = trading_service.quote_adapter
+        quote_adapter = service.quote_adapter
 
         # Run expiration simulation
         expiration_engine = OptionsExpirationEngine()
@@ -756,8 +665,10 @@ async def simulate_options_expiration(request: ExpirationSimulationRequest):
 
 
 # Quick Risk Check Endpoint
-@router.post("/risk/quick-check")
-async def quick_risk_check_endpoint(order_data: Dict[str, Any]):
+@router.post("/risk/quick-check", response_model=Dict[str, Any])
+async def quick_risk_check_endpoint(
+    order_data: Dict[str, Any], service: TradingService = Depends(trading_service)
+) -> Dict[str, Any]:
     """
     Perform quick risk assessment for an order.
 
@@ -765,49 +676,50 @@ async def quick_risk_check_endpoint(order_data: Dict[str, Any]):
     """
     try:
         # Create order object
+        order: Union[OrderCreate, MultiLegOrderCreate]
         if "legs" in order_data:
             # Multi-leg order
             legs = []
             for leg_data in order_data["legs"]:
-                asset = asset_factory(leg_data["symbol"])
                 leg = OrderLegCreate(
-                    asset=asset,
+                    symbol=leg_data["symbol"],
                     quantity=leg_data["quantity"],
-                    order_type=OrderType(leg_data["order_type"]),
+                    side=leg_data["side"],
                     price=leg_data.get("price"),
                 )
                 legs.append(leg)
 
-            order = MultiLegOrderCreate(legs=legs)
+            order = MultiLegOrderCreate(
+                legs=legs,
+                limit_price=order_data.get("net_price"),
+                condition=OrderCondition(order_data.get("order_type", "limit")),
+            )
         else:
             # Single order
-            from app.schemas.orders import OrderCreate
-
             order = OrderCreate(
                 symbol=order_data["symbol"],
                 order_type=OrderType(order_data["order_type"]),
                 quantity=order_data["quantity"],
                 price=order_data.get("price"),
+                condition=OrderCondition(order_data.get("condition", "limit")),
             )
 
         # Get current quotes
-        symbols = []
-        if hasattr(order, "symbol"):
+        symbols: List[str] = []
+        if isinstance(order, OrderCreate):
             symbols = [order.symbol]
-        elif hasattr(order, "legs"):
-            symbols = [leg.asset.symbol for leg in order.legs]
+        elif isinstance(order, MultiLegOrderCreate):
+            symbols = [leg.symbol for leg in order.legs]
 
         current_quotes = {}
         for symbol in symbols:
             try:
-                quote = trading_service.get_enhanced_quote(symbol)
+                quote = service.get_enhanced_quote(symbol)
                 current_quotes[symbol] = quote
             except Exception:
                 continue
 
         # Quick risk check
-        from app.services.pre_trade_risk import quick_risk_check
-
         risk_check = quick_risk_check(order, current_quotes)
 
         return {

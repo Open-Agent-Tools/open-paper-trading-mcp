@@ -296,10 +296,30 @@ class PreTradeRiskAnalyzer:
                 quantity=order.quantity,
                 avg_price=order.price
                 or current_quotes.get(
-                    order.symbol, Quote(asset=asset, quote_date=datetime.now(), price=0, bid=0, ask=0, bid_size=0, ask_size=0, volume=0)
+                    order.symbol,
+                    Quote(
+                        asset=asset,
+                        quote_date=datetime.now(),
+                        price=0,
+                        bid=0,
+                        ask=0,
+                        bid_size=0,
+                        ask_size=0,
+                        volume=0,
+                    ),
                 ).price,
                 current_price=current_quotes.get(
-                    order.symbol, Quote(asset=asset, quote_date=datetime.now(), price=0, bid=0, ask=0, bid_size=0, ask_size=0, volume=0)
+                    order.symbol,
+                    Quote(
+                        asset=asset,
+                        quote_date=datetime.now(),
+                        price=0,
+                        bid=0,
+                        ask=0,
+                        bid_size=0,
+                        ask_size=0,
+                        volume=0,
+                    ),
                 ).price,
                 asset=asset,
             )
@@ -313,11 +333,29 @@ class PreTradeRiskAnalyzer:
                     avg_price=leg.price
                     or current_quotes.get(
                         leg.asset.symbol,
-                        Quote(asset=leg.asset, quote_date=datetime.now(), price=0, bid=0, ask=0, bid_size=0, ask_size=0, volume=0),
+                        Quote(
+                            asset=leg.asset,
+                            quote_date=datetime.now(),
+                            price=0,
+                            bid=0,
+                            ask=0,
+                            bid_size=0,
+                            ask_size=0,
+                            volume=0,
+                        ),
                     ).price,
                     current_price=current_quotes.get(
                         leg.asset.symbol,
-                        Quote(asset=leg.asset, quote_date=datetime.now(), price=0, bid=0, ask=0, bid_size=0, ask_size=0, volume=0),
+                        Quote(
+                            asset=leg.asset,
+                            quote_date=datetime.now(),
+                            price=0,
+                            bid=0,
+                            ask=0,
+                            bid_size=0,
+                            ask_size=0,
+                            volume=0,
+                        ),
                     ).price,
                     asset=leg.asset,
                 )

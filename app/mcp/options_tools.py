@@ -1,8 +1,9 @@
 """
 MCP tools for live options data operations.
 """
+
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 import robin_stocks.robinhood as rh
@@ -11,16 +12,24 @@ from app.core.logging import logger
 
 mcp = FastMCP("Options Data Tools")
 
+
 class GetOptionsChainsArgs(BaseModel):
-    symbol: str = Field(..., description="Stock symbol to get option chains for (e.g., AAPL, GOOGL)")
+    symbol: str = Field(
+        ..., description="Stock symbol to get option chains for (e.g., AAPL, GOOGL)"
+    )
+
 
 class FindTradableOptionsArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
-    expiration_date: Optional[str] = Field(None, description="Expiration date in YYYY-MM-DD format")
+    expiration_date: Optional[str] = Field(
+        None, description="Expiration date in YYYY-MM-DD format"
+    )
     option_type: Optional[str] = Field(None, description="Option type: 'call' or 'put'")
+
 
 class GetOptionMarketDataArgs(BaseModel):
     option_id: str = Field(..., description="Unique option contract ID")
+
 
 @mcp.tool()
 async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
@@ -45,7 +54,7 @@ async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
                 "total_contracts": 0,
                 "message": "No option chains found",
             }
-        
+
         session_manager.update_last_successful_call()
 
         return {
@@ -57,6 +66,7 @@ async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
         logger.error(f"Error getting option chains for {symbol}: {e}")
         return {"error": str(e)}
 
+
 @mcp.tool()
 async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]:
     """
@@ -67,7 +77,9 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]
         return {"error": "Authentication failed"}
 
     symbol = args.symbol.strip().upper()
-    logger.info(f"Finding tradable options for {symbol} with filters: expiration={args.expiration_date}, type={args.option_type}")
+    logger.info(
+        f"Finding tradable options for {symbol} with filters: expiration={args.expiration_date}, type={args.option_type}"
+    )
 
     try:
         loop = asyncio.get_event_loop()
@@ -105,6 +117,7 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]
     except Exception as e:
         logger.error(f"Error finding tradable options for {symbol}: {e}")
         return {"error": str(e)}
+
 
 @mcp.tool()
 async def get_option_market_data(args: GetOptionMarketDataArgs) -> Dict[str, Any]:

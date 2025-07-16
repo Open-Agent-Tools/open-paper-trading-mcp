@@ -1,15 +1,15 @@
 """
 Tests for the options expiration engine in app/services/expiration.py.
 """
+
 import pytest
-from datetime import date, timedelta
+from datetime import date
 from app.services.expiration import OptionsExpirationEngine, ExpirationResult
 from app.models.trading import Position
-from app.models.assets import Option, Asset, asset_factory
 from app.adapters.test_data import TestDataQuoteAdapter
 
-class TestOptionsExpirationEngine:
 
+class TestOptionsExpirationEngine:
     @pytest.fixture
     def engine(self):
         """Provides an OptionsExpirationEngine instance."""
@@ -40,13 +40,15 @@ class TestOptionsExpirationEngine:
                 Position(symbol="GOOG170120P00810000", quantity=-1, avg_price=2.00),
                 # Non-expired position
                 Position(symbol="GOOG170127C00820000", quantity=1, avg_price=3.00),
-            ]
+            ],
         }
 
     def test_process_account_expirations(self, engine, sample_account, quote_adapter):
         """Tests the main entry point for processing expirations."""
-        result = engine.process_account_expirations(sample_account, quote_adapter, processing_date=date(2017, 1, 20))
-        
+        result = engine.process_account_expirations(
+            sample_account, quote_adapter, processing_date=date(2017, 1, 20)
+        )
+
         assert isinstance(result, ExpirationResult)
         # AAL has 3 expired options, GOOG has 1
         assert len(result.expired_positions) == 4
@@ -102,19 +104,27 @@ class TestOptionsExpirationEngine:
 
     def test_no_expired_positions(self, engine, quote_adapter):
         """Tests a scenario with no expired options."""
-        account = {"cash_balance": 10000.0, "positions": [Position(symbol="AAPL251219C00200000", quantity=1)]}
-        result = engine.process_account_expirations(account, quote_adapter, processing_date=date(2024, 1, 1))
+        account = {
+            "cash_balance": 10000.0,
+            "positions": [Position(symbol="AAPL251219C00200000", quantity=1)],
+        }
+        result = engine.process_account_expirations(
+            account, quote_adapter, processing_date=date(2024, 1, 1)
+        )
         assert len(result.expired_positions) == 0
         assert result.cash_impact == 0
 
     def test_error_handling_for_missing_quote(self, engine, sample_account):
         """Tests that the engine handles errors when a quote is not available."""
+
         # Mock adapter that raises an error
         class FailingQuoteAdapter:
             def get_quote(self, symbol):
                 raise ConnectionError("Failed to fetch quote")
 
         failing_adapter = FailingQuoteAdapter()
-        result = engine.process_account_expirations(sample_account, failing_adapter, processing_date=date(2017, 1, 20))
+        result = engine.process_account_expirations(
+            sample_account, failing_adapter, processing_date=date(2017, 1, 20)
+        )
         assert len(result.errors) > 0
         assert "Failed to fetch quote" in result.errors[0]

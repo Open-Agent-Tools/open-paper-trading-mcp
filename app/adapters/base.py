@@ -13,6 +13,7 @@ from app.models.assets import Asset
 
 class AdapterConfig(BaseModel):
     """Base configuration for adapters."""
+
     enabled: bool = True
     api_key: Optional[str] = None
     api_secret: Optional[str] = None
@@ -26,6 +27,7 @@ class AdapterConfig(BaseModel):
 
 class AdapterRegistry:
     """Registry for managing and accessing adapters."""
+
     def __init__(self) -> None:
         self.adapters: Dict[str, Any] = {}
 
@@ -35,12 +37,13 @@ class AdapterRegistry:
     def get(self, name: str) -> Optional[Any]:
         return self.adapters.get(name)
 
+
 # Global registry instance
 adapter_registry = AdapterRegistry()
 
+
 def get_adapter_registry() -> AdapterRegistry:
     return adapter_registry
-
 
 
 class AccountAdapter(ABC):

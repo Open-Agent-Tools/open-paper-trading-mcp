@@ -1,8 +1,9 @@
 """
 MCP tools for live market data operations.
 """
+
 import asyncio
-from typing import Any, Dict, List
+from typing import Any, Dict
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 import robin_stocks.robinhood as rh
@@ -11,21 +12,33 @@ from app.core.logging import logger
 
 mcp = FastMCP("Market Data Tools")
 
+
 class GetStockPriceArgs(BaseModel):
-    symbol: str = Field(..., description="Stock symbol to get price for (e.g., AAPL, GOOGL)")
+    symbol: str = Field(
+        ..., description="Stock symbol to get price for (e.g., AAPL, GOOGL)"
+    )
+
 
 class GetStockInfoArgs(BaseModel):
-    symbol: str = Field(..., description="Stock symbol to get information for (e.g., AAPL, GOOGL)")
+    symbol: str = Field(
+        ..., description="Stock symbol to get information for (e.g., AAPL, GOOGL)"
+    )
+
 
 class GetPriceHistoryArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
-    period: str = Field("week", description="Time period: day, week, month, 3month, year, 5year")
+    period: str = Field(
+        "week", description="Time period: day, week, month, 3month, year, 5year"
+    )
+
 
 class GetStockNewsArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
 
+
 class SearchStocksArgs(BaseModel):
     query: str = Field(..., description="Search query (symbol or company name)")
+
 
 @mcp.tool()
 async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
@@ -41,8 +54,10 @@ async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
 
     try:
         loop = asyncio.get_event_loop()
-        
-        price_data = await loop.run_in_executor(None, rh.get_latest_price, symbol, "ask_price")
+
+        price_data = await loop.run_in_executor(
+            None, rh.get_latest_price, symbol, "ask_price"
+        )
         quote_data_list = await loop.run_in_executor(None, rh.get_quotes, symbol)
 
         if not price_data or not price_data[0] or not quote_data_list:
@@ -71,6 +86,7 @@ async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
         logger.error(f"Error getting stock price for {symbol}: {e}")
         return {"error": str(e)}
 
+
 @mcp.tool()
 async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
     """
@@ -86,15 +102,19 @@ async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
     try:
         loop = asyncio.get_event_loop()
 
-        fundamentals_list = await loop.run_in_executor(None, rh.get_fundamentals, symbol)
-        instruments_list = await loop.run_in_executor(None, rh.get_instruments_by_symbols, symbol)
+        fundamentals_list = await loop.run_in_executor(
+            None, rh.get_fundamentals, symbol
+        )
+        instruments_list = await loop.run_in_executor(
+            None, rh.get_instruments_by_symbols, symbol
+        )
 
         if not fundamentals_list or not instruments_list:
             return {"error": f"No company information found for symbol: {symbol}"}
 
         fundamental = fundamentals_list[0]
         instrument = instruments_list[0]
-        
+
         company_name = await loop.run_in_executor(None, rh.get_name_by_symbol, symbol)
 
         session_manager.update_last_successful_call()
@@ -116,6 +136,7 @@ async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error getting stock info for {symbol}: {e}")
         return {"error": str(e)}
+
 
 @mcp.tool()
 async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
@@ -147,7 +168,9 @@ async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
         )
 
         if not historical_data:
-            return {"error": f"No historical data found for {symbol} over {args.period}"}
+            return {
+                "error": f"No historical data found for {symbol} over {args.period}"
+            }
 
         price_points = [
             {
@@ -173,6 +196,7 @@ async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error getting price history for {symbol}: {e}")
         return {"error": str(e)}
+
 
 @mcp.tool()
 async def get_stock_news(args: GetStockNewsArgs) -> Dict[str, Any]:
@@ -203,6 +227,7 @@ async def get_stock_news(args: GetStockNewsArgs) -> Dict[str, Any]:
         logger.error(f"Error getting news for {symbol}: {e}")
         return {"error": str(e)}
 
+
 @mcp.tool()
 async def get_top_movers() -> Dict[str, Any]:
     """
@@ -228,6 +253,7 @@ async def get_top_movers() -> Dict[str, Any]:
         logger.error(f"Error getting top movers: {e}")
         return {"error": str(e)}
 
+
 @mcp.tool()
 async def search_stocks(args: SearchStocksArgs) -> Dict[str, Any]:
     """
@@ -242,7 +268,9 @@ async def search_stocks(args: SearchStocksArgs) -> Dict[str, Any]:
 
     try:
         loop = asyncio.get_event_loop()
-        search_results = await loop.run_in_executor(None, rh.find_instrument_data, query)
+        search_results = await loop.run_in_executor(
+            None, rh.find_instrument_data, query
+        )
 
         if not search_results:
             return {

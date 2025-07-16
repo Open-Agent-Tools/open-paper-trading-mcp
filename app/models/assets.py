@@ -68,7 +68,7 @@ class Asset(BaseModel):
 
 class Stock(Asset):
     """Stock asset class for specific stock instruments."""
-    
+
     def __init__(self, symbol: str, **data: object) -> None:
         super().__init__(symbol=symbol, asset_type="stock", **data)
 
@@ -93,14 +93,18 @@ class Option(Asset):
         if symbol is not None:
             # Parse from option symbol (e.g., "AAPL240119C00195000")
             parsed = self._parse_option_symbol(symbol)
-            data.update({
-                "symbol": symbol,
-                "asset_type": parsed["option_type"],
-                "underlying": Asset(symbol=str(parsed["underlying"]), asset_type="stock"),
-                "option_type": parsed["option_type"],
-                "strike": parsed["strike"],
-                "expiration_date": parsed["expiration_date"],
-            })
+            data.update(
+                {
+                    "symbol": symbol,
+                    "asset_type": parsed["option_type"],
+                    "underlying": Asset(
+                        symbol=str(parsed["underlying"]), asset_type="stock"
+                    ),
+                    "option_type": parsed["option_type"],
+                    "strike": parsed["strike"],
+                    "expiration_date": parsed["expiration_date"],
+                }
+            )
             super().__init__(**data)
         else:
             # Build from components
@@ -130,14 +134,16 @@ class Option(Asset):
                 f"{underlying_asset.symbol}{exp_str}{option_char}{strike_str}"
             )
 
-            data.update({
-                "symbol": built_symbol,
-                "asset_type": option_type,
-                "underlying": underlying_asset,
-                "option_type": option_type,
-                "strike": float(strike),
-                "expiration_date": exp_date,
-            })
+            data.update(
+                {
+                    "symbol": built_symbol,
+                    "asset_type": option_type,
+                    "underlying": underlying_asset,
+                    "option_type": option_type,
+                    "strike": float(strike),
+                    "expiration_date": exp_date,
+                }
+            )
             super().__init__(**data)
 
     @staticmethod
@@ -206,7 +212,9 @@ class Option(Asset):
         """Calculate extrinsic (time) value of the option."""
         return option_price - self.get_intrinsic_value(underlying_price)
 
-    def get_days_to_expiration(self, as_of_date: Optional[Union[date, datetime]] = None) -> int:
+    def get_days_to_expiration(
+        self, as_of_date: Optional[Union[date, datetime]] = None
+    ) -> int:
         """Calculate days until expiration."""
         if as_of_date is None:
             as_of_date = date.today()

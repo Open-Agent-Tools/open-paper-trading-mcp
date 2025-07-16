@@ -5,14 +5,12 @@ This module contains the core strategy models, enums, and data structures
 for the trading strategy system.
 """
 
-from typing import List, Dict, Any, Optional, Union, Literal
+from typing import List, Any, Optional, Union, Literal
 from enum import Enum
-from datetime import date
 from pydantic import BaseModel, Field
 
-from ...models.assets import Asset, Option, Call, Put, asset_factory
+from ...models.assets import Asset, Option, asset_factory
 from ...models.trading import Position
-from ...models.quotes import Quote, OptionQuote
 
 
 class StrategyType(str, Enum):
@@ -66,7 +64,9 @@ class AssetStrategy(BasicStrategy):
     asset: Asset = Field(..., description="Asset being held")
     direction: str = Field(..., description="Position direction (long/short)")
 
-    def __init__(self, asset: Union[str, Asset], quantity: int = 1, **data: Any) -> None:
+    def __init__(
+        self, asset: Union[str, Asset], quantity: int = 1, **data: Any
+    ) -> None:
         # Normalize asset
         asset_obj = asset_factory(asset) if isinstance(asset, str) else asset
         if asset_obj is None:
@@ -86,7 +86,9 @@ class OffsetStrategy(BasicStrategy):
     strategy_type: Literal[StrategyType.OFFSET] = Field(default=StrategyType.OFFSET)
     asset: Asset = Field(..., description="Asset being offset")
 
-    def __init__(self, asset: Union[str, Asset], quantity: int = 1, **data: Any) -> None:
+    def __init__(
+        self, asset: Union[str, Asset], quantity: int = 1, **data: Any
+    ) -> None:
         asset_obj = asset_factory(asset) if isinstance(asset, str) else asset
         if asset_obj is None:
             raise ValueError(f"Could not create asset from: {asset}")
@@ -150,7 +152,11 @@ class CoveredStrategy(BasicStrategy):
     sell_option: Option = Field(..., description="Option being sold")
 
     def __init__(
-        self, asset: Union[str, Asset], sell_option: Option, quantity: int = 1, **data: Any
+        self,
+        asset: Union[str, Asset],
+        sell_option: Option,
+        quantity: int = 1,
+        **data: Any,
     ) -> None:
         # Normalize asset
         asset_obj = asset_factory(asset) if isinstance(asset, str) else asset

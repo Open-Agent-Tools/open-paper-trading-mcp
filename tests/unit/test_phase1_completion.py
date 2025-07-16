@@ -11,15 +11,11 @@ from app.models.assets import Asset, Option, Call, asset_factory
 from app.schemas.orders import (
     Order,
     OrderType,
-    OrderStatus,
     MultiLegOrder,
     OrderLeg,
 )
 from app.models.trading import (
     Position,
-    StockQuote,
-    Portfolio,
-    PortfolioSummary,
 )
 from app.models.quotes import Quote, OptionQuote, quote_factory
 from app.services.greeks import calculate_option_greeks

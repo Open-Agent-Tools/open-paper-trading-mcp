@@ -1,8 +1,8 @@
 """
 API endpoints for market data.
 """
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Any, Dict
+
+from fastapi import APIRouter
 # TODO: get_stock_info not implemented yet
 # from app.mcp.market_data_tools import get_stock_info, GetStockInfoArgs
 # TODO: get_stock_price not implemented yet

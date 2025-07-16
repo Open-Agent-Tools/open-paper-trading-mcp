@@ -40,13 +40,13 @@ def quote_factory(
 
     if asset_obj is None:
         raise ValueError("Could not create asset from provided symbol")
-    
+
     # Normalize quote_date to datetime
     if isinstance(quote_date, str):
         quote_date = datetime.fromisoformat(quote_date.replace("Z", "+00:00"))
     elif isinstance(quote_date, date) and not isinstance(quote_date, datetime):
         quote_date = datetime.combine(quote_date, datetime.min.time())
-    
+
     if isinstance(asset_obj, Option):
         return OptionQuote(
             quote_date=quote_date,
@@ -102,7 +102,9 @@ class Quote(BaseModel):
         return v if isinstance(v, datetime) else datetime.now()
 
     @validator("price")
-    def calculate_midpoint(cls, v: Optional[float], values: Dict[str, Any]) -> Optional[float]:
+    def calculate_midpoint(
+        cls, v: Optional[float], values: Dict[str, Any]
+    ) -> Optional[float]:
         """Calculate midpoint if price not provided."""
         if v is None:
             bid = values.get("bid", 0.0)
@@ -162,7 +164,7 @@ class OptionQuote(Quote):
     )
     ultima: Optional[float] = Field(None, description="Ultima (vomma sensitivity)")
     dual_delta: Optional[float] = Field(None, description="Dual delta")
-    
+
     # Market data
     open_interest: Optional[int] = Field(None, description="Open interest")
 
@@ -304,12 +306,28 @@ class OptionsChain(BaseModel):
         filtered_puts = self.puts.copy()
 
         if min_strike is not None:
-            filtered_calls = [opt for opt in filtered_calls if opt.strike is not None and opt.strike >= min_strike]
-            filtered_puts = [opt for opt in filtered_puts if opt.strike is not None and opt.strike >= min_strike]
+            filtered_calls = [
+                opt
+                for opt in filtered_calls
+                if opt.strike is not None and opt.strike >= min_strike
+            ]
+            filtered_puts = [
+                opt
+                for opt in filtered_puts
+                if opt.strike is not None and opt.strike >= min_strike
+            ]
 
         if max_strike is not None:
-            filtered_calls = [opt for opt in filtered_calls if opt.strike is not None and opt.strike <= max_strike]
-            filtered_puts = [opt for opt in filtered_puts if opt.strike is not None and opt.strike <= max_strike]
+            filtered_calls = [
+                opt
+                for opt in filtered_calls
+                if opt.strike is not None and opt.strike <= max_strike
+            ]
+            filtered_puts = [
+                opt
+                for opt in filtered_puts
+                if opt.strike is not None and opt.strike <= max_strike
+            ]
 
         return OptionsChain(
             underlying_symbol=self.underlying_symbol,
@@ -356,9 +374,15 @@ class OptionsChain(BaseModel):
         max_strike = self.underlying_price + tolerance_amount
 
         atm_calls = [
-            opt for opt in self.calls if opt.strike is not None and min_strike <= opt.strike <= max_strike
+            opt
+            for opt in self.calls
+            if opt.strike is not None and min_strike <= opt.strike <= max_strike
         ]
-        atm_puts = [opt for opt in self.puts if opt.strike is not None and min_strike <= opt.strike <= max_strike]
+        atm_puts = [
+            opt
+            for opt in self.puts
+            if opt.strike is not None and min_strike <= opt.strike <= max_strike
+        ]
 
         return {"calls": atm_calls, "puts": atm_puts}
 
@@ -372,8 +396,16 @@ class OptionsChain(BaseModel):
         if self.underlying_price is None:
             return {"calls": [], "puts": []}
 
-        itm_calls = [opt for opt in self.calls if opt.strike is not None and opt.strike < self.underlying_price]
-        itm_puts = [opt for opt in self.puts if opt.strike is not None and opt.strike > self.underlying_price]
+        itm_calls = [
+            opt
+            for opt in self.calls
+            if opt.strike is not None and opt.strike < self.underlying_price
+        ]
+        itm_puts = [
+            opt
+            for opt in self.puts
+            if opt.strike is not None and opt.strike > self.underlying_price
+        ]
 
         return {"calls": itm_calls, "puts": itm_puts}
 
@@ -387,8 +419,16 @@ class OptionsChain(BaseModel):
         if self.underlying_price is None:
             return {"calls": [], "puts": []}
 
-        otm_calls = [opt for opt in self.calls if opt.strike is not None and opt.strike > self.underlying_price]
-        otm_puts = [opt for opt in self.puts if opt.strike is not None and opt.strike < self.underlying_price]
+        otm_calls = [
+            opt
+            for opt in self.calls
+            if opt.strike is not None and opt.strike > self.underlying_price
+        ]
+        otm_puts = [
+            opt
+            for opt in self.puts
+            if opt.strike is not None and opt.strike < self.underlying_price
+        ]
 
         return {"calls": otm_calls, "puts": otm_puts}
 

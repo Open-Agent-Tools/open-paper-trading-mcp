@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.core.config import settings
 
+
 def get_default_log_dir() -> Path:
     """Get the default log directory based on OS standards"""
     system = platform.system().lower()
@@ -77,6 +78,7 @@ def setup_logging() -> None:
 
     project_logger.info(f"Log File: {log_file}")
     project_logger.info(f"Log Level: {log_level}")
+
 
 # Export the logger for use in other modules
 logger = logging.getLogger("open_paper_trading_mcp")

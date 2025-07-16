@@ -4,7 +4,7 @@ Account and order validation service.
 Adapted from reference implementation with enhanced validation capabilities.
 """
 
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Any
 from datetime import datetime, date
 
 from ..schemas.orders import MultiLegOrder, Order, OrderLeg, OrderType
@@ -110,7 +110,12 @@ class AccountValidator:
             raise ValidationError("Order must have at least one leg")
 
         # Check for duplicate assets
-        symbols = [self._get_symbol(leg.asset) if isinstance(leg.asset, Asset) else str(leg.asset) for leg in order.legs]
+        symbols = [
+            self._get_symbol(leg.asset)
+            if isinstance(leg.asset, Asset)
+            else str(leg.asset)
+            for leg in order.legs
+        ]
         if len(symbols) != len(set(symbols)):
             raise ValidationError("Duplicate assets not allowed in multi-leg orders")
 
@@ -152,7 +157,11 @@ class AccountValidator:
 
         for leg in legs:
             if leg.order_type in [OrderType.BTC, OrderType.STC]:
-                symbol = self._get_symbol(leg.asset) if isinstance(leg.asset, Asset) else str(leg.asset)
+                symbol = (
+                    self._get_symbol(leg.asset)
+                    if isinstance(leg.asset, Asset)
+                    else str(leg.asset)
+                )
 
                 # Find positions that can be closed by this leg
                 closable_positions = [

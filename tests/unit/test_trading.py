@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 
-def test_get_quote_valid_symbol(client: TestClient):
+def test_get_quote_valid_symbol(client: TestClient) -> None:
     """Test getting a quote for a valid symbol."""
     response = client.get("/api/v1/trading/quote/AAPL")
     assert response.status_code == 200
@@ -12,13 +12,13 @@ def test_get_quote_valid_symbol(client: TestClient):
     assert "volume" in data
 
 
-def test_get_quote_invalid_symbol(client: TestClient):
+def test_get_quote_invalid_symbol(client: TestClient) -> None:
     """Test getting a quote for an invalid symbol."""
     response = client.get("/api/v1/trading/quote/INVALID")
     assert response.status_code == 404
 
 
-def test_create_order(client: TestClient):
+def test_create_order(client: TestClient) -> None:
     """Test creating a new order."""
     order_data = {"symbol": "AAPL", "order_type": "buy", "quantity": 10, "price": 150.0}
     response = client.post("/api/v1/trading/order", json=order_data)
@@ -32,7 +32,7 @@ def test_create_order(client: TestClient):
     assert "id" in data
 
 
-def test_get_orders(client: TestClient):
+def test_get_orders(client: TestClient) -> None:
     """Test getting all orders."""
     response = client.get("/api/v1/trading/orders")
     assert response.status_code == 200
@@ -40,7 +40,7 @@ def test_get_orders(client: TestClient):
     assert isinstance(data, list)
 
 
-def test_get_order_by_id(client: TestClient):
+def test_get_order_by_id(client: TestClient) -> None:
     """Test getting a specific order by ID."""
     # First create an order
     order_data = {
@@ -60,7 +60,7 @@ def test_get_order_by_id(client: TestClient):
     assert data["symbol"] == "GOOGL"
 
 
-def test_cancel_order(client: TestClient):
+def test_cancel_order(client: TestClient) -> None:
     """Test canceling an order."""
     # First create an order
     order_data = {"symbol": "AAPL", "order_type": "buy", "quantity": 10, "price": 150.0}

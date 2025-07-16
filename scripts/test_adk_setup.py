@@ -147,7 +147,7 @@ def check_environment() -> bool:
     return all_good
 
 
-def main() -> None:
+def main() -> bool:
     """Main test function."""
     print("🧪 Testing ADK Evaluation Setup\n")
 

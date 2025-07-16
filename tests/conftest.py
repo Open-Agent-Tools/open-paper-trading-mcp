@@ -1,6 +1,9 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
+from typing import Generator, Any
+from unittest.mock import MagicMock
+from sqlalchemy.orm import Session
 
 # Set the TESTING environment variable BEFORE importing the app
 os.environ["TESTING"] = "True"
@@ -9,8 +12,9 @@ from app.main import app
 from app.storage.database import get_db, SessionLocal, engine
 from app.models.database.base import Base
 
+
 @pytest.fixture(scope="function")
-def db_session():
+def db_session() -> Generator[Session, Any, None]:
     """Create a new database session for a test and handle setup/teardown."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -20,11 +24,12 @@ def db_session():
         db.close()
         Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture
-def client(db_session) -> TestClient:
+def client(db_session: Session) -> TestClient:
     """Create a test client that uses the test database session."""
-    
-    def override_get_db():
+
+    def override_get_db() -> Generator[Session, Any, None]:
         try:
             yield db_session
         finally:
@@ -33,13 +38,15 @@ def client(db_session) -> TestClient:
     app.dependency_overrides[get_db] = override_get_db
     return TestClient(app)
 
+
 @pytest.fixture
 def auth_headers() -> dict[str, str]:
     """Create authentication headers for testing."""
     return {"Authorization": "Bearer testuser"}
 
+
 @pytest.fixture
-def mock_trading_service(mocker):
+def mock_trading_service(mocker: MagicMock) -> MagicMock:
     """Mock the trading service."""
     mock_service = mocker.patch("app.services.trading_service.trading_service")
-    return mock_service
+    return mock_service  # type: ignore

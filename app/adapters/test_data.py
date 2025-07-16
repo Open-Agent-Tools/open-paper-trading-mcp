@@ -15,7 +15,7 @@ Data format: [symbol],[current_date],[bid],[ask]
 import gzip
 import csv
 from datetime import datetime, date
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 from .base import QuoteAdapter, AdapterConfig
@@ -244,8 +244,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
             return None
 
         # Separate calls and puts
-        calls = [opt for opt in all_options if isinstance(opt.asset, Option) and opt.asset.option_type == "call"]
-        puts = [opt for opt in all_options if isinstance(opt.asset, Option) and opt.asset.option_type == "put"]
+        calls = [
+            opt
+            for opt in all_options
+            if isinstance(opt.asset, Option) and opt.asset.option_type == "call"
+        ]
+        puts = [
+            opt
+            for opt in all_options
+            if isinstance(opt.asset, Option) and opt.asset.option_type == "put"
+        ]
 
         # Sort by strike price
         calls.sort(key=lambda x: x.asset.strike if isinstance(x.asset, Option) else 0)
@@ -253,7 +261,11 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         # Determine expiration date
         exp_date = expiration
-        if exp_date is None and all_options and isinstance(all_options[0].asset, Option):
+        if (
+            exp_date is None
+            and all_options
+            and isinstance(all_options[0].asset, Option)
+        ):
             exp_date = all_options[0].asset.expiration_date
 
         return OptionsChain(
@@ -361,7 +373,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
                 set(
                     quote.asset.symbol
                     for quote in cache.values()
-                    if quote.asset is not None and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
+                    if quote.asset is not None
+                    and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
                 )
             )
 

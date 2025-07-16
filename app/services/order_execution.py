@@ -23,8 +23,8 @@ from .estimators import PriceEstimator, MidpointEstimator
 
 class QuoteServiceProtocol(Protocol):
     """Protocol for quote service."""
-    async def get_quote(self, asset: object) -> Quote:
-        ...
+
+    async def get_quote(self, asset: object) -> Quote: ...
 
 
 class OrderExecutionError(Exception):
@@ -63,7 +63,11 @@ class OrderExecutionEngine:
     - Margin requirement updates
     """
 
-    def __init__(self, quote_service: Optional[QuoteServiceProtocol] = None, margin_service: Optional[object] = None) -> None:
+    def __init__(
+        self,
+        quote_service: Optional[QuoteServiceProtocol] = None,
+        margin_service: Optional[object] = None,
+    ) -> None:
         self.quote_service = quote_service
         self.margin_service = margin_service
         self.default_estimator = MidpointEstimator()
@@ -360,10 +364,14 @@ class OrderExecutionEngine:
                 break
 
             quantity_can_close = abs(position.quantity)
-            quantity_to_close = int(min(quantity_to_close_remaining, quantity_can_close))
+            quantity_to_close = int(
+                min(quantity_to_close_remaining, quantity_can_close)
+            )
 
             # Reduce position quantity
-            position.quantity += int(copysign(1, position.quantity) * -1 * quantity_to_close)
+            position.quantity += int(
+                copysign(1, position.quantity) * -1 * quantity_to_close
+            )
             quantity_to_close_remaining -= quantity_to_close
 
             # Calculate realized P&L for the closed portion

@@ -11,7 +11,7 @@ For new code, import directly from app.schemas.* modules.
 # Re-export schemas for backwards compatibility
 from app.schemas.orders import (
     OrderType,
-    OrderStatus, 
+    OrderStatus,
     OrderCondition,
     OrderSide,
     OrderLeg,
@@ -36,23 +36,20 @@ from app.schemas.trading import (
 __all__ = [
     # Order types and enums
     "OrderType",
-    "OrderStatus", 
+    "OrderStatus",
     "OrderCondition",
     "OrderSide",
-    
     # Order models
     "OrderLeg",
-    "Order", 
+    "Order",
     "MultiLegOrder",
     "OrderCreate",
-    "OrderLegCreate", 
+    "OrderLegCreate",
     "MultiLegOrderCreate",
-    
     # Position models
     "Position",
     "Portfolio",
     "PortfolioSummary",
-    
     # Trading models
     "StockQuote",
 ]

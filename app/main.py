@@ -16,17 +16,12 @@ from app.auth.robinhood_auth import get_robinhood_client
 from app.core.logging import setup_logging
 
 # Import all MCP tool instances
+mcp_instance: Optional[Any] = None
 try:
-    from app.mcp.tools import mcp as paper_trading_mcp
-    from app.mcp.market_data_tools import mcp as market_data_mcp
-    from app.mcp.options_tools import mcp as options_mcp
-    from fastmcp import FastMCP
-
-    # Use the main trading MCP instance (contains all core tools)
-    mcp = paper_trading_mcp
+    from app.mcp.tools import mcp as mcp_instance
 
 except ImportError:
-    mcp: Optional[FastMCP[Any]] = None
+    pass
 
 
 def initialize_database() -> None:
@@ -46,11 +41,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging()
     print("Starting up FastAPI server...")
     initialize_database()
-    
+
     # Authenticate with Robinhood
     robinhood_client = get_robinhood_client()
     await robinhood_client.authenticate()
-    
+
     yield
     # Shutdown
     print("Shutting down FastAPI server...")
@@ -112,7 +107,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 def run_mcp_server() -> None:
     """Run the MCP server in a separate thread."""
-    if mcp is None:
+    if mcp_instance is None:
         print("MCP server not available (likely in test mode)")
         return
 
@@ -120,7 +115,7 @@ def run_mcp_server() -> None:
         f"Starting MCP server on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}"
     )
     try:
-        mcp.run(
+        mcp_instance.run(
             host=settings.MCP_SERVER_HOST,
             port=settings.MCP_SERVER_PORT,
             transport="sse",
@@ -132,7 +127,7 @@ def run_mcp_server() -> None:
 def main() -> None:
     """Main entry point to run both servers."""
     # Start MCP server in a separate thread if available
-    if mcp is not None:
+    if mcp_instance is not None:
         mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
         mcp_thread.start()
     else:

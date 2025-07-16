@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 
-def test_get_portfolio(client: TestClient):
+def test_get_portfolio(client: TestClient) -> None:
     """Test getting the portfolio."""
     response = client.get("/api/v1/portfolio/")
     assert response.status_code == 200
@@ -14,7 +14,7 @@ def test_get_portfolio(client: TestClient):
     assert isinstance(data["positions"], list)
 
 
-def test_get_portfolio_summary(client: TestClient):
+def test_get_portfolio_summary(client: TestClient) -> None:
     """Test getting the portfolio summary."""
     response = client.get("/api/v1/portfolio/summary")
     assert response.status_code == 200
@@ -28,7 +28,7 @@ def test_get_portfolio_summary(client: TestClient):
     assert "total_pnl_percent" in data
 
 
-def test_get_positions(client: TestClient):
+def test_get_positions(client: TestClient) -> None:
     """Test getting all positions."""
     response = client.get("/api/v1/portfolio/positions")
     assert response.status_code == 200
@@ -43,7 +43,7 @@ def test_get_positions(client: TestClient):
         assert "unrealized_pnl" in position
 
 
-def test_get_position_by_symbol(client: TestClient):
+def test_get_position_by_symbol(client: TestClient) -> None:
     """Test getting a specific position by symbol."""
     response = client.get("/api/v1/portfolio/position/AAPL")
     assert response.status_code == 200
@@ -55,7 +55,7 @@ def test_get_position_by_symbol(client: TestClient):
     assert "unrealized_pnl" in data
 
 
-def test_get_position_invalid_symbol(client: TestClient):
+def test_get_position_invalid_symbol(client: TestClient) -> None:
     """Test getting a position for an invalid symbol."""
     response = client.get("/api/v1/portfolio/position/INVALID")
     assert response.status_code == 404

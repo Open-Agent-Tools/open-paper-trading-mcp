@@ -13,8 +13,9 @@ Margin Rules Summary:
 - Naked options: Complex calculation based on underlying price and volatility
 """
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import List, Optional, Dict, Any, cast, TypedDict
+
 from pydantic import BaseModel, Field
 
 from ..models.assets import Option, Call, Put
@@ -28,6 +29,12 @@ from .strategies import (
     SpreadType,
     group_into_basic_strategies,
 )
+
+
+class MarginBreakdown(TypedDict):
+    total_margin: float
+    strategies: List["MarginRequirement"]
+    strategy_count: int
 
 
 class MarginRequirement(BaseModel):
@@ -79,7 +86,7 @@ class MaintenanceMarginService:
         self,
         positions: Optional[List[Position]] = None,
         strategies: Optional[List[BasicStrategy]] = None,
-        quote_adapter=None,
+        quote_adapter: Optional[Any] = None,
     ) -> MarginCalculationResult:
         """
         Calculate total maintenance margin requirement.
@@ -128,16 +135,22 @@ class MaintenanceMarginService:
         return result
 
     def _calculate_strategy_margin(
-        self, strategy: BasicStrategy, quote_adapter
+        self, strategy: BasicStrategy, quote_adapter: Optional[Any]
     ) -> MarginRequirement:
         """Calculate margin requirement for a single strategy."""
 
         if strategy.strategy_type == StrategyType.ASSET:
-            return self._calculate_asset_margin(strategy, quote_adapter)
+            return self._calculate_asset_margin(
+                cast(AssetStrategy, strategy), quote_adapter
+            )
         elif strategy.strategy_type == StrategyType.SPREAD:
-            return self._calculate_spread_margin(strategy, quote_adapter)
+            return self._calculate_spread_margin(
+                cast(SpreadStrategy, strategy), quote_adapter
+            )
         elif strategy.strategy_type == StrategyType.COVERED:
-            return self._calculate_covered_margin(strategy, quote_adapter)
+            return self._calculate_covered_margin(
+                cast(CoveredStrategy, strategy), quote_adapter
+            )
         elif strategy.strategy_type == StrategyType.OFFSET:
             return self._calculate_offset_margin(strategy, quote_adapter)
         else:
@@ -150,7 +163,7 @@ class MaintenanceMarginService:
             )
 
     def _calculate_asset_margin(
-        self, strategy: AssetStrategy, quote_adapter
+        self, strategy: AssetStrategy, quote_adapter: Optional[Any]
     ) -> MarginRequirement:
         """Calculate margin for asset (stock/option) strategy."""
 
@@ -175,7 +188,7 @@ class MaintenanceMarginService:
             return self._calculate_short_stock_margin(strategy, quote_adapter)
 
     def _calculate_short_stock_margin(
-        self, strategy: AssetStrategy, quote_adapter
+        self, strategy: AssetStrategy, quote_adapter: Optional[Any]
     ) -> MarginRequirement:
         """Calculate margin for short stock position."""
 
@@ -205,7 +218,7 @@ class MaintenanceMarginService:
         )
 
     def _calculate_naked_option_margin(
-        self, strategy: AssetStrategy, quote_adapter
+        self, strategy: AssetStrategy, quote_adapter: Optional[Any]
     ) -> MarginRequirement:
         """Calculate margin for naked option position."""
 
@@ -245,7 +258,10 @@ class MaintenanceMarginService:
             method = "naked_call_standard"
         else:  # Put
             margin = self._calculate_naked_put_margin(
-                option, underlying_quote.price, option_premium, abs(strategy.quantity)
+                cast(Put, option),
+                underlying_quote.price,
+                option_premium,
+                abs(strategy.quantity),
             )
             method = "naked_put_standard"
 
@@ -313,7 +329,7 @@ class MaintenanceMarginService:
         return margin_per_share * 100 * quantity
 
     def _calculate_spread_margin(
-        self, strategy: SpreadStrategy, quote_adapter
+        self, strategy: SpreadStrategy, quote_adapter: Optional[Any]
     ) -> MarginRequirement:
         """Calculate margin for spread strategy."""
 
@@ -356,7 +372,7 @@ class MaintenanceMarginService:
         )
 
     def _calculate_covered_margin(
-        self, strategy: CoveredStrategy, quote_adapter
+        self, strategy: CoveredStrategy, quote_adapter: Optional[Any]
     ) -> MarginRequirement:
         """Calculate margin for covered strategy."""
 
@@ -374,20 +390,26 @@ class MaintenanceMarginService:
             },
         )
 
-    def _calculate_offset_margin(self, strategy, quote_adapter) -> MarginRequirement:
+    def _calculate_offset_margin(
+        self, strategy: BasicStrategy, quote_adapter: Optional[Any]
+    ) -> MarginRequirement:
         """Calculate margin for offset strategy."""
 
         # Offset strategies typically require no additional margin
+        asset_strategy = cast(AssetStrategy, strategy)
         return MarginRequirement(
             strategy_id="",
             strategy_type=StrategyType.OFFSET,
             margin_requirement=0.0,
             calculation_method="offset_position_no_margin",
-            details={"asset": strategy.asset.symbol, "quantity": strategy.quantity},
+            details={
+                "asset": asset_strategy.asset.symbol,
+                "quantity": asset_strategy.quantity,
+            },
         )
 
     def get_portfolio_margin_breakdown(
-        self, positions: List[Position], quote_adapter=None
+        self, positions: List[Position], quote_adapter: Optional[Any] = None
     ) -> Dict[str, Any]:
         """Get detailed margin breakdown by underlying asset."""
 
@@ -397,7 +419,7 @@ class MaintenanceMarginService:
         )
 
         # Group by underlying
-        breakdown = {}
+        breakdown: Dict[str, MarginBreakdown] = {}
 
         for margin_req in result.strategy_margins:
             # Extract underlying from details
@@ -422,11 +444,7 @@ class MaintenanceMarginService:
 
             margin_amount = margin_req.margin_requirement
             if isinstance(margin_amount, (int, float)):
-                current_total = breakdown[underlying]["total_margin"]
-                if isinstance(current_total, (int, float)):
-                    breakdown[underlying]["total_margin"] = current_total + margin_amount
-                else:
-                    breakdown[underlying]["total_margin"] = margin_amount
+                breakdown[underlying]["total_margin"] += margin_amount
             breakdown[underlying]["strategies"].append(margin_req)
             breakdown[underlying]["strategy_count"] += 1
 
@@ -442,7 +460,7 @@ class MaintenanceMarginService:
 def calculate_maintenance_margin(
     positions: Optional[List[Position]] = None,
     strategies: Optional[List[BasicStrategy]] = None,
-    quote_adapter=None,
+    quote_adapter: Any = None,
 ) -> float:
     """Calculate total maintenance margin requirement."""
     service = MaintenanceMarginService(quote_adapter)
@@ -451,7 +469,7 @@ def calculate_maintenance_margin(
 
 
 def get_margin_breakdown(
-    positions: List[Position], quote_adapter=None
+    positions: List[Position], quote_adapter: Any = None
 ) -> Dict[str, Any]:
     """Get detailed margin breakdown for positions."""
     service = MaintenanceMarginService(quote_adapter)

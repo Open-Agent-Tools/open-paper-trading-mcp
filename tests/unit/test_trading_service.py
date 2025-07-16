@@ -198,38 +198,50 @@ class TestTradingService:
 def test_get_enhanced_quote_stock():
     pytest.fail("Test not implemented")
 
+
 def test_get_enhanced_quote_option():
     pytest.fail("Test not implemented")
+
 
 def test_get_options_chain():
     pytest.fail("Test not implemented")
 
+
 def test_calculate_greeks():
     pytest.fail("Test not implemented")
+
 
 def test_analyze_portfolio_strategies():
     pytest.fail("Test not implemented")
 
+
 def test_calculate_margin_requirement():
     pytest.fail("Test not implemented")
+
 
 def test_validate_account_state():
     pytest.fail("Test not implemented")
 
+
 def test_get_test_scenarios():
     pytest.fail("Test not implemented")
+
 
 def test_set_test_date():
     pytest.fail("Test not implemented")
 
+
 def test_get_available_symbols():
     pytest.fail("Test not implemented")
+
 
 def test_get_sample_data_info():
     pytest.fail("Test not implemented")
 
+
 def test_get_expiration_dates():
     pytest.fail("Test not implemented")
+
 
 def test_create_multi_leg_order():
     pytest.fail("Test not implemented")

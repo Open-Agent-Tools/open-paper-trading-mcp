@@ -28,4 +28,5 @@ class RobinhoodConfig(BaseSettings):
             return None
         return self.password.get_secret_value()
 
+
 settings = RobinhoodConfig()

@@ -210,9 +210,11 @@ async def get_portfolio_risk():
                         short_positions += 1
 
                     # Check expiration
-                    if (hasattr(position, "asset") 
+                    if (
+                        hasattr(position, "asset")
                         and position.asset is not None
-                        and hasattr(position.asset, "expiration_date")):
+                        and hasattr(position.asset, "expiration_date")
+                    ):
                         days_to_exp = (
                             position.asset.expiration_date - datetime.now().date()
                         ).days

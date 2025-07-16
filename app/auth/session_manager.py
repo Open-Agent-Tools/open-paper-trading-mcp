@@ -2,9 +2,10 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Optional
 import robin_stocks.robinhood as rh
 from app.core.logging import logger
+
 
 class SessionManager:
     """Manages Robin Stocks authentication session lifecycle."""
@@ -56,10 +57,8 @@ class SessionManager:
         try:
             logger.info(f"Attempting to authenticate user: {self.username}")
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None, rh.login, self.username, self.password
-            )
-            
+            await loop.run_in_executor(None, rh.login, self.username, self.password)
+
             # Verify login by making a test API call
             user_profile = await loop.run_in_executor(None, rh.load_user_profile)
 
@@ -90,8 +89,10 @@ class SessionManager:
                 self.login_time = None
                 self.last_successful_call = None
 
+
 # Global session manager instance
 _session_manager: Optional[SessionManager] = None
+
 
 def get_session_manager() -> SessionManager:
     """Get the global session manager instance."""

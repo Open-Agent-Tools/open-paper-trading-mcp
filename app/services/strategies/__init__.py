@@ -20,7 +20,6 @@ from .models import (
     StrategyType,
     SpreadType,
     ComplexStrategyType,
-    
     # Base strategy models
     BasicStrategy,
     AssetStrategy,
@@ -28,7 +27,6 @@ from .models import (
     SpreadStrategy,
     CoveredStrategy,
     ComplexStrategy,
-    
     # Analysis models
     StrategyPnL,
     StrategyGreeks,
@@ -55,9 +53,8 @@ from .analyzer import (
 __all__ = [
     # Enums
     "StrategyType",
-    "SpreadType", 
+    "SpreadType",
     "ComplexStrategyType",
-    
     # Strategy models
     "BasicStrategy",
     "AssetStrategy",
@@ -65,21 +62,18 @@ __all__ = [
     "SpreadStrategy",
     "CoveredStrategy",
     "ComplexStrategy",
-    
     # Analysis models
     "StrategyPnL",
     "StrategyGreeks",
     "StrategyRiskMetrics",
-    
     # Services
     "StrategyRecognitionService",
     "AdvancedStrategyAnalyzer",
-    
     # Convenience functions
     "group_into_basic_strategies",
     "analyze_strategy_portfolio",
     "analyze_advanced_strategy_pnl",
     "aggregate_portfolio_greeks",
-    "detect_complex_strategies", 
+    "detect_complex_strategies",
     "get_portfolio_optimization_recommendations",
 ]

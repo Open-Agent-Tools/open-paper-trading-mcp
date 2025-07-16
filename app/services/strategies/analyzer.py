@@ -8,7 +8,7 @@ Greeks aggregation, complex strategy detection, and optimization recommendations
 from typing import List, Dict, Any, Optional, Union
 from datetime import date
 
-from ...models.assets import Asset, Option, Call, Put
+from ...models.assets import Option, Call, Put
 from ...models.trading import Position
 from ...models.quotes import Quote, OptionQuote
 
@@ -18,7 +18,6 @@ from .models import (
     SpreadStrategy,
     CoveredStrategy,
     ComplexStrategy,
-    ComplexStrategyType,
     StrategyPnL,
     StrategyGreeks,
     StrategyRiskMetrics,
@@ -110,7 +109,9 @@ class AdvancedStrategyAnalyzer:
                     total_greeks.rho += (quote.rho or 0.0) * position_size
 
                     # Track investment for normalization
-                    position_value = abs(position.quantity * (quote.price or 0.0) * multiplier)
+                    position_value = abs(
+                        position.quantity * (quote.price or 0.0) * multiplier
+                    )
                     total_investment += position_value
 
                     # Get underlying price for dollar Greeks
@@ -346,7 +347,10 @@ class AdvancedStrategyAnalyzer:
 
         if isinstance(strategy, AssetStrategy):
             for position in all_positions:
-                if position.asset is not None and position.asset.symbol == strategy.asset.symbol:
+                if (
+                    position.asset is not None
+                    and position.asset.symbol == strategy.asset.symbol
+                ):
                     strategy_positions.append(position)
 
         return strategy_positions

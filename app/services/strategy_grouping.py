@@ -5,7 +5,7 @@ Groups positions into basic strategies for margin calculation and risk analysis.
 Special thanks to /u/EdKaim for the outline of this process.
 """
 
-from typing import List, Dict, Any, Optional, Tuple, Union, cast
+from typing import List, Dict, Any, Tuple, cast
 
 from ..models.assets import Option, asset_factory
 from ..models.trading import Position
@@ -14,7 +14,6 @@ from .strategies.models import (
     AssetStrategy,
     SpreadStrategy,
     CoveredStrategy,
-    StrategyType,
 )
 
 
@@ -118,10 +117,10 @@ def _group_into_basic_strategies_in_underlying(
                         long_puts.append(AssetStrategy(asset=asset, quantity=1))
 
     # Sort by strike for optimal pairing
-    short_calls.sort(key=lambda x: getattr(x.asset, 'strike', 0))
-    long_calls.sort(key=lambda x: getattr(x.asset, 'strike', 0))
-    short_puts.sort(key=lambda x: getattr(x.asset, 'strike', 0), reverse=True)
-    long_puts.sort(key=lambda x: getattr(x.asset, 'strike', 0), reverse=True)
+    short_calls.sort(key=lambda x: getattr(x.asset, "strike", 0))
+    long_calls.sort(key=lambda x: getattr(x.asset, "strike", 0))
+    short_puts.sort(key=lambda x: getattr(x.asset, "strike", 0), reverse=True)
+    long_puts.sort(key=lambda x: getattr(x.asset, "strike", 0), reverse=True)
 
     # Process short calls
     for short_call in short_calls:
@@ -129,7 +128,9 @@ def _group_into_basic_strategies_in_underlying(
             # Covered call strategy
             strategies.append(
                 CoveredStrategy(
-                    asset=underlying, sell_option=cast(Option, short_call.asset), quantity=1
+                    asset=underlying,
+                    sell_option=cast(Option, short_call.asset),
+                    quantity=1,
                 )
             )
             long_equity.quantity -= 100
@@ -138,7 +139,9 @@ def _group_into_basic_strategies_in_underlying(
             long_call = long_calls.pop(0)
             strategies.append(
                 SpreadStrategy(
-                    buy_option=cast(Option, long_call.asset), sell_option=cast(Option, short_call.asset), quantity=1
+                    buy_option=cast(Option, long_call.asset),
+                    sell_option=cast(Option, short_call.asset),
+                    quantity=1,
                 )
             )
         else:
@@ -151,7 +154,9 @@ def _group_into_basic_strategies_in_underlying(
             # Covered put strategy (short stock covers short put)
             strategies.append(
                 CoveredStrategy(
-                    asset=underlying, sell_option=cast(Option, short_put.asset), quantity=1
+                    asset=underlying,
+                    sell_option=cast(Option, short_put.asset),
+                    quantity=1,
                 )
             )
             short_equity.quantity += 100  # Reduce short position
@@ -160,7 +165,9 @@ def _group_into_basic_strategies_in_underlying(
             long_put = long_puts.pop(0)
             strategies.append(
                 SpreadStrategy(
-                    buy_option=cast(Option, long_put.asset), sell_option=cast(Option, short_put.asset), quantity=1
+                    buy_option=cast(Option, long_put.asset),
+                    sell_option=cast(Option, short_put.asset),
+                    quantity=1,
                 )
             )
         else:
@@ -335,19 +342,13 @@ def _find_iron_condors(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
     call_spreads = [
         s
         for s in strategies
-        if (
-            isinstance(s, SpreadStrategy)
-            and s.sell_option.option_type == "call"
-        )
+        if (isinstance(s, SpreadStrategy) and s.sell_option.option_type == "call")
     ]
 
     put_spreads = [
         s
         for s in strategies
-        if (
-            isinstance(s, SpreadStrategy)
-            and s.sell_option.option_type == "put"
-        )
+        if (isinstance(s, SpreadStrategy) and s.sell_option.option_type == "put")
     ]
 
     for call_spread in call_spreads:
@@ -390,9 +391,7 @@ def _find_straddles_strangles(strategies: List[BasicStrategy]) -> List[Dict[str,
     option_groups: Dict[Tuple[str, str], List[AssetStrategy]] = {}
 
     for strategy in strategies:
-        if isinstance(strategy, AssetStrategy) and isinstance(
-            strategy.asset, Option
-        ):
+        if isinstance(strategy, AssetStrategy) and isinstance(strategy.asset, Option):
             option = strategy.asset  # Already confirmed to be Option via isinstance
             key = (option.underlying.symbol, option.expiration_date.isoformat())
             if key not in option_groups:

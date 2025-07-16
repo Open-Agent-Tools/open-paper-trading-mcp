@@ -56,4 +56,5 @@ async def init_db() -> None:
     Initialize the database (create tables, etc.).
     """
     from app.models.database.base import Base
+
     Base.metadata.create_all(bind=engine)

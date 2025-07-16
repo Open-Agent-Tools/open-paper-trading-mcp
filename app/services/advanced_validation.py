@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from app.models.assets import Option, asset_factory
 from app.schemas.orders import Order, MultiLegOrder, OrderType
 from app.models.quotes import Quote, OptionQuote
-from app.services.validation import AccountValidator
+from app.services.validation import AccountValidator, ValidationError
 from app.services.strategies import AdvancedStrategyAnalyzer
 
 
@@ -129,7 +129,7 @@ class AdvancedOrderValidator:
     - Liquidity and execution feasibility
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.basic_validator = AccountValidator()
         self.strategy_analyzer = AdvancedStrategyAnalyzer()
 
@@ -226,20 +226,21 @@ class AdvancedOrderValidator:
 
         # Use existing basic validator
         try:
-            basic_errors = self.basic_validator.validate_order(
-                account_data, order, None
+            self.basic_validator.validate_account_state(
+                cash_balance=account_data.get("cash_balance", 0.0),
+                positions=account_data.get("positions", []),
             )
 
-            for error in basic_errors:
-                result.messages.append(
-                    ValidationMessage(
-                        rule=ValidationRule.BASIC,
-                        severity=ValidationSeverity.ERROR,
-                        code="BASIC_VALIDATION",
-                        message=error,
-                        suggested_action=None,
-                    )
+        except ValidationError as e:
+            result.messages.append(
+                ValidationMessage(
+                    rule=ValidationRule.BASIC,
+                    severity=ValidationSeverity.ERROR,
+                    code="BASIC_VALIDATION",
+                    message=str(e),
+                    suggested_action=None,
                 )
+            )
         except Exception as e:
             result.messages.append(
                 ValidationMessage(
@@ -340,6 +341,7 @@ class AdvancedOrderValidator:
                         "symbol": option.symbol,
                         "expiration_date": option.expiration_date.isoformat(),
                     },
+                    suggested_action="Choose a valid, unexpired option",
                 )
             )
 
@@ -362,6 +364,7 @@ class AdvancedOrderValidator:
                     code="NO_UNDERLYING_QUOTE",
                     message=f"Cannot validate strike price - no quote for {option.underlying.symbol}",
                     details={"underlying_symbol": option.underlying.symbol},
+                    suggested_action="Ensure market data is available for the underlying asset",
                 )
             )
             return
@@ -402,22 +405,24 @@ class AdvancedOrderValidator:
 
         # Warn about deep ITM/OTM options
         if strike_distance > 0.2:  # More than 20% from ATM
-            moneyness = (
-                "ITM" if option.get_intrinsic_value(underlying_price) > 0 else "OTM"
-            )
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.OPTIONS,
-                    severity=ValidationSeverity.INFO,
-                    code="DEEP_MONEYNESS",
-                    message=f"Deep {moneyness} option - {strike_distance:.1%} from ATM",
-                    details={
-                        "symbol": option.symbol,
-                        "moneyness": moneyness,
-                        "distance_percent": strike_distance,
-                    },
+            if underlying_price is not None:
+                moneyness = (
+                    "ITM" if option.get_intrinsic_value(underlying_price) > 0 else "OTM"
                 )
-            )
+                result.messages.append(
+                    ValidationMessage(
+                        rule=ValidationRule.OPTIONS,
+                        severity=ValidationSeverity.INFO,
+                        code="DEEP_MONEYNESS",
+                        message=f"Deep {moneyness} option - {strike_distance:.1%} from ATM",
+                        details={
+                            "symbol": option.symbol,
+                            "moneyness": moneyness,
+                            "distance_percent": strike_distance,
+                        },
+                        suggested_action=None,
+                    )
+                )
 
     def _validate_assignment_risk(
         self,
@@ -450,6 +455,8 @@ class AdvancedOrderValidator:
             return
 
         underlying_price = underlying_quote.price
+        if underlying_price is None:
+            return
         intrinsic_value = option.get_intrinsic_value(underlying_price)
 
         # Check if option is ITM (high assignment risk)
@@ -473,6 +480,7 @@ class AdvancedOrderValidator:
 
         # Check days to expiration for assignment risk
         days_to_expiration = (option.expiration_date - date.today()).days
+        option_strike = option.strike
         if (
             days_to_expiration <= 3 and intrinsic_value > -2.0
         ):  # Close to expiration and near ITM
@@ -485,7 +493,9 @@ class AdvancedOrderValidator:
                     details={
                         "symbol": option.symbol,
                         "days_to_expiration": days_to_expiration,
-                        "distance_from_strike": abs(underlying_price - option_strike) if option_strike is not None else 0.0,
+                        "distance_from_strike": abs(underlying_price - option_strike)
+                        if option_strike is not None
+                        else 0.0,
                     },
                     suggested_action="Consider rolling or closing position",
                 )
@@ -702,7 +712,9 @@ class AdvancedOrderValidator:
                 and quote.ask
             ):
                 spread_percent = (
-                    (quote.ask - quote.bid) / quote.price if quote.price and quote.price > 0 else 0
+                    (quote.ask - quote.bid) / quote.price
+                    if quote.price and quote.price > 0
+                    else 0
                 )
 
                 if spread_percent > 0.1:  # Spread wider than 10%
@@ -761,6 +773,7 @@ class AdvancedOrderValidator:
                             "symbol": symbol,
                             "open_interest": quote.open_interest,
                         },
+                        suggested_action=None,
                     )
                 )
 
@@ -948,4 +961,13 @@ def create_default_account_limits(
         is_pdt=is_pdt,
         max_position_size=50000.0 if options_level >= 3 else 25000.0,
         max_options_contracts=500 if options_level >= 3 else 100,
+        max_daily_trades=100,
+        max_delta_exposure=10000.0,
+        max_theta_decay=500.0,
+        max_vega_exposure=5000.0,
+        max_naked_options=50,
+        min_days_to_expiration=1,
+        max_strike_distance=0.5,
+        day_trades_used=0,
+        is_margin_account=True,
     )

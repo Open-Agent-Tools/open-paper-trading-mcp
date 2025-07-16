@@ -132,7 +132,9 @@ class OptionsExpirationEngine:
 
         return result
 
-    def _find_expired_positions(self, positions: list[dict[str, object]], processing_date: date) -> list[dict[str, object]]:
+    def _find_expired_positions(
+        self, positions: list[dict[str, object]], processing_date: date
+    ) -> list[dict[str, object]]:
         """Find all expired option positions."""
         expired = []
 
@@ -141,7 +143,11 @@ class OptionsExpirationEngine:
             if isinstance(position, dict):
                 symbol = str(position.get("symbol", ""))
                 quantity_val = position.get("quantity", 0)
-                quantity = int(quantity_val) if isinstance(quantity_val, (int, float, str)) else 0
+                quantity = (
+                    int(quantity_val)
+                    if isinstance(quantity_val, (int, float, str))
+                    else 0
+                )
             else:
                 symbol = position.symbol
                 quantity = position.quantity
@@ -157,7 +163,9 @@ class OptionsExpirationEngine:
 
         return expired
 
-    def _group_by_underlying(self, expired_positions: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
+    def _group_by_underlying(
+        self, expired_positions: list[dict[str, object]]
+    ) -> dict[str, list[dict[str, object]]]:
         """Group expired positions by underlying symbol."""
         groups: dict[str, list[dict[str, object]]] = {}
 
@@ -213,11 +221,13 @@ class OptionsExpirationEngine:
             account["positions"], underlying_symbol
         )
         long_equity = sum(
-            int(pos["quantity"]) for pos in equity_positions 
+            int(pos["quantity"])
+            for pos in equity_positions
             if isinstance(pos["quantity"], (int, float)) and int(pos["quantity"]) > 0
         )
         short_equity = sum(
-            int(pos["quantity"]) for pos in equity_positions 
+            int(pos["quantity"])
+            for pos in equity_positions
             if isinstance(pos["quantity"], (int, float)) and int(pos["quantity"]) < 0
         )
 
@@ -515,7 +525,9 @@ class OptionsExpirationEngine:
                 "shares_destination": "new_long_position",
             }
 
-    def _get_equity_positions(self, positions: list[dict[str, object]], underlying_symbol: str) -> list[dict[str, object]]:
+    def _get_equity_positions(
+        self, positions: list[dict[str, object]], underlying_symbol: str
+    ) -> list[dict[str, object]]:
         """Get non-option positions for an underlying."""
         equity_positions = []
 
@@ -523,7 +535,11 @@ class OptionsExpirationEngine:
             if isinstance(position, dict):
                 symbol = str(position.get("symbol", ""))
                 quantity_val = position.get("quantity", 0)
-                quantity = int(quantity_val) if isinstance(quantity_val, (int, float, str)) else 0
+                quantity = (
+                    int(quantity_val)
+                    if isinstance(quantity_val, (int, float, str))
+                    else 0
+                )
             else:
                 symbol = position.symbol
                 quantity = position.quantity
@@ -533,12 +549,18 @@ class OptionsExpirationEngine:
                 continue
 
             asset = asset_factory(symbol)
-            if asset is not None and not isinstance(asset, Option) and asset.symbol == underlying_symbol:
+            if (
+                asset is not None
+                and not isinstance(asset, Option)
+                and asset.symbol == underlying_symbol
+            ):
                 equity_positions.append(position)
 
         return equity_positions
 
-    def _drain_asset(self, positions: list[dict[str, object]], symbol: str, quantity: int) -> int:
+    def _drain_asset(
+        self, positions: list[dict[str, object]], symbol: str, quantity: int
+    ) -> int:
         """
         Reduce asset quantities across positions (FIFO).
 
@@ -558,7 +580,11 @@ class OptionsExpirationEngine:
             if isinstance(pos, dict):
                 pos_symbol = str(pos.get("symbol", ""))
                 pos_quantity_val = pos.get("quantity", 0)
-                pos_quantity = int(pos_quantity_val) if isinstance(pos_quantity_val, (int, float, str)) else 0
+                pos_quantity = (
+                    int(pos_quantity_val)
+                    if isinstance(pos_quantity_val, (int, float, str))
+                    else 0
+                )
             else:
                 pos_symbol = pos.symbol
                 pos_quantity = pos.quantity
@@ -572,7 +598,11 @@ class OptionsExpirationEngine:
         for position in target_positions:
             if isinstance(position, dict):
                 pos_quantity_val = position.get("quantity", 0)
-                pos_quantity = int(pos_quantity_val) if isinstance(pos_quantity_val, (int, float, str)) else 0
+                pos_quantity = (
+                    int(pos_quantity_val)
+                    if isinstance(pos_quantity_val, (int, float, str))
+                    else 0
+                )
             else:
                 pos_quantity = position.quantity
 

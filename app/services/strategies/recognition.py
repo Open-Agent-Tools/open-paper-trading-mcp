@@ -7,7 +7,7 @@ and provides analysis of strategy composition.
 
 from typing import List, Dict, Any
 
-from ...models.assets import Asset, Option, asset_factory
+from ...models.assets import Option, asset_factory
 from ...models.trading import Position
 
 from .models import (
@@ -110,10 +110,22 @@ class StrategyRecognitionService:
         )
 
         # Sort options by strike for optimal pairing
-        short_calls.sort(key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0, reverse=False)
-        long_calls.sort(key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0, reverse=False)
-        short_puts.sort(key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0, reverse=True)
-        long_puts.sort(key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0, reverse=True)
+        short_calls.sort(
+            key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0,
+            reverse=False,
+        )
+        long_calls.sort(
+            key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0,
+            reverse=False,
+        )
+        short_puts.sort(
+            key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0,
+            reverse=True,
+        )
+        long_puts.sort(
+            key=lambda s: s.asset.strike if isinstance(s.asset, Option) else 0,
+            reverse=True,
+        )
 
         # Create underlying asset for covered strategies
         underlying_asset = asset_factory(underlying_symbol)

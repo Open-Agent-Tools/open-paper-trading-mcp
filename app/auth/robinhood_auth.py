@@ -1,14 +1,17 @@
 """Robin Stocks authentication management."""
+
 import asyncio
 from dataclasses import dataclass, field
 from typing import Any
-import robin_stocks.robinhood as rs
+import robin_stocks.robinhood as r  # type: ignore
 from app.core.logging import logger
 from .config import settings
+
 
 @dataclass
 class RobinhoodAuth:
     """Robin Stocks authentication manager."""
+
     _authenticated: bool = field(default=False, init=False)
     _session_info: dict[str, Any] | None = field(default=None, init=False)
 
@@ -22,11 +25,7 @@ class RobinhoodAuth:
         try:
             loop = asyncio.get_running_loop()
             self._session_info = await loop.run_in_executor(
-                None, 
-                lambda: rs.login(
-                    settings.username,
-                    settings.get_password()
-                )
+                None, lambda: r.login(settings.username, settings.get_password())
             )
             self._authenticated = True
             logger.info("Robinhood authentication successful.")
@@ -43,7 +42,7 @@ class RobinhoodAuth:
             bool: True if logout successful, False otherwise
         """
         logger.info("Logging out from Robinhood.")
-        rs.logout()
+        r.logout()
         self._authenticated = False
         self._session_info = None
         return True
@@ -52,8 +51,10 @@ class RobinhoodAuth:
         """Check if currently authenticated."""
         return self._authenticated
 
+
 # Global authentication instance
 _robinhood_auth: RobinhoodAuth | None = None
+
 
 def get_robinhood_client() -> RobinhoodAuth:
     """
