@@ -1,11 +1,14 @@
 """
-Pydantic schemas for Account data.
+Account-related API schemas.
+
+This module contains all Pydantic models for account management:
+- Account schemas with positions and balance tracking
 """
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
 
-from app.models.trading import Position
+from app.schemas.positions import Position
 
 
 class Account(BaseModel):

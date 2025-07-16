@@ -1,15 +1,21 @@
 """
-Pydantic schemas for Order data.
+Order-related API schemas.
+
+This module contains all Pydantic models for order management:
+- Order types and statuses (enums)
+- Single and multi-leg order schemas
+- Order creation and validation schemas
 """
+
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Union, Dict
+from typing import Optional, List, Union, Dict, Any
 from datetime import datetime
 from enum import Enum
-
 from app.models.assets import Asset, asset_factory
 
 
 class OrderType(str, Enum):
+    """Order types for trading operations."""
     BUY = "buy"
     SELL = "sell"
     BTO = "buy_to_open"
@@ -19,6 +25,7 @@ class OrderType(str, Enum):
 
 
 class OrderStatus(str, Enum):
+    """Order status values."""
     PENDING = "pending"
     FILLED = "filled"
     CANCELLED = "cancelled"
@@ -27,10 +34,17 @@ class OrderStatus(str, Enum):
 
 
 class OrderCondition(str, Enum):
+    """Order execution conditions."""
     MARKET = "market"
     LIMIT = "limit"
     STOP = "stop"
     STOP_LIMIT = "stop_limit"
+
+
+class OrderSide(str, Enum):
+    """Order side for multi-leg orders."""
+    BUY = "buy"
+    SELL = "sell"
 
 
 class OrderLeg(BaseModel):

@@ -30,7 +30,7 @@ def sample_quotes():
     return {
         "AAPL": Quote(asset=Stock(symbol="AAPL"), quote_date=datetime.now(), price=155.0),
         "SPY251219C00500000": OptionQuote(
-            asset=Option.from_symbol("SPY251219C00500000"),
+            asset=Option("SPY251219C00500000"),
             quote_date=datetime.now(),
             price=10.0,
             underlying_price=500.0,

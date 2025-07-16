@@ -12,6 +12,8 @@ from app.core.config import settings
 from app.core.exceptions import CustomException
 from app.storage.database import engine
 from app.models.database.base import Base
+from app.auth.robinhood_auth import get_robinhood_client
+from app.core.logging import setup_logging
 
 # Import MCP tools only when not in test mode
 try:
@@ -34,8 +36,14 @@ def initialize_database() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
+    setup_logging()
     print("Starting up FastAPI server...")
     initialize_database()
+    
+    # Authenticate with Robinhood
+    robinhood_client = get_robinhood_client()
+    await robinhood_client.authenticate()
+    
     yield
     # Shutdown
     print("Shutting down FastAPI server...")

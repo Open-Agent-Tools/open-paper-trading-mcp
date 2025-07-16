@@ -8,33 +8,65 @@ Address 537 mypy errors and improve the core architecture through a multi-phase 
 ### Phase 0: Foundational Architecture & Models
 **Goal**: Unify the project structure, separate schemas from models, establish database best practices, and set up a robust testing foundation before tackling detailed type errors.
 
-#### 0.1 Standardize Models and Schemas
-- [ ] **Separate Concerns**: Move all Pydantic models from `app/models/` to a new `app/schemas/` directory to distinguish API schemas from database models.
-- [ ] **Organize Files**:
-  - Create `app/schemas/orders.py` and move `Order`, `OrderLeg`, and `MultiLegOrder`.
-  - Create `app/schemas/positions.py` for all position-related schemas.
-  - Create `app/schemas/accounts.py` for the `Account` schema.
-- [ ] **Standardize Constructors**: Add any missing required arguments to all Pydantic model constructors (e.g., `Position`, `Quote`) and provide sensible defaults for optional fields. This will fix a large category of `mypy` errors upfront.
+**Implementation Priority**: Tasks must be completed in this order to minimize cascading failures and maximize MyPy error reduction.
 
-#### 0.2 Configure Database and Migrations
-- [ ] **Fix SQLAlchemy Mappings**: In `app/models/database/trading.py`, update column definitions to use modern SQLAlchemy 2.0 type annotations (e.g., `Mapped[OrderType]`).
-- [ ] **Implement Database Migrations**: Integrate `Alembic` to manage and version the database schema, preventing manual schema changes.
+#### ✅ PRIORITY 1: Schema/Model Separation (0.1) - COMPLETE
+**Why First**: Foundation for everything else, will immediately resolve many MyPy errors
 
-#### 0.3 Refactor Core Application Logic
-- [ ] **Enhance Configuration**: Refactor `app/core/config.py` to use Pydantic's `BaseSettings` for validated, type-safe loading of environment variables.
-- [ ] **Break Circular Dependencies**: Use a tool like `pylint` or `deptry` to identify and refactor any module import cycles.
-- [ ] **Refactor Services**: Review `app/services/trading_service.py` to decompose it into smaller, more cohesive services if needed.
-- [ ] **Standardize Dependency Injection**: Refactor all API endpoints to consistently use FastAPI's `Depends` system for providing services and database sessions.
+- [x] **Create Schema Directory Structure**: ✅ Created `app/schemas/` with proper `__init__.py`
+- [x] **Move and Reorganize Schemas**: ✅ All schemas moved successfully:
+  - Created `app/schemas/orders.py` → Moved `Order`, `OrderLeg`, `MultiLegOrder`, enums
+  - Created `app/schemas/positions.py` → Moved `Position`, `Portfolio`, `PortfolioSummary`  
+  - Created `app/schemas/accounts.py` → Moved `Account` schema
+  - Created `app/schemas/trading.py` → Moved `StockQuote` and general trading schemas
+- [x] **Backwards Compatibility**: ✅ `app/models/trading.py` now re-exports all schemas
+- [x] **Standardize Constructors**: ✅ All schemas have proper Field definitions with defaults
 
-#### 0.4 Establish Testing Foundation
-- [ ] **Ensure Isolated Test Database**: Configure the test environment to use a separate, ephemeral database for every test run.
-- [ ] **Centralize Test Fixtures**: Move common test setup logic (e.g., creating an API client, a database session) into `tests/conftest.py` for reusability.
+#### ✅ PRIORITY 2: Fix Imports & Dependencies (0.5) - COMPLETE
+**Why Second**: Must be done immediately after schema move to prevent breakage
 
-#### 0.5 Finalize and Clean Up
-- [ ] **Fix Imports**: After all files have been moved and reorganized, update all import statements across the application to reflect the new structure.
+- [x] **Schema Exports**: ✅ `app/schemas/__init__.py` exports all schemas for easy access
+- [x] **Backwards Compatibility**: ✅ All existing imports continue to work via `app.models.trading`
+- [x] **Verify Module Loading**: ✅ All critical modules (main, services, API) load correctly
+- [x] **Application Startup**: ✅ FastAPI app imports and initializes successfully
 
-#### 0.6 Code Quality and Consistency
-- [ ] **Format and Lint**: Run a full formatting (`ruff format .`) and linting (`ruff check .`) pass across the entire codebase to ensure a consistent style after major structural changes.
+#### 🥉 PRIORITY 3: Database Configuration (0.2)
+**Why Third**: Critical for production, independent of other tasks
+
+- [ ] **Update SQLAlchemy Models**: Use `Mapped[Type]` annotations in `app/models/database/trading.py`
+- [ ] **Set Up Alembic**: Integrate database migrations
+- [ ] **Create Initial Migration**: From current schema
+- [ ] **Test Migration**: Verify up/down operations work
+
+#### 🏅 PRIORITY 4: Service Architecture Review (0.3)
+**Why Fourth**: May require schema changes, so do after schema separation
+
+- [ ] **Analyze TradingService Complexity**: Identify decomposition opportunities
+- [ ] **Standardize Dependency Injection**: Use FastAPI `Depends` consistently across endpoints
+- [ ] **Refactor Services**: Break down large services if needed (may defer to Phase 1)
+- [x] **Enhanced Configuration**: `app/core/config.py` already uses `BaseSettings` ✅
+- [x] **Break Circular Dependencies**: Recent import review found none ✅
+
+#### 🎖️ PRIORITY 5: Testing Foundation (0.4)
+**Why Fifth**: Needs stable schemas and services to be effective
+
+- [ ] **Verify Test Database Isolation**: Ensure separate, ephemeral test database
+- [ ] **Centralize Test Fixtures**: Expand `tests/conftest.py` with new schema structure
+- [ ] **Create Base Test Classes**: For common testing patterns
+
+#### 🏆 PRIORITY 6: Code Quality Pass (0.6)
+**Why Last**: Only after all structural changes are complete
+
+- [ ] **Run Full Format Pass**: `ruff format .`
+- [ ] **Run Full Lint Pass**: `ruff check .`
+- [ ] **Verify MyPy Improvement**: Compare error count to baseline
+
+#### Success Gates
+Each priority must pass these gates before moving to the next:
+- [ ] All imports resolve correctly
+- [ ] All tests pass
+- [ ] MyPy error count decreases
+- [ ] Application starts successfully
 
 ---
 

@@ -205,3 +205,5 @@ Temporary Items
 # Temporary files
 *.tmp
 *.temp
+
+/reference_code/
