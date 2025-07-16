@@ -66,7 +66,7 @@ class MaintenanceMarginService:
     NAKED_PUT_MIN_RATE = 0.20  # 20% of strike price
     SHORT_STOCK_RATE = 1.0  # 100% of market value
 
-    def __init__(self, quote_adapter=None):
+    def __init__(self, quote_adapter: Optional[Any] = None) -> None:
         """
         Initialize margin service.
 

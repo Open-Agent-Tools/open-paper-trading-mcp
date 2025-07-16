@@ -153,9 +153,29 @@ class AdvancedOrderValidator:
             ValidationResult with detailed analysis
         """
         if account_limits is None:
-            account_limits = AccountLimits()
+            account_limits = AccountLimits(
+                max_position_size=100000.0,
+                max_daily_trades=100,
+                max_options_contracts=1000,
+                max_delta_exposure=10000.0,
+                max_theta_decay=500.0,
+                max_vega_exposure=5000.0,
+                max_naked_options=50,
+                min_days_to_expiration=1,
+                max_strike_distance=0.5,
+                is_pdt=False,
+                day_trades_used=0,
+                is_margin_account=True,
+                options_level=2,
+            )
 
-        result = ValidationResult(is_valid=True, can_execute=True)
+        result = ValidationResult(
+            is_valid=True,
+            can_execute=True,
+            risk_score=0.0,
+            estimated_margin=0.0,
+            estimated_cost=0.0,
+        )
 
         # Basic validation
         self._validate_basic_requirements(account_data, order, current_quotes, result)
@@ -217,6 +237,7 @@ class AdvancedOrderValidator:
                         severity=ValidationSeverity.ERROR,
                         code="BASIC_VALIDATION",
                         message=error,
+                        suggested_action=None,
                     )
                 )
         except Exception as e:
@@ -226,6 +247,7 @@ class AdvancedOrderValidator:
                     severity=ValidationSeverity.ERROR,
                     code="BASIC_VALIDATION_ERROR",
                     message=f"Basic validation failed: {str(e)}",
+                    suggested_action=None,
                 )
             )
 

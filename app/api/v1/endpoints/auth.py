@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 
 router = APIRouter()
 
@@ -54,7 +54,7 @@ def authenticate_user(username: str, password: str) -> Union[UserInDB, bool]:
 
 
 @router.post("/token", response_model=Token, deprecated=True)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()) -> dict[str, str]:
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -66,7 +66,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 @router.get("/me", response_model=User)
-async def read_users_me(token: str = Depends(oauth2_scheme)):
+async def read_users_me(token: str = Depends(oauth2_scheme)) -> UserInDB:
     user = get_user(token)
     if user is None:
         raise HTTPException(

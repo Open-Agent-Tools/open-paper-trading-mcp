@@ -57,7 +57,7 @@ __all__ = [
 ]
 
 
-def initialize_adapters():
+def initialize_adapters() -> None:
     """
     Initialize the adapter system with default configuration.
 

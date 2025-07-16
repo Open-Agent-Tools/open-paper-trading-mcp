@@ -37,6 +37,8 @@ class DatabaseAccountAdapter(AccountAdapter):
             id=db_account.id,
             cash_balance=float(db_account.cash_balance),
             positions=[],  # Positions loaded separately
+            name=f"Account-{db_account.id}",
+            owner=db_account.owner,
         )
 
     def put_account(self, account: Account) -> None:
@@ -147,4 +149,6 @@ def account_factory(
         id=account_id,
         cash_balance=cash,
         positions=[],
+        name=name,
+        owner=owner,
     )

@@ -194,13 +194,13 @@ class AdapterFactory:
                     adapter = self.create_adapter(adapter_type)
 
                 if adapter is not None:
-                    registry.register(adapter)
+                    registry.register(adapter_type, adapter)
                     print(f"Registered adapter: {adapter_type}")
 
             except Exception as e:
                 print(f"Failed to register adapter {adapter_type}: {e}")
 
-    def _get_adapter_class(self, adapter_type: str) -> Optional[Type[QuoteAdapter]]:
+    def _get_adapter_class(self, adapter_type: str) -> Optional[Type[Any]]:
         """Get adapter class by type."""
         if adapter_type in self._adapter_cache:
             return self._adapter_cache[adapter_type]

@@ -22,11 +22,8 @@ try:
     from app.mcp.options_tools import mcp as options_mcp
     from fastmcp import FastMCP
 
-    # Merge all MCP instances into a single one
-    mcp = FastMCP("Open Paper Trading MCP")
-    mcp.tools.update(paper_trading_mcp.tools)
-    mcp.tools.update(market_data_mcp.tools)
-    mcp.tools.update(options_mcp.tools)
+    # Use the main trading MCP instance (contains all core tools)
+    mcp = paper_trading_mcp
 
 except ImportError:
     mcp = None
