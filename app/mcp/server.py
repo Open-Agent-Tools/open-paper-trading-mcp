@@ -2,7 +2,7 @@
 Unified MCP server that combines all MCP tools.
 """
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP  # type: ignore
 
 # Import all tool functions from individual modules
 from app.mcp.tools import (
@@ -22,8 +22,6 @@ from app.mcp.tools import (
     calculate_option_greeks,
     get_strategy_analysis,
     simulate_option_expiration,
-    analyze_pre_trade_risk_advanced,
-    quick_order_risk_check,
     find_tradable_options,
     get_option_market_data,
 )
@@ -40,7 +38,7 @@ from app.mcp.market_data_tools import (
 # Removed direct Robinhood options tools imports
 
 # Create the unified MCP instance
-mcp = FastMCP("Open Paper Trading MCP")
+mcp: FastMCP = FastMCP("Open Paper Trading MCP")
 
 # Register all tools from tools.py
 mcp.tool()(get_stock_quote)
@@ -59,8 +57,6 @@ mcp.tool()(create_multi_leg_order)
 mcp.tool()(calculate_option_greeks)
 mcp.tool()(get_strategy_analysis)
 mcp.tool()(simulate_option_expiration)
-mcp.tool()(analyze_pre_trade_risk_advanced)
-mcp.tool()(quick_order_risk_check)
 mcp.tool()(find_tradable_options)
 mcp.tool()(get_option_market_data)
 

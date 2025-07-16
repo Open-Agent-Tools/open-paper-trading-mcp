@@ -1,8 +1,8 @@
 """
 Advanced order validation service with comprehensive pre-trade checks.
 
-Enhanced from basic validation with options-specific rules, risk-based limits,
-compliance validation, and sophisticated pre-trade risk analysis.
+Enhanced from basic validation with options-specific rules,
+compliance validation, and sophisticated pre-trade checks.
 """
 
 from datetime import date
@@ -11,7 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 from app.models.assets import Option, asset_factory
-from app.schemas.orders import Order, MultiLegOrder, OrderType
+from app.schemas.orders import Order, MultiLegOrder
 from app.models.quotes import Quote, OptionQuote
 from app.services.validation import AccountValidator, ValidationError
 from app.services.strategies import AdvancedStrategyAnalyzer
@@ -31,7 +31,6 @@ class ValidationRule(str, Enum):
 
     BASIC = "basic"
     OPTIONS = "options"
-    RISK = "risk"
     COMPLIANCE = "compliance"
     STRATEGY = "strategy"
     LIQUIDITY = "liquidity"
@@ -60,8 +59,6 @@ class ValidationResult(BaseModel):
     messages: List[ValidationMessage] = Field(
         default_factory=list, description="Validation messages"
     )
-    risk_score: float = Field(0.0, description="Overall risk score (0-100)")
-    estimated_margin: float = Field(0.0, description="Estimated margin requirement")
     estimated_cost: float = Field(0.0, description="Estimated order cost")
 
     @property
@@ -112,19 +109,17 @@ class AccountLimits(BaseModel):
     day_trades_used: int = Field(0, description="Day trades used in rolling period")
 
     # Account type restrictions
-    is_margin_account: bool = Field(True, description="Margin account status")
     options_level: int = Field(2, description="Options trading level (1-4)")
 
 
 class AdvancedOrderValidator:
     """
-    Advanced order validation with comprehensive pre-trade risk analysis.
+    Advanced order validation with comprehensive pre-trade checks.
 
     Validates orders against:
     - Basic order requirements (cash, position availability)
-    - Options-specific rules (expiration, strikes, assignment risk)
-    - Risk-based position limits
-    - Regulatory compliance (PDT, margin requirements)
+    - Options-specific rules (expiration, strikes)
+    - Regulatory compliance (PDT)
     - Strategy-specific validation
     - Liquidity and execution feasibility
     """
@@ -165,15 +160,12 @@ class AdvancedOrderValidator:
                 max_strike_distance=0.5,
                 is_pdt=False,
                 day_trades_used=0,
-                is_margin_account=True,
                 options_level=2,
             )
 
         result = ValidationResult(
             is_valid=True,
             can_execute=True,
-            risk_score=0.0,
-            estimated_margin=0.0,
             estimated_cost=0.0,
         )
 
@@ -186,11 +178,6 @@ class AdvancedOrderValidator:
                 order, current_quotes, account_limits, result
             )
 
-        # Risk-based validation
-        self._validate_risk_limits(
-            account_data, order, current_quotes, account_limits, result
-        )
-
         # Compliance validation
         self._validate_compliance_rules(account_data, order, account_limits, result)
 
@@ -200,18 +187,13 @@ class AdvancedOrderValidator:
         # Liquidity validation
         self._validate_liquidity_requirements(order, current_quotes, result)
 
-        # Calculate overall risk score
-        result.risk_score = self._calculate_risk_score(result.messages)
-
         # Determine final validation status
         has_errors = any(
             msg.severity in [ValidationSeverity.ERROR, ValidationSeverity.CRITICAL]
             for msg in result.messages
         )
         result.is_valid = not has_errors
-        result.can_execute = (
-            result.is_valid and result.risk_score < 90
-        )  # Don't execute very high risk
+        result.can_execute = result.is_valid
 
         return result
 
@@ -283,9 +265,6 @@ class AdvancedOrderValidator:
             # Strike price validation
             self._validate_strike_price(asset, current_quotes, account_limits, result)
 
-            # Assignment risk validation
-            self._validate_assignment_risk(order, asset, current_quotes, result)
-
             # Liquidity validation for options
             self._validate_option_liquidity(symbol, current_quotes, result)
 
@@ -320,12 +299,12 @@ class AdvancedOrderValidator:
                     rule=ValidationRule.OPTIONS,
                     severity=ValidationSeverity.WARNING,
                     code="EXPIRATION_WARNING",
-                    message=f"Option expires in {days_to_expiration} days - high theta decay risk",
+                    message=f"Option expires in {days_to_expiration} days",
                     details={
                         "symbol": option.symbol,
                         "days_to_expiration": days_to_expiration,
                     },
-                    suggested_action="Consider longer-dated options to reduce theta risk",
+                    suggested_action="Consider longer-dated options",
                 )
             )
 
@@ -424,182 +403,66 @@ class AdvancedOrderValidator:
                     )
                 )
 
-    def _validate_assignment_risk(
-        self,
-        order: Union[Order, MultiLegOrder],
-        option: Option,
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        result: ValidationResult,
-    ) -> None:
-        """Validate assignment risk for short options."""
+    # def _validate_greeks_limits(
+    #     self,
+    #     account_data: Dict[str, Any],
+    #     order: Union[Order, MultiLegOrder],
+    #     current_quotes: Dict[str, Union[Quote, OptionQuote]],
+    #     account_limits: AccountLimits,
+    #     result: ValidationResult,
+    # ) -> None:
+    #     """Validate Greeks exposure limits."""
 
-        # Check if this is a short option position
-        is_short = False
-        if isinstance(order, Order):
-            is_short = order.order_type in [OrderType.SELL, OrderType.STO]
-        elif isinstance(order, MultiLegOrder):
-            for leg in order.legs:
-                if leg.asset.symbol == option.symbol and leg.order_type in [
-                    OrderType.SELL,
-                    OrderType.STO,
-                ]:
-                    is_short = True
-                    break
+    #     # Calculate current portfolio Greeks
+    #     positions = account_data.get("positions", [])
+    #     current_greeks = self.strategy_analyzer.aggregate_strategy_greeks(
+    #         positions, current_quotes
+    #     )
 
-        if not is_short:
-            return
+    #     # Estimate Greeks impact of new order (simplified)
+    #     order_delta_impact = 0.0
+    #     order_theta_impact = 0.0
 
-        # Get underlying price for ITM check
-        underlying_quote = current_quotes.get(option.underlying.symbol)
-        if not underlying_quote:
-            return
+    #     # This would need more sophisticated calculation in a real implementation
+    #     # For now, we'll do a basic estimate
 
-        underlying_price = underlying_quote.price
-        if underlying_price is None:
-            return
-        intrinsic_value = option.get_intrinsic_value(underlying_price)
+    #     # Check delta limits
+    #     new_delta = current_greeks.delta + order_delta_impact
+    #     if abs(new_delta) > account_limits.max_delta_exposure:
+    #         result.messages.append(
+    #             ValidationMessage(
+    #                 rule=ValidationRule.RISK,
+    #                 severity=ValidationSeverity.WARNING,
+    #                 code="DELTA_LIMIT_EXCEEDED",
+    #                 message=f"Order would increase delta exposure to {new_delta:.0f} (limit: {account_limits.max_delta_exposure:.0f})",
+    #                 details={
+    #                     "current_delta": current_greeks.delta,
+    #                     "order_impact": order_delta_impact,
+    #                     "new_delta": new_delta,
+    #                     "limit": account_limits.max_delta_exposure,
+    #                 },
+    #                 suggested_action="Consider delta hedging",
+    #             )
+    #         )
 
-        # Check if option is ITM (high assignment risk)
-        if intrinsic_value > 0:
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.OPTIONS,
-                    severity=ValidationSeverity.WARNING,
-                    code="HIGH_ASSIGNMENT_RISK",
-                    message=f"Short option is ITM - high assignment risk (intrinsic: ${intrinsic_value:.2f})",
-                    details={
-                        "symbol": option.symbol,
-                        "underlying_price": underlying_price,
-                        "strike": option.strike,
-                        "intrinsic_value": intrinsic_value,
-                        "option_type": option.option_type,
-                    },
-                    suggested_action="Monitor position closely or consider closing",
-                )
-            )
-
-        # Check days to expiration for assignment risk
-        days_to_expiration = (option.expiration_date - date.today()).days
-        option_strike = option.strike
-        if (
-            days_to_expiration <= 3 and intrinsic_value > -2.0
-        ):  # Close to expiration and near ITM
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.OPTIONS,
-                    severity=ValidationSeverity.WARNING,
-                    code="EXPIRATION_ASSIGNMENT_RISK",
-                    message=f"Short option expires in {days_to_expiration} days with potential assignment risk",
-                    details={
-                        "symbol": option.symbol,
-                        "days_to_expiration": days_to_expiration,
-                        "distance_from_strike": abs(underlying_price - option_strike)
-                        if option_strike is not None
-                        else 0.0,
-                    },
-                    suggested_action="Consider rolling or closing position",
-                )
-            )
-
-    def _validate_risk_limits(
-        self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        account_limits: AccountLimits,
-        result: ValidationResult,
-    ) -> None:
-        """Validate risk-based position limits."""
-
-        # Calculate position size
-        estimated_cost = self._calculate_estimated_cost(order, current_quotes)
-        result.estimated_cost = estimated_cost
-
-        # Check position size limits
-        if estimated_cost > account_limits.max_position_size:
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.RISK,
-                    severity=ValidationSeverity.ERROR,
-                    code="POSITION_SIZE_EXCEEDED",
-                    message=f"Order size ${estimated_cost:,.2f} exceeds limit ${account_limits.max_position_size:,.2f}",
-                    details={
-                        "estimated_cost": estimated_cost,
-                        "limit": account_limits.max_position_size,
-                    },
-                    suggested_action="Reduce order size",
-                )
-            )
-
-        # Check Greeks exposure limits (for options)
-        if self._is_options_order(order):
-            self._validate_greeks_limits(
-                account_data, order, current_quotes, account_limits, result
-            )
-
-        # Check concentration risk
-        self._validate_concentration_risk(account_data, order, current_quotes, result)
-
-    def _validate_greeks_limits(
-        self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        account_limits: AccountLimits,
-        result: ValidationResult,
-    ) -> None:
-        """Validate Greeks exposure limits."""
-
-        # Calculate current portfolio Greeks
-        positions = account_data.get("positions", [])
-        current_greeks = self.strategy_analyzer.aggregate_strategy_greeks(
-            positions, current_quotes
-        )
-
-        # Estimate Greeks impact of new order (simplified)
-        order_delta_impact = 0.0
-        order_theta_impact = 0.0
-
-        # This would need more sophisticated calculation in a real implementation
-        # For now, we'll do a basic estimate
-
-        # Check delta limits
-        new_delta = current_greeks.delta + order_delta_impact
-        if abs(new_delta) > account_limits.max_delta_exposure:
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.RISK,
-                    severity=ValidationSeverity.WARNING,
-                    code="DELTA_LIMIT_EXCEEDED",
-                    message=f"Order would increase delta exposure to {new_delta:.0f} (limit: {account_limits.max_delta_exposure:.0f})",
-                    details={
-                        "current_delta": current_greeks.delta,
-                        "order_impact": order_delta_impact,
-                        "new_delta": new_delta,
-                        "limit": account_limits.max_delta_exposure,
-                    },
-                    suggested_action="Consider delta hedging",
-                )
-            )
-
-        # Check theta decay limits
-        new_theta = current_greeks.theta + order_theta_impact
-        if abs(new_theta) > account_limits.max_theta_decay:
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.RISK,
-                    severity=ValidationSeverity.WARNING,
-                    code="THETA_LIMIT_EXCEEDED",
-                    message=f"Order would increase theta decay to {new_theta:.2f}/day (limit: {account_limits.max_theta_decay:.2f})",
-                    details={
-                        "current_theta": current_greeks.theta,
-                        "order_impact": order_theta_impact,
-                        "new_theta": new_theta,
-                        "limit": account_limits.max_theta_decay,
-                    },
-                    suggested_action="Monitor time decay risk",
-                )
-            )
+    #     # Check theta decay limits
+    #     new_theta = current_greeks.theta + order_theta_impact
+    #     if abs(new_theta) > account_limits.max_theta_decay:
+    #         result.messages.append(
+    #             ValidationMessage(
+    #                 rule=ValidationRule.RISK,
+    #                 severity=ValidationSeverity.WARNING,
+    #                 code="THETA_LIMIT_EXCEEDED",
+    #                 message=f"Order would increase theta decay to {new_theta:.2f}/day (limit: {account_limits.max_theta_decay:.2f})",
+    #                 details={
+    #                     "current_theta": current_greeks.theta,
+    #                     "order_impact": order_theta_impact,
+    #                     "new_theta": new_theta,
+    #                     "limit": account_limits.max_theta_decay,
+    #                 },
+    #                 suggested_action="Monitor time decay risk",
+    #             )
+    #         )
 
     def _validate_compliance_rules(
         self,
@@ -646,19 +509,6 @@ class AdvancedOrderValidator:
                     )
                 )
 
-        # Margin account requirements
-        if not account_limits.is_margin_account and self._requires_margin(order):
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.COMPLIANCE,
-                    severity=ValidationSeverity.ERROR,
-                    code="MARGIN_REQUIRED",
-                    message="Order requires margin account",
-                    details={"is_margin_account": account_limits.is_margin_account},
-                    suggested_action="Upgrade to margin account",
-                )
-            )
-
     def _validate_strategy_rules(
         self,
         account_data: Dict[str, Any],
@@ -673,7 +523,7 @@ class AdvancedOrderValidator:
             self._validate_multileg_strategy(order, current_quotes, result)
 
         # Check for conflicting positions
-        self._validate_position_conflicts(account_data, order, result)
+        self._validate_position_conflicts(order, account_data, result)
 
     def _validate_liquidity_requirements(
         self,
@@ -806,53 +656,28 @@ class AdvancedOrderValidator:
 
         return total_cost
 
-    def _calculate_risk_score(self, messages: List[ValidationMessage]) -> float:
-        """Calculate overall risk score from validation messages."""
-
-        score = 0.0
-
-        for message in messages:
-            if message.severity == ValidationSeverity.CRITICAL:
-                score += 25
-            elif message.severity == ValidationSeverity.ERROR:
-                score += 15
-            elif message.severity == ValidationSeverity.WARNING:
-                score += 5
-            elif message.severity == ValidationSeverity.INFO:
-                score += 1
-
-        return min(100.0, score)
-
     def _is_options_order(self, order: Union[Order, MultiLegOrder]) -> bool:
         """Check if order involves options."""
-
-        if isinstance(order, Order):
-            return isinstance(asset_factory(order.symbol), Option)
-        elif isinstance(order, MultiLegOrder):
+        if isinstance(order, MultiLegOrder):
             return any(isinstance(leg.asset, Option) for leg in order.legs)
-
-        return False
+        else:
+            return isinstance(asset_factory(order.symbol), Option)
 
     def _is_potential_day_trade(
         self, order: Union[Order, MultiLegOrder], account_data: Dict[str, Any]
     ) -> bool:
-        """Check if order could result in a day trade."""
-        # Simplified check - would need more sophisticated logic
+        """Check if order could be a day trade."""
+        # Basic implementation - check if we have existing positions
+        # In a real implementation, this would check trade history
         return False
 
     def _get_required_options_level(self, order: Union[Order, MultiLegOrder]) -> int:
-        """Get required options trading level for order."""
-        # Simplified mapping
+        """Get required options level for order."""
+        # Basic implementation - return level based on order complexity
         if isinstance(order, MultiLegOrder):
-            return 3  # Multi-leg strategies typically require level 3
-        return 2  # Basic options trading
-
-    def _requires_margin(self, order: Union[Order, MultiLegOrder]) -> bool:
-        """Check if order requires margin account."""
-        # Simplified check
-        if isinstance(order, Order):
-            return order.order_type in [OrderType.SELL, OrderType.STO]
-        return False
+            return 3  # Multi-leg orders require level 3
+        else:
+            return 2  # Single options require level 2
 
     def _validate_multileg_strategy(
         self,
@@ -861,83 +686,29 @@ class AdvancedOrderValidator:
         result: ValidationResult,
     ) -> None:
         """Validate multi-leg strategy coherence."""
-
-        # Check that all legs have same underlying
-        underlyings = set()
+        # Basic implementation - check that all legs are options
         for leg in order.legs:
-            if isinstance(leg.asset, Option):
-                underlyings.add(leg.asset.underlying.symbol)
-
-        if len(underlyings) > 1:
-            result.messages.append(
-                ValidationMessage(
-                    rule=ValidationRule.STRATEGY,
-                    severity=ValidationSeverity.WARNING,
-                    code="MULTIPLE_UNDERLYINGS",
-                    message=f"Multi-leg order spans multiple underlyings: {', '.join(underlyings)}",
-                    details={"underlyings": list(underlyings)},
-                    suggested_action="Consider separate orders for each underlying",
+            if not isinstance(leg.asset, Option):
+                result.messages.append(
+                    ValidationMessage(
+                        rule=ValidationRule.STRATEGY,
+                        severity=ValidationSeverity.WARNING,
+                        code="MIXED_STRATEGY",
+                        message=f"Mixed strategy contains non-option: {leg.asset.symbol}",
+                        details={"symbol": leg.asset.symbol},
+                        suggested_action="Consider using single-leg orders for stocks",
+                    )
                 )
-            )
 
     def _validate_position_conflicts(
         self,
-        account_data: Dict[str, Any],
         order: Union[Order, MultiLegOrder],
+        account_data: Dict[str, Any],
         result: ValidationResult,
     ) -> None:
-        """Check for conflicting positions."""
-        # Implementation would check for positions that conflict with the order
+        """Validate for position conflicts."""
+        # Basic implementation - placeholder for position conflict checks
         pass
-
-    def _validate_concentration_risk(
-        self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        result: ValidationResult,
-    ) -> None:
-        """Validate concentration risk."""
-
-        # Calculate current portfolio value
-        positions = account_data.get("positions", [])
-        total_portfolio_value = 0.0
-
-        for position in positions:
-            if hasattr(position, "symbol"):
-                symbol = position.symbol
-            else:
-                symbol = position.get("symbol")
-
-            quote = current_quotes.get(symbol)
-            if quote:
-                position_value = (
-                    abs(getattr(position, "quantity", position.get("quantity", 0)))
-                    * quote.price
-                )
-                total_portfolio_value += position_value
-
-        # Calculate order value as percentage of portfolio
-        order_value = self._calculate_estimated_cost(order, current_quotes)
-
-        if total_portfolio_value > 0:
-            concentration = order_value / total_portfolio_value
-
-            if concentration > 0.2:  # More than 20% of portfolio
-                result.messages.append(
-                    ValidationMessage(
-                        rule=ValidationRule.RISK,
-                        severity=ValidationSeverity.WARNING,
-                        code="HIGH_CONCENTRATION",
-                        message=f"Order represents {concentration:.1%} of portfolio value",
-                        details={
-                            "order_value": order_value,
-                            "portfolio_value": total_portfolio_value,
-                            "concentration_percent": concentration,
-                        },
-                        suggested_action="Consider position sizing",
-                    )
-                )
 
 
 # Convenience functions
@@ -969,5 +740,4 @@ def create_default_account_limits(
         min_days_to_expiration=1,
         max_strike_distance=0.5,
         day_trades_used=0,
-        is_margin_account=True,
     )

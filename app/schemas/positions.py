@@ -6,7 +6,7 @@ This module contains all Pydantic models for position management:
 - Portfolio and portfolio summary schemas
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Union, Dict, Any
 from datetime import date
 from app.models.assets import Asset, Option, asset_factory
@@ -49,7 +49,7 @@ class Position(BaseModel):
     rho: Optional[float] = Field(default=None, description="Position rho")
     iv: Optional[float] = Field(default=None, description="Implied volatility")
 
-    @validator("asset", pre=True)
+    @field_validator("asset", mode="before")
     def normalize_asset(cls, v: Union[str, Asset]) -> Optional[Asset]:
         if isinstance(v, str):
             return asset_factory(v)

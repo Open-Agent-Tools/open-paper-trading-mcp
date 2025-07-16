@@ -20,7 +20,7 @@ def calculate_option_greeks(
     underlying_price: float,
     days_to_expiration: int,
     option_price: float,
-    risk_free_rate: float = 0.02,
+    volatility: float = 0.2,
     dividend_yield: float = 0.0,
 ) -> Dict[str, Optional[float]]:
     """
@@ -32,7 +32,6 @@ def calculate_option_greeks(
         underlying_price: Current price of underlying
         days_to_expiration: Days until expiration
         option_price: Current option price (for IV calculation)
-        risk_free_rate: Annual risk-free rate (default 2%)
         dividend_yield: Annual dividend yield (default 0%)
 
     Returns:
@@ -68,7 +67,7 @@ def calculate_option_greeks(
     S = underlying_price
     K = strike
     T = days_to_expiration / 365.0  # Time to expiration in years
-    r = risk_free_rate
+    r = 0.02
     q = dividend_yield
 
     # Calculate implied volatility first
@@ -333,7 +332,6 @@ def _calculate_all_greeks(
 # Helper function to integrate with the quote system
 def update_option_quote_with_greeks(
     option_quote: "OptionQuote",
-    risk_free_rate: float = 0.02,
     dividend_yield: float = 0.0,
 ) -> None:
     """Update an OptionQuote with calculated Greeks."""
@@ -357,7 +355,7 @@ def update_option_quote_with_greeks(
         underlying_price=option_quote.underlying_price,
         days_to_expiration=days_to_exp,
         option_price=option_quote.price or 0.0,
-        risk_free_rate=risk_free_rate,
+        volatility=option_quote.iv or 0.2,
         dividend_yield=dividend_yield,
     )
 

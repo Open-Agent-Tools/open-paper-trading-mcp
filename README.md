@@ -122,7 +122,6 @@ python scripts/dev.py check
 - **Options Chain Support**: Real-time options quotes and Greeks calculations
 - **Complex Orders**: Multi-leg strategies (covered calls, spreads, straddles)
 - **Automatic Expiration**: Handle option expirations and assignments
-- **Risk Management**: Position sizing and margin requirements
 - **Options Education**: Interactive learning tools for options mechanics
 
 ### Phase 3: Backtesting Framework 📈 PLANNED
@@ -233,6 +232,20 @@ adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json \
 ```
 
 See [ADK Testing Guide](tests/evals/ADK-testing-evals.md) for details.
+
+## 📊 Development Status
+
+### ✅ Completed (as of 2025-01-16)
+- **Phase 0**: Infrastructure setup with Docker, PostgreSQL, and ADK test runner
+- **Phase 1**: Complete architectural refactoring and type safety
+  - 100% MyPy compliance achieved (0 errors in 72 source files)
+  - Full PostgreSQL database integration
+  - Clean service layer architecture
+  - Comprehensive type annotations throughout
+
+### 🚧 Current Focus
+- **Phase 2**: Live Market Data Integration via Robinhood API
+  - See [TODO.md](TODO.md) for detailed roadmap
 
 ## 📚 Documentation
 

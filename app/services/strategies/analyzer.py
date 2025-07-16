@@ -20,7 +20,6 @@ from .models import (
     ComplexStrategy,
     StrategyPnL,
     StrategyGreeks,
-    StrategyRiskMetrics,
 )
 from .recognition import StrategyRecognitionService
 
@@ -166,52 +165,6 @@ class AdvancedStrategyAnalyzer:
 
         return complex_strategies
 
-    def calculate_risk_metrics(
-        self,
-        positions: List[Position],
-        historical_prices: Optional[List[Dict[str, float]]] = None,
-    ) -> StrategyRiskMetrics:
-        """
-        Calculate comprehensive risk metrics for strategy portfolio.
-
-        Args:
-            positions: Portfolio positions
-            historical_prices: Historical price data for volatility calculation
-
-        Returns:
-            StrategyRiskMetrics with risk analysis
-        """
-        metrics = StrategyRiskMetrics(
-            max_drawdown=0.0,
-            volatility=0.0,
-            sharpe_ratio=None,
-            var_95=None,
-            expected_shortfall=None,
-            theta_risk_score=0.0,
-            days_to_max_theta=None,
-            assignment_probability=0.0,
-            itm_probability=0.0,
-        )
-
-        # Calculate basic risk metrics
-        if historical_prices:
-            metrics = self._calculate_historical_risk_metrics(
-                positions, historical_prices
-            )
-
-        # Calculate options-specific risk metrics
-        options_positions = [p for p in positions if isinstance(p.asset, Option)]
-        if options_positions:
-            theta_risk = self._calculate_theta_risk(options_positions)
-            assignment_risk = self._calculate_assignment_risk(options_positions)
-
-            metrics.theta_risk_score = theta_risk["risk_score"]
-            metrics.days_to_max_theta = theta_risk["days_to_max"]
-            metrics.assignment_probability = assignment_risk["assignment_prob"]
-            metrics.itm_probability = assignment_risk["itm_prob"]
-
-        return metrics
-
     def generate_optimization_recommendations(
         self,
         positions: List[Position],
@@ -261,7 +214,7 @@ class AdvancedStrategyAnalyzer:
                 {
                     "type": "hedge_vega",
                     "priority": "medium",
-                    "description": f"High vega exposure ({greeks.vega:.0f}). Monitor volatility risk.",
+                    "description": f"High vega exposure ({greeks.vega:.0f}).",
                     "suggested_action": "hedge_volatility",
                     "current_vega": greeks.vega,
                 }
@@ -428,68 +381,6 @@ class AdvancedStrategyAnalyzer:
         """Detect condor strategies."""
         # Simplified detection - in a real implementation this would be more sophisticated
         return []
-
-    def _calculate_historical_risk_metrics(
-        self, positions: List[Position], historical_prices: List[Dict[str, float]]
-    ) -> StrategyRiskMetrics:
-        """Calculate risk metrics from historical price data."""
-        # Implementation would calculate volatility, VaR, etc. from historical data
-        return StrategyRiskMetrics(
-            max_drawdown=0.0,
-            volatility=0.0,
-            sharpe_ratio=None,
-            var_95=None,
-            expected_shortfall=None,
-            theta_risk_score=0.0,
-            days_to_max_theta=None,
-            assignment_probability=0.0,
-            itm_probability=0.0,
-        )
-
-    def _calculate_theta_risk(
-        self, options_positions: List[Position]
-    ) -> Dict[str, Any]:
-        """Calculate theta decay risk metrics."""
-        total_theta = sum(getattr(p, "theta", 0.0) for p in options_positions)
-
-        # Find position closest to expiration
-        min_days_to_expiry = float("inf")
-        for position in options_positions:
-            if isinstance(position.asset, Option):
-                days_to_expiry = (position.asset.expiration_date - date.today()).days
-                min_days_to_expiry = min(min_days_to_expiry, days_to_expiry)
-
-        # Calculate risk score (0-100)
-        risk_score = min(100, abs(total_theta) / 10)  # Simplified scoring
-
-        return {
-            "risk_score": risk_score,
-            "days_to_max": (
-                int(min_days_to_expiry) if min_days_to_expiry != float("inf") else None
-            ),
-            "total_theta": total_theta,
-        }
-
-    def _calculate_assignment_risk(
-        self, options_positions: List[Position]
-    ) -> Dict[str, Any]:
-        """Calculate assignment risk for short options."""
-        # Simplified assignment risk calculation
-        short_options = [p for p in options_positions if p.quantity < 0]
-
-        assignment_prob = 0.0
-        itm_prob = 0.0
-
-        if short_options:
-            # In a real implementation, this would use current prices and Greeks
-            # to estimate probabilities
-            assignment_prob = len(short_options) * 0.1  # Simplified
-            itm_prob = len(short_options) * 0.15  # Simplified
-
-        return {
-            "assignment_prob": min(1.0, assignment_prob),
-            "itm_prob": min(1.0, itm_prob),
-        }
 
     def _generate_strategy_specific_recommendations(
         self,

@@ -3,7 +3,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
-import robin_stocks.robinhood as rh
+import robin_stocks.robinhood as rh  # type: ignore
 from app.core.logging import logger
 
 

@@ -1,8 +1,7 @@
 """
-Order execution engine for options trading.
+Order Execution Engine.
 
-Handles multi-leg order execution with proper position management,
-cash balance updates, and margin calculations.
+Handles the execution of orders, including cash balance updates.
 """
 
 from typing import List, Dict, Optional, Protocol
@@ -17,6 +16,7 @@ from ..schemas.orders import (
 )
 from ..schemas.positions import Position
 from ..models.assets import Option
+from .validation import AccountValidator
 from ..models.quotes import Quote
 from .estimators import PriceEstimator, MidpointEstimator
 
@@ -55,22 +55,16 @@ class OrderExecutionResult:
 
 
 class OrderExecutionEngine:
-    """
-    Core order execution engine that handles:
-    - Multi-leg order execution
-    - Position opening and closing
-    - Cash balance management
-    - Margin requirement updates
-    """
+    """Service for executing trading orders."""
 
     def __init__(
         self,
-        quote_service: Optional[QuoteServiceProtocol] = None,
-        margin_service: Optional[object] = None,
+        validator: Optional[AccountValidator] = None,
     ) -> None:
-        self.quote_service = quote_service
-        self.margin_service = margin_service
+        """Initialize with validation services."""
+        self.validator = validator or AccountValidator()
         self.default_estimator = MidpointEstimator()
+        self.quote_service: Optional[QuoteServiceProtocol] = None
 
     async def execute_order(
         self,
@@ -151,9 +145,9 @@ class OrderExecutionEngine:
                     modified_positions.extend(affected_positions)
 
             # Calculate maintenance margin if service available
-            if self.margin_service:
-                # This will be implemented when we migrate the margin service
-                pass
+            # if self.margin_service:
+            #     # This will be implemented when we migrate the margin service
+            #     pass
 
             return OrderExecutionResult(
                 success=True,

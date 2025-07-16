@@ -6,7 +6,7 @@ Asset models with improvements for FastAPI/MCP architecture.
 
 from datetime import datetime, date
 from typing import Optional, Union, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 def asset_factory(symbol: Union[str, "Asset", None] = None) -> Optional["Asset"]:
@@ -42,13 +42,26 @@ def asset_factory(symbol: Union[str, "Asset", None] = None) -> Optional["Asset"]
 class Asset(BaseModel):
     """Base class for all tradeable assets."""
 
+    model_config = ConfigDict(frozen=True)
+
     symbol: str = Field(..., description="Asset symbol (e.g., AAPL, GOOGL)")
     asset_type: str = Field(default="stock", description="Type of asset")
 
-    class Config:
-        frozen = True  # Make immutable for hashing
+    # Option-specific attributes (None for stocks)
+    underlying: Optional["Asset"] = Field(
+        default=None, description="Underlying asset for options"
+    )
+    option_type: Optional[str] = Field(
+        default=None, description="Option type (call/put)"
+    )
+    strike: Optional[float] = Field(
+        default=None, description="Strike price for options"
+    )
+    expiration_date: Optional[date] = Field(
+        default=None, description="Expiration date for options"
+    )
 
-    @validator("symbol", pre=True)
+    @field_validator("symbol", mode="before")
     def normalize_symbol(cls, v: str) -> str:
         if isinstance(v, str):
             return v.upper().strip()
@@ -69,8 +82,8 @@ class Asset(BaseModel):
 class Stock(Asset):
     """Stock asset class for specific stock instruments."""
 
-    def __init__(self, symbol: str, **data: object) -> None:
-        super().__init__(symbol=symbol, asset_type="stock", **data)
+    def __init__(self, symbol: str, **data: Any) -> None:
+        super().__init__(symbol=symbol, asset_type="stock", **data)  # type: ignore
 
 
 class Option(Asset):

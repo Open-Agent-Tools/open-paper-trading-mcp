@@ -4,7 +4,7 @@ Strategy analysis and recognition module.
 This module provides comprehensive strategy analysis capabilities including:
 - Basic strategy recognition and grouping
 - Advanced P&L calculation and analysis
-- Greeks aggregation and risk metrics
+- Greeks aggregation
 - Complex strategy detection
 - Portfolio optimization recommendations
 
@@ -30,7 +30,6 @@ from .models import (
     # Analysis models
     StrategyPnL,
     StrategyGreeks,
-    StrategyRiskMetrics,
 )
 
 # Recognition service
@@ -65,7 +64,6 @@ __all__ = [
     # Analysis models
     "StrategyPnL",
     "StrategyGreeks",
-    "StrategyRiskMetrics",
     # Services
     "StrategyRecognitionService",
     "AdvancedStrategyAnalyzer",

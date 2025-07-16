@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import BaseModel, Field
 
 from app.schemas.accounts import Account
@@ -143,4 +143,29 @@ class QuoteAdapter(ABC):
     @abstractmethod
     def get_market_hours(self) -> Dict[str, Any]:
         """Get market hours information."""
+        pass
+
+    @abstractmethod
+    def get_sample_data_info(self) -> Dict[str, Any]:
+        """Get information about sample data."""
+        pass
+
+    @abstractmethod
+    def get_expiration_dates(self, underlying: str) -> List[date]:
+        """Get available expiration dates for an underlying symbol."""
+        pass
+
+    @abstractmethod
+    def get_test_scenarios(self) -> Dict[str, Any]:
+        """Get available test scenarios."""
+        pass
+
+    @abstractmethod
+    def set_date(self, date: str) -> None:
+        """Set the current date for test data."""
+        pass
+
+    @abstractmethod
+    def get_available_symbols(self) -> List[str]:
+        """Get list of available symbols."""
         pass

@@ -125,7 +125,7 @@ def find_cycles(graph: Dict[str, Set[str]]) -> List[List[str]]:
 
 def analyze_project_dependencies() -> bool:
     """Analyze the entire project for circular dependencies."""
-    app_root = Path("app")
+    app_root = Path("../app")
     if not app_root.exists():
         print(
             "Error: 'app' directory not found. Run this script from the project root."
@@ -147,7 +147,7 @@ def analyze_project_dependencies() -> bool:
 
     # First pass: map files to modules
     for file_path in python_files:
-        package_name = get_package_name(file_path, Path("."))
+        package_name = get_package_name(file_path, Path(".."))
         file_to_module[file_path] = package_name
         module_to_file[package_name] = file_path
 

@@ -1,5 +1,5 @@
 """
-Order Impact Analysis Service for pre-trade risk assessment.
+Order Impact Analysis Service.
 
 Adapted from reference implementation OrderImpact with enhanced analysis capabilities.
 Provides before/after simulation of orders to assess their impact on accounts.
@@ -14,11 +14,9 @@ from ..schemas.orders import (
     Order,
     MultiLegOrder,
     OrderLeg,
-    OrderType,
 )
 from ..models.trading import Position
 from ..models.assets import Asset, Option
-from .margin import MaintenanceMarginService
 from .validation import AccountValidator, ValidationError
 
 
@@ -30,9 +28,6 @@ class AccountSnapshot(BaseModel):
         default_factory=list, description="Current positions"
     )
     total_value: float = Field(..., description="Total account value")
-    maintenance_margin: float = Field(
-        default=0.0, description="Required maintenance margin"
-    )
     buying_power: float = Field(..., description="Available buying power")
     timestamp: datetime = Field(
         default_factory=datetime.now, description="Snapshot timestamp"
@@ -56,26 +51,16 @@ class OrderImpactAnalysis(BaseModel):
 
     # Impact calculations
     cash_impact: float = Field(..., description="Change in cash balance")
-    margin_impact: float = Field(
-        ..., description="Change in maintenance margin requirement"
-    )
     buying_power_impact: float = Field(..., description="Change in buying power")
     position_impact: Dict[str, Any] = Field(
         default_factory=dict, description="Changes to positions"
     )
 
     # Risk assessments
-    risk_warnings: List[str] = Field(default_factory=list, description="Risk warnings")
     validation_errors: List[str] = Field(
         default_factory=list, description="Validation errors"
     )
     approval_status: str = Field(..., description="Order approval status")
-
-    # Greeks impact (for options)
-    delta_impact: Optional[float] = Field(None, description="Portfolio delta change")
-    gamma_impact: Optional[float] = Field(None, description="Portfolio gamma change")
-    theta_impact: Optional[float] = Field(None, description="Portfolio theta change")
-    vega_impact: Optional[float] = Field(None, description="Portfolio vega change")
 
 
 class OrderImpactService:
@@ -83,11 +68,9 @@ class OrderImpactService:
 
     def __init__(
         self,
-        margin_service: Optional[MaintenanceMarginService] = None,
         validator: Optional[AccountValidator] = None,
     ) -> None:
-        """Initialize with margin and validation services."""
-        self.margin_service = margin_service or MaintenanceMarginService()
+        """Initialize with validation services."""
         self.validator = validator or AccountValidator()
 
     def analyze_order_impact(
@@ -112,6 +95,9 @@ class OrderImpactService:
         # Create before snapshot
         before_snapshot = self._create_account_snapshot(account_data, quote_adapter)
 
+        # Initialize validation errors
+        validation_errors: List[str] = []
+
         # Simulate order execution
         after_account_data = self._simulate_order_execution(
             account_data, order, quote_adapter, estimated_fill_prices
@@ -122,9 +108,6 @@ class OrderImpactService:
 
         # Calculate impacts
         cash_impact = after_snapshot.cash_balance - before_snapshot.cash_balance
-        margin_impact = (
-            after_snapshot.maintenance_margin - before_snapshot.maintenance_margin
-        )
         buying_power_impact = after_snapshot.buying_power - before_snapshot.buying_power
 
         # Analyze position changes
@@ -132,19 +115,8 @@ class OrderImpactService:
             before_snapshot.positions, after_snapshot.positions
         )
 
-        # Calculate Greeks impact for options
-        greeks_impact = self._calculate_greeks_impact(
-            before_snapshot.positions, after_snapshot.positions
-        )
-
-        # Risk assessment
-        risk_warnings = self._assess_risks(before_snapshot, after_snapshot, order)
-        validation_errors = self._validate_order(account_data, order, quote_adapter)
-
         # Determine approval status
         approval_status = "approved" if not validation_errors else "rejected"
-        if risk_warnings and not validation_errors:
-            approval_status = "warning"
 
         return OrderImpactAnalysis(
             order_id=getattr(order, "id", None),
@@ -155,16 +127,10 @@ class OrderImpactService:
             before=before_snapshot,
             after=after_snapshot,
             cash_impact=cash_impact,
-            margin_impact=margin_impact,
             buying_power_impact=buying_power_impact,
             position_impact=position_impact,
-            risk_warnings=risk_warnings,
             validation_errors=validation_errors,
             approval_status=approval_status,
-            delta_impact=greeks_impact.get("delta"),
-            gamma_impact=greeks_impact.get("gamma"),
-            theta_impact=greeks_impact.get("theta"),
-            vega_impact=greeks_impact.get("vega"),
         )
 
     def preview_order(
@@ -185,8 +151,6 @@ class OrderImpactService:
             "estimated_cost": abs(analysis.cash_impact),
             "approval_status": analysis.approval_status,
             "buying_power_after": analysis.after.buying_power,
-            "margin_requirement_change": analysis.margin_impact,
-            "warnings": analysis.risk_warnings[:3],  # Top 3 warnings
             "errors": analysis.validation_errors[:3],  # Top 3 errors
             "estimated_fill": analysis.estimated_fill_price,
         }
@@ -209,12 +173,6 @@ class OrderImpactService:
                 # Convert dict to Position object
                 position_objects.append(Position(**pos))
 
-        # Calculate maintenance margin
-        margin_result = self.margin_service.calculate_maintenance_margin(
-            positions=position_objects, quote_adapter=quote_adapter
-        )
-        maintenance_margin = margin_result.total_margin_requirement
-
         # Calculate total value
         total_invested = sum(
             pos.market_value for pos in position_objects if pos.market_value is not None
@@ -222,13 +180,12 @@ class OrderImpactService:
         total_value = cash_balance + total_invested
 
         # Calculate buying power (simplified)
-        buying_power = max(0, cash_balance - maintenance_margin)
+        buying_power = cash_balance
 
         return AccountSnapshot(
             cash_balance=cash_balance,
             positions=position_objects,
             total_value=total_value,
-            maintenance_margin=maintenance_margin,
             buying_power=buying_power,
         )
 
@@ -456,64 +413,6 @@ class OrderImpactService:
             "vega": after_vega - before_vega,
         }
 
-    def _assess_risks(
-        self,
-        before: AccountSnapshot,
-        after: AccountSnapshot,
-        order: Union[Order, MultiLegOrder, List[OrderLeg]],
-    ) -> List[str]:
-        """Assess risk factors of the order."""
-
-        warnings = []
-
-        # Cash and margin warnings
-        if after.cash_balance < 0:
-            warnings.append("Order would result in negative cash balance")
-
-        if after.buying_power < 1000:  # Configurable threshold
-            warnings.append("Order would significantly reduce buying power")
-
-        margin_increase = after.maintenance_margin - before.maintenance_margin
-        if margin_increase > before.cash_balance * 0.5:
-            warnings.append("Order would significantly increase margin requirement")
-
-        # Concentration warnings
-        if len(after.positions) > 0:
-            largest_position_value = max(
-                abs(pos.market_value)
-                for pos in after.positions
-                if pos.market_value is not None
-            )
-            if largest_position_value > after.total_value * 0.3:
-                warnings.append("Large position concentration risk")
-
-        # Options-specific warnings
-        if hasattr(order, "legs"):
-            legs = order.legs
-        elif isinstance(order, list):
-            legs = order
-        else:
-            legs = [order.to_leg()] if hasattr(order, "to_leg") else []
-
-        for leg in legs:
-            asset = leg.asset
-            if isinstance(asset, Option):
-                # Check for high-risk options trades
-                if hasattr(asset, "get_days_to_expiration"):
-                    days_to_exp = asset.get_days_to_expiration(datetime.now().date())
-                    if days_to_exp is not None and days_to_exp < 7:
-                        warnings.append(
-                            f"Short-dated option expiring in {days_to_exp} days"
-                        )
-
-                # Naked options warning
-                if leg.order_type in [
-                    OrderType.STO
-                ] and not self._has_covering_position(asset, after.positions):
-                    warnings.append("Naked option position with unlimited risk")
-
-        return warnings
-
     def _validate_order(
         self,
         account_data: Dict[str, Any],
@@ -550,6 +449,7 @@ class OrderImpactService:
                 pos.is_option
                 and pos.asset is not None
                 and hasattr(pos.asset, "underlying")
+                and pos.asset.underlying is not None
                 and pos.asset.underlying.symbol == option.underlying.symbol
             ):
                 # Add specific logic for different spread types

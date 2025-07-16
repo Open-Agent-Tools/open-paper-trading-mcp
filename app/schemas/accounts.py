@@ -6,7 +6,7 @@ This module contains all Pydantic models for account management:
 """
 
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.schemas.positions import Position
 
@@ -15,6 +15,8 @@ class Account(BaseModel):
     """
     Represents a trading account.
     """
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: str = Field(..., description="Unique account identifier")
     cash_balance: float = Field(..., description="Available cash balance")
@@ -28,6 +30,3 @@ class Account(BaseModel):
     @property
     def cash(self) -> float:
         return self.cash_balance
-
-    class Config:
-        orm_mode = True

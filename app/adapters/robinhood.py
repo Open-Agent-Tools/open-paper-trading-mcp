@@ -5,8 +5,7 @@ Robinhood adapter for live market data integration.
 import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime, date
-import robin_stocks.robinhood as rh
-from pydantic import BaseModel
+import robin_stocks.robinhood as rh  # type: ignore
 
 from app.adapters.base import QuoteAdapter, AdapterConfig
 from app.models.quotes import Quote, OptionQuote, OptionsChain
@@ -17,23 +16,23 @@ from app.core.logging import logger
 
 class RobinhoodConfig(AdapterConfig):
     """Configuration for Robinhood adapter."""
-    
+
     name: str = "robinhood"
     priority: int = 1
     cache_ttl: float = 300.0  # 5 minutes
-    
-    
+
+
 class RobinhoodAdapter(QuoteAdapter):
     """Live market data adapter using Robinhood API."""
-    
+
     def __init__(self, config: Optional[RobinhoodConfig] = None):
         self.config = config or RobinhoodConfig()
         self.session_manager = get_session_manager()
-        
+
     async def _ensure_authenticated(self) -> bool:
         """Ensure we have valid authentication."""
         return await self.session_manager.ensure_authenticated()
-        
+
     def get_quote(self, asset: Asset) -> Optional[Quote]:
         """Get a single quote for an asset."""
         try:
@@ -44,49 +43,55 @@ class RobinhoodAdapter(QuoteAdapter):
                 if not loop.run_until_complete(self._ensure_authenticated()):
                     logger.error("Robinhood authentication failed")
                     return None
-                    
+
                 if isinstance(asset, Stock):
                     return self._get_stock_quote(asset)
                 elif isinstance(asset, Option):
                     return self._get_option_quote(asset)
-                    
+                else:
+                    return None
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting quote for {asset.symbol}: {e}")
             return None
-            
+
     def _get_stock_quote(self, asset: Stock) -> Optional[Quote]:
         """Get stock quote from Robinhood."""
         try:
             quote_data = rh.stocks.get_latest_price(asset.symbol)
             if not quote_data or not quote_data[0]:
                 return None
-                
+
             price = float(quote_data[0])
-            
+
             # Get fundamentals for more data
             fundamentals = rh.stocks.get_fundamentals(asset.symbol)
             if fundamentals and fundamentals[0]:
                 fund_data = fundamentals[0]
-                volume = int(fund_data.get('volume', 0)) if fund_data.get('volume') else None
+                volume = (
+                    int(fund_data.get("volume", 0)) if fund_data.get("volume") else None
+                )
             else:
                 volume = None
-                
+
             return Quote(
                 asset=asset,
                 quote_date=datetime.now(),
                 price=price,
                 bid=price - 0.01,  # Approximation
                 ask=price + 0.01,  # Approximation
-                volume=volume
+                bid_size=100,  # Default approximation
+                ask_size=100,  # Default approximation
+                volume=volume,
             )
-            
+
         except Exception as e:
             logger.error(f"Error getting stock quote for {asset.symbol}: {e}")
             return None
-            
+
     def _get_option_quote(self, asset: Option) -> Optional[OptionQuote]:
         """Get option quote from Robinhood."""
         try:
@@ -95,26 +100,37 @@ class RobinhoodAdapter(QuoteAdapter):
                 asset.underlying.symbol,
                 asset.expiration_date.isoformat(),
                 asset.strike,
-                asset.option_type.lower()
+                asset.option_type.lower(),
             )
-            
+
             if not option_data:
                 return None
-                
+
             instrument = option_data[0]
-            market_data = rh.options.get_option_market_data_by_id(instrument['id'])
-            
+            market_data = rh.options.get_option_market_data_by_id(instrument["id"])
+
             if not market_data:
                 return None
-                
+
             # Get underlying price
-            underlying_quote = self._get_stock_quote(asset.underlying)
-            underlying_price = underlying_quote.price if underlying_quote else None
-            
-            bid = float(market_data.get('bid_price', 0)) if market_data.get('bid_price') else 0
-            ask = float(market_data.get('ask_price', 0)) if market_data.get('ask_price') else 0
+            if isinstance(asset.underlying, Stock):
+                underlying_quote = self._get_stock_quote(asset.underlying)
+                underlying_price = underlying_quote.price if underlying_quote else None
+            else:
+                underlying_price = None
+
+            bid = (
+                float(market_data.get("bid_price", 0))
+                if market_data.get("bid_price")
+                else 0
+            )
+            ask = (
+                float(market_data.get("ask_price", 0))
+                if market_data.get("ask_price")
+                else 0
+            )
             price = (bid + ask) / 2 if bid > 0 and ask > 0 else None
-            
+
             return OptionQuote(
                 asset=asset,
                 quote_date=datetime.now(),
@@ -122,14 +138,18 @@ class RobinhoodAdapter(QuoteAdapter):
                 bid=bid,
                 ask=ask,
                 underlying_price=underlying_price,
-                volume=int(market_data.get('volume', 0)) if market_data.get('volume') else None,
-                open_interest=int(market_data.get('open_interest', 0)) if market_data.get('open_interest') else None
+                volume=int(market_data.get("volume", 0))
+                if market_data.get("volume")
+                else None,
+                open_interest=int(market_data.get("open_interest", 0))
+                if market_data.get("open_interest")
+                else None,
             )
-            
+
         except Exception as e:
             logger.error(f"Error getting option quote for {asset.symbol}: {e}")
             return None
-            
+
     def get_quotes(self, assets: List[Asset]) -> Dict[Asset, Quote]:
         """Get quotes for multiple assets."""
         results = {}
@@ -138,7 +158,7 @@ class RobinhoodAdapter(QuoteAdapter):
             if quote:
                 results[asset] = quote
         return results
-        
+
     def get_chain(
         self, underlying: str, expiration_date: Optional[datetime] = None
     ) -> List[Asset]:
@@ -150,38 +170,38 @@ class RobinhoodAdapter(QuoteAdapter):
             try:
                 if not loop.run_until_complete(self._ensure_authenticated()):
                     return []
-                    
+
                 chains_data = rh.options.get_chains(underlying)
                 if not chains_data:
                     return []
-                    
+
                 assets = []
                 for chain in chains_data:
-                    expiration = chain.get('expiration_date')
-                    if expiration_date and expiration != expiration_date.strftime('%Y-%m-%d'):
+                    expiration = chain.get("expiration_date")
+                    if expiration_date and expiration != expiration_date.strftime(
+                        "%Y-%m-%d"
+                    ):
                         continue
-                        
+
                     # Get instruments for this expiration
                     instruments = rh.options.get_option_instruments(
-                        underlying,
-                        expiration,
-                        option_type='both'
+                        underlying, expiration, option_type="both"
                     )
-                    
+
                     for instrument in instruments:
-                        asset = asset_factory(instrument.get('url', ''))
+                        asset = asset_factory(instrument.get("url", ""))
                         if asset:
                             assets.append(asset)
-                            
+
                 return assets
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting option chain for {underlying}: {e}")
             return []
-            
+
     def get_options_chain(
         self, underlying: str, expiration_date: Optional[datetime] = None
     ) -> Optional[OptionsChain]:
@@ -192,114 +212,131 @@ class RobinhoodAdapter(QuoteAdapter):
             try:
                 if not loop.run_until_complete(self._ensure_authenticated()):
                     return None
-                    
+
                 # Get underlying asset and price
                 underlying_asset = asset_factory(underlying)
                 if not underlying_asset:
                     return None
-                    
-                underlying_quote = self._get_stock_quote(underlying_asset)
-                underlying_price = underlying_quote.price if underlying_quote else None
-                
+
+                if isinstance(underlying_asset, Stock):
+                    underlying_quote = self._get_stock_quote(underlying_asset)
+                    underlying_price = (
+                        underlying_quote.price if underlying_quote else None
+                    )
+                else:
+                    underlying_price = None
+
                 # Get chains data
                 chains_data = rh.options.get_chains(underlying)
                 if not chains_data:
                     return None
-                    
+
                 calls = []
                 puts = []
                 target_expiration = None
-                
+
                 for chain in chains_data:
-                    expiration_str = chain.get('expiration_date')
+                    expiration_str = chain.get("expiration_date")
                     if not expiration_str:
                         continue
-                        
-                    chain_exp_date = datetime.strptime(expiration_str, '%Y-%m-%d').date()
-                    
+
+                    chain_exp_date = datetime.strptime(
+                        expiration_str, "%Y-%m-%d"
+                    ).date()
+
                     # Filter by expiration if specified
                     if expiration_date:
-                        exp_date = expiration_date.date() if isinstance(expiration_date, datetime) else expiration_date
+                        exp_date = (
+                            expiration_date.date()
+                            if isinstance(expiration_date, datetime)
+                            else expiration_date
+                        )
                         if chain_exp_date != exp_date:
                             continue
-                    
+
                     target_expiration = chain_exp_date
-                    
+
                     # Get option instruments for this expiration
                     call_instruments = rh.options.get_option_instruments(
-                        underlying, expiration_str, option_type='call'
+                        underlying, expiration_str, option_type="call"
                     )
                     put_instruments = rh.options.get_option_instruments(
-                        underlying, expiration_str, option_type='put'
+                        underlying, expiration_str, option_type="put"
                     )
-                    
+
                     # Process calls
                     for instrument in call_instruments:
-                        option_asset = self._create_option_asset(instrument, underlying_asset, 'call')
+                        option_asset = self._create_option_asset(
+                            instrument, underlying_asset, "call"
+                        )
                         if option_asset:
                             option_quote = self._get_option_quote(option_asset)
                             if option_quote:
                                 calls.append(option_quote)
-                                
-                    # Process puts  
+
+                    # Process puts
                     for instrument in put_instruments:
-                        option_asset = self._create_option_asset(instrument, underlying_asset, 'put')
+                        option_asset = self._create_option_asset(
+                            instrument, underlying_asset, "put"
+                        )
                         if option_asset:
                             option_quote = self._get_option_quote(option_asset)
                             if option_quote:
                                 puts.append(option_quote)
-                                
+
                     # If we have a specific expiration, we only want one
                     if expiration_date:
                         break
-                        
+
                 if not target_expiration:
                     return None
-                    
+
                 return OptionsChain(
                     underlying_symbol=underlying,
                     expiration_date=target_expiration,
                     underlying_price=underlying_price,
                     calls=calls,
                     puts=puts,
-                    quote_time=datetime.now()
+                    quote_time=datetime.now(),
                 )
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting options chain for {underlying}: {e}")
             return None
-            
-    def _create_option_asset(self, instrument: Dict, underlying_asset: Asset, option_type: str) -> Optional[Option]:
+
+    def _create_option_asset(
+        self, instrument: Dict[str, Any], underlying_asset: Asset, option_type: str
+    ) -> Optional[Option]:
         """Create an Option asset from Robinhood instrument data."""
         try:
-            strike = float(instrument.get('strike_price', 0))
-            expiration_str = instrument.get('expiration_date')
+            strike = float(instrument.get("strike_price", 0))
+            expiration_str = instrument.get("expiration_date")
             if not expiration_str:
                 return None
-                
-            expiration = datetime.strptime(expiration_str, '%Y-%m-%d').date()
-            
+
+            expiration = datetime.strptime(expiration_str, "%Y-%m-%d").date()
+
             # Create option symbol in standard format
-            exp_str = expiration.strftime('%y%m%d')
+            exp_str = expiration.strftime("%y%m%d")
             strike_str = f"{int(strike * 1000):08d}"
-            type_char = 'C' if option_type.lower() == 'call' else 'P'
+            type_char = "C" if option_type.lower() == "call" else "P"
             symbol = f"{underlying_asset.symbol}{exp_str}{type_char}{strike_str}"
-            
+
             return Option(
                 symbol=symbol,
                 underlying=underlying_asset,
                 option_type=option_type.upper(),
                 strike=strike,
-                expiration_date=expiration
+                expiration_date=expiration,
             )
-            
+
         except Exception as e:
             logger.error(f"Error creating option asset: {e}")
             return None
-            
+
     def is_market_open(self) -> bool:
         """Check if the market is currently open."""
         try:
@@ -308,20 +345,23 @@ class RobinhoodAdapter(QuoteAdapter):
             try:
                 if not loop.run_until_complete(self._ensure_authenticated()):
                     return False
-                    
-                market_hours = rh.markets.get_market_hours('XNYS', datetime.now().date())
+
+                market_hours = rh.markets.get_market_hours(
+                    "XNYS", datetime.now().date()
+                )
                 if not market_hours:
                     return False
-                    
-                return market_hours.get('is_open', False)
-                
+
+                is_open = market_hours.get("is_open", False)
+                return bool(is_open)
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error checking market status: {e}")
             return False
-            
+
     def get_market_hours(self) -> Dict[str, Any]:
         """Get market hours information."""
         try:
@@ -330,13 +370,15 @@ class RobinhoodAdapter(QuoteAdapter):
             try:
                 if not loop.run_until_complete(self._ensure_authenticated()):
                     return {}
-                    
-                market_hours = rh.markets.get_market_hours('XNYS', datetime.now().date())
+
+                market_hours = rh.markets.get_market_hours(
+                    "XNYS", datetime.now().date()
+                )
                 return market_hours or {}
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting market hours: {e}")
             return {}
@@ -358,7 +400,9 @@ class RobinhoodAdapter(QuoteAdapter):
                 instruments_list = rh.stocks.get_instruments_by_symbols(symbol)
 
                 if not fundamentals_list or not instruments_list:
-                    return {"error": f"No company information found for symbol: {symbol}"}
+                    return {
+                        "error": f"No company information found for symbol: {symbol}"
+                    }
 
                 fundamental = fundamentals_list[0]
                 instrument = instruments_list[0]
@@ -366,7 +410,8 @@ class RobinhoodAdapter(QuoteAdapter):
 
                 return {
                     "symbol": symbol.upper(),
-                    "company_name": company_name or instrument.get("simple_name", "N/A"),
+                    "company_name": company_name
+                    or instrument.get("simple_name", "N/A"),
                     "sector": fundamental.get("sector", "N/A"),
                     "industry": fundamental.get("industry", "N/A"),
                     "description": fundamental.get("description", "N/A"),
@@ -378,10 +423,10 @@ class RobinhoodAdapter(QuoteAdapter):
                     "average_volume": fundamental.get("average_volume", "N/A"),
                     "tradeable": instrument.get("tradeable", False),
                 }
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting stock info for {symbol}: {e}")
             return {"error": str(e)}
@@ -397,7 +442,7 @@ class RobinhoodAdapter(QuoteAdapter):
 
                 interval_map = {
                     "day": "5minute",
-                    "week": "hour", 
+                    "week": "hour",
                     "month": "day",
                     "3month": "day",
                     "year": "week",
@@ -410,7 +455,9 @@ class RobinhoodAdapter(QuoteAdapter):
                 )
 
                 if not historical_data:
-                    return {"error": f"No historical data found for {symbol} over {period}"}
+                    return {
+                        "error": f"No historical data found for {symbol} over {period}"
+                    }
 
                 price_points = [
                     {
@@ -431,10 +478,10 @@ class RobinhoodAdapter(QuoteAdapter):
                     "interval": interval,
                     "data_points": price_points,
                 }
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting price history for {symbol}: {e}")
             return {"error": str(e)}
@@ -457,10 +504,10 @@ class RobinhoodAdapter(QuoteAdapter):
                     "symbol": symbol.upper(),
                     "news": news_data,
                 }
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting news for {symbol}: {e}")
             return {"error": str(e)}
@@ -480,10 +527,10 @@ class RobinhoodAdapter(QuoteAdapter):
                     return {"error": "No top movers data found"}
 
                 return {"movers": movers_data}
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error getting top movers: {e}")
             return {"error": str(e)}
@@ -520,10 +567,33 @@ class RobinhoodAdapter(QuoteAdapter):
                     "query": query,
                     "results": results,
                 }
-                
+
             finally:
                 loop.close()
-                
+
         except Exception as e:
             logger.error(f"Error searching for stocks with query {query}: {e}")
             return {"error": str(e)}
+
+    def get_sample_data_info(self) -> Dict[str, Any]:
+        """Get information about sample data."""
+        return {"message": "RobinhoodAdapter uses live data, not sample data"}
+
+    def get_expiration_dates(self, underlying: str) -> List[date]:
+        """Get available expiration dates for an underlying symbol."""
+        # This would need to be implemented with actual Robinhood API calls
+        return []
+
+    def get_test_scenarios(self) -> Dict[str, Any]:
+        """Get available test scenarios."""
+        return {"message": "RobinhoodAdapter uses live data, no test scenarios"}
+
+    def set_date(self, date: str) -> None:
+        """Set the current date for test data."""
+        # No-op for live data adapter
+        pass
+
+    def get_available_symbols(self) -> List[str]:
+        """Get list of available symbols."""
+        # This would need to be implemented with actual Robinhood API calls
+        return []

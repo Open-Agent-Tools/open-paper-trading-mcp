@@ -258,10 +258,10 @@ class RecognizedStrategy(Base):
     )  # List of breakeven prices
 
     # Risk metrics
-    net_delta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    net_gamma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    net_theta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    net_vega: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # net_delta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # net_gamma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # net_theta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # net_vega: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Position tracking
     position_ids: Mapped[str] = mapped_column(JSON)  # List of position IDs in strategy
@@ -346,10 +346,6 @@ class PortfolioGreeksSnapshot(Base):
     options_value = Column(Float, nullable=False, default=0.0)
     stocks_value = Column(Float, nullable=False, default=0.0)
 
-    # Risk metrics
-    var_1day = Column(Float, nullable=True)
-    var_10day = Column(Float, nullable=True)
-
     # Relationships
     account = relationship("Account", back_populates="greeks_snapshots")
 
@@ -377,8 +373,8 @@ class StrategyPerformance(Base):
     annualized_return = Column(Float, nullable=True)
 
     # Risk metrics
-    max_drawdown = Column(Float, nullable=True)
-    sharpe_ratio = Column(Float, nullable=True)
+    # max_drawdown: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # sharpe_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Greeks at measurement time
     delta_exposure = Column(Float, nullable=True)

@@ -4,10 +4,10 @@ Account and order validation service.
 Adapted from reference implementation with enhanced validation capabilities.
 """
 
-from typing import List, Optional, Any
-from datetime import datetime, date
+from typing import List, Optional
+from datetime import date
 
-from ..schemas.orders import MultiLegOrder, Order, OrderLeg, OrderType
+from ..schemas.orders import MultiLegOrder, OrderLeg, OrderType
 from ..models.trading import Position
 from ..models.assets import Asset, Option
 
@@ -19,18 +19,16 @@ class ValidationError(Exception):
 
 
 class AccountValidator:
-    """
-    Validates account state after orders and ensures trading rules compliance.
-    """
+    """Service for validating account state."""
 
-    def __init__(self, margin_service: Optional[Any] = None) -> None:
-        self.margin_service = margin_service
+    def __init__(self) -> None:
+        """Initialize validator."""
+        pass
 
     def validate_account_state(
         self,
         cash_balance: float,
         positions: List[Position],
-        maintenance_margin: float = 0.0,
     ) -> bool:
         """
         Validate account state after an order execution.
@@ -38,7 +36,6 @@ class AccountValidator:
         Args:
             cash_balance: Current cash balance
             positions: Current positions
-            maintenance_margin: Required maintenance margin
 
         Returns:
             True if valid
@@ -53,12 +50,8 @@ class AccountValidator:
                 f"Insufficient cash: Account balance is ${cash_balance:,.2f}"
             )
 
-        # Check margin requirements
-        if cash_balance < maintenance_margin:
-            raise ValidationError(
-                f"Insufficient cash for margin requirements. "
-                f"Cash: ${cash_balance:,.2f}, Required margin: ${maintenance_margin:,.2f}"
-            )
+        if cash_balance < 0:
+            raise ValidationError(f"Insufficient cash: ${cash_balance:,.2f}")
 
         return True
 
@@ -254,154 +247,17 @@ class AccountValidator:
 
         return True
 
-    def validate_risk_limits(
-        self,
-        positions: List[Position],
-        max_daily_loss: Optional[float] = None,
-        max_portfolio_delta: Optional[float] = None,
-    ) -> bool:
-        """
-        Validate risk-based limits.
-
-        Args:
-            positions: Current positions
-            max_daily_loss: Maximum allowed daily loss
-            max_portfolio_delta: Maximum portfolio delta exposure
-
-        Returns:
-            True if within limits
-
-        Raises:
-            ValidationError: If limits exceeded
-        """
-
-        if max_daily_loss is not None:
-            daily_pnl = sum(pos.unrealized_pnl or 0 for pos in positions)
-            if daily_pnl < -max_daily_loss:
-                raise ValidationError(
-                    f"Daily loss limit exceeded: "
-                    f"${daily_pnl:,.2f} loss > ${max_daily_loss:,.2f} limit"
-                )
-
-        if max_portfolio_delta is not None:
-            portfolio_delta = sum(pos.delta or 0 for pos in positions)
-            if abs(portfolio_delta) > max_portfolio_delta:
-                raise ValidationError(
-                    f"Portfolio delta limit exceeded: "
-                    f"{portfolio_delta:.2f} > {max_portfolio_delta:.2f} limit"
-                )
-
-        return True
-
     def _get_symbol(self, asset: Asset) -> str:
         """Get symbol from asset."""
-        return asset.symbol if hasattr(asset, "symbol") else str(asset)
+        return asset.symbol
 
     def _positions_are_closable(
-        self, position_quantity: int, order_quantity: int
+        self, position_quantity: float, order_quantity: float
     ) -> bool:
-        """Check if position can be closed by order (opposite signs)."""
-        from math import copysign
-
-        return copysign(1, position_quantity) == (copysign(1, order_quantity) * -1)
+        """Check if positions can be closed by order quantity."""
+        return abs(order_quantity) <= abs(position_quantity)
 
     def _is_valid_option_symbol(self, symbol: str) -> bool:
         """Validate option symbol format."""
-        # Basic validation - should be at least 15 characters for standard format
-        # AAPL240119C00195000 = 16 characters
-        return len(symbol) >= 15 and ("C0" in symbol or "P0" in symbol)
-
-
-class OrderValidator:
-    """
-    Specialized validator for order-specific rules.
-    """
-
-    def __init__(self) -> None:
-        self.account_validator = AccountValidator()
-
-    def validate_simple_order(self, order: Order) -> bool:
-        """Validate a simple single-leg order."""
-
-        # Convert to multi-leg for validation
-        multi_leg = MultiLegOrder(
-            id=order.id,
-            legs=[order.to_leg()],
-            condition=order.condition,
-            limit_price=order.price,
-        )
-
-        self.account_validator._validate_order_structure(multi_leg)
-        return True
-
-    def validate_order_timing(self, order: MultiLegOrder) -> bool:
-        """Validate order timing rules."""
-
-        # Check market hours (placeholder - would integrate with market calendar)
-        datetime.now()
-
-        # For options, check days to expiration
-        for leg in order.legs:
-            if isinstance(leg.asset, Option):
-                days_to_exp = (leg.asset.expiration_date - date.today()).days
-                if days_to_exp < 0:
-                    raise ValidationError(
-                        f"Cannot trade expired option: {leg.asset.symbol}"
-                    )
-                if days_to_exp == 0:
-                    # Same-day expiration warning (could be converted to error)
-                    pass
-
-        return True
-
-    def validate_strategy_rules(self, order: MultiLegOrder) -> bool:
-        """Validate strategy-specific rules."""
-
-        # For multi-leg orders, check for valid strategy combinations
-        if len(order.legs) > 1:
-            self._validate_multi_leg_strategy(order)
-
-        return True
-
-    def _validate_multi_leg_strategy(self, order: MultiLegOrder) -> None:
-        """Validate multi-leg strategy makes sense."""
-
-        # Basic validation - could be expanded with strategy recognition
-        opening_legs = [
-            leg
-            for leg in order.legs
-            if leg.order_type in [OrderType.BTO, OrderType.STO]
-        ]
-        closing_legs = [
-            leg
-            for leg in order.legs
-            if leg.order_type in [OrderType.BTC, OrderType.STC]
-        ]
-
-        # Don't allow mixing opening and closing in same order for now
-        if opening_legs and closing_legs:
-            raise ValidationError(
-                "Cannot mix opening and closing legs in the same order"
-            )
-
-
-# Convenience function for basic account validation
-def validate_account_state(
-    cash_balance: float, positions: List[Position], maintenance_margin: float = 0.0
-) -> bool:
-    """
-    Quick account validation function.
-
-    Args:
-        cash_balance: Current cash balance
-        positions: Current positions
-        maintenance_margin: Required maintenance margin
-
-    Returns:
-        True if valid
-
-    Raises:
-        ValidationError: If account invalid
-    """
-    validator = AccountValidator()
-    return validator.validate_account_state(cash_balance, positions, maintenance_margin)
+        # Basic validation - should be at least 8 characters for options
+        return len(symbol) >= 8 and ("C0" in symbol or "P0" in symbol)

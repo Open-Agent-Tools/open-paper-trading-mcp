@@ -7,8 +7,8 @@ This module contains all Pydantic models for order management:
 - Order creation and validation schemas
 """
 
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Union, Dict
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from typing import Optional, List, Union
 from datetime import datetime
 from enum import Enum
 from app.models.assets import Asset, asset_factory
@@ -65,28 +65,30 @@ class OrderLeg(BaseModel):
         None, description="Price per share/contract (None for market orders)"
     )
 
-    @validator("asset", pre=True)
+    @field_validator("asset", mode="before")
     def normalize_asset(cls, v: Union[str, Asset]) -> Asset:
         result = asset_factory(v) if isinstance(v, str) else v
         if result is None:
             raise ValueError(f"Invalid asset: {v}")
         return result
 
-    @validator("quantity")
-    def set_quantity_sign(cls, v: int, values: Dict[str, object]) -> int:
-        order_type = values.get("order_type")
+    @field_validator("quantity")
+    @classmethod
+    def set_quantity_sign(cls, v: int, info: ValidationInfo) -> int:
+        order_type = info.data.get("order_type")
         if order_type in [OrderType.SELL, OrderType.STO, OrderType.STC]:
             return -abs(v)
         else:
             return abs(v)
 
-    @validator("price")
+    @field_validator("price")
+    @classmethod
     def set_price_sign(
-        cls, v: Optional[float], values: Dict[str, object]
+        cls, v: Optional[float], info: ValidationInfo
     ) -> Optional[float]:
         if v is None:
             return v
-        order_type = values.get("order_type")
+        order_type = info.data.get("order_type")
         if order_type in [OrderType.SELL, OrderType.STO, OrderType.STC]:
             return -abs(v)
         else:
@@ -109,6 +111,12 @@ class Order(BaseModel):
     status: OrderStatus = OrderStatus.PENDING
     created_at: Optional[datetime] = None
     filled_at: Optional[datetime] = None
+
+    # Additional attributes for compatibility
+    legs: List[OrderLeg] = Field(
+        default_factory=list, description="Order legs (empty for single-leg orders)"
+    )
+    net_price: Optional[float] = Field(None, description="Net price for the order")
 
     def to_leg(self) -> OrderLeg:
         return OrderLeg(
@@ -134,7 +142,7 @@ class MultiLegOrder(BaseModel):
     created_at: Optional[datetime] = None
     filled_at: Optional[datetime] = None
 
-    @validator("legs")
+    @field_validator("legs")
     def validate_no_duplicate_assets(cls, v: List[OrderLeg]) -> List[OrderLeg]:
         symbols = [
             leg.asset.symbol if hasattr(leg.asset, "symbol") else str(leg.asset)

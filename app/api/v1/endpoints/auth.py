@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional
+from datetime import timedelta
+
+from app.services.auth_service import AuthService, auth_service
+from app.core.exceptions import NotFoundError
 
 router = APIRouter()
 
@@ -19,61 +23,46 @@ class User(BaseModel):
     full_name: Optional[str] = None
 
 
-class UserInDB(User):
-    hashed_password: str
-
-
-def fake_hash_password(password: str) -> str:
-    return "fakehashed" + password
-
-
-fake_users_db = {
-    "testuser": {
-        "username": "testuser",
-        "full_name": "Test User",
-        "email": "test@example.com",
-        "hashed_password": "fakehashed" + "secret",
-    }
-}
-
-
-def get_user(username: str) -> Optional[UserInDB]:
-    if username in fake_users_db:
-        user_dict = fake_users_db[username]
-        return UserInDB(**user_dict)
-    return None
-
-
-def authenticate_user(username: str, password: str) -> Union[UserInDB, bool]:
-    user = get_user(username)
-    if not user:
-        return False
-    if not fake_hash_password(password) == user.hashed_password:
-        return False
-    return user
+def get_auth_service() -> AuthService:
+    """Dependency to get auth service instance."""
+    return auth_service
 
 
 @router.post("/token", response_model=Token, deprecated=True)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
+    service: AuthService = Depends(get_auth_service),
 ) -> dict[str, str]:
-    user = authenticate_user(form_data.username, form_data.password)
-    if not user or user is True:  # user can be True from authenticate_user
+    user = service.authenticate_user(form_data.username, form_data.password)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {"access_token": user.username, "token_type": "bearer"}
+
+    access_token_expires = timedelta(minutes=service.access_token_expire_minutes)
+    access_token = service.create_access_token(
+        data={"sub": user["username"]}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/me", response_model=User)
-async def read_users_me(token: str = Depends(oauth2_scheme)) -> UserInDB:
-    user = get_user(token)
-    if user is None:
+async def read_users_me(
+    token: str = Depends(oauth2_scheme),
+    service: AuthService = Depends(get_auth_service),
+) -> User:
+    try:
+        user = service.get_current_user(token)
+        return User(
+            username=user["username"],
+            email=user.get("email"),
+            full_name=user.get("full_name"),
+        )
+    except NotFoundError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return user

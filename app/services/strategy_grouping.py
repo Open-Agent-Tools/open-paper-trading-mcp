@@ -1,7 +1,7 @@
 """
 Advanced strategy grouping algorithm from reference implementation.
 
-Groups positions into basic strategies for margin calculation and risk analysis.
+Groups positions into basic strategies.
 Special thanks to /u/EdKaim for the outline of this process.
 """
 
@@ -19,7 +19,7 @@ from .strategies.models import (
 
 def group_into_basic_strategies(positions: List[Position]) -> List[BasicStrategy]:
     """
-    Group positions into basic strategies for margin calculation.
+    Group positions into basic strategies.
 
     Args:
         positions: List of positions to group
@@ -247,7 +247,7 @@ def normalize_strategy_quantities(
     strategies: List[BasicStrategy],
 ) -> List[BasicStrategy]:
     """
-    Normalize strategy quantities to minimize margin requirements.
+    Normalize strategy quantities.
 
     Args:
         strategies: List of strategies to normalize

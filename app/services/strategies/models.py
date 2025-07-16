@@ -7,7 +7,7 @@ for the trading strategy system.
 
 from typing import List, Any, Optional, Union, Literal
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from ...models.assets import Asset, Option, asset_factory
 from ...models.trading import Position
@@ -53,8 +53,7 @@ class BasicStrategy(BaseModel):
     )
     quantity: int = Field(default=1, description="Strategy quantity (contracts/shares)")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class AssetStrategy(BasicStrategy):
@@ -98,7 +97,7 @@ class OffsetStrategy(BasicStrategy):
 
 
 class SpreadStrategy(BasicStrategy):
-    """Options spread strategy with defined risk profile."""
+    """Options spread strategy."""
 
     strategy_type: Literal[StrategyType.SPREAD] = Field(default=StrategyType.SPREAD)
     sell_option: Option = Field(..., description="Option being sold")
@@ -145,7 +144,7 @@ class SpreadStrategy(BasicStrategy):
 
 
 class CoveredStrategy(BasicStrategy):
-    """Strategy where underlying asset covers short option risk."""
+    """Strategy where underlying asset covers a short option."""
 
     strategy_type: Literal[StrategyType.COVERED] = Field(default=StrategyType.COVERED)
     asset: Asset = Field(..., description="Underlying asset providing cover")
@@ -220,39 +219,13 @@ class StrategyGreeks(BaseModel):
     vega: float = Field(0.0, description="Total vega sensitivity")
     rho: float = Field(0.0, description="Total rho sensitivity")
 
+    # Dollar-denominated Greeks
+    delta_dollars: float = Field(0.0, description="Delta in dollar terms")
+    gamma_dollars: float = Field(0.0, description="Gamma in dollar terms")
+    theta_dollars: float = Field(0.0, description="Theta in dollar terms")
+
     # Normalized Greeks (per $1000 invested)
     delta_normalized: float = Field(0.0, description="Delta per $1000 invested")
     gamma_normalized: float = Field(0.0, description="Gamma per $1000 invested")
     theta_normalized: float = Field(0.0, description="Theta per $1000 invested")
     vega_normalized: float = Field(0.0, description="Vega per $1000 invested")
-
-    # Risk metrics
-    delta_dollars: float = Field(
-        0.0, description="Dollar delta (delta * underlying price)"
-    )
-    gamma_dollars: float = Field(0.0, description="Dollar gamma")
-    theta_dollars: float = Field(0.0, description="Dollar theta per day")
-
-
-class StrategyRiskMetrics(BaseModel):
-    """Risk analysis metrics for strategies."""
-
-    max_drawdown: float = Field(0.0, description="Maximum historical drawdown")
-    volatility: float = Field(0.0, description="Strategy volatility")
-    sharpe_ratio: Optional[float] = Field(
-        None, description="Risk-adjusted return ratio"
-    )
-    var_95: Optional[float] = Field(None, description="Value at Risk (95% confidence)")
-    expected_shortfall: Optional[float] = Field(
-        None, description="Expected loss beyond VaR"
-    )
-
-    # Time decay risk
-    theta_risk_score: float = Field(0.0, description="Time decay risk (0-100 scale)")
-    days_to_max_theta: Optional[int] = Field(
-        None, description="Days to maximum theta decay"
-    )
-
-    # Assignment risk (for short options)
-    assignment_probability: float = Field(0.0, description="Probability of assignment")
-    itm_probability: float = Field(0.0, description="Probability of finishing ITM")

@@ -40,11 +40,11 @@ class SearchStocksArgs(BaseModel):
 async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
     """
     Get current stock price and basic metrics.
-    
+
     This function now routes through TradingService for unified data access.
     """
     symbol = args.symbol.strip().upper()
-    
+
     try:
         result = trading_service.get_stock_price(symbol)
         return result
@@ -55,11 +55,11 @@ async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
 async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
     """
     Get detailed company information and fundamentals for a stock.
-    
+
     This function now routes through TradingService for unified data access.
     """
     symbol = args.symbol.strip().upper()
-    
+
     try:
         result = trading_service.get_stock_info(symbol)
         return result
@@ -70,11 +70,11 @@ async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
 async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
     """
     Get historical price data for a stock.
-    
+
     This function now routes through TradingService for unified data access.
     """
     symbol = args.symbol.strip().upper()
-    
+
     try:
         result = trading_service.get_price_history(symbol, args.period)
         return result
@@ -85,11 +85,11 @@ async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
 async def get_stock_news(args: GetStockNewsArgs) -> Dict[str, Any]:
     """
     Get news stories for a stock.
-    
+
     This function now routes through TradingService for unified data access.
     """
     symbol = args.symbol.strip().upper()
-    
+
     try:
         result = trading_service.get_stock_news(symbol)
         return result
@@ -100,7 +100,7 @@ async def get_stock_news(args: GetStockNewsArgs) -> Dict[str, Any]:
 async def get_top_movers() -> Dict[str, Any]:
     """
     Get top movers in the market.
-    
+
     This function now routes through TradingService for unified data access.
     """
     try:
@@ -113,11 +113,11 @@ async def get_top_movers() -> Dict[str, Any]:
 async def search_stocks(args: SearchStocksArgs) -> Dict[str, Any]:
     """
     Search for stocks by symbol or company name.
-    
+
     This function now routes through TradingService for unified data access.
     """
     query = args.query.strip()
-    
+
     try:
         result = trading_service.search_stocks(query)
         return result

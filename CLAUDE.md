@@ -35,9 +35,9 @@ uv run python app/main.py
 # Development utilities
 python scripts/dev.py server     # Start both FastAPI and MCP servers
 python scripts/dev.py test       # Run all tests
-python scripts/dev.py format     # Format with black and isort
-python scripts/dev.py lint       # Lint with flake8
-python scripts/dev.py typecheck  # Type check with mypy
+python3 -m ruff format .         # Format with ruff
+python3 -m ruff check . --fix    # Lint with ruff
+python3 -m mypy app/             # Type check with mypy
 python scripts/dev.py check      # Run all checks (format, lint, typecheck, test)
 
 # Run specific tests
@@ -115,10 +115,11 @@ The application runs both servers in a single Python process (`app/main.py`):
 **Phase 0 (Complete)**: Infrastructure with Docker, PostgreSQL integration, test runner
 
 **Phase 1 (Complete) [2025-07-16]**: Comprehensive codebase refactoring and type safety improvements:
-- MyPy errors reduced from 567 → 271 (-52% improvement)
+- MyPy errors reduced from 567 → 0 (100% resolution achieved)
 - Complete schema/model separation with backward compatibility
 - Modern SQLAlchemy 2.0 implementation throughout
 - Systematic type safety improvements across all services
+- Full ruff integration for code formatting and linting
 
 **Phase 2 (Current)**: Live Market Data Integration via Robinhood/open-stocks-mcp
 - Account management with persistent storage

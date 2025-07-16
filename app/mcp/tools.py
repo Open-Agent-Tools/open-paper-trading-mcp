@@ -1,25 +1,15 @@
 from pydantic import BaseModel, Field
 import json
-from datetime import date, datetime
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 from app.services.trading_service import trading_service
-from app.models.trading import (
+from app.schemas.orders import (
     OrderCreate,
     OrderType,
-    MultiLegOrderCreate,
-    OrderLegCreate,
+    OrderCondition,
 )
 from app.models.assets import asset_factory, Option
-from app.services.strategies import (
-    analyze_advanced_strategy_pnl,
-    aggregate_portfolio_greeks,
-    detect_complex_strategies,
-    get_portfolio_optimization_recommendations,
-)
-from app.services.expiration import OptionsExpirationEngine
-from app.services.pre_trade_risk import analyze_pre_trade_risk, quick_risk_check
-from app.services.advanced_validation import create_default_account_limits
 
 
 class GetQuoteArgs(BaseModel):
@@ -74,6 +64,7 @@ def create_buy_order(args: CreateOrderArgs) -> str:
             order_type=OrderType.BUY,
             quantity=args.quantity,
             price=args.price,
+            condition=OrderCondition.MARKET,
         )
         order = trading_service.create_order(order_data)
         return json.dumps(
@@ -102,6 +93,7 @@ def create_sell_order(args: CreateOrderArgs) -> str:
             order_type=OrderType.SELL,
             quantity=args.quantity,
             price=args.price,
+            condition=OrderCondition.MARKET,
         )
         order = trading_service.create_order(order_data)
         return json.dumps(
@@ -321,12 +313,6 @@ class SimulateExpirationArgs(BaseModel):
     dry_run: bool = Field(True, description="Dry run mode (don't modify account)")
 
 
-class PreTradeAnalysisArgs(BaseModel):
-    order_data: Dict[str, Any] = Field(..., description="Order data to analyze")
-    include_scenarios: bool = Field(True, description="Include scenario stress testing")
-    options_level: int = Field(2, description="Account options trading level")
-
-
 def get_options_chain(args: GetOptionsChainArgs) -> str:
     """Get options chain for an underlying symbol with filtering capabilities."""
     try:
@@ -336,72 +322,14 @@ def get_options_chain(args: GetOptionsChainArgs) -> str:
             expiration = datetime.strptime(args.expiration_date, "%Y-%m-%d").date()
 
         # Get options chain
-        chain = trading_service.get_options_chain(args.symbol)
-
-        if chain is None:
-            return json.dumps(
-                {"error": f"No options chain found for {args.symbol}"}, indent=2
-            )
-
-        # Apply filters
-        if args.min_strike or args.max_strike or expiration:
-            chain = chain.filter_by_strike_range(args.min_strike, args.max_strike)
-
-        # Convert to JSON-serializable format
-        calls_data = []
-        for call in chain.calls:
-            calls_data.append(
-                {
-                    "symbol": call.asset.symbol,
-                    "strike": call.asset.strike,
-                    "expiration": call.asset.expiration_date.isoformat(),
-                    "bid": call.bid,
-                    "ask": call.ask,
-                    "price": call.price,
-                    "volume": getattr(call, "volume", None),
-                    "open_interest": getattr(call, "open_interest", None),
-                    "delta": getattr(call, "delta", None),
-                    "gamma": getattr(call, "gamma", None),
-                    "theta": getattr(call, "theta", None),
-                    "vega": getattr(call, "vega", None),
-                    "iv": getattr(call, "iv", None),
-                }
-            )
-
-        puts_data = []
-        for put in chain.puts:
-            puts_data.append(
-                {
-                    "symbol": put.asset.symbol,
-                    "strike": put.asset.strike,
-                    "expiration": put.asset.expiration_date.isoformat(),
-                    "bid": put.bid,
-                    "ask": put.ask,
-                    "price": put.price,
-                    "volume": getattr(put, "volume", None),
-                    "open_interest": getattr(put, "open_interest", None),
-                    "delta": getattr(put, "delta", None),
-                    "gamma": getattr(put, "gamma", None),
-                    "theta": getattr(put, "theta", None),
-                    "vega": getattr(put, "vega", None),
-                    "iv": getattr(put, "iv", None),
-                }
-            )
-
-        return json.dumps(
-            {
-                "underlying_symbol": chain.underlying_symbol,
-                "underlying_price": chain.underlying_price,
-                "expiration_date": (
-                    chain.expiration_date.isoformat() if chain.expiration_date else None
-                ),
-                "quote_time": chain.quote_time.isoformat(),
-                "calls": calls_data,
-                "puts": puts_data,
-                "summary": chain.get_summary_stats(),
-            },
-            indent=2,
+        chain_data = trading_service.get_formatted_options_chain(
+            args.symbol,
+            expiration_date=expiration,
+            min_strike=args.min_strike,
+            max_strike=args.max_strike,
         )
+
+        return json.dumps(chain_data, indent=2)
 
     except Exception as e:
         return f"Error getting options chain: {str(e)}"
@@ -429,22 +357,9 @@ def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
 def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
     """Create a multi-leg options order (spreads, straddles, etc.)."""
     try:
-        # Convert legs to OrderLegCreate objects
-        order_legs = []
-        for leg_data in args.legs:
-            asset = asset_factory(leg_data["symbol"])
-            leg = OrderLegCreate(
-                asset=asset,
-                quantity=leg_data["quantity"],
-                order_type=OrderType(leg_data["order_type"]),
-                price=leg_data.get("price"),
-            )
-            order_legs.append(leg)
-
-        # Create multi-leg order
-        order_data = MultiLegOrderCreate(legs=order_legs, order_type=args.order_type)
-
-        order = trading_service.create_multi_leg_order(order_data)
+        order = trading_service.create_multi_leg_order_from_request(
+            args.legs, args.order_type
+        )
 
         # Convert legs for response
         legs_data = []
@@ -484,19 +399,20 @@ def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
 
         # Add option details
         asset = asset_factory(args.option_symbol)
+        result: Dict[str, Any] = dict(greeks)  # Copy the greeks dict
         if isinstance(asset, Option):
-            greeks.update(
+            result.update(
                 {
                     "option_symbol": args.option_symbol,
                     "underlying_symbol": asset.underlying.symbol,
                     "strike": asset.strike,
                     "expiration_date": asset.expiration_date.isoformat(),
-                    "option_type": asset.option_type,
+                    "option_type": asset.option_type.lower(),
                     "days_to_expiration": asset.get_days_to_expiration(),
                 }
             )
 
-        return json.dumps(greeks, indent=2)
+        return json.dumps(result, indent=2)
 
     except Exception as e:
         return f"Error calculating Greeks: {str(e)}"
@@ -505,94 +421,12 @@ def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
 def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
     """Get comprehensive strategy analysis for current portfolio."""
     try:
-        portfolio = trading_service.get_portfolio()
-        positions = portfolio.positions
-
-        analysis_result = {
-            "timestamp": datetime.now().isoformat(),
-            "total_positions": len(positions),
-        }
-
-        # Get current quotes for analysis
-        symbols = [pos.symbol for pos in positions]
-        current_quotes = {}
-        for symbol in symbols:
-            try:
-                quote = trading_service.get_enhanced_quote(symbol)
-                current_quotes[symbol] = quote
-            except Exception:
-                continue
-
-        # Portfolio Greeks aggregation
-        if args.include_greeks and current_quotes:
-            try:
-                portfolio_greeks = aggregate_portfolio_greeks(positions, current_quotes)
-                analysis_result["portfolio_greeks"] = {
-                    "delta": portfolio_greeks.delta,
-                    "gamma": portfolio_greeks.gamma,
-                    "theta": portfolio_greeks.theta,
-                    "vega": portfolio_greeks.vega,
-                    "rho": portfolio_greeks.rho,
-                    "delta_normalized": portfolio_greeks.delta_normalized,
-                    "delta_dollars": portfolio_greeks.delta_dollars,
-                    "theta_dollars": portfolio_greeks.theta_dollars,
-                }
-            except Exception as e:
-                analysis_result["greeks_error"] = str(e)
-
-        # Strategy P&L analysis
-        if args.include_pnl and current_quotes:
-            try:
-                strategy_pnls = analyze_advanced_strategy_pnl(positions, current_quotes)
-                pnl_data = []
-                for pnl in strategy_pnls:
-                    pnl_data.append(
-                        {
-                            "strategy_type": pnl.strategy_type,
-                            "strategy_name": pnl.strategy_name,
-                            "unrealized_pnl": pnl.unrealized_pnl,
-                            "realized_pnl": pnl.realized_pnl,
-                            "total_pnl": pnl.total_pnl,
-                            "pnl_percent": pnl.pnl_percent,
-                            "cost_basis": pnl.cost_basis,
-                            "market_value": pnl.market_value,
-                            "days_held": pnl.days_held,
-                            "annualized_return": pnl.annualized_return,
-                        }
-                    )
-                analysis_result["strategy_pnl"] = pnl_data
-            except Exception as e:
-                analysis_result["pnl_error"] = str(e)
-
-        # Complex strategy detection
-        try:
-            complex_strategies = detect_complex_strategies(positions)
-            complex_data = []
-            for strategy in complex_strategies:
-                complex_data.append(
-                    {
-                        "complex_type": strategy.complex_type,
-                        "underlying_symbol": strategy.underlying_symbol,
-                        "leg_count": len(strategy.legs),
-                        "net_credit": strategy.net_credit,
-                        "max_profit": strategy.max_profit,
-                        "max_loss": strategy.max_loss,
-                    }
-                )
-            analysis_result["complex_strategies"] = complex_data
-        except Exception as e:
-            analysis_result["complex_strategies_error"] = str(e)
-
-        # Optimization recommendations
-        if args.include_recommendations and current_quotes:
-            try:
-                recommendations = get_portfolio_optimization_recommendations(
-                    positions, current_quotes
-                )
-                analysis_result["recommendations"] = recommendations
-            except Exception as e:
-                analysis_result["recommendations_error"] = str(e)
-
+        analysis_result = trading_service.analyze_portfolio_strategies(
+            include_greeks=args.include_greeks,
+            include_pnl=args.include_pnl,
+            include_complex_strategies=True,  # Not available in args, default to True
+            include_recommendations=args.include_recommendations,
+        )
         return json.dumps(analysis_result, indent=2)
 
     except Exception as e:
@@ -602,263 +436,14 @@ def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
 def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
     """Simulate option expiration processing for current portfolio."""
     try:
-        # Get current account data
-        portfolio = trading_service.get_portfolio()
-        account_data = {
-            "cash_balance": portfolio.cash_balance,
-            "positions": portfolio.positions,
-        }
-
-        # Parse processing date
-        processing_date = date.today()
-        if args.processing_date:
-            processing_date = datetime.strptime(args.processing_date, "%Y-%m-%d").date()
-
-        # Get quote adapter for current prices
-        quote_adapter = trading_service.quote_adapter
-
-        # Run expiration simulation
-        expiration_engine = OptionsExpirationEngine()
-        result = expiration_engine.process_account_expirations(
-            account_data, quote_adapter, processing_date
+        result = trading_service.simulate_expiration(
+            processing_date=args.processing_date,
+            dry_run=args.dry_run,
         )
-
-        # Convert result to JSON-serializable format
-        expired_data = []
-        for pos in result.expired_positions:
-            expired_data.append(
-                {
-                    "symbol": pos.symbol,
-                    "quantity": pos.quantity,
-                    "avg_price": pos.avg_price,
-                    "current_price": pos.current_price,
-                }
-            )
-
-        new_positions_data = []
-        for pos in result.new_positions:
-            new_positions_data.append(
-                {
-                    "symbol": pos.symbol,
-                    "quantity": pos.quantity,
-                    "avg_price": pos.avg_price,
-                    "current_price": pos.current_price,
-                }
-            )
-
-        return json.dumps(
-            {
-                "processing_date": processing_date.isoformat(),
-                "dry_run": args.dry_run,
-                "expired_positions": expired_data,
-                "new_positions": new_positions_data,
-                "cash_impact": result.cash_impact,
-                "assignments": result.assignments,
-                "exercises": result.exercises,
-                "worthless_expirations": result.worthless_expirations,
-                "warnings": result.warnings,
-                "errors": result.errors,
-            },
-            indent=2,
-        )
+        return json.dumps(result, indent=2)
 
     except Exception as e:
         return f"Error simulating option expiration: {str(e)}"
-
-
-def analyze_pre_trade_risk_advanced(args: PreTradeAnalysisArgs) -> str:
-    """Perform comprehensive pre-trade risk analysis for an order."""
-    try:
-        # Get current account data
-        portfolio = trading_service.get_portfolio()
-        account_data = {
-            "cash_balance": portfolio.cash_balance,
-            "positions": portfolio.positions,
-        }
-
-        # Create order object from data
-        order_data = args.order_data
-        if "legs" in order_data:
-            # Multi-leg order
-            legs = []
-            for leg_data in order_data["legs"]:
-                asset = asset_factory(leg_data["symbol"])
-                leg = OrderLegCreate(
-                    asset=asset,
-                    quantity=leg_data["quantity"],
-                    order_type=OrderType(leg_data["order_type"]),
-                    price=leg_data.get("price"),
-                )
-                legs.append(leg)
-
-            order = MultiLegOrderCreate(legs=legs)
-        else:
-            # Single order
-            order = OrderCreate(
-                symbol=order_data["symbol"],
-                order_type=OrderType(order_data["order_type"]),
-                quantity=order_data["quantity"],
-                price=order_data.get("price"),
-            )
-
-        # Get current quotes
-        symbols = []
-        if hasattr(order, "symbol"):
-            symbols = [order.symbol]
-        elif hasattr(order, "legs"):
-            symbols = [leg.asset.symbol for leg in order.legs]
-
-        current_quotes = {}
-        for symbol in symbols:
-            try:
-                quote = trading_service.get_enhanced_quote(symbol)
-                current_quotes[symbol] = quote
-            except Exception:
-                continue
-
-        # Create account limits
-        account_limits = create_default_account_limits(options_level=args.options_level)
-
-        # Perform analysis
-        analysis = analyze_pre_trade_risk(
-            account_data, order, current_quotes, account_limits
-        )
-
-        # Convert to JSON-serializable format
-        validation_messages = []
-        for msg in analysis.validation_result.messages:
-            validation_messages.append(
-                {
-                    "rule": msg.rule,
-                    "severity": msg.severity,
-                    "code": msg.code,
-                    "message": msg.message,
-                    "details": msg.details,
-                    "suggested_action": msg.suggested_action,
-                }
-            )
-
-        scenario_data = []
-        for scenario in analysis.scenario_results:
-            scenario_data.append(
-                {
-                    "scenario_type": scenario.scenario.scenario_type,
-                    "description": scenario.scenario.description,
-                    "portfolio_pnl": scenario.portfolio_pnl,
-                    "order_pnl": scenario.order_pnl,
-                    "combined_pnl": scenario.combined_pnl,
-                    "max_loss": scenario.max_loss,
-                    "margin_call_risk": scenario.margin_call_risk,
-                }
-            )
-
-        return json.dumps(
-            {
-                "analysis_timestamp": datetime.now().isoformat(),
-                "should_execute": analysis.should_execute,
-                "execution_recommendation": analysis.execution_recommendation,
-                "confidence_level": analysis.confidence_level,
-                "validation": {
-                    "is_valid": analysis.validation_result.is_valid,
-                    "can_execute": analysis.validation_result.can_execute,
-                    "risk_score": analysis.validation_result.risk_score,
-                    "estimated_cost": analysis.validation_result.estimated_cost,
-                    "messages": validation_messages,
-                },
-                "risk_metrics": {
-                    "overall_risk_level": analysis.risk_metrics.overall_risk_level,
-                    "risk_score": analysis.risk_metrics.risk_score,
-                    "order_max_loss": analysis.risk_metrics.order_max_loss,
-                    "concentration_risk": analysis.risk_metrics.concentration_risk,
-                    "delta_risk": analysis.risk_metrics.delta_risk,
-                    "theta_risk": analysis.risk_metrics.theta_risk,
-                    "days_to_next_expiration": analysis.risk_metrics.days_to_next_expiration,
-                },
-                "portfolio_greeks": {
-                    "current_delta": analysis.portfolio_greeks.delta,
-                    "current_theta": analysis.portfolio_greeks.theta,
-                    "projected_delta": analysis.projected_greeks.delta,
-                    "projected_theta": analysis.projected_greeks.theta,
-                    "delta_change": analysis.projected_greeks.delta
-                    - analysis.portfolio_greeks.delta,
-                    "theta_change": analysis.projected_greeks.theta
-                    - analysis.portfolio_greeks.theta,
-                },
-                "scenarios": scenario_data,
-                "worst_case_loss": analysis.worst_case_loss,
-                "best_case_gain": analysis.best_case_gain,
-                "recommendations": analysis.recommendations,
-                "alternative_strategies": analysis.alternative_strategies,
-            },
-            indent=2,
-        )
-
-    except Exception as e:
-        return f"Error in pre-trade analysis: {str(e)}"
-
-
-def quick_order_risk_check(args: PreTradeAnalysisArgs) -> str:
-    """Perform quick risk assessment for an order without full analysis."""
-    try:
-        # Create order object from data
-        order_data = args.order_data
-        if "legs" in order_data:
-            # Multi-leg order
-            legs = []
-            for leg_data in order_data["legs"]:
-                asset = asset_factory(leg_data["symbol"])
-                leg = OrderLegCreate(
-                    asset=asset,
-                    quantity=leg_data["quantity"],
-                    order_type=OrderType(leg_data["order_type"]),
-                    price=leg_data.get("price"),
-                )
-                legs.append(leg)
-
-            order = MultiLegOrderCreate(legs=legs)
-        else:
-            # Single order
-            order = OrderCreate(
-                symbol=order_data["symbol"],
-                order_type=OrderType(order_data["order_type"]),
-                quantity=order_data["quantity"],
-                price=order_data.get("price"),
-            )
-
-        # Get current quotes
-        symbols = []
-        if hasattr(order, "symbol"):
-            symbols = [order.symbol]
-        elif hasattr(order, "legs"):
-            symbols = [leg.asset.symbol for leg in order.legs]
-
-        current_quotes = {}
-        for symbol in symbols:
-            try:
-                quote = trading_service.get_enhanced_quote(symbol)
-                current_quotes[symbol] = quote
-            except Exception:
-                continue
-
-        # Quick risk check
-        risk_check = quick_risk_check(order, current_quotes)
-
-        return json.dumps(
-            {
-                "timestamp": datetime.now().isoformat(),
-                "risk_level": risk_check["risk_level"],
-                "risk_score": risk_check["risk_score"],
-                "can_execute": risk_check["can_execute"],
-                "key_warnings": risk_check["key_warnings"],
-                "recommendation": (
-                    "proceed" if risk_check["can_execute"] else "review_risks"
-                ),
-            },
-            indent=2,
-        )
-
-    except Exception as e:
-        return f"Error in quick risk check: {str(e)}"
 
 
 class FindTradableOptionsArgs(BaseModel):
@@ -876,15 +461,13 @@ class GetOptionMarketDataArgs(BaseModel):
 def find_tradable_options(args: FindTradableOptionsArgs) -> str:
     """
     Find tradable options for a symbol with optional filtering.
-    
+
     This function provides a unified interface for options discovery
     that works with both test data and live market data.
     """
     try:
         result = trading_service.find_tradable_options(
-            args.symbol, 
-            args.expiration_date, 
-            args.option_type
+            args.symbol, args.expiration_date, args.option_type
         )
         return json.dumps(result, indent=2)
     except Exception as e:
@@ -894,7 +477,7 @@ def find_tradable_options(args: FindTradableOptionsArgs) -> str:
 def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
     """
     Get market data for a specific option contract.
-    
+
     Provides comprehensive option market data including Greeks,
     pricing, and volume information.
     """

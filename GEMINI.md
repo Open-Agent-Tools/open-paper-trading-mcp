@@ -47,6 +47,32 @@ This document provides project-specific context and conventions to guide Gemini'
     docker-compose run --rm test-runner
     ```
 
+### Local Development (Non-Docker)
+
+For a more direct development workflow that bypasses Docker, you can set up a local environment. This is also the current workaround for running the test suite, as the `test-runner` container is non-functional.
+
+1.  **Create and activate a virtual environment:**
+    It is recommended to use the existing `.venv` directory.
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
+
+2.  **Install dependencies:**
+    The project uses `uv` for package management. Install the necessary dependencies, including `dev` packages for testing.
+    ```bash
+    pip install uv
+    uv pip install -e ".[dev]"
+    ```
+
+3.  **Run tests:**
+    Execute the test suite using `pytest`.
+    ```bash
+    pytest
+    ```
+    *Note: The test suite currently has a large number of failures and warnings that appear to be pre-existing issues.*
+
+
 ## 3. Core Technologies
 
 -   **Backend**: FastAPI (for the REST API), FastMCP (for the AI agent tools).

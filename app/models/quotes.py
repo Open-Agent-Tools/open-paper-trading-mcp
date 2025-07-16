@@ -6,7 +6,7 @@ Quote models with Pydantic validation and FastAPI integration.
 
 from datetime import datetime, date
 from typing import Optional, Union, List, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 from .assets import Asset, Option, asset_factory
 
 
@@ -84,7 +84,14 @@ class Quote(BaseModel):
     ask_size: int = Field(0, ge=0, description="Ask size")
     volume: Optional[int] = Field(None, ge=0, description="Trading volume")
 
-    @validator("asset", pre=True)
+    # Greeks (optional for options)
+    delta: Optional[float] = Field(default=None, description="Delta greek")
+    gamma: Optional[float] = Field(default=None, description="Gamma greek")
+    theta: Optional[float] = Field(default=None, description="Theta greek")
+    vega: Optional[float] = Field(default=None, description="Vega greek")
+    rho: Optional[float] = Field(default=None, description="Rho greek")
+
+    @field_validator("asset", mode="before")
     def normalize_asset(cls, v: Union[str, Asset]) -> Asset:
         if isinstance(v, str):
             asset = asset_factory(v)
@@ -93,7 +100,7 @@ class Quote(BaseModel):
             return asset
         return v
 
-    @validator("quote_date", pre=True)
+    @field_validator("quote_date", mode="before")
     def normalize_date(cls, v: Union[str, date, datetime]) -> datetime:
         if isinstance(v, str):
             return datetime.fromisoformat(v.replace("Z", "+00:00"))
@@ -101,14 +108,15 @@ class Quote(BaseModel):
             return datetime.combine(v, datetime.min.time())
         return v if isinstance(v, datetime) else datetime.now()
 
-    @validator("price")
+    @field_validator("price")
+    @classmethod
     def calculate_midpoint(
-        cls, v: Optional[float], values: Dict[str, Any]
+        cls, v: Optional[float], info: ValidationInfo
     ) -> Optional[float]:
         """Calculate midpoint if price not provided."""
         if v is None:
-            bid = values.get("bid", 0.0)
-            ask = values.get("ask", 0.0)
+            bid = info.data.get("bid", 0.0)
+            ask = info.data.get("ask", 0.0)
             if bid > 0 and ask > 0:
                 return float((bid + ask) / 2)
         return v
@@ -168,7 +176,7 @@ class OptionQuote(Quote):
     # Market data
     open_interest: Optional[int] = Field(None, description="Open interest")
 
-    @validator("asset")
+    @field_validator("asset")
     def validate_option_asset(cls, v: Asset) -> Asset:
         if not isinstance(v, Option):
             raise ValueError("OptionQuote requires an Option asset")
@@ -543,27 +551,35 @@ class OptionsChain(BaseModel):
 
 class OptionsChainResponse(BaseModel):
     """API response for options chain data."""
-    
+
     underlying_symbol: str = Field(..., description="Underlying asset symbol")
-    underlying_price: Optional[float] = Field(None, description="Current underlying price")
-    expiration_date: Optional[str] = Field(None, description="Expiration date (ISO format)")
+    underlying_price: Optional[float] = Field(
+        None, description="Current underlying price"
+    )
+    expiration_date: Optional[str] = Field(
+        None, description="Expiration date (ISO format)"
+    )
     quote_time: str = Field(..., description="Quote timestamp (ISO format)")
-    calls: List[Dict[str, Any]] = Field(default_factory=list, description="Call options data")
-    puts: List[Dict[str, Any]] = Field(default_factory=list, description="Put options data")
+    calls: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Call options data"
+    )
+    puts: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Put options data"
+    )
     data_source: str = Field(..., description="Data source identifier")
     cached: bool = Field(False, description="Whether data was served from cache")
 
 
 class GreeksResponse(BaseModel):
     """API response for option Greeks data."""
-    
+
     option_symbol: str = Field(..., description="Option symbol")
     underlying_symbol: str = Field(..., description="Underlying asset symbol")
     strike: float = Field(..., description="Strike price")
     expiration_date: str = Field(..., description="Expiration date (ISO format)")
     option_type: str = Field(..., description="Option type (call/put)")
     days_to_expiration: Optional[int] = Field(None, description="Days to expiration")
-    
+
     # Greeks
     delta: Optional[float] = Field(None, description="Delta")
     gamma: Optional[float] = Field(None, description="Gamma")
@@ -575,7 +591,7 @@ class GreeksResponse(BaseModel):
     speed: Optional[float] = Field(None, description="Speed")
     zomma: Optional[float] = Field(None, description="Zomma")
     color: Optional[float] = Field(None, description="Color")
-    
+
     # Additional data
     implied_volatility: Optional[float] = Field(None, description="Implied volatility")
     underlying_price: Optional[float] = Field(None, description="Underlying price")
