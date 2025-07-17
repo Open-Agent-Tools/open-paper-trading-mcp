@@ -92,8 +92,9 @@ The application runs both servers in a single Python process (`app/main.py`):
 
 1. **TradingService** (`app/services/trading_service.py`):
    - Central business logic shared by both interfaces
-   - Currently mocked - primary target for Phase 1 implementation
-   - Manages orders, positions, portfolio calculations
+   - **Fully async**: All I/O operations use async/await patterns
+   - **Database-first**: All state persisted in PostgreSQL, no in-memory storage
+   - Manages orders, positions, portfolio calculations with proper async methods
 
 2. **Database Layer**:
    - PostgreSQL in dedicated container
@@ -102,23 +103,35 @@ The application runs both servers in a single Python process (`app/main.py`):
    - Connection managed by `app/storage/database.py`
 
 3. **API Structure**:
-   - REST endpoints in `app/api/v1/endpoints/` (auth, trading, portfolio)
-   - MCP tools in `app/mcp/tools.py`
+   - **Async REST endpoints** in `app/api/v1/endpoints/` (auth, trading, portfolio)
+   - **Async MCP tools** in `app/mcp/tools.py` - all tools use async/await
    - Shared Pydantic models in `app/models/trading.py`
 
 4. **Configuration**:
    - Settings in `app/core/config.py` loaded from environment variables
    - Database URL: `postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db`
 
+5. **Volume Configuration**:
+   - `./data/tokens/` - Robinhood authentication tokens (mounted to `/app/.tokens` in container)
+   - `./data/logs/` - Application logs (mounted to `/app/.logs` in container)
+   - **Environment Variables:**
+     - `ROBINHOOD_TOKEN_PATH=/app/.tokens` - Path to token storage inside container
+   - **Benefits:**
+     - Avoids re-authentication on container restarts
+     - Persistent session tokens for Robinhood API
+     - Follows the same pattern as open-stocks-mcp reference implementation
+
 ### Implementation Status
 
 **Phase 0 (Complete)**: Infrastructure with Docker, PostgreSQL integration, test runner
 
-**Phase 1 (Complete) [2025-07-16]**: Comprehensive codebase refactoring and type safety improvements:
+**Phase 1 (Complete) [2025-07-17]**: Comprehensive codebase refactoring and async migration:
 - MyPy errors reduced from 567 → 0 (100% resolution achieved)
 - Complete schema/model separation with backward compatibility
 - Modern SQLAlchemy 2.0 implementation throughout
-- Systematic type safety improvements across all services
+- **Full async/await migration**: All I/O operations now use async patterns
+- **Database-first architecture**: Removed all in-memory storage patterns
+- **Proper async TradingService**: All methods use database persistence
 - Full ruff integration for code formatting and linting
 
 **Phase 2 (Current)**: Live Market Data Integration via Robinhood/open-stocks-mcp
@@ -129,11 +142,17 @@ The application runs both servers in a single Python process (`app/main.py`):
 
 ### Key Architectural Decisions
 
-1. **Shared Service Pattern**: Both FastAPI and FastMCP access the same in-memory `TradingService` instance, avoiding duplication and ensuring consistency.
+1. **Shared Service Pattern**: Both FastAPI and FastMCP access the same `TradingService` instance, avoiding duplication and ensuring consistency.
 
 2. **Database First**: All persistent state (accounts, orders, positions, transactions) stored in PostgreSQL. The service layer reads/writes to DB, never holds state in memory.
 
-3. **Deprecation Strategy**:
+3. **Async Throughout**: All I/O operations use async/await patterns for optimal performance:
+   - TradingService methods: `async def get_portfolio()`, `async def create_order()`, etc.
+   - API endpoints: All FastAPI endpoints are async
+   - MCP tools: All MCP tools are async functions
+   - Database operations: Use async SQLAlchemy patterns
+
+4. **Deprecation Strategy**:
    - FastAPI: Add `deprecated=True` to endpoint decorators
    - MCP: Add `[DEPRECATED]` prefix to tool docstrings
 
