@@ -3,6 +3,7 @@ from typing import Any
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.models.assets import Option, asset_factory
@@ -25,8 +26,7 @@ from app.schemas.orders import (
     OrderType,
 )
 
-# Database imports
-from app.storage.database import SessionLocal
+# Database imports removed - using async patterns only
 
 from ..adapters.base import QuoteAdapter
 from ..adapters.test_data import TestDataQuoteAdapter
@@ -58,28 +58,32 @@ class TradingService:
         self.legs: list[Any] = []  # Placeholder for legs
 
         # Initialize database account
-        self._ensure_account_exists()
+        # Note: This will be called lazily on first async method call
 
-    def _get_db_session(self) -> Session:
-        """Get a database session."""
-        return SessionLocal()
+    async def _get_async_db_session(self) -> AsyncSession:
+        """Get an async database session."""
+        from app.storage.database import get_async_session
+        async_generator = get_async_session()
+        session = await async_generator.__anext__()
+        return session
 
-    def _ensure_account_exists(self) -> None:
+    async def _ensure_account_exists(self) -> None:
         """Ensure the account exists in the database."""
-        db = self._get_db_session()
+        from sqlalchemy import select
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
+            stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
+            result = await db.execute(stmt)
+            account = result.scalar_one_or_none()
+            
             if not account:
                 account = DBAccount(
                     owner=self.account_owner,
                     cash_balance=10000.0,  # Starting balance
                 )
                 db.add(account)
-                db.commit()
+                await db.commit()
+                await db.refresh(account)
 
                 # Add some initial positions for compatibility
                 initial_positions = [
@@ -88,42 +92,41 @@ class TradingService:
                         symbol="AAPL",
                         quantity=10,
                         avg_price=145.00,
-                        current_price=150.00,
-                        unrealized_pnl=50.0,
                     ),
                     DBPosition(
                         account_id=account.id,
                         symbol="GOOGL",
                         quantity=2,
                         avg_price=2850.00,
-                        current_price=2800.00,
-                        unrealized_pnl=-100.0,
                     ),
                 ]
                 for pos in initial_positions:
                     db.add(pos)
-                db.commit()
+                await db.commit()
         finally:
-            db.close()
+            await db.close()
 
-    def _get_account(self) -> DBAccount:
+    async def _get_account(self) -> DBAccount:
         """Get the current account from database."""
-        db = self._get_db_session()
+        from sqlalchemy import select
+        
+        # Ensure account exists first
+        await self._ensure_account_exists()
+        
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
+            stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
+            result = await db.execute(stmt)
+            account = result.scalar_one_or_none()
             if not account:
                 raise NotFoundError(f"Account for owner {self.account_owner} not found")
             return account
         finally:
-            db.close()
+            await db.close()
 
     async def get_account_balance(self) -> float:
         """Get current account balance from database."""
-        account = self._get_account()
+        account = await self._get_account()
         return float(account.cash_balance)
 
     def get_quote(self, symbol: str) -> StockQuote:
@@ -157,15 +160,9 @@ class TradingService:
         # Validate symbol exists
         self.get_quote(order_data.symbol)
 
-        db = self._get_db_session()
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
-            if not account:
-                raise NotFoundError(f"Account for owner {self.account_owner} not found")
+            account = await self._get_account()
 
             # Create database order
             db_order = DBOrder(
@@ -174,17 +171,14 @@ class TradingService:
                 order_type=order_data.order_type,
                 quantity=order_data.quantity,
                 price=order_data.price,
-                condition=order_data.condition
-                if hasattr(order_data, "condition")
-                else OrderCondition.MARKET,
                 status=OrderStatus.PENDING,
                 created_at=datetime.now(),
             )
 
             db.add(db_order)
-            db.commit()
-            db.refresh(db_order)
-
+            await db.commit()
+            await db.refresh(db_order)
+            
             # Return schema model
             return Order(
                 id=db_order.id,
@@ -192,28 +186,25 @@ class TradingService:
                 order_type=db_order.order_type,
                 quantity=db_order.quantity,
                 price=db_order.price,
-                condition=db_order.condition,
+                condition=OrderCondition.MARKET,  # Default condition since not stored in DB
                 status=db_order.status,
                 created_at=db_order.created_at if db_order.created_at else None,  # type: ignore
                 filled_at=db_order.filled_at if db_order.filled_at else None,  # type: ignore
                 net_price=db_order.price,
             )
         finally:
-            db.close()
+            await db.close()
 
     async def get_orders(self) -> list[Order]:
         """Get all orders."""
-        db = self._get_db_session()
+        from sqlalchemy import select
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
-            if not account:
-                return []
-
-            db_orders = db.query(DBOrder).filter(DBOrder.account_id == account.id).all()
+            account = await self._get_account()
+            
+            stmt = select(DBOrder).where(DBOrder.account_id == account.id)
+            result = await db.execute(stmt)
+            db_orders = result.scalars().all()
 
             return [
                 Order(
@@ -222,7 +213,7 @@ class TradingService:
                     order_type=db_order.order_type,
                     quantity=db_order.quantity,
                     price=db_order.price,
-                    condition=db_order.condition,
+                    condition=OrderCondition.MARKET,  # Default condition since not stored in DB
                     status=db_order.status,
                     created_at=db_order.created_at,  # type: ignore
                     filled_at=db_order.filled_at,  # type: ignore
@@ -231,25 +222,21 @@ class TradingService:
                 for db_order in db_orders
             ]
         finally:
-            db.close()
+            await db.close()
 
     async def get_order(self, order_id: str) -> Order:
         """Get a specific order by ID."""
-        db = self._get_db_session()
+        from sqlalchemy import select
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
-            if not account:
-                raise NotFoundError(f"Order {order_id} not found")
+            account = await self._get_account()
 
-            db_order = (
-                db.query(DBOrder)
-                .filter(DBOrder.id == order_id, DBOrder.account_id == account.id)
-                .first()
+            stmt = select(DBOrder).where(
+                DBOrder.id == order_id,
+                DBOrder.account_id == account.id
             )
+            result = await db.execute(stmt)
+            db_order = result.scalar_one_or_none()
 
             if not db_order:
                 raise NotFoundError(f"Order {order_id} not found")
@@ -260,58 +247,49 @@ class TradingService:
                 order_type=db_order.order_type,
                 quantity=db_order.quantity,
                 price=db_order.price,
-                condition=db_order.condition,
+                condition=OrderCondition.MARKET,  # Default condition since not stored in DB
                 status=db_order.status,
                 created_at=db_order.created_at if db_order.created_at else None,  # type: ignore
                 filled_at=db_order.filled_at if db_order.filled_at else None,  # type: ignore
                 net_price=db_order.price,
             )
         finally:
-            db.close()
+            await db.close()
 
-    def cancel_order(self, order_id: str) -> dict[str, str]:
+    async def cancel_order(self, order_id: str) -> dict[str, str]:
         """Cancel a specific order."""
-        db = self._get_db_session()
+        from sqlalchemy import select
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
-            if not account:
-                raise NotFoundError(f"Order {order_id} not found")
+            account = await self._get_account()
 
-            db_order = (
-                db.query(DBOrder)
-                .filter(DBOrder.id == order_id, DBOrder.account_id == account.id)
-                .first()
+            stmt = select(DBOrder).where(
+                DBOrder.id == order_id,
+                DBOrder.account_id == account.id
             )
+            result = await db.execute(stmt)
+            db_order = result.scalar_one_or_none()
 
             if not db_order:
                 raise NotFoundError(f"Order {order_id} not found")
 
             db_order.status = OrderStatus.CANCELLED
-            db.commit()
+            await db.commit()
 
             return {"message": "Order cancelled successfully"}
         finally:
-            db.close()
+            await db.close()
 
     async def get_portfolio(self) -> Portfolio:
         """Get complete portfolio information."""
-        db = self._get_db_session()
+        from sqlalchemy import select
+        db = await self._get_async_db_session()
         try:
-            account = (
-                db.query(DBAccount)
-                .filter(DBAccount.owner == self.account_owner)
-                .first()
-            )
-            if not account:
-                raise NotFoundError(f"Account for owner {self.account_owner} not found")
+            account = await self._get_account()
 
-            db_positions = (
-                db.query(DBPosition).filter(DBPosition.account_id == account.id).all()
-            )
+            stmt = select(DBPosition).where(DBPosition.account_id == account.id)
+            result = await db.execute(stmt)
+            db_positions = result.scalars().all()
 
             # Convert database positions to schema positions
             positions = []
@@ -324,11 +302,7 @@ class TradingService:
                         current_price - db_pos.avg_price
                     ) * db_pos.quantity
 
-                    # Update database with current price
-                    db_pos.current_price = current_price
-                    db_pos.unrealized_pnl = unrealized_pnl
-                    db.commit()
-
+                    # Don't update database - calculate on the fly
                     positions.append(
                         Position(
                             symbol=db_pos.symbol,
@@ -336,7 +310,7 @@ class TradingService:
                             avg_price=db_pos.avg_price,
                             current_price=current_price,
                             unrealized_pnl=unrealized_pnl,
-                            realized_pnl=db_pos.realized_pnl,
+                            realized_pnl=0.0,  # Not stored in database currently
                         )
                     )
                 except NotFoundError:
@@ -357,7 +331,7 @@ class TradingService:
                 total_pnl=total_pnl,
             )
         finally:
-            db.close()
+            await db.close()
 
     async def get_portfolio_summary(self) -> PortfolioSummary:
         """Get portfolio summary."""
@@ -679,7 +653,7 @@ class TradingService:
         """Get available expiration dates for an underlying symbol."""
         return self.quote_adapter.get_expiration_dates(underlying)
 
-    def create_multi_leg_order(self, order_data: Any) -> Order:
+    async def create_multi_leg_order(self, order_data: Any) -> Order:
         """Create a multi-leg order."""
         # For now, create a simple order representation
         # In a real implementation, this would handle complex multi-leg orders
@@ -699,12 +673,10 @@ class TradingService:
         )
         
         # Persist to database using the same pattern as create_order
-        db = self._get_db_session()
+        db = await self._get_async_db_session()
         try:
             # Query for the account ID instead of using account_owner directly
-            account = db.query(DBAccount).filter_by(owner=self.account_owner).first()
-            if not account:
-                raise ValueError(f"Account not found for owner: {self.account_owner}")
+            account = await self._get_account()
             
             db_order = DBOrder(
                 id=order.id,
@@ -719,10 +691,10 @@ class TradingService:
                 account_id=account.id,
             )
             db.add(db_order)
-            db.commit()
-            db.refresh(db_order)
+            await db.commit()
+            await db.refresh(db_order)
         finally:
-            db.close()
+            await db.close()
         
         return order
 
@@ -1462,5 +1434,13 @@ def _get_quote_adapter() -> QuoteAdapter:
     return TestDataQuoteAdapter()
 
 
-# Global service instance
-trading_service = TradingService(_get_quote_adapter())
+# Global service instance - will be created lazily to avoid sync database calls during import
+import os
+trading_service = None
+
+def get_trading_service() -> TradingService:
+    """Get or create the global trading service instance."""
+    global trading_service
+    if trading_service is None:
+        trading_service = TradingService(_get_quote_adapter())
+    return trading_service

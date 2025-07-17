@@ -1,54 +1,45 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.core.config import settings
-from typing import Generator
+from typing import AsyncGenerator
 
 # Check for a testing environment
 TESTING = os.getenv("TESTING", "False").lower() == "true"
 
 if TESTING:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    # For testing, use async SQLite with aiosqlite driver
+    ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+    async_engine = create_async_engine(
+        ASYNC_DATABASE_URL, 
+        connect_args={"check_same_thread": False},
+        echo=False
     )
 else:
-    # Convert asyncpg URL to sync psycopg2 URL for synchronous operations
+    # Production: Use async PostgreSQL with asyncpg driver
     database_url = settings.DATABASE_URL
-    if "+asyncpg" in database_url:
-        database_url = database_url.replace("+asyncpg", "")
-    engine = create_engine(database_url)
+    if "+asyncpg" not in database_url:
+        ASYNC_DATABASE_URL = database_url.replace("postgresql://", "postgresql+asyncpg://")
+    else:
+        ASYNC_DATABASE_URL = database_url
+    async_engine = create_async_engine(ASYNC_DATABASE_URL)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create async session factory
+AsyncSessionLocal = async_sessionmaker(
+    async_engine, 
+    class_=AsyncSession, 
+    expire_on_commit=False
+)
 
-# Export engine for direct access (needed by main.py)
-__all__ = ["engine", "SessionLocal", "get_db", "get_async_session", "init_db"]
+# Export async engine and session for direct access
+__all__ = ["async_engine", "AsyncSessionLocal", "get_async_session", "init_db"]
 
 
-def get_db() -> Generator[Session, None, None]:
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Dependency to get a database session.
+    Get an async database session using asyncpg (production) or aiosqlite (testing).
     """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-async def get_async_session() -> object:
-    """
-    Get an async database session (placeholder for async functionality).
-    Note: This is a placeholder implementation. For true async support,
-    you would need to use SQLAlchemy's async engine and session.
-    """
-    # For now, this just wraps the sync session
-    # In a real async implementation, you'd use create_async_engine
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    async with AsyncSessionLocal() as session:
+        yield session
 
 
 async def init_db() -> None:
@@ -57,4 +48,5 @@ async def init_db() -> None:
     """
     from app.models.database.base import Base
 
-    Base.metadata.create_all(bind=engine)
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

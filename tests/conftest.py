@@ -1,41 +1,45 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
-from typing import Generator, Any
+from typing import Generator, Any, AsyncGenerator
 from unittest.mock import MagicMock
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Set the TESTING environment variable BEFORE importing the app
 os.environ["TESTING"] = "True"
 
 from app.main import app
-from app.storage.database import get_db, SessionLocal, engine
+from app.storage.database import get_async_session, AsyncSessionLocal, async_engine
 from app.models.database.base import Base
 
 
 @pytest.fixture(scope="function")
-def db_session() -> Generator[Session, Any, None]:
-    """Create a new database session for a test and handle setup/teardown."""
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Create a new async database session for a test and handle setup/teardown."""
+    # Create tables
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Create session
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+    
+    # Clean up tables
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture
-def client(db_session: Session) -> TestClient:
+def client(async_db_session: AsyncSession) -> TestClient:
     """Create a test client that uses the test database session."""
 
-    def override_get_db() -> Generator[Session, Any, None]:
-        try:
-            yield db_session
-        finally:
-            db_session.close()
+    async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
+        yield async_db_session
 
-    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_async_session] = override_get_async_session
     return TestClient(app)
 
 

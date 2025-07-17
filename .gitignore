@@ -206,4 +206,9 @@ Temporary Items
 *.tmp
 *.temp
 
+# Token storage and sensitive data
+data/tokens/
+data/logs/
+*.pickle
+
 /reference_code/

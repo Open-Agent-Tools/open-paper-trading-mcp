@@ -6,25 +6,25 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.base import AccountAdapter
 from app.schemas.accounts import Account
 from app.models.database.trading import Account as DBAccount
-from app.storage.database import SessionLocal
+from app.storage.database import AsyncSessionLocal
 
 
 class DatabaseAccountAdapter(AccountAdapter):
     """Database-backed account adapter."""
 
-    def __init__(self, db_session: Optional[Session] = None):
+    def __init__(self, db_session: Optional[AsyncSession] = None):
         self._db = db_session
 
     @property
-    def db(self) -> Session:
+    def db(self) -> AsyncSession:
         """Get database session."""
         if self._db is None:
-            self._db = SessionLocal()
+            self._db = AsyncSessionLocal()
         return self._db
 
     def get_account(self, account_id: str) -> Optional[Account]:

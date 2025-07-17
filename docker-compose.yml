@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
+    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -22,8 +23,11 @@ services:
       context: .
       dockerfile: Dockerfile
     image: open-paper-trading-mcp_app:latest
+    restart: unless-stopped
     volumes:
       - .:/app
+      - robinhood_tokens:/app/.tokens
+      - trading_logs:/app/.logs
     ports:
       - "2080:2080"
       - "2081:2081"
@@ -31,6 +35,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db
       - ENVIRONMENT=development
       - DEBUG=True
+      - ROBINHOOD_TOKEN_PATH=/app/.tokens
     depends_on:
       db:
         condition: service_healthy
@@ -51,3 +56,15 @@ services:
 
 volumes:
   postgres_data:
+  robinhood_tokens:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/tokens
+  trading_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/logs

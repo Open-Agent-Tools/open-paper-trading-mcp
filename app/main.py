@@ -10,7 +10,7 @@ from typing import Dict, Any, AsyncGenerator, Optional
 from app.api.routes import api_router
 from app.core.config import settings
 from app.core.exceptions import CustomException
-from app.storage.database import engine
+from app.storage.database import async_engine
 from app.models.database.base import Base
 from app.auth.robinhood_auth import get_robinhood_client
 from app.core.logging import setup_logging
@@ -24,11 +24,12 @@ except ImportError:
     pass
 
 
-def initialize_database() -> None:
-    """Initialize database tables synchronously."""
+async def initialize_database() -> None:
+    """Initialize database tables asynchronously."""
     print("Initializing database...")
     try:
-        Base.metadata.create_all(bind=engine)
+        from app.storage.database import init_db
+        await init_db()
         print("Database initialized successfully.")
     except Exception as e:
         print(f"Database initialization failed: {e}")
@@ -40,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     setup_logging()
     print("Starting up FastAPI server...")
-    initialize_database()
+    await initialize_database()
 
     # Authenticate with Robinhood
     robinhood_client = get_robinhood_client()

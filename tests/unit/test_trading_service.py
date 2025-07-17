@@ -11,29 +11,31 @@ from datetime import date, datetime
 
 
 @pytest.fixture
-def trading_service(db_session):
+def trading_service(async_db_session):
     """Provides a TradingService instance with real database session."""
     service = TradingService(account_owner="test_user")
     service.quote_adapter = MagicMock()
-    # Override the database session getter to use test database
-    service._get_db_session = lambda: db_session
+    # Override the async database session getter to use test database
+    async def mock_get_async_db_session():
+        return async_db_session
+    service._get_async_db_session = mock_get_async_db_session
     return service
 
 @pytest.fixture
-def sample_account(db_session):
+async def sample_account(async_db_session):
     """Create a sample account for testing."""
     account = DBAccount(
         id="test-account-id",
         owner="test_user",
         cash_balance=100000.0
     )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
+    async_db_session.add(account)
+    await async_db_session.commit()
+    await async_db_session.refresh(account)
     return account
 
 @pytest.fixture
-def sample_positions(db_session, sample_account):
+async def sample_positions(async_db_session, sample_account):
     """Create sample positions for testing."""
     positions = [
         DBPosition(
@@ -41,23 +43,19 @@ def sample_positions(db_session, sample_account):
             account_id=sample_account.id,
             symbol="AAPL",
             quantity=10,
-            avg_price=150.0,
-            current_price=155.0,
-            unrealized_pnl=50.0
+            avg_price=150.0
         ),
         DBPosition(
             id="pos-2", 
             account_id=sample_account.id,
             symbol="GOOGL",
             quantity=5,
-            avg_price=2800.0,
-            current_price=2750.0,
-            unrealized_pnl=-250.0
+            avg_price=2800.0
         )
     ]
     for pos in positions:
-        db_session.add(pos)
-    db_session.commit()
+        async_db_session.add(pos)
+    await async_db_session.commit()
     return positions
 
 

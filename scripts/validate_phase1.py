@@ -12,14 +12,18 @@ This script performs runtime verification of the Phase 1 QA fixes:
 import asyncio
 import sys
 import logging
+import os
 from pathlib import Path
 
 # Add the app directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Set testing environment
+os.environ["TESTING"] = "true"
+
 from app.services.trading_service import TradingService
 from app.models.database.trading import Account as DBAccount, Position as DBPosition
-from app.storage.database import SessionLocal, engine
+from app.storage.database import AsyncSessionLocal, async_engine, init_db
 from app.models.database.base import Base
 from app.schemas.orders import OrderCreate, OrderType, MultiLegOrderCreate, OrderLeg
 from app.models.trading import StockQuote
@@ -36,16 +40,16 @@ class Phase1Validator:
     """Validates Phase 1 QA fixes."""
     
     def __init__(self):
-        self.db = SessionLocal()
+        self.db = AsyncSessionLocal()
         self.test_account_id = None
         self.service = None
         
-    def setup_test_database(self):
+    async def setup_test_database(self):
         """Set up test database and account."""
         logger.info("Setting up test database...")
         
         # Create tables
-        Base.metadata.create_all(bind=engine)
+        await init_db()
         
         # Create test account
         test_account = DBAccount(
@@ -72,7 +76,8 @@ class Phase1Validator:
         """Clean up test database."""
         logger.info("Cleaning up test database...")
         try:
-            Base.metadata.drop_all(bind=engine)
+            async with async_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.drop_all)
             self.db.close()
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
@@ -235,7 +240,7 @@ class Phase1Validator:
         logger.info("Starting Phase 1 validation...")
         
         try:
-            self.setup_test_database()
+            await self.setup_test_database()
             
             # Run all validations
             await self.validate_async_methods()
