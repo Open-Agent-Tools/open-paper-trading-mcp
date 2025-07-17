@@ -1,41 +1,47 @@
-from datetime import datetime, date
-from typing import List, Dict, Optional, Union, Any
+from datetime import date, datetime
+from typing import Any
 from uuid import uuid4
+
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import NotFoundError
+from app.models.assets import Option, asset_factory
+from app.models.database.trading import (
+    Account as DBAccount,
+)
+from app.models.database.trading import (
+    Order as DBOrder,
+)
+from app.models.database.trading import (
+    Position as DBPosition,
+)
+from app.models.quotes import OptionQuote, OptionsChain, Quote
+from app.models.trading import Portfolio, PortfolioSummary, Position, StockQuote
 from app.schemas.orders import (
     Order,
+    OrderCondition,
     OrderCreate,
     OrderStatus,
-    OrderCondition,
     OrderType,
 )
-from app.models.trading import StockQuote, Position, Portfolio, PortfolioSummary
-from app.models.assets import Option, asset_factory
-from app.models.quotes import Quote, OptionQuote, OptionsChain
-from app.core.exceptions import NotFoundError
 
 # Database imports
 from app.storage.database import SessionLocal
-from app.models.database.trading import (
-    Account as DBAccount,
-    Position as DBPosition,
-    Order as DBOrder,
-)
+
+from ..adapters.base import QuoteAdapter
+from ..adapters.test_data import TestDataQuoteAdapter
+from .greeks import calculate_option_greeks
 
 # Import new services
 from .order_execution import OrderExecutionEngine
-from .validation import AccountValidator
 from .strategies import StrategyRecognitionService
-from .greeks import calculate_option_greeks
-from ..adapters.test_data import TestDataQuoteAdapter
-from ..adapters.base import QuoteAdapter
+from .validation import AccountValidator
 
 
 class TradingService:
     def __init__(
         self,
-        quote_adapter: Optional[QuoteAdapter] = None,
+        quote_adapter: QuoteAdapter | None = None,
         account_owner: str = "default",
     ) -> None:
         # Initialize services
@@ -47,50 +53,9 @@ class TradingService:
         # Account configuration
         self.account_owner = account_owner
 
-        # Initialize orders list
-        self.orders: List[Order] = []
-
-        # Portfolio and account state
-        self.portfolio_positions: List[Position] = []
-        self.cash_balance: float = 100000.0  # Default starting balance
+        # Service components
         self.margin_service = None  # Placeholder for margin service
-        self.legs: List[Any] = []  # Placeholder for legs
-
-        # Legacy data (maintain compatibility for test data)
-        self.mock_quotes: Dict[str, StockQuote] = {
-            "AAPL": StockQuote(
-                symbol="AAPL",
-                price=150.00,
-                change=2.50,
-                change_percent=1.69,
-                volume=1000000,
-                last_updated=datetime.now(),
-            ),
-            "GOOGL": StockQuote(
-                symbol="GOOGL",
-                price=2800.00,
-                change=-15.00,
-                change_percent=-0.53,
-                volume=500000,
-                last_updated=datetime.now(),
-            ),
-            "MSFT": StockQuote(
-                symbol="MSFT",
-                price=420.00,
-                change=5.25,
-                change_percent=1.27,
-                volume=750000,
-                last_updated=datetime.now(),
-            ),
-            "TSLA": StockQuote(
-                symbol="TSLA",
-                price=245.00,
-                change=-8.50,
-                change_percent=-3.36,
-                volume=2000000,
-                last_updated=datetime.now(),
-            ),
-        }
+        self.legs: list[Any] = []  # Placeholder for legs
 
         # Initialize database account
         self._ensure_account_exists()
@@ -156,13 +121,38 @@ class TradingService:
         finally:
             db.close()
 
+    async def get_account_balance(self) -> float:
+        """Get current account balance from database."""
+        account = self._get_account()
+        return float(account.cash_balance)
+
     def get_quote(self, symbol: str) -> StockQuote:
         """Get current stock quote for a symbol."""
-        if symbol.upper() not in self.mock_quotes:
-            raise NotFoundError(f"Symbol {symbol} not found")
-        return self.mock_quotes[symbol.upper()]
+        try:
+            # Create asset from symbol
+            asset = asset_factory(symbol)
+            if asset is None:
+                raise NotFoundError(f"Invalid symbol: {symbol}")
+            
+            # Use the quote adapter to get real market data
+            quote = self.quote_adapter.get_quote(asset)
+            if quote is None:
+                raise NotFoundError(f"Symbol {symbol} not found")
+            
+            # Convert to StockQuote format for backward compatibility
+            return StockQuote(
+                symbol=symbol.upper(),
+                price=quote.price or 0.0,
+                change=0.0,  # Not available in Quote format
+                change_percent=0.0,  # Not available in Quote format
+                volume=getattr(quote, 'volume', 0),
+                last_updated=quote.quote_date
+            )
+        except Exception as e:
+            # If adapter fails, raise a not found error
+            raise NotFoundError(f"Symbol {symbol} not found: {e!s}") from e
 
-    def create_order(self, order_data: OrderCreate) -> Order:
+    async def create_order(self, order_data: OrderCreate) -> Order:
         """Create a new trading order."""
         # Validate symbol exists
         self.get_quote(order_data.symbol)
@@ -211,7 +201,7 @@ class TradingService:
         finally:
             db.close()
 
-    def get_orders(self) -> List[Order]:
+    async def get_orders(self) -> list[Order]:
         """Get all orders."""
         db = self._get_db_session()
         try:
@@ -243,7 +233,7 @@ class TradingService:
         finally:
             db.close()
 
-    def get_order(self, order_id: str) -> Order:
+    async def get_order(self, order_id: str) -> Order:
         """Get a specific order by ID."""
         db = self._get_db_session()
         try:
@@ -279,7 +269,7 @@ class TradingService:
         finally:
             db.close()
 
-    def cancel_order(self, order_id: str) -> Dict[str, str]:
+    def cancel_order(self, order_id: str) -> dict[str, str]:
         """Cancel a specific order."""
         db = self._get_db_session()
         try:
@@ -307,7 +297,7 @@ class TradingService:
         finally:
             db.close()
 
-    def get_portfolio(self) -> Portfolio:
+    async def get_portfolio(self) -> Portfolio:
         """Get complete portfolio information."""
         db = self._get_db_session()
         try:
@@ -369,10 +359,10 @@ class TradingService:
         finally:
             db.close()
 
-    def get_portfolio_summary(self) -> PortfolioSummary:
+    async def get_portfolio_summary(self) -> PortfolioSummary:
         """Get portfolio summary."""
         # Use get_portfolio to get updated positions from database
-        portfolio = self.get_portfolio()
+        portfolio = await self.get_portfolio()
 
         invested_value = sum(
             pos.quantity * (pos.current_price or 0) for pos in portfolio.positions
@@ -390,15 +380,15 @@ class TradingService:
             total_pnl_percent=(total_pnl / total_value) * 100 if total_value > 0 else 0,
         )
 
-    def get_positions(self) -> List[Position]:
+    async def get_positions(self) -> list[Position]:
         """Get all portfolio positions."""
         # Use get_portfolio to get updated positions from database
-        portfolio = self.get_portfolio()
+        portfolio = await self.get_portfolio()
         return portfolio.positions
 
-    def get_position(self, symbol: str) -> Position:
+    async def get_position(self, symbol: str) -> Position:
         """Get a specific position by symbol."""
-        portfolio = self.get_portfolio()
+        portfolio = await self.get_portfolio()
         for position in portfolio.positions:
             if position.symbol.upper() == symbol.upper():
                 return position
@@ -406,11 +396,11 @@ class TradingService:
 
     # Enhanced Options Trading Methods
 
-    def get_portfolio_greeks(self) -> Dict[str, Any]:
+    async def get_portfolio_greeks(self) -> dict[str, Any]:
         """Get aggregated Greeks for entire portfolio."""
         from .strategies import aggregate_portfolio_greeks
 
-        positions = self.get_positions()
+        positions = await self.get_positions()
 
         # Get quotes for all positions
         current_quotes = {}
@@ -451,9 +441,9 @@ class TradingService:
             },
         }
 
-    def get_position_greeks(self, symbol: str) -> Dict[str, Any]:
+    async def get_position_greeks(self, symbol: str) -> dict[str, Any]:
         """Get Greeks for a specific position."""
-        position = self.get_position(symbol)
+        position = await self.get_position(symbol)
 
         # Get current quote for Greeks
         quote = self.get_enhanced_quote(symbol)
@@ -494,11 +484,11 @@ class TradingService:
             "quote_time": quote.quote_date.isoformat(),
         }
 
-    def get_portfolio_strategies(self) -> Dict[str, Any]:
+    async def get_portfolio_strategies(self) -> dict[str, Any]:
         """Get strategy analysis for portfolio."""
         from .strategies import analyze_strategy_portfolio
 
-        positions = self.get_positions()
+        positions = await self.get_positions()
 
         # Analyze strategies
         analysis = analyze_strategy_portfolio(positions)
@@ -523,8 +513,8 @@ class TradingService:
         }
 
     def get_option_greeks_response(
-        self, option_symbol: str, underlying_price: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, option_symbol: str, underlying_price: float | None = None
+    ) -> dict[str, Any]:
         """Get comprehensive Greeks response for an option symbol."""
         # Calculate Greeks
         greeks = self.calculate_greeks(option_symbol, underlying_price=underlying_price)
@@ -561,36 +551,23 @@ class TradingService:
         }
 
     def get_enhanced_quote(
-        self, symbol: str, underlying_price: Optional[float] = None
-    ) -> Union[Quote, OptionQuote]:
+        self, symbol: str, underlying_price: float | None = None
+    ) -> Quote | OptionQuote:
         """Get enhanced quote with Greeks for options."""
         asset = asset_factory(symbol)
         if asset is None:
             raise NotFoundError(f"Invalid symbol: {symbol}")
 
-        # Try test data adapter first
+        # Use the quote adapter to get real market data
         quote = self.quote_adapter.get_quote(asset)
         if quote:
             return quote
 
-        # Fallback to legacy data for stocks
-        if not isinstance(asset, Option) and symbol.upper() in self.mock_quotes:
-            legacy_quote = self.mock_quotes[symbol.upper()]
-            return Quote(
-                asset=asset,
-                quote_date=datetime.now(),
-                price=legacy_quote.price,
-                bid=legacy_quote.price - 0.01,
-                ask=legacy_quote.price + 0.01,
-                bid_size=100,
-                ask_size=100,
-                volume=legacy_quote.volume,
-            )
-
+        # No fallback - raise error if adapter cannot provide quote
         raise NotFoundError(f"No quote available for {symbol}")
 
     def get_options_chain(
-        self, underlying: str, expiration_date: Optional[date] = None
+        self, underlying: str, expiration_date: date | None = None
     ) -> OptionsChain:
         """Get complete options chain for an underlying."""
         exp_datetime = (
@@ -604,8 +581,8 @@ class TradingService:
         return chain
 
     def calculate_greeks(
-        self, option_symbol: str, underlying_price: Optional[float] = None
-    ) -> Dict[str, Optional[float]]:
+        self, option_symbol: str, underlying_price: float | None = None
+    ) -> dict[str, float | None]:
         """Calculate option Greeks."""
         option = asset_factory(option_symbol)
         if not isinstance(option, Option):
@@ -628,17 +605,20 @@ class TradingService:
             option_price=option_quote.price,
         )
 
-    def analyze_portfolio_strategies(
+    async def analyze_portfolio_strategies(
         self,
         include_greeks: bool = False,
         include_pnl: bool = False,
         include_complex_strategies: bool = False,
         include_recommendations: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze portfolio for trading strategies."""
-        # Convert legacy positions to enhanced Position objects
+        # Get current positions from database
+        positions = await self.get_positions()
+        
+        # Convert to enhanced Position objects
         enhanced_positions = []
-        for pos in self.portfolio_positions:
+        for pos in positions:
             # This is a simplified conversion - in real implementation would need proper Position model
             enhanced_positions.append(pos)
 
@@ -654,11 +634,14 @@ class TradingService:
             "total_strategies": len(strategies),
         }
 
-    def calculate_margin_requirement(self) -> Dict[str, Any]:
+    async def calculate_margin_requirement(self) -> dict[str, Any]:
         """Calculate current portfolio margin requirement."""
-        # Convert legacy positions to enhanced Position objects
+        # Get current positions from database
+        positions = await self.get_positions()
+        
+        # Convert to enhanced Position objects
         enhanced_positions = []
-        for pos in self.portfolio_positions:
+        for pos in positions:
             enhanced_positions.append(pos)
 
         if self.margin_service:
@@ -668,13 +651,15 @@ class TradingService:
         else:
             return {"error": "Margin service not available"}
 
-    def validate_account_state(self) -> bool:
+    async def validate_account_state(self) -> bool:
         """Validate current account state."""
+        cash_balance = await self.get_account_balance()
+        positions = await self.get_positions()
         return self.account_validation.validate_account_state(
-            cash_balance=self.cash_balance, positions=self.portfolio_positions
+            cash_balance=cash_balance, positions=positions
         )
 
-    def get_test_scenarios(self) -> Dict[str, Any]:
+    def get_test_scenarios(self) -> dict[str, Any]:
         """Get available test scenarios for development."""
         return self.quote_adapter.get_test_scenarios()
 
@@ -682,15 +667,15 @@ class TradingService:
         """Set test data date for historical scenarios."""
         self.quote_adapter.set_date(date_str)
 
-    def get_available_symbols(self) -> List[str]:
+    def get_available_symbols(self) -> list[str]:
         """Get all available symbols in test data."""
         return self.quote_adapter.get_available_symbols()
 
-    def get_sample_data_info(self) -> Dict[str, Any]:
+    def get_sample_data_info(self) -> dict[str, Any]:
         """Get information about sample data."""
         return self.quote_adapter.get_sample_data_info()
 
-    def get_expiration_dates(self, underlying: str) -> List[date]:
+    def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
         return self.quote_adapter.get_expiration_dates(underlying)
 
@@ -712,15 +697,41 @@ class TradingService:
             filled_at=datetime.now(),
             net_price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
         )
-        self.orders.append(order)
+        
+        # Persist to database using the same pattern as create_order
+        db = self._get_db_session()
+        try:
+            # Query for the account ID instead of using account_owner directly
+            account = db.query(DBAccount).filter_by(owner=self.account_owner).first()
+            if not account:
+                raise ValueError(f"Account not found for owner: {self.account_owner}")
+            
+            db_order = DBOrder(
+                id=order.id,
+                symbol=order.symbol,
+                order_type=order.order_type.value,
+                quantity=order.quantity,
+                price=order.price,
+                condition=order.condition.value,
+                status=order.status.value,
+                created_at=order.created_at,
+                filled_at=order.filled_at,
+                account_id=account.id,
+            )
+            db.add(db_order)
+            db.commit()
+            db.refresh(db_order)
+        finally:
+            db.close()
+        
         return order
 
     def find_tradable_options(
         self,
         symbol: str,
-        expiration_date: Optional[str] = None,
-        option_type: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        expiration_date: str | None = None,
+        option_type: str | None = None,
+    ) -> dict[str, Any]:
         """
         Find tradable options for a symbol with optional filtering.
 
@@ -794,7 +805,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_option_market_data(self, option_id: str) -> Dict[str, Any]:
+    def get_option_market_data(self, option_id: str) -> dict[str, Any]:
         """
         Get market data for a specific option contract.
 
@@ -851,7 +862,7 @@ class TradingService:
     # STOCK MARKET DATA METHODS
     # ============================================================================
 
-    def get_stock_price(self, symbol: str) -> Dict[str, Any]:
+    def get_stock_price(self, symbol: str) -> dict[str, Any]:
         """
         Get current stock price and basic metrics.
 
@@ -896,7 +907,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_stock_info(self, symbol: str) -> Dict[str, Any]:
+    def get_stock_info(self, symbol: str) -> dict[str, Any]:
         """
         Get detailed company information and fundamentals for a stock.
 
@@ -938,7 +949,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_price_history(self, symbol: str, period: str = "week") -> Dict[str, Any]:
+    def get_price_history(self, symbol: str, period: str = "week") -> dict[str, Any]:
         """
         Get historical price data for a stock.
 
@@ -982,7 +993,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_stock_news(self, symbol: str) -> Dict[str, Any]:
+    def get_stock_news(self, symbol: str) -> dict[str, Any]:
         """
         Get news stories for a stock.
 
@@ -1007,7 +1018,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_top_movers(self) -> Dict[str, Any]:
+    def get_top_movers(self) -> dict[str, Any]:
         """
         Get top movers in the market.
 
@@ -1047,7 +1058,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def search_stocks(self, query: str) -> Dict[str, Any]:
+    def search_stocks(self, query: str) -> dict[str, Any]:
         """
         Search for stocks by symbol or company name.
 
@@ -1088,11 +1099,11 @@ class TradingService:
     def get_formatted_options_chain(
         self,
         symbol: str,
-        expiration_date: Optional[date] = None,
-        min_strike: Optional[float] = None,
-        max_strike: Optional[float] = None,
+        expiration_date: date | None = None,
+        min_strike: float | None = None,
+        max_strike: float | None = None,
         include_greeks: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get formatted options chain with filtering and optional Greeks.
 
@@ -1206,9 +1217,9 @@ class TradingService:
 
     def create_multi_leg_order_from_request(
         self,
-        legs: List[Dict[str, Any]],
+        legs: list[dict[str, Any]],
         order_type: str,
-        net_price: Optional[float] = None,
+        net_price: float | None = None,
     ) -> Order:
         """
         Create a multi-leg order from raw request data.
@@ -1263,11 +1274,11 @@ class TradingService:
             return self.create_multi_leg_order(mock_order_data)
 
         except Exception as e:
-            raise ValueError(f"Failed to create multi-leg order: {str(e)}")
+            raise ValueError(f"Failed to create multi-leg order: {e!s}") from e
 
-    def simulate_expiration(
-        self, processing_date: Optional[str] = None, dry_run: bool = True
-    ) -> Dict[str, Any]:
+    async def simulate_expiration(
+        self, processing_date: str | None = None, dry_run: bool = True
+    ) -> dict[str, Any]:
         """
         Simulate option expiration processing for current portfolio.
 
@@ -1286,7 +1297,7 @@ class TradingService:
                 process_date = datetime.now().date()
 
             # Get current portfolio positions
-            portfolio = self.get_portfolio()
+            portfolio = await self.get_portfolio()
 
             expiring_positions = []
             non_expiring_positions = []
@@ -1363,7 +1374,7 @@ class TradingService:
                                         "symbol": position.symbol,
                                         "expiration_date": asset.expiration_date.isoformat(),
                                         "quantity": position.quantity,
-                                        "error": f"Could not get quote: {str(quote_error)}",
+                                        "error": f"Could not get quote: {quote_error!s}",
                                         "action": "manual_review_required",
                                     }
                                 )
@@ -1393,7 +1404,7 @@ class TradingService:
                     expiring_positions.append(
                         {
                             "symbol": position.symbol,
-                            "error": f"Could not parse position: {str(position_error)}",
+                            "error": f"Could not parse position: {position_error!s}",
                             "action": "manual_review_required",
                         }
                     )
@@ -1427,7 +1438,7 @@ class TradingService:
             return results
 
         except Exception as e:
-            return {"error": f"Simulation failed: {str(e)}"}
+            return {"error": f"Simulation failed: {e!s}"}
 
 
 # Initialize adapter based on configuration

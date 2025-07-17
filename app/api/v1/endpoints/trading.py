@@ -29,14 +29,14 @@ async def create_order(
     order: OrderCreate, service: TradingService = Depends(get_trading_service)
 ):
     try:
-        return service.create_order(order)
+        return await service.create_order(order)
     except (NotFoundError, ValidationError) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/orders", response_model=List[Order])
 async def get_orders(service: TradingService = Depends(get_trading_service)):
-    return service.get_orders()
+    return await service.get_orders()
 
 
 @router.get("/order/{order_id}", response_model=Order)
@@ -44,7 +44,7 @@ async def get_order(
     order_id: str, service: TradingService = Depends(get_trading_service)
 ):
     try:
-        return service.get_order(order_id)
+        return await service.get_order(order_id)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

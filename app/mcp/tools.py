@@ -56,7 +56,7 @@ def get_stock_quote(args: GetQuoteArgs) -> str:
         return f"Error getting quote: {str(e)}"
 
 
-def create_buy_order(args: CreateOrderArgs) -> str:
+async def create_buy_order(args: CreateOrderArgs) -> str:
     """Create a buy order for a stock."""
     try:
         order_data = OrderCreate(
@@ -66,7 +66,7 @@ def create_buy_order(args: CreateOrderArgs) -> str:
             price=args.price,
             condition=OrderCondition.MARKET,
         )
-        order = trading_service.create_order(order_data)
+        order = await trading_service.create_order(order_data)
         return json.dumps(
             {
                 "id": order.id,
@@ -85,7 +85,7 @@ def create_buy_order(args: CreateOrderArgs) -> str:
         return f"Error creating buy order: {str(e)}"
 
 
-def create_sell_order(args: CreateOrderArgs) -> str:
+async def create_sell_order(args: CreateOrderArgs) -> str:
     """Create a sell order for a stock."""
     try:
         order_data = OrderCreate(
@@ -95,7 +95,7 @@ def create_sell_order(args: CreateOrderArgs) -> str:
             price=args.price,
             condition=OrderCondition.MARKET,
         )
-        order = trading_service.create_order(order_data)
+        order = await trading_service.create_order(order_data)
         return json.dumps(
             {
                 "id": order.id,
@@ -114,10 +114,10 @@ def create_sell_order(args: CreateOrderArgs) -> str:
         return f"Error creating sell order: {str(e)}"
 
 
-def get_all_orders() -> str:
+async def get_all_orders() -> str:
     """Get all trading orders."""
     try:
-        orders = trading_service.get_orders()
+        orders = await trading_service.get_orders()
         orders_data = []
         for order in orders:
             orders_data.append(
@@ -141,10 +141,10 @@ def get_all_orders() -> str:
         return f"Error getting orders: {str(e)}"
 
 
-def get_order(args: GetOrderArgs) -> str:
+async def get_order(args: GetOrderArgs) -> str:
     """Get a specific order by ID."""
     try:
-        order = trading_service.get_order(args.order_id)
+        order = await trading_service.get_order(args.order_id)
         return json.dumps(
             {
                 "id": order.id,
@@ -173,10 +173,10 @@ def cancel_order(args: CancelOrderArgs) -> str:
         return f"Error cancelling order: {str(e)}"
 
 
-def get_portfolio() -> str:
+async def get_portfolio() -> str:
     """Get complete portfolio information."""
     try:
-        portfolio = trading_service.get_portfolio()
+        portfolio = await trading_service.get_portfolio()
         positions_data = []
         for pos in portfolio.positions:
             positions_data.append(
@@ -204,10 +204,10 @@ def get_portfolio() -> str:
         return f"Error getting portfolio: {str(e)}"
 
 
-def get_portfolio_summary() -> str:
+async def get_portfolio_summary() -> str:
     """Get portfolio summary with key metrics."""
     try:
-        summary = trading_service.get_portfolio_summary()
+        summary = await trading_service.get_portfolio_summary()
         return json.dumps(
             {
                 "total_value": summary.total_value,
@@ -224,10 +224,10 @@ def get_portfolio_summary() -> str:
         return f"Error getting portfolio summary: {str(e)}"
 
 
-def get_all_positions() -> str:
+async def get_all_positions() -> str:
     """Get all portfolio positions."""
     try:
-        positions = trading_service.get_positions()
+        positions = await trading_service.get_positions()
         positions_data = []
         for pos in positions:
             positions_data.append(
@@ -245,10 +245,10 @@ def get_all_positions() -> str:
         return f"Error getting positions: {str(e)}"
 
 
-def get_position(args: GetPositionArgs) -> str:
+async def get_position(args: GetPositionArgs) -> str:
     """Get a specific position by symbol."""
     try:
-        position = trading_service.get_position(args.symbol)
+        position = await trading_service.get_position(args.symbol)
         return json.dumps(
             {
                 "symbol": position.symbol,
