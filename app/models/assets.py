@@ -36,7 +36,7 @@ def asset_factory(symbol: Union[str, "Asset", None] = None) -> Optional["Asset"]
         else:
             return Option(symbol=symbol)
     else:
-        return Asset(symbol=symbol)
+        return Stock(symbol=symbol)
 
 
 class Asset(BaseModel):
@@ -110,8 +110,8 @@ class Option(Asset):
                 {
                     "symbol": symbol,
                     "asset_type": parsed["option_type"],
-                    "underlying": Asset(
-                        symbol=str(parsed["underlying"]), asset_type="stock"
+                    "underlying": Stock(
+                        symbol=str(parsed["underlying"])
                     ),
                     "option_type": parsed["option_type"],
                     "strike": parsed["strike"],

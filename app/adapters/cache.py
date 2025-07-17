@@ -285,7 +285,7 @@ class CachedQuoteAdapter:
 
         return None
 
-    def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
+    async def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
         """Get multiple quotes with caching."""
         results = {}
         uncached_symbols = []
@@ -307,7 +307,7 @@ class CachedQuoteAdapter:
 
             uncached_assets = [asset_factory(symbol) for symbol in uncached_symbols]
             valid_assets = [asset for asset in uncached_assets if asset is not None]
-            fresh_quotes = self.adapter.get_quotes(valid_assets)
+            fresh_quotes = await self.adapter.get_quotes(valid_assets)
             for asset, quote in fresh_quotes.items():
                 symbol = asset.symbol if hasattr(asset, "symbol") else str(asset)
                 cache_key = f"quote:{symbol}:{getattr(self.adapter, 'name', 'unknown')}"
@@ -316,7 +316,7 @@ class CachedQuoteAdapter:
 
         return results
 
-    def get_options_chain(
+    async def get_options_chain(
         self, underlying: str, expiration: Optional[Any] = None
     ) -> Optional[OptionsChain]:
         """Get options chain with caching."""
@@ -332,7 +332,7 @@ class CachedQuoteAdapter:
 
         # Fetch from adapter
         if hasattr(self.adapter, "get_options_chain"):
-            chain = self.adapter.get_options_chain(underlying, expiration)
+            chain = await self.adapter.get_options_chain(underlying, expiration)
         else:
             return None
         if chain is not None and isinstance(chain, OptionsChain):

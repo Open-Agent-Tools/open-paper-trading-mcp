@@ -13,6 +13,9 @@ from sqlalchemy import (
     JSON,
     Text,
     Index,
+    Numeric,
+    BigInteger,
+    UUID,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -154,7 +157,64 @@ class OptionQuoteHistory(Base):
     underlying_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     quote_time: Mapped[DateTime] = mapped_column(DateTime, index=True)
 
+    # Test scenario field for Phase 3
+    test_scenario: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+
+
+class TestStockQuote(Base):
+    """Test stock quote data for development and testing."""
+
+    __tablename__ = "test_stock_quotes"
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    symbol: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    quote_date: Mapped[Date] = mapped_column(Date, nullable=False, index=True)
+    bid: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
+    ask: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
+    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
+    volume: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    scenario: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+
+    # Composite indexes for efficient queries
+    __table_args__ = (
+        Index('idx_test_stock_symbol_date', 'symbol', 'quote_date'),
+        Index('idx_test_stock_scenario', 'scenario', 'quote_date'),
+    )
+
+
+class TestOptionQuote(Base):
+    """Test option quote data for development and testing."""
+
+    __tablename__ = "test_option_quotes"
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    underlying: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    expiration: Mapped[Date] = mapped_column(Date, nullable=False)
+    strike: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    option_type: Mapped[str] = mapped_column(String(4), nullable=False)  # 'call' or 'put'
+    quote_date: Mapped[Date] = mapped_column(Date, nullable=False, index=True)
+    bid: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
+    ask: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
+    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
+    volume: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    scenario: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+
+    # Composite indexes for efficient queries
+    __table_args__ = (
+        Index('idx_test_option_symbol_date', 'symbol', 'quote_date'),
+        Index('idx_test_option_underlying_date', 'underlying', 'quote_date'),
+        Index('idx_test_option_scenario', 'scenario', 'quote_date'),
+        Index('idx_test_option_expiry_strike', 'expiration', 'strike'),
+    )
 
 
 class MultiLegOrder(Base):
@@ -492,4 +552,18 @@ Index(
     "idx_expiry_underlying_date",
     OptionExpiration.underlying_symbol,
     OptionExpiration.expiration_date,
+)
+
+# Test data indexes
+Index(
+    "idx_test_stock_symbol_date_scenario",
+    TestStockQuote.symbol,
+    TestStockQuote.quote_date,
+    TestStockQuote.scenario,
+)
+Index(
+    "idx_test_option_underlying_expiry_scenario",
+    TestOptionQuote.underlying,
+    TestOptionQuote.expiration,
+    TestOptionQuote.scenario,
 )

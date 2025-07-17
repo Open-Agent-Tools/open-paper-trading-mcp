@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "2081"))
     MCP_SERVER_HOST: str = os.getenv("MCP_SERVER_HOST", "localhost")
     MCP_SERVER_NAME: str = "Open Paper Trading MCP"
+    
+    # Quote Adapter Configuration
+    QUOTE_ADAPTER_TYPE: str = os.getenv("QUOTE_ADAPTER_TYPE", "test")
+    
+    # Robinhood Configuration
+    ROBINHOOD_USERNAME: str = os.getenv("ROBINHOOD_USERNAME", "")
+    ROBINHOOD_PASSWORD: str = os.getenv("ROBINHOOD_PASSWORD", "")
+    ROBINHOOD_TOKEN_PATH: str = os.getenv("ROBINHOOD_TOKEN_PATH", "/app/.tokens")
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod

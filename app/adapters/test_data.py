@@ -162,7 +162,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         return self._cache
 
-    def get_quote(self, asset: Asset) -> Optional[Quote]:
+    async def get_quote(self, asset: Asset) -> Optional[Quote]:
         """
         Get quote for a symbol on the current date.
 
@@ -177,7 +177,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         cache = self.load_test_data()
         return cache.get(cache_key)
 
-    def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
+    async def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
         """
         Get quotes for multiple symbols.
 
@@ -198,7 +198,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         return results
 
-    def get_chain(
+    async def get_chain(
         self, underlying: str, expiration_date: Optional[datetime] = None
     ) -> List[Asset]:
         """Get option chain for an underlying."""
@@ -206,7 +206,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         # A full implementation would be similar to get_options_chain.
         return []
 
-    def get_options_chain(
+    async def get_options_chain(
         self, underlying: str, expiration: Optional[date] = None
     ) -> Optional[OptionsChain]:
         """
@@ -225,7 +225,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         cache = self.load_test_data()
 
         # Get underlying quote
-        underlying_quote = self.get_quote(underlying_asset)
+        underlying_quote = await self.get_quote(underlying_asset)
         underlying_price = underlying_quote.price if underlying_quote else None
 
         # Filter options for this underlying and date
@@ -304,7 +304,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         return sorted(list(expiration_dates))
 
-    def is_market_open(self) -> bool:
+    async def is_market_open(self) -> bool:
         """
         Check if the market is currently open.
         For test data, always return True.
@@ -314,7 +314,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         """
         return True
 
-    def get_market_hours(self) -> Dict[str, datetime]:
+    async def get_market_hours(self) -> Dict[str, datetime]:
         """
         Get current market hours.
         For test data, return standard market hours.

@@ -107,11 +107,19 @@ The application runs both servers in a single Python process (`app/main.py`):
    - **Async MCP tools** in `app/mcp/tools.py` - all tools use async/await
    - Shared Pydantic models in `app/models/trading.py`
 
-4. **Configuration**:
+4. **Quote Adapter System**:
+   - **AdapterFactory**: Dynamic adapter creation and configuration
+   - **RobinhoodAdapter**: Live market data via robin_stocks library
+   - **TestDataAdapter**: Historical test data for development and testing
+   - **Cache Warming**: Automatic pre-loading of popular symbols on startup
+   - **Failover Support**: Automatic fallback between adapters
+
+5. **Configuration**:
    - Settings in `app/core/config.py` loaded from environment variables
    - Database URL: `postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db`
+   - Quote adapter configuration via `QUOTE_ADAPTER_TYPE` environment variable
 
-5. **Volume Configuration**:
+6. **Volume Configuration**:
    - `./data/tokens/` - Robinhood authentication tokens (mounted to `/app/.tokens` in container)
    - `./data/logs/` - Application logs (mounted to `/app/.logs` in container)
    - **Environment Variables:**
@@ -134,11 +142,13 @@ The application runs both servers in a single Python process (`app/main.py`):
 - **Proper async TradingService**: All methods use database persistence
 - Full ruff integration for code formatting and linting
 
-**Phase 2 (Current)**: Live Market Data Integration via Robinhood/open-stocks-mcp
-- Account management with persistent storage
-- Real-time market data via Polygon.io API
-- Order execution logic with database updates
-- Portfolio calculations from database state
+**Phase 2 (Complete) [2025-07-17]**: Live Market Data Integration via Robinhood:
+- **RobinhoodAdapter**: Fully integrated with robin_stocks library for live quotes
+- **Comprehensive Testing**: Unit tests for RobinhoodAdapter, integration tests for TradingService-RobinhoodAdapter integration
+- **Robust Authentication**: SessionManager with exponential backoff, circuit breaker pattern, and automatic recovery
+- **Cache Warming**: Automatic cache warming on startup for popular symbols (AAPL, GOOGL, MSFT, etc.)
+- **Performance Monitoring**: Structured logging, performance metrics, and comprehensive error handling
+- **Async Integration**: All quote operations use async/await patterns throughout the stack
 
 ### Key Architectural Decisions
 
@@ -178,5 +188,12 @@ Key tables defined in `app/models/database/trading.py`:
 
 Required in `.env` or Docker environment:
 - `DATABASE_URL`: PostgreSQL connection string
-- `POLYGON_API_KEY`: For market data (Phase 1)
 - `GOOGLE_API_KEY`: For ADK testing
+
+**Quote Adapter Configuration:**
+- `QUOTE_ADAPTER_TYPE`: Adapter type (`test` or `robinhood`, defaults to `test`)
+
+**Robinhood Configuration (for live trading):**
+- `ROBINHOOD_USERNAME`: Robinhood account username
+- `ROBINHOOD_PASSWORD`: Robinhood account password
+- `ROBINHOOD_TOKEN_PATH`: Path to store authentication tokens (defaults to `/app/.tokens`)

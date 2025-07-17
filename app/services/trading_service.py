@@ -45,7 +45,23 @@ class TradingService:
         account_owner: str = "default",
     ) -> None:
         # Initialize services
-        self.quote_adapter = quote_adapter or TestDataQuoteAdapter()
+        if quote_adapter is None:
+            # Use adapter factory to create quote adapter based on configuration
+            from app.adapters.config import get_adapter_factory
+            from app.core.config import settings
+            
+            factory = get_adapter_factory()
+            quote_adapter = factory.create_adapter(settings.QUOTE_ADAPTER_TYPE)
+            
+            if quote_adapter is None:
+                # Fall back to database test data adapter
+                quote_adapter = factory.create_adapter("test_data_db")
+                
+                if quote_adapter is None:
+                    # Final fallback to CSV test data adapter
+                    quote_adapter = TestDataQuoteAdapter()
+        
+        self.quote_adapter = quote_adapter
         self.order_execution = OrderExecutionEngine()
         self.account_validation = AccountValidator()
         self.strategy_recognition = StrategyRecognitionService()
@@ -129,7 +145,7 @@ class TradingService:
         account = await self._get_account()
         return float(account.cash_balance)
 
-    def get_quote(self, symbol: str) -> StockQuote:
+    async def get_quote(self, symbol: str) -> StockQuote:
         """Get current stock quote for a symbol."""
         try:
             # Create asset from symbol
@@ -138,7 +154,7 @@ class TradingService:
                 raise NotFoundError(f"Invalid symbol: {symbol}")
             
             # Use the quote adapter to get real market data
-            quote = self.quote_adapter.get_quote(asset)
+            quote = await self.quote_adapter.get_quote(asset)
             if quote is None:
                 raise NotFoundError(f"Symbol {symbol} not found")
             
@@ -158,7 +174,7 @@ class TradingService:
     async def create_order(self, order_data: OrderCreate) -> Order:
         """Create a new trading order."""
         # Validate symbol exists
-        self.get_quote(order_data.symbol)
+        await self.get_quote(order_data.symbol)
 
         db = await self._get_async_db_session()
         try:
@@ -296,7 +312,7 @@ class TradingService:
             for db_pos in db_positions:
                 # Update current price from quote adapter
                 try:
-                    quote = self.get_quote(db_pos.symbol)
+                    quote = await self.get_quote(db_pos.symbol)
                     current_price = quote.price
                     unrealized_pnl = (
                         current_price - db_pos.avg_price
@@ -380,7 +396,7 @@ class TradingService:
         current_quotes = {}
         for position in positions:
             try:
-                quote = self.get_enhanced_quote(position.symbol)
+                quote = await self.get_enhanced_quote(position.symbol)
                 current_quotes[position.symbol] = quote
             except Exception:
                 continue
@@ -524,7 +540,7 @@ class TradingService:
             "cached": False,
         }
 
-    def get_enhanced_quote(
+    async def get_enhanced_quote(
         self, symbol: str, underlying_price: float | None = None
     ) -> Quote | OptionQuote:
         """Get enhanced quote with Greeks for options."""
@@ -533,7 +549,7 @@ class TradingService:
             raise NotFoundError(f"Invalid symbol: {symbol}")
 
         # Use the quote adapter to get real market data
-        quote = self.quote_adapter.get_quote(asset)
+        quote = await self.quote_adapter.get_quote(asset)
         if quote:
             return quote
 

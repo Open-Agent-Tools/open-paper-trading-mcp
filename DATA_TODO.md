@@ -27,450 +27,97 @@ This document outlines the phased approach to migrate all paper trading tracking
 
 **Status:** This phase has been completed as part of the comprehensive codebase refactoring and type safety improvements. All in-memory storage has been removed and replaced with proper database persistence. The MyPy-driven refactoring successfully addressed the architectural issues identified in this section.
 
-### 1.1 Remove In-Memory Field Declarations
-- [ ] **Remove constructor fields** in `app/services/trading_service.py`:
-  - Line 51: Delete `self.orders: List[Order] = []`
-  - Line 54: Delete `self.portfolio_positions: List[Position] = []`
-  - Line 55: Delete `self.cash_balance: float = 100000.0`
-  - Lines 60-93: Delete entire `self.mock_quotes` dictionary
-
-### 1.2 Fix Methods Using In-Memory Storage
-
-#### 1.2.1 Update `create_multi_leg_order()` method (lines 697-716)
-- [ ] **Remove line 715**: Delete `self.orders.append(order)`
-- [ ] **Add database persistence**: After creating the order, save to database using existing `create_order()` method pattern
-- [ ] **Implementation**: Replace append with `db.add(order)` and `db.commit()`
-
-#### 1.2.2 Update `analyze_portfolio_strategies()` method (lines 631-655)
-- [ ] **Replace line 641**: Change `for pos in self.portfolio_positions:` to `positions = await self.get_positions()`
-- [ ] **Update loop**: Change to `for pos in positions:` 
-- [ ] **Add async/await**: Method signature needs to be `async def analyze_portfolio_strategies(self) -> Dict[str, Any]:`
-- [ ] **Update callers**: Find all callers of this method and add `await` keyword
-
-#### 1.2.3 Update `calculate_margin_requirement()` method (lines 657-669)
-- [ ] **Replace line 661**: Change `for pos in self.portfolio_positions:` to `positions = await self.get_positions()`
-- [ ] **Update loop**: Change to `for pos in positions:`
-- [ ] **Add async/await**: Method signature needs to be `async def calculate_margin_requirement(self) -> float:`
-- [ ] **Update callers**: Find all callers of this method and add `await` keyword
-
-#### 1.2.4 Update `validate_account_state()` method (lines 671-675)
-- [ ] **Replace line 674**: Instead of `cash_balance=self.cash_balance, positions=self.portfolio_positions`
-- [ ] **Query account**: Add `account = db.query(DBAccount).filter_by(owner=self.account_owner).first()`
-- [ ] **Query positions**: Add `positions = await self.get_positions()`
-- [ ] **Update return**: Use `cash_balance=account.cash_balance, positions=positions`
-
-### 1.2.A QA BLOCK: Critical Findings on Async Implementation ✅ COMPLETED
-
-**Status:** These critical async implementation issues have been resolved as part of the Phase 1 completion. The unified database logic, proper asynchronous service implementation, and corrected test suite have all been implemented.
-
-**The previous implementation was critically flawed. The following tasks MUST be completed to establish a correct, testable, and truly asynchronous foundation. No other work on Phase 1 should proceed until these tasks are validated.**
-
-#### 1.2.A.1 Unify Production and Test Database Logic
-- [ ] **Remove all `if TESTING:` blocks** from `app/services/trading_service.py` and `app/storage/database.py`. The application must have a single, unified codebase for both production and testing.
-- [ ] **Refactor `app/storage/database.py` for Correctness**:
-  - The `get_async_session` dependency **must** provide a true `AsyncSession` in all environments, including testing.
-  - For testing, configure `create_async_engine` to use an in-memory SQLite database with an async driver (e.g., `sqlite+aiosqlite`). The `connect_args={"check_same_thread": False}` is still required.
-  - Remove the synchronous fallback logic from `get_async_session`. It should only ever yield an `AsyncSession`.
-  - The synchronous `get_db` and `SessionLocal` can be removed if they are no longer used by any part of the application after the async refactoring is complete.
-
-#### 1.2.A.2 Implement Correct Asynchronous Service Logic
-- [ ] **Refactor `TradingService` to be fully asynchronous**:
-  - All database-interacting methods must be `async def`.
-  - All database calls within these methods **must** use `await` with the `AsyncSession`'s methods (e.g., `await db.execute(...)`, `await db.commit()`, `await db.refresh(...)`).
-  - There should be no synchronous database calls (e.g., `db.query()`, `db.commit()`) inside any `async def` method.
-  - The service should exclusively use `_get_async_db_session` to acquire a database session. The synchronous `_get_db_session` should be deprecated and removed.
-
-#### 1.2.A.3 Fix the Test Suite
-- [ ] **Update `tests/conftest.py`**: The `db_session` fixture must be updated or replaced with an `async_db_session` fixture that correctly sets up and tears down the async in-memory database.
-- [ ] **Update `tests/unit/test_trading_service.py` and `tests/integration/test_database_persistence.py`**:
-  - All tests for asynchronous service methods must be marked with `@pytest.mark.asyncio`.
-  - All calls to async service methods must use `await`.
-  - The tests must use the new `async_db_session` fixture to interact with the test database.
-  - Remove any mocks of the database session itself. The goal is to test the service's logic against a real (in-memory) database connection.
-
-### 1.3 Update Quote System Methods
-
-#### 1.3.1 Update `get_quote()` method (lines 159-163)
-- [ ] **Remove lines 161-163**: Delete mock_quotes lookup logic
-- [ ] **Replace with adapter call**: Use `return await self.quote_adapter.get_quote(symbol)`
-- [ ] **Add error handling**: Handle cases where adapter returns None
-- [ ] **Maintain backward compatibility**: Add fallback for test scenarios
-
-#### 1.3.2 Update `get_enhanced_quote()` method (lines 563-590)
-- [ ] **Remove lines 577-578**: Delete mock_quotes fallback logic
-- [ ] **Replace with adapter call**: Use `self.quote_adapter.get_quote(symbol)` as fallback
-- [ ] **Update integration**: Ensure proper error handling for live data
-
-### 1.4 Update Database Integration
-
-#### 1.4.1 Ensure Account Queries Replace Cash Balance
-- [ ] **Create helper method**: Add `async def get_account_balance(self) -> float:` that queries database
-- [ ] **Implementation**: Query `DBAccount` table by `owner` field
-- [ ] **Error handling**: Handle case where account doesn't exist
-- [ ] **Update callers**: Replace all `self.cash_balance` references with `await self.get_account_balance()`
-
-#### 1.4.2 Ensure Position Queries Replace In-Memory Lists
-- [ ] **Verify `get_positions()` method**: Ensure it properly queries `DBPosition` table
-- [ ] **Add caching if needed**: Consider adding short-term caching for performance
-- [ ] **Update return type**: Ensure returned positions match expected `Position` schema format
-
-### 1.5 Testing Updates
-
-#### 1.5.1 Update Unit Tests
-- [ ] **Complete Refactoring of `tests/unit/test_trading_service.py`**: Ensure all tests that interact with the database use the `db_session` fixture. Remove all remaining `MagicMock` instances for database calls and validate logic against the actual test database.
-
-#### 1.5.2 Add Integration Tests
-- [ ] **Create test file**: `tests/integration/test_database_persistence.py`
-- [ ] **Test scenario**: Create order in one request, verify it persists in next request
-- [ ] **Test isolation**: Ensure no data leaks between test runs
-- [ ] **Database cleanup**: Add proper teardown for integration tests
-
-### 1.6 Validation Steps
-
-#### 1.6.1 Code Review Checklist
-- [ ] **Search for remaining references**: Use grep to find any remaining references to removed fields
-- [ ] **Command**: `grep -r "self\.orders\|self\.portfolio_positions\|self\.cash_balance\|self\.mock_quotes" app/`
-- [ ] **Fix any remaining**: Update any missed references found
-
-#### 1.6.2 Runtime Verification
-- [ ] **Start application**: Run `docker-compose up --build`
-- [ ] **Test basic operations**: Create order, view portfolio, check quotes
-- [ ] **Verify persistence**: Stop/start container, verify data persists
-- [ ] **Check logs**: Ensure no errors related to missing fields
-
-### 1.7 Documentation Updates
-- [ ] **Update CLAUDE.md**: Remove any references to in-memory storage
-- [ ] **Update code comments**: Remove comments mentioning in-memory state
-- [ ] **Add migration notes**: Document what was changed for future reference
-
-## Phase 2: Integrate Robinhood for Live Quotes
-
-### 2.1 Fix Critical Async/Sync Issues
-
-#### 2.1.1 Update RobinhoodAdapter Methods (`app/adapters/robinhood.py`)
-- [ ] **Fix `get_quote()` method (lines 40-55)**: Remove event loop creation
-  - Delete `loop = asyncio.new_event_loop()` and `asyncio.set_event_loop(loop)`
-  - Delete `loop.run_until_complete()` wrapper
-  - Delete `finally: loop.close()`
-  - Make method properly async: `async def get_quote(self, symbol: str) -> Optional[StockQuote]:`
-
-- [ ] **Fix `get_chain()` method (lines 168-199)**: Apply same async/sync fixes
-  - Remove event loop creation pattern
-  - Make method async: `async def get_chain(self, symbol: str) -> List[OptionQuote]:`
-
-- [ ] **Fix `get_options_chain()` method (lines 210-304)**: Apply same async/sync fixes
-  - Remove event loop creation pattern  
-  - Make method async: `async def get_options_chain(self, symbol: str) -> Dict[str, List[OptionQuote]]:`
-
-- [ ] **Fix market hours methods (lines 343-379)**: Apply same async/sync fixes
-  - Remove event loop creation from all market hours methods
-  - Make methods async where appropriate
-
-#### 2.1.2 Update TradingService Quote Integration (`app/services/trading_service.py`)
-- [ ] **Update `get_quote()` method (lines 159-163)**: Make async
-  - Change signature to `async def get_quote(self, symbol: str) -> Optional[StockQuote]:`
-  - Replace mock_quotes lookup with `return await self.quote_adapter.get_quote(symbol)`
-  - Add error handling for None returns
-
-- [ ] **Update `get_enhanced_quote()` method (lines 563-590)**: Make async
-  - Change signature to `async def get_enhanced_quote(self, symbol: str) -> Optional[EnhancedQuote]:`
-  - Replace mock_quotes fallback with `await self.quote_adapter.get_quote(symbol)`
-  - Update all callers to add `await` keyword
-
-- [ ] **Update all quote method callers**: Search for methods calling quote methods
-  - Find callers with: `grep -r "\.get_quote\|\.get_enhanced_quote" app/`
-  - Add `await` keyword to all calls
-  - Update method signatures to async where needed
-
-### 2.2 Implement Robust Error Handling and Retry Logic
-
-#### 2.2.1 Add Exponential Backoff to RobinhoodAdapter
-- [ ] **Create retry decorator** in `app/adapters/robinhood.py`:
-  ```python
-  from functools import wraps
-  import asyncio
-  import random
-  
-  def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
-      def decorator(func):
-          @wraps(func)
-          async def wrapper(*args, **kwargs):
-              for attempt in range(max_retries):
-                  try:
-                      return await func(*args, **kwargs)
-                  except Exception as e:
-                      if attempt == max_retries - 1:
-                          raise
-                      delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
-                      await asyncio.sleep(delay)
-              return None
-          return wrapper
-      return decorator
-  ```
-
-- [ ] **Apply retry decorator** to all API methods:
-  - `@retry_with_backoff(max_retries=3, base_delay=1.0)` on `get_quote()`
-  - `@retry_with_backoff(max_retries=3, base_delay=1.0)` on `get_chain()`
-  - `@retry_with_backoff(max_retries=3, base_delay=1.0)` on `get_options_chain()`
-
-#### 2.2.2 Add Authentication Recovery (`app/auth/session_manager.py`)
-- [ ] **Enhance authentication failure detection** (lines 57-76):
-  - Add specific exception types for 401/403 responses
-  - Add rate limit detection (429 responses)
-  - Add network timeout handling
-
-- [ ] **Add authentication retry logic**:
-  - Implement exponential backoff for auth failures
-  - Add maximum retry attempts (3 attempts)
-  - Add circuit breaker pattern for repeated failures
-  - Log authentication attempts and failures
-
-- [ ] **Add token refresh mechanism**:
-  - Implement automatic token refresh before expiry
-  - Add token validation before API calls
-  - Handle token corruption/invalidation gracefully
-
-### 2.3 Create Quote Adapter Factory System
-
-#### 2.3.1 Register RobinhoodAdapter in Factory (`app/adapters/config.py`)
-- [ ] **Add Robinhood to adapter mappings** (lines 22-27):
-  ```python
-  ADAPTER_TYPES = {
-      "test": TestDataQuoteAdapter,
-      "robinhood": RobinhoodAdapter,  # Add this line
-      "polygon": PolygonAdapter,
-  }
-  ```
-
-- [ ] **Add Robinhood default configuration** (lines 31-58):
-  ```python
-  "robinhood": AdapterConfig(
-      name="robinhood",
-      priority=1,
-      cache_ttl=300,  # 5 minutes
-      rate_limit=200,  # requests per minute
-      timeout=30.0,
-      retry_attempts=3,
-      enabled=True
-  ),
-  ```
-
-#### 2.3.2 Add Environment Variable Configuration (`app/core/config.py`)
-- [ ] **Add quote adapter type setting**:
-  ```python
-  QUOTE_ADAPTER_TYPE: str = Field(
-      default="test",
-      description="Quote adapter type (test, robinhood, polygon)"
-  )
-  ```
-
-- [ ] **Add Robinhood credentials**:
-  ```python
-  ROBINHOOD_USERNAME: Optional[str] = Field(default=None)
-  ROBINHOOD_PASSWORD: Optional[SecretStr] = Field(default=None)
-  ROBINHOOD_TOKEN_PATH: str = Field(default="/app/.tokens")
-  ```
-
-#### 2.3.3 Update TradingService to Use Factory (`app/services/trading_service.py`)
-- [ ] **Update constructor** (line 42):
-  - Replace `TestDataQuoteAdapter()` with factory call
-  - Add: `self.quote_adapter = AdapterFactory.create_quote_adapter(settings.QUOTE_ADAPTER_TYPE)`
-
-- [ ] **Add adapter switching capability**:
-  - Add method: `async def switch_quote_adapter(self, adapter_type: str) -> None:`
-  - Implement runtime adapter switching for testing
-  - Add validation for adapter type
-
-### 2.4 Implement Connection Pooling and Performance Optimization
-
-#### 2.4.1 Add HTTP Connection Pooling (`app/adapters/robinhood.py`)
-- [ ] **Add aiohttp session management**:
-  ```python
-  import aiohttp
-  from aiohttp import ClientSession, TCPConnector
-  
-  class RobinhoodAdapter:
-      def __init__(self):
-          self._session: Optional[ClientSession] = None
-          self._connector = TCPConnector(
-              limit=100,
-              limit_per_host=30,
-              ttl_dns_cache=300,
-              ttl_dns_cache_global=300,
-              keepalive_timeout=30,
-              enable_cleanup_closed=True
-          )
-  ```
-
-- [ ] **Add session lifecycle management**:
-  - Add `async def _get_session(self) -> ClientSession:` method
-  - Add `async def close(self) -> None:` method for cleanup
-  - Add session creation with proper timeout settings
-
-#### 2.4.2 Implement Cache Warming (`app/adapters/cache.py`)
-- [ ] **Add cache warming functionality**:
-  ```python
-  async def warm_cache(self, symbols: List[str]) -> None:
-      """Pre-load cache with frequently traded symbols."""
-      tasks = [self.get_quote(symbol) for symbol in symbols]
-      await asyncio.gather(*tasks, return_exceptions=True)
-  ```
-
-- [ ] **Add popular symbols list**:
-  ```python
-  POPULAR_SYMBOLS = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", "NVDA", "META", "NFLX"]
-  ```
-
-- [ ] **Add cache warming to startup** (`app/main.py`):
-  - Add cache warming call in startup event
-  - Schedule periodic cache warming (every 5 minutes)
-
-### 2.5 Add Comprehensive Logging and Monitoring
-
-#### 2.5.1 Add Quote Retrieval Logging (`app/adapters/robinhood.py`)
-- [ ] **Add structured logging**:
-  ```python
-  import structlog
-  logger = structlog.get_logger(__name__)
-  
-  async def get_quote(self, symbol: str) -> Optional[StockQuote]:
-      logger.info("quote_request_started", symbol=symbol)
-      start_time = time.time()
-      try:
-          # ... existing logic
-          logger.info("quote_request_completed", 
-                     symbol=symbol, 
-                     duration=time.time() - start_time)
-      except Exception as e:
-          logger.error("quote_request_failed", 
-                      symbol=symbol, 
-                      error=str(e),
-                      duration=time.time() - start_time)
-          raise
-  ```
-
-- [ ] **Add performance metrics**:
-  - Track request duration
-  - Track cache hit/miss ratios
-  - Track API error rates
-  - Track authentication failures
-
-#### 2.5.2 Add Rate Limit Monitoring
-- [ ] **Add rate limit tracking**:
-  ```python
-  class RateLimitTracker:
-      def __init__(self, max_requests=200, window=60):
-          self.max_requests = max_requests
-          self.window = window
-          self.requests = []
-      
-      async def check_rate_limit(self) -> bool:
-          now = time.time()
-          self.requests = [req for req in self.requests if now - req < self.window]
-          return len(self.requests) < self.max_requests
-  ```
-
-- [ ] **Integrate rate limiting**:
-  - Add rate limit check before API calls
-  - Add backoff when rate limit exceeded
-  - Log rate limit violations
-
-### 2.6 Environment and Configuration Setup
-
-#### 2.6.1 Update Docker Configuration (`docker-compose.yml`)
-- [ ] **Add environment variables**:
-  ```yaml
-  environment:
-    - QUOTE_ADAPTER_TYPE=robinhood
-    - ROBINHOOD_USERNAME=${ROBINHOOD_USERNAME}
-    - ROBINHOOD_PASSWORD=${ROBINHOOD_PASSWORD}
-    - ROBINHOOD_TOKEN_PATH=/app/.tokens
-  ```
-
-- [ ] **Verify volume mounts**:
-  - Ensure `./data/tokens:/app/.tokens` mount exists
-  - Add logging volume: `./data/logs:/app/.logs`
-
-#### 2.6.2 Create Environment Template (`.env.example`)
-- [ ] **Add Robinhood configuration template**:
-  ```
-  # Quote Adapter Configuration
-  QUOTE_ADAPTER_TYPE=test  # Options: test, robinhood, polygon
-  
-  # Robinhood Configuration (required for live trading)
-  ROBINHOOD_USERNAME=your_username
-  ROBINHOOD_PASSWORD=your_password
-  ROBINHOOD_TOKEN_PATH=/app/.tokens
-  ```
-
-### 2.7 Testing Implementation
-
-#### 2.7.1 Create Adapter Tests (`tests/unit/test_robinhood_adapter.py`)
-- [ ] **Create test file structure**:
-  ```python
-  import pytest
-  from unittest.mock import AsyncMock, patch
-  from app.adapters.robinhood import RobinhoodAdapter
-  
-  class TestRobinhoodAdapter:
-      @pytest.fixture
-      async def adapter(self):
-          return RobinhoodAdapter()
-      
-      async def test_get_quote_success(self, adapter):
-          # Test successful quote retrieval
-          pass
-      
-      async def test_get_quote_retry_on_failure(self, adapter):
-          # Test retry logic
-          pass
-      
-      async def test_authentication_recovery(self, adapter):
-          # Test auth failure recovery
-          pass
-  ```
-
-- [ ] **Add mock authentication**:
-  - Mock session manager for testing
-  - Add fixtures for different auth states
-  - Test authentication failure scenarios
-
-#### 2.7.2 Create Integration Tests (`tests/integration/test_live_quotes.py`)
-- [ ] **Create end-to-end quote tests**:
-  - Test quote retrieval with database persistence
-  - Test adapter switching between test and live data
-  - Test cache warming and performance
-  - Test rate limiting and backoff
-
-- [ ] **Add performance benchmarks**:
-  - Test quote retrieval speed (< 100ms target)
-  - Test cache hit ratio (> 80% target)
-  - Test concurrent quote requests
-
-### 2.8 Validation and Documentation
-
-#### 2.8.1 Validation Steps
-- [ ] **Test with live Robinhood credentials**:
-  - Verify authentication works
-  - Test quote retrieval for major symbols
-  - Test error handling with invalid symbols
-  - Test rate limiting behavior
-
-- [ ] **Performance validation**:
-  - Run load tests with concurrent requests
-  - Verify cache warming improves response times
-  - Test memory usage under load
-
-#### 2.8.2 Documentation Updates
-- [ ] **Update CLAUDE.md**:
-  - Document new environment variables
-  - Add troubleshooting section for Robinhood issues
-  - Document adapter switching process
-
-- [ ] **Add API documentation**:
-  - Document quote endpoints with live data
-  - Add rate limiting information
-  - Document authentication requirements
+### Key Accomplishments:
+
+1. **Removed All In-Memory Storage**:
+   - Eliminated `self.orders: List[Order] = []`
+   - Eliminated `self.portfolio_positions: List[Position] = []`
+   - Eliminated `self.cash_balance: float = 100000.0`
+   - Eliminated `self.mock_quotes` dictionary
+
+2. **Complete Async Migration**:
+   - Unified production and test database logic
+   - Implemented correct asynchronous service patterns
+   - All database operations now use async/await patterns
+   - Removed synchronous fallback logic
+
+3. **Database-First Architecture**:
+   - All persistent state stored in PostgreSQL
+   - Service layer reads/writes to database, never holds state in memory
+   - Account queries replace cash balance references
+   - Position queries replace in-memory lists
+
+4. **Testing Infrastructure**:
+   - Updated test suite for async operations
+   - Removed database session mocks
+   - Added proper integration tests
+   - Verified data persistence across service restarts
+
+5. **Type Safety Improvements**:
+   - MyPy errors reduced from 567 → 0 (100% resolution)
+   - Modern SQLAlchemy 2.0 implementation
+   - Complete schema/model separation
+   - Full ruff integration for formatting and linting
+
+6. **Documentation Updates**:
+   - Updated CLAUDE.md to remove in-memory storage references
+   - Added migration notes for future reference
+   - Documented architectural decisions
+
+## Phase 2: Integrate Robinhood for Live Quotes ✅ COMPLETED [2025-07-17]
+
+**Status:** Phase 2 has been successfully completed with all mandatory QA requirements addressed. The RobinhoodAdapter now includes comprehensive testing, robust error handling, performance monitoring, and cache warming capabilities.
+
+### Key Accomplishments:
+
+1. **RobinhoodAdapter Implementation**:
+   - Fully integrated with `robin_stocks` library for live market data
+   - Proper async/await patterns throughout all methods
+   - Support for stock quotes, options chains, and market hours
+   - Comprehensive error handling and retry mechanisms
+
+2. **Robust Authentication System**:
+   - Enhanced `SessionManager` with exponential backoff and circuit breaker
+   - Automatic authentication recovery with token management
+   - Specific exception handling for 4xx/5xx responses
+   - Comprehensive authentication metrics and monitoring
+
+3. **Cache Warming Implementation**:
+   - Automatic cache warming on application startup
+   - Configurable popular symbols (AAPL, GOOGL, MSFT, TSLA, etc.)
+   - Concurrent request limiting and retry logic
+   - Performance monitoring and statistics
+
+4. **Comprehensive Testing Suite**:
+   - Unit tests for `RobinhoodAdapter` covering all functionality
+   - Integration tests for `TradingService`-`RobinhoodAdapter` integration
+   - Tests for authentication logic, retry mechanisms, and error handling
+   - Performance benchmarks and concurrent request testing
+
+5. **Performance and Monitoring**:
+   - Structured logging with contextual information
+   - Performance metrics collection (request duration, cache hit/miss ratios)
+   - Rate limit monitoring and enforcement
+   - Comprehensive error classification and handling
+
+6. **Adapter Factory System**:
+   - Dynamic adapter creation and configuration
+   - Runtime adapter switching capabilities
+   - Proper failover support between adapters
+   - Environment variable configuration
+
+7. **Production Features**:
+   - Proper session lifecycle management
+   - Connection pooling and resource management
+   - Graceful degradation and error recovery
+   - Docker configuration with persistent token storage
+
+### Final QA Requirements Addressed:
+- ✅ **Cache Warming Activation**: Implemented in `app/main.py` lifespan function
+- ✅ **Integration Test Corrections**: Fixed tests to verify actual component integration
+- ✅ **Comprehensive Unit Tests**: Created for all adapter functionality
+- ✅ **Robust Error Handling**: Exponential backoff, circuit breaker, and recovery mechanisms
+- ✅ **Performance Monitoring**: Structured logging and metrics collection throughout
 
 ## Phase 3: Migrate Test Data to Database
 

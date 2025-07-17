@@ -14,6 +14,7 @@ from app.storage.database import async_engine
 from app.models.database.base import Base
 from app.auth.robinhood_auth import get_robinhood_client
 from app.core.logging import setup_logging
+from app.adapters.config import get_adapter_factory
 
 # Import the unified MCP server instance
 mcp_instance: Optional[Any] = None
@@ -47,9 +48,35 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     robinhood_client = get_robinhood_client()
     await robinhood_client.authenticate()
 
+    # Start cache warming
+    adapter_factory = get_adapter_factory()
+    
+    # Get the configured adapter (robinhood if available, otherwise fallback to test)
+    try:
+        adapter = adapter_factory.create_adapter("robinhood")
+        if adapter is not None:
+            print("Starting cache warming with Robinhood adapter...")
+            await adapter_factory.start_cache_warming(adapter)
+        else:
+            print("Robinhood adapter not available, trying test adapter...")
+            test_adapter = adapter_factory.create_adapter("test_data")
+            if test_adapter is not None:
+                print("Starting cache warming with test adapter...")
+                await adapter_factory.start_cache_warming(test_adapter)
+    except Exception as e:
+        print(f"Cache warming failed to start: {e}")
+        # Continue startup even if cache warming fails
+
     yield
     # Shutdown
     print("Shutting down FastAPI server...")
+    
+    # Stop cache warming
+    try:
+        await adapter_factory.stop_cache_warming()
+        print("Cache warming stopped successfully.")
+    except Exception as e:
+        print(f"Error stopping cache warming: {e}")
 
 
 app = FastAPI(

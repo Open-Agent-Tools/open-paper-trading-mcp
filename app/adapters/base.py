@@ -112,36 +112,36 @@ class QuoteAdapter(ABC):
     """Abstract base class for market data adapters."""
 
     @abstractmethod
-    def get_quote(self, asset: Asset) -> Optional[Quote]:
+    async def get_quote(self, asset: Asset) -> Optional[Quote]:
         """Get a single quote for an asset."""
         pass
 
     @abstractmethod
-    def get_quotes(self, assets: List[Asset]) -> Dict[Asset, Quote]:
+    async def get_quotes(self, assets: List[Asset]) -> Dict[Asset, Quote]:
         """Get quotes for multiple assets."""
         pass
 
     @abstractmethod
-    def get_chain(
+    async def get_chain(
         self, underlying: str, expiration_date: Optional[datetime] = None
     ) -> List[Asset]:
         """Get option chain for an underlying."""
         pass
 
     @abstractmethod
-    def get_options_chain(
+    async def get_options_chain(
         self, underlying: str, expiration_date: Optional[datetime] = None
     ) -> Optional["OptionsChain"]:
         """Get complete options chain for an underlying."""
         pass
 
     @abstractmethod
-    def is_market_open(self) -> bool:
+    async def is_market_open(self) -> bool:
         """Check if the market is currently open."""
         pass
 
     @abstractmethod
-    def get_market_hours(self) -> Dict[str, Any]:
+    async def get_market_hours(self) -> Dict[str, Any]:
         """Get market hours information."""
         pass
 
