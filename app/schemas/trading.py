@@ -6,8 +6,9 @@ This module contains Pydantic models for general trading functionality:
 - Asset-related schemas that aren't orders or positions
 """
 
-from pydantic import BaseModel, Field
 from datetime import datetime
+
+from pydantic import BaseModel, Field
 
 
 class StockQuote(BaseModel):

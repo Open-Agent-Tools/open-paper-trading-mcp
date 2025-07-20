@@ -7,14 +7,14 @@ Handles automatic ITM/OTM option processing, assignment, and exercise simulation
 
 import copy
 from datetime import date
-from typing import Optional, Any
 from math import copysign
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.models.assets import Option, Call, Put, asset_factory
-from app.schemas.positions import Position
 from app.adapters.base import QuoteAdapter
+from app.models.assets import Call, Option, Put, asset_factory
+from app.schemas.positions import Position
 
 
 class ExpirationResult(BaseModel):
@@ -57,13 +57,13 @@ class OptionsExpirationEngine:
     """
 
     def __init__(self) -> None:
-        self.current_date: Optional[date] = None
+        self.current_date: date | None = None
 
     def process_account_expirations(
         self,
         account_data: dict[str, Any],
         quote_adapter: QuoteAdapter,
-        processing_date: Optional[date] = None,
+        processing_date: date | None = None,
     ) -> ExpirationResult:
         """
         Process all expired options in an account.
@@ -120,7 +120,7 @@ class OptionsExpirationEngine:
 
             except Exception as e:
                 result.errors.append(
-                    f"Error processing {underlying_symbol} expirations: {str(e)}"
+                    f"Error processing {underlying_symbol} expirations: {e!s}"
                 )
 
         # Remove expired positions with zero quantity
@@ -211,9 +211,7 @@ class OptionsExpirationEngine:
                 return result
 
         except Exception as e:
-            result.errors.append(
-                f"Error getting quote for {underlying_symbol}: {str(e)}"
-            )
+            result.errors.append(f"Error getting quote for {underlying_symbol}: {e!s}")
             return result
 
         # Get current equity positions in this underlying
@@ -259,7 +257,7 @@ class OptionsExpirationEngine:
                 result.warnings.extend(position_result.warnings)
 
             except Exception as e:
-                result.errors.append(f"Error processing position {position}: {str(e)}")
+                result.errors.append(f"Error processing position {position}: {e!s}")
 
         return result
 

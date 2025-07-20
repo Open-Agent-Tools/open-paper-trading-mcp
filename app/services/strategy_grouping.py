@@ -5,19 +5,19 @@ Groups positions into basic strategies.
 Special thanks to /u/EdKaim for the outline of this process.
 """
 
-from typing import List, Dict, Any, Tuple, cast
+from typing import Any, cast
 
 from ..models.assets import Option, asset_factory
 from ..models.trading import Position
 from .strategies.models import (
-    BasicStrategy,
     AssetStrategy,
-    SpreadStrategy,
+    BasicStrategy,
     CoveredStrategy,
+    SpreadStrategy,
 )
 
 
-def group_into_basic_strategies(positions: List[Position]) -> List[BasicStrategy]:
+def group_into_basic_strategies(positions: list[Position]) -> list[BasicStrategy]:
     """
     Group positions into basic strategies.
 
@@ -52,8 +52,8 @@ def group_into_basic_strategies(positions: List[Position]) -> List[BasicStrategy
 
 
 def _group_into_basic_strategies_in_underlying(
-    underlying: str, positions: List[Position]
-) -> List[BasicStrategy]:
+    underlying: str, positions: list[Position]
+) -> list[BasicStrategy]:
     """Group positions for a specific underlying into basic strategies."""
 
     # Filter positions for this underlying
@@ -71,7 +71,7 @@ def _group_into_basic_strategies_in_underlying(
     if not underlying_positions:
         return []
 
-    strategies: List[BasicStrategy] = []
+    strategies: list[BasicStrategy] = []
 
     # Calculate equity positions
     long_equity_quantity = sum(
@@ -184,8 +184,8 @@ def _group_into_basic_strategies_in_underlying(
 
 
 def create_asset_strategies(
-    positions: List[Position], underlying: str
-) -> List[AssetStrategy]:
+    positions: list[Position], underlying: str
+) -> list[AssetStrategy]:
     """
     Create asset strategies for positions in a specific underlying.
 
@@ -244,8 +244,8 @@ def create_asset_strategies(
 
 
 def normalize_strategy_quantities(
-    strategies: List[BasicStrategy],
-) -> List[BasicStrategy]:
+    strategies: list[BasicStrategy],
+) -> list[BasicStrategy]:
     """
     Normalize strategy quantities.
 
@@ -259,7 +259,7 @@ def normalize_strategy_quantities(
         return []
 
     # Group strategies by type and asset
-    grouped: Dict[Any, List[BasicStrategy]] = {}
+    grouped: dict[Any, list[BasicStrategy]] = {}
 
     for strategy in strategies:
         key: Any
@@ -303,8 +303,8 @@ def normalize_strategy_quantities(
 
 
 def identify_complex_strategies(
-    strategies: List[BasicStrategy],
-) -> Dict[str, List[Dict[str, Any]]]:
+    strategies: list[BasicStrategy],
+) -> dict[str, list[dict[str, Any]]]:
     """
     Identify complex multi-leg strategies from basic strategies.
 
@@ -334,7 +334,7 @@ def identify_complex_strategies(
     return complex_strategies
 
 
-def _find_iron_condors(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
+def _find_iron_condors(strategies: list[BasicStrategy]) -> list[dict[str, Any]]:
     """Find iron condor strategies."""
     iron_condors = []
 
@@ -373,9 +373,9 @@ def _find_iron_condors(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
     return iron_condors
 
 
-def _find_butterflies(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
+def _find_butterflies(strategies: list[BasicStrategy]) -> list[dict[str, Any]]:
     """Find butterfly strategies."""
-    butterflies: List[Dict[str, Any]] = []
+    butterflies: list[dict[str, Any]] = []
 
     # Butterfly = buy 2 middle strikes, sell 1 lower + 1 higher
     # This is complex to detect from spreads, would need position-level analysis
@@ -383,12 +383,12 @@ def _find_butterflies(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
     return butterflies
 
 
-def _find_straddles_strangles(strategies: List[BasicStrategy]) -> List[Dict[str, Any]]:
+def _find_straddles_strangles(strategies: list[BasicStrategy]) -> list[dict[str, Any]]:
     """Find straddle and strangle strategies."""
     straddles_strangles = []
 
     # Group option strategies by expiration and underlying
-    option_groups: Dict[Tuple[str, str], List[AssetStrategy]] = {}
+    option_groups: dict[tuple[str, str], list[AssetStrategy]] = {}
 
     for strategy in strategies:
         if isinstance(strategy, AssetStrategy) and isinstance(strategy.asset, Option):

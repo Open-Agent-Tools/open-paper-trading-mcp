@@ -1,8 +1,8 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
-from typing import List, Union
-import os
 import logging
+import os
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:2080"]
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:2080"]
 
     # Database
     DATABASE_URL: str = os.getenv(
@@ -44,10 +44,14 @@ class Settings(BaseSettings):
     MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "2081"))
     MCP_SERVER_HOST: str = os.getenv("MCP_SERVER_HOST", "localhost")
     MCP_SERVER_NAME: str = "Open Paper Trading MCP"
-    
+
     # Quote Adapter Configuration
     QUOTE_ADAPTER_TYPE: str = os.getenv("QUOTE_ADAPTER_TYPE", "test")
-    
+
+    # Test Data Configuration
+    TEST_SCENARIO: str = os.getenv("TEST_SCENARIO", "default")
+    TEST_DATE: str = os.getenv("TEST_DATE", "2017-03-24")
+
     # Robinhood Configuration
     ROBINHOOD_USERNAME: str = os.getenv("ROBINHOOD_USERNAME", "")
     ROBINHOOD_PASSWORD: str = os.getenv("ROBINHOOD_PASSWORD", "")
@@ -55,7 +59,7 @@ class Settings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):

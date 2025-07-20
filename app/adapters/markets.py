@@ -1,13 +1,13 @@
 """Market adapter implementations."""
 
-from typing import Dict, List, Optional, Any
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import Any
 
 from app.adapters.base import MarketAdapter, QuoteAdapter
-from app.schemas.orders import Order, OrderStatus, OrderType, OrderCondition
-from app.services.estimators import MidpointEstimator, MarketEstimator
 from app.models.assets import asset_factory
+from app.schemas.orders import Order, OrderCondition, OrderStatus, OrderType
+from app.services.estimators import MarketEstimator, MidpointEstimator
 
 
 class OrderImpact:
@@ -24,7 +24,7 @@ class OrderImpact:
 
     def calculate_impact(
         self, slippage_bps: float = 10.0, commission_per_share: float = 0.01
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate the full impact of the order."""
         # Calculate executed price based on order type
         if self.order.condition == OrderCondition.MARKET:
@@ -83,7 +83,7 @@ class PaperMarketAdapter(MarketAdapter):
 
     def __init__(self, quote_adapter: QuoteAdapter):
         super().__init__(quote_adapter)
-        self.filled_orders: List[Order] = []
+        self.filled_orders: list[Order] = []
         self.midpoint_estimator = MidpointEstimator()
         self.market_estimator = MarketEstimator()
 
@@ -115,7 +115,7 @@ class PaperMarketAdapter(MarketAdapter):
                 return True
         return False
 
-    def get_pending_orders(self, account_id: Optional[str] = None) -> List[Order]:
+    def get_pending_orders(self, account_id: str | None = None) -> list[Order]:
         """Get pending orders, optionally filtered by account."""
         if account_id:
             # Note: Order schema doesn't have account_id, so return all for now
@@ -123,7 +123,7 @@ class PaperMarketAdapter(MarketAdapter):
             return self.pending_orders.copy()
         return self.pending_orders.copy()
 
-    def simulate_order(self, order: Order) -> Dict[str, Any]:
+    def simulate_order(self, order: Order) -> dict[str, Any]:
         """Simulate order execution without actually executing."""
         # Get current quote
         asset = asset_factory(order.symbol)
@@ -163,7 +163,7 @@ class PaperMarketAdapter(MarketAdapter):
             "quote": quote,
         }
 
-    def process_pending_orders(self) -> List[Order]:
+    def process_pending_orders(self) -> list[Order]:
         """Process all pending orders and return filled orders."""
         filled = []
         remaining = []

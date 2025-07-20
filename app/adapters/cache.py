@@ -3,12 +3,12 @@ Quote caching system with TTL (Time To Live) for performance optimization.
 """
 
 import time
-from typing import Dict, Optional, Union, List, Any
 from dataclasses import dataclass
 from threading import RLock
+from typing import Any
 
-from app.models.quotes import Quote, OptionQuote, OptionsChain
 from app.adapters.base import QuoteAdapter
+from app.models.quotes import OptionQuote, OptionsChain, Quote
 
 
 @dataclass
@@ -17,7 +17,7 @@ class CacheEntry:
     Cache entry with TTL support.
     """
 
-    value: Union[Quote, OptionQuote, OptionsChain, Dict[str, Any], List[Any]]
+    value: Quote | OptionQuote | OptionsChain | dict[str, Any] | list[Any]
     timestamp: float
     ttl: float
 
@@ -52,13 +52,13 @@ class QuoteCache:
         """
         self.default_ttl = default_ttl
         self.max_size = max_size
-        self._cache: Dict[str, CacheEntry] = {}
+        self._cache: dict[str, CacheEntry] = {}
         self._lock = RLock()
         self._stats = {"hits": 0, "misses": 0, "evictions": 0, "cleanups": 0}
 
     def get(
         self, key: str
-    ) -> Optional[Union[Quote, OptionQuote, OptionsChain, Dict[str, Any], List[Any]]]:
+    ) -> Quote | OptionQuote | OptionsChain | dict[str, Any] | list[Any] | None:
         """
         Get value from cache if it exists and hasn't expired.
 
@@ -87,8 +87,8 @@ class QuoteCache:
     def put(
         self,
         key: str,
-        value: Union[Quote, OptionQuote, OptionsChain, Dict[str, Any], List[Any]],
-        ttl: Optional[float] = None,
+        value: Quote | OptionQuote | OptionsChain | dict[str, Any] | list[Any],
+        ttl: float | None = None,
     ) -> None:
         """
         Store value in cache with TTL.
@@ -183,7 +183,7 @@ class QuoteCache:
         self._stats["evictions"] += evicted
         return evicted
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get cache statistics.
 
@@ -207,7 +207,7 @@ class QuoteCache:
                 "default_ttl": self.default_ttl,
             }
 
-    def get_entries_info(self) -> List[Dict[str, Any]]:
+    def get_entries_info(self) -> list[dict[str, Any]]:
         """
         Get information about current cache entries.
 
@@ -246,9 +246,7 @@ class CachedQuoteAdapter:
     Wrapper that adds caching to any QuoteAdapter.
     """
 
-    def __init__(
-        self, adapter: QuoteAdapter, cache: Optional[QuoteCache] = None
-    ) -> None:
+    def __init__(self, adapter: QuoteAdapter, cache: QuoteCache | None = None) -> None:
         """
         Initialize cached adapter.
 
@@ -263,7 +261,7 @@ class CachedQuoteAdapter:
         )
         self.cache = cache or QuoteCache(default_ttl=cache_ttl)
 
-    def get_quote(self, symbol: str) -> Optional[Union[Quote, OptionQuote]]:
+    def get_quote(self, symbol: str) -> Quote | OptionQuote | None:
         """Get quote with caching."""
         cache_key = f"quote:{symbol}:{getattr(self.adapter, 'name', 'unknown')}"
 
@@ -285,7 +283,7 @@ class CachedQuoteAdapter:
 
         return None
 
-    async def get_quotes(self, symbols: List[str]) -> Dict[str, Union[Quote, OptionQuote]]:
+    async def get_quotes(self, symbols: list[str]) -> dict[str, Quote | OptionQuote]:
         """Get multiple quotes with caching."""
         results = {}
         uncached_symbols = []
@@ -317,8 +315,8 @@ class CachedQuoteAdapter:
         return results
 
     async def get_options_chain(
-        self, underlying: str, expiration: Optional[Any] = None
-    ) -> Optional[OptionsChain]:
+        self, underlying: str, expiration: Any | None = None
+    ) -> OptionsChain | None:
         """Get options chain with caching."""
         exp_str = expiration.isoformat() if expiration else "all"
         cache_key = (
@@ -343,7 +341,7 @@ class CachedQuoteAdapter:
 
         return None
 
-    def get_expiration_dates(self, underlying: str) -> List[Any]:
+    def get_expiration_dates(self, underlying: str) -> list[Any]:
         """Get expiration dates with caching."""
         cache_key = (
             f"expirations:{underlying}:{getattr(self.adapter, 'name', 'unknown')}"
@@ -371,7 +369,7 @@ class CachedQuoteAdapter:
         """Clear all cached data."""
         self.cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return self.cache.get_stats()
 
@@ -390,9 +388,7 @@ def get_global_cache() -> QuoteCache:
     return _global_cache
 
 
-def cached_adapter(
-    adapter: Any, cache: Optional[QuoteCache] = None
-) -> CachedQuoteAdapter:
+def cached_adapter(adapter: Any, cache: QuoteCache | None = None) -> CachedQuoteAdapter:
     """
     Wrap an adapter with caching.
 

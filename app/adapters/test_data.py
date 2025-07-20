@@ -12,16 +12,18 @@ Data includes quotes for AAL and GOOG from 2017:
 Data format: [symbol],[current_date],[bid],[ask]
 """
 
-import gzip
-import csv
-from datetime import datetime, date
-from typing import Dict, List, Optional, Any
-from pathlib import Path
+from datetime import date, datetime, timedelta
+from functools import lru_cache
+from typing import Any
 
-from .base import QuoteAdapter, AdapterConfig
+from sqlalchemy import and_
+
 from ..models.assets import Asset, Option, asset_factory
-from ..models.quotes import Quote, OptionQuote, OptionsChain
+from ..models.database.trading import TestOptionQuote, TestScenario, TestStockQuote
+from ..models.quotes import OptionQuote, OptionsChain, Quote
 from ..services.greeks import calculate_option_greeks
+from ..storage.database import get_sync_session
+from .base import AdapterConfig, QuoteAdapter
 
 
 class TestDataError(Exception):
@@ -39,14 +41,17 @@ class TestDataQuoteAdapter(QuoteAdapter):
     """
 
     def __init__(
-        self, current_date: str = "2017-03-24", config: Optional[AdapterConfig] = None
+        self,
+        current_date: str = "2017-03-24",
+        scenario: str = "default",
+        config: AdapterConfig | None = None,
     ):
         """
-        Initialize with a specific date.
+        Initialize with a specific date and scenario.
 
         Args:
             current_date: Date to retrieve quotes for (YYYY-MM-DD format)
-                         Available dates: 2017-01-27, 2017-01-28, 2017-03-24, 2017-03-25
+            scenario: Test scenario to use (default, calm_market, volatile_market, trending_up)
             config: Adapter configuration, will create default if None
         """
         if config is None:
@@ -55,114 +60,152 @@ class TestDataQuoteAdapter(QuoteAdapter):
         self.config = config
         self.name = "TestDataQuoteAdapter"
         self.enabled = True
-
-        self.current_date = datetime.strptime(current_date, "%Y-%m-%d").strftime(
-            "%Y-%m-%d"
-        )
-        self._cache: Optional[Dict[str, Any]] = None
-        self._data_file = Path(__file__).parent / "test_data" / "data.csv.gz"
-
-        if not self._data_file.exists():
-            raise TestDataError(f"Test data file not found: {self._data_file}")
+        self.scenario = scenario
+        self.current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
+        self._quote_cache: dict[str, Any] = {}  # Small cache for performance
 
     def set_date(self, date_str: str) -> None:
         """Set the current date for quote retrieval."""
-        self.current_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%Y-%m-%d")
+        self.current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        self._quote_cache.clear()  # Clear cache when date changes
 
-    def get_available_dates(self) -> List[str]:
+    async def switch_scenario(self, scenario_name: str) -> None:
+        """Switch to different test scenario."""
+        with next(get_sync_session()) as db:
+            scenario = (
+                db.query(TestScenario)
+                .filter(TestScenario.name == scenario_name)
+                .first()
+            )
+            if scenario:
+                self.scenario = scenario_name
+                self.current_date = scenario.start_date
+                self._quote_cache.clear()  # Clear cache when switching
+
+    def get_available_dates(self) -> list[str]:
         """Get list of available test dates."""
-        return ["2017-01-27", "2017-01-28", "2017-03-24", "2017-03-25"]
+        with next(get_sync_session()) as db:
+            # Get unique dates from stock quotes for current scenario
+            dates = (
+                db.query(TestStockQuote.quote_date)
+                .filter(TestStockQuote.scenario == self.scenario)
+                .distinct()
+                .all()
+            )
+            return sorted([d[0].strftime("%Y-%m-%d") for d in dates])
 
-    def load_test_data(self) -> Dict[str, Any]:
-        """Load and cache test data from compressed CSV file."""
-        if self._cache is not None:
-            return self._cache
+    async def advance_date(self, days: int = 1) -> None:
+        """Advance current date by specified days."""
+        self.current_date += timedelta(days=days)
+        self._quote_cache.clear()
 
-        self._cache = {}
-
-        try:
-            with gzip.open(self._data_file, "rt") as f:
-                reader = csv.reader(f, delimiter="\t")
-
-                for row in reader:
-                    if len(row) < 4:
-                        continue
-
-                    symbol, quote_date, bid, ask = (
-                        row[0],
-                        row[1],
-                        float(row[2]),
-                        float(row[3]),
+    def _get_stock_quote_from_db(
+        self, symbol: str, quote_date: date, scenario: str
+    ) -> TestStockQuote | None:
+        """Get stock quote from database."""
+        with next(get_sync_session()) as db:
+            return (
+                db.query(TestStockQuote)
+                .filter(
+                    and_(
+                        TestStockQuote.symbol == symbol,
+                        TestStockQuote.quote_date == quote_date,
+                        TestStockQuote.scenario == scenario,
                     )
-                    cache_key = symbol + quote_date
+                )
+                .first()
+            )
 
-                    # Create asset and quote
-                    asset = asset_factory(symbol)
+    def _get_option_quote_from_db(
+        self, symbol: str, quote_date: date, scenario: str
+    ) -> TestOptionQuote | None:
+        """Get option quote from database."""
+        with next(get_sync_session()) as db:
+            return (
+                db.query(TestOptionQuote)
+                .filter(
+                    and_(
+                        TestOptionQuote.symbol == symbol,
+                        TestOptionQuote.quote_date == quote_date,
+                        TestOptionQuote.scenario == scenario,
+                    )
+                )
+                .first()
+            )
 
-                    if isinstance(asset, Option):
-                        # Create option quote with calculated price
-                        price = (bid + ask) / 2 if bid > 0 and ask > 0 else None
-                        option_quote = OptionQuote(
-                            quote_date=datetime.strptime(quote_date, "%Y-%m-%d"),
-                            asset=asset,
-                            bid=bid,
-                            ask=ask,
-                            price=price,
-                        )
+    @lru_cache(maxsize=1000)
+    def _cached_stock_quote(
+        self, symbol: str, quote_date: date, scenario: str
+    ) -> Quote | None:
+        """Cached version of stock quote lookup."""
+        db_quote = self._get_stock_quote_from_db(symbol, quote_date, scenario)
+        if db_quote:
+            asset = asset_factory(symbol)
+            if asset:
+                return Quote(
+                    quote_date=datetime.combine(
+                        db_quote.quote_date, datetime.min.time()
+                    ),
+                    asset=asset,
+                    bid=float(db_quote.bid) if db_quote.bid else None,
+                    ask=float(db_quote.ask) if db_quote.ask else None,
+                    price=float(db_quote.price) if db_quote.price else None,
+                    bid_size=100,
+                    ask_size=100,
+                    volume=db_quote.volume or 1000,
+                )
+        return None
 
-                        # Calculate Greeks if we have price and underlying data
-                        if option_quote.price and option_quote.price > 0:
-                            underlying_key = asset.underlying.symbol + quote_date
-                            underlying_quote = self._cache.get(underlying_key)
+    @lru_cache(maxsize=1000)
+    def _cached_option_quote(
+        self, symbol: str, quote_date: date, scenario: str
+    ) -> OptionQuote | None:
+        """Cached version of option quote lookup."""
+        db_quote = self._get_option_quote_from_db(symbol, quote_date, scenario)
+        if db_quote:
+            asset = asset_factory(symbol)
+            if asset and isinstance(asset, Option):
+                option_quote = OptionQuote(
+                    quote_date=datetime.combine(
+                        db_quote.quote_date, datetime.min.time()
+                    ),
+                    asset=asset,
+                    bid=float(db_quote.bid) if db_quote.bid else None,
+                    ask=float(db_quote.ask) if db_quote.ask else None,
+                    price=float(db_quote.price) if db_quote.price else None,
+                    volume=db_quote.volume,
+                )
 
-                            if underlying_quote and hasattr(underlying_quote, "price"):
-                                try:
-                                    greeks = calculate_option_greeks(
-                                        option_type=asset.option_type,
-                                        strike=asset.strike,
-                                        underlying_price=underlying_quote.price,
-                                        days_to_expiration=asset.get_days_to_expiration(
-                                            datetime.strptime(
-                                                quote_date, "%Y-%m-%d"
-                                            ).date()
-                                        ),
-                                        option_price=option_quote.price,
-                                    )
+                # Calculate Greeks if we have price and underlying data
+                if option_quote.price and option_quote.price > 0:
+                    underlying_quote = self._cached_stock_quote(
+                        asset.underlying.symbol, quote_date, scenario
+                    )
 
-                                    # Update option quote with Greeks
-                                    for greek_name, value in greeks.items():
-                                        if value is not None:
-                                            setattr(option_quote, greek_name, value)
+                    if underlying_quote and underlying_quote.price:
+                        try:
+                            greeks = calculate_option_greeks(
+                                option_type=asset.option_type,
+                                strike=asset.strike,
+                                underlying_price=underlying_quote.price,
+                                days_to_expiration=asset.get_days_to_expiration(
+                                    quote_date
+                                ),
+                                option_price=option_quote.price,
+                            )
 
-                                except Exception:
-                                    # Greeks calculation failed - continue without Greeks
-                                    pass
+                            # Update option quote with Greeks
+                            for greek_name, value in greeks.items():
+                                if value is not None:
+                                    setattr(option_quote, greek_name, value)
+                        except Exception:
+                            # Greeks calculation failed - continue without Greeks
+                            pass
 
-                        self._cache[cache_key] = option_quote
+                return option_quote
+        return None
 
-                    else:
-                        # Create stock quote with calculated price
-                        price = (bid + ask) / 2 if bid > 0 and ask > 0 else None
-                        if asset is None:
-                            continue
-                        stock_quote = Quote(
-                            quote_date=datetime.strptime(quote_date, "%Y-%m-%d"),
-                            asset=asset,
-                            bid=bid,
-                            ask=ask,
-                            bid_size=100,
-                            ask_size=100,
-                            volume=1000,
-                            price=price,
-                        )
-                        self._cache[cache_key] = stock_quote
-
-        except Exception as e:
-            raise TestDataError(f"Failed to load test data: {e}")
-
-        return self._cache
-
-    async def get_quote(self, asset: Asset) -> Optional[Quote]:
+    async def get_quote(self, asset: Asset) -> Quote | None:
         """
         Get quote for a symbol on the current date.
 
@@ -172,10 +215,15 @@ class TestDataQuoteAdapter(QuoteAdapter):
         Returns:
             Quote object or None if not found
         """
-        cache_key = asset.symbol + self.current_date
-
-        cache = self.load_test_data()
-        return cache.get(cache_key)
+        # Check if it's an option or stock
+        if isinstance(asset, Option):
+            return self._cached_option_quote(
+                asset.symbol, self.current_date, self.scenario
+            )
+        else:
+            return self._cached_stock_quote(
+                asset.symbol, self.current_date, self.scenario
+            )
 
     async def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
         """
@@ -188,27 +236,157 @@ class TestDataQuoteAdapter(QuoteAdapter):
             Dictionary mapping assets to their quotes
         """
         results = {}
-        cache = self.load_test_data()
 
         for asset in assets:
-            cache_key = asset.symbol + self.current_date
-            quote = cache.get(cache_key)
+            quote = await self.get_quote(asset)
             if quote is not None:
                 results[asset] = quote
 
         return results
 
+    async def batch_get_quotes(self, symbols: list[str]) -> dict[str, Quote | None]:
+        """
+        Get quotes for multiple symbols efficiently.
+
+        Args:
+            symbols: List of symbol strings
+
+        Returns:
+            Dictionary mapping symbols to their quotes
+        """
+        results = {}
+
+        # Group symbols by type (stock vs option)
+        stock_symbols = []
+        option_symbols = []
+
+        for symbol in symbols:
+            asset = asset_factory(symbol)
+            if asset:
+                if isinstance(asset, Option):
+                    option_symbols.append(symbol)
+                else:
+                    stock_symbols.append(symbol)
+
+        # Batch query stocks
+        if stock_symbols:
+            with next(get_sync_session()) as db:
+                stock_records = (
+                    db.query(TestStockQuote)
+                    .filter(
+                        and_(
+                            TestStockQuote.symbol.in_(stock_symbols),
+                            TestStockQuote.quote_date == self.current_date,
+                            TestStockQuote.scenario == self.scenario,
+                        )
+                    )
+                    .all()
+                )
+
+                for record in stock_records:
+                    quote = self._cached_stock_quote(
+                        record.symbol, record.quote_date, self.scenario
+                    )
+                    if quote:
+                        results[record.symbol] = quote
+
+        # Batch query options
+        if option_symbols:
+            with next(get_sync_session()) as db:
+                option_records = (
+                    db.query(TestOptionQuote)
+                    .filter(
+                        and_(
+                            TestOptionQuote.symbol.in_(option_symbols),
+                            TestOptionQuote.quote_date == self.current_date,
+                            TestOptionQuote.scenario == self.scenario,
+                        )
+                    )
+                    .all()
+                )
+
+                for record in option_records:
+                    quote = self._cached_option_quote(
+                        record.symbol, record.quote_date, self.scenario
+                    )
+                    if quote:
+                        results[record.symbol] = quote
+
+        # Add None for symbols that weren't found
+        for symbol in symbols:
+            if symbol not in results:
+                results[symbol] = None
+
+        return results
+
+    async def get_quotes_for_date_range(
+        self, symbol: str, start_date: date, end_date: date
+    ) -> list[Quote]:
+        """Get quotes for a date range (backtesting support)."""
+        quotes = []
+
+        with next(get_sync_session()) as db:
+            # Check if it's a stock or option
+            asset = asset_factory(symbol)
+            if not asset:
+                return quotes
+
+            if isinstance(asset, Option):
+                records = (
+                    db.query(TestOptionQuote)
+                    .filter(
+                        and_(
+                            TestOptionQuote.symbol == symbol,
+                            TestOptionQuote.quote_date >= start_date,
+                            TestOptionQuote.quote_date <= end_date,
+                            TestOptionQuote.scenario == self.scenario,
+                        )
+                    )
+                    .order_by(TestOptionQuote.quote_date)
+                    .all()
+                )
+
+                for record in records:
+                    quote = self._cached_option_quote(
+                        symbol, record.quote_date, self.scenario
+                    )
+                    if quote:
+                        quotes.append(quote)
+            else:
+                records = (
+                    db.query(TestStockQuote)
+                    .filter(
+                        and_(
+                            TestStockQuote.symbol == symbol,
+                            TestStockQuote.quote_date >= start_date,
+                            TestStockQuote.quote_date <= end_date,
+                            TestStockQuote.scenario == self.scenario,
+                        )
+                    )
+                    .order_by(TestStockQuote.quote_date)
+                    .all()
+                )
+
+                for record in records:
+                    quote = self._cached_stock_quote(
+                        symbol, record.quote_date, self.scenario
+                    )
+                    if quote:
+                        quotes.append(quote)
+
+        return quotes
+
     async def get_chain(
-        self, underlying: str, expiration_date: Optional[datetime] = None
-    ) -> List[Asset]:
+        self, underlying: str, expiration_date: datetime | None = None
+    ) -> list[Asset]:
         """Get option chain for an underlying."""
         # This is a basic implementation to satisfy the abstract method.
         # A full implementation would be similar to get_options_chain.
         return []
 
     async def get_options_chain(
-        self, underlying: str, expiration: Optional[date] = None
-    ) -> Optional[OptionsChain]:
+        self, underlying: str, expiration: date | None = None
+    ) -> OptionsChain | None:
         """
         Get options chain for an underlying asset.
 
@@ -222,38 +400,42 @@ class TestDataQuoteAdapter(QuoteAdapter):
         underlying_asset = asset_factory(underlying)
         if underlying_asset is None:
             return None
-        cache = self.load_test_data()
 
         # Get underlying quote
         underlying_quote = await self.get_quote(underlying_asset)
         underlying_price = underlying_quote.price if underlying_quote else None
 
-        # Filter options for this underlying and date
-        all_options = []
-        for quote in cache.values():
-            if (
-                isinstance(quote, OptionQuote)
-                and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
-                and isinstance(quote.asset, Option)
-                and quote.asset.underlying.symbol == underlying_asset.symbol
-            ):
-                if expiration is None or quote.asset.expiration_date == expiration:
-                    all_options.append(quote)
+        # Query options from database
+        with next(get_sync_session()) as db:
+            query = db.query(TestOptionQuote).filter(
+                and_(
+                    TestOptionQuote.underlying == underlying,
+                    TestOptionQuote.quote_date == self.current_date,
+                    TestOptionQuote.scenario == self.scenario,
+                )
+            )
 
-        if not all_options:
+            if expiration:
+                query = query.filter(TestOptionQuote.expiration == expiration)
+
+            option_records = query.all()
+
+        if not option_records:
             return None
 
-        # Separate calls and puts
-        calls = [
-            opt
-            for opt in all_options
-            if isinstance(opt.asset, Option) and opt.asset.option_type == "call"
-        ]
-        puts = [
-            opt
-            for opt in all_options
-            if isinstance(opt.asset, Option) and opt.asset.option_type == "put"
-        ]
+        # Convert database records to OptionQuote objects
+        calls = []
+        puts = []
+
+        for record in option_records:
+            option_quote = self._cached_option_quote(
+                record.symbol, record.quote_date, self.scenario
+            )
+            if option_quote and isinstance(option_quote.asset, Option):
+                if option_quote.asset.option_type == "call":
+                    calls.append(option_quote)
+                else:
+                    puts.append(option_quote)
 
         # Sort by strike price
         calls.sort(key=lambda x: x.asset.strike if isinstance(x.asset, Option) else 0)
@@ -261,12 +443,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         # Determine expiration date
         exp_date = expiration
-        if (
-            exp_date is None
-            and all_options
-            and isinstance(all_options[0].asset, Option)
-        ):
-            exp_date = all_options[0].asset.expiration_date
+        if exp_date is None and option_records:
+            exp_date = option_records[0].expiration
 
         return OptionsChain(
             underlying_symbol=underlying_asset.symbol,
@@ -274,10 +452,10 @@ class TestDataQuoteAdapter(QuoteAdapter):
             underlying_price=underlying_price,
             calls=calls,
             puts=puts,
-            quote_time=datetime.strptime(self.current_date, "%Y-%m-%d"),
+            quote_time=datetime.combine(self.current_date, datetime.min.time()),
         )
 
-    def get_expiration_dates(self, underlying: str) -> List[date]:
+    def get_expiration_dates(self, underlying: str) -> list[date]:
         """
         Get available expiration dates for an underlying asset.
 
@@ -287,22 +465,21 @@ class TestDataQuoteAdapter(QuoteAdapter):
         Returns:
             List of expiration dates
         """
-        underlying_asset = asset_factory(underlying)
-        if underlying_asset is None:
-            return []
-        cache = self.load_test_data()
+        with next(get_sync_session()) as db:
+            expiration_dates = (
+                db.query(TestOptionQuote.expiration)
+                .filter(
+                    and_(
+                        TestOptionQuote.underlying == underlying,
+                        TestOptionQuote.quote_date == self.current_date,
+                        TestOptionQuote.scenario == self.scenario,
+                    )
+                )
+                .distinct()
+                .all()
+            )
 
-        expiration_dates = set()
-        for quote in cache.values():
-            if (
-                isinstance(quote, OptionQuote)
-                and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
-                and isinstance(quote.asset, Option)
-                and quote.asset.underlying.symbol == underlying_asset.symbol
-            ):
-                expiration_dates.add(quote.asset.expiration_date)
-
-        return sorted(list(expiration_dates))
+            return sorted([exp[0] for exp in expiration_dates])
 
     async def is_market_open(self) -> bool:
         """
@@ -314,7 +491,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         """
         return True
 
-    async def get_market_hours(self) -> Dict[str, datetime]:
+    async def get_market_hours(self) -> dict[str, datetime]:
         """
         Get current market hours.
         For test data, return standard market hours.
@@ -336,16 +513,47 @@ class TestDataQuoteAdapter(QuoteAdapter):
             True if symbol exists in test data
         """
         try:
-            cache = self.load_test_data()
             asset_obj = asset_factory(symbol)
             if asset_obj is None:
                 return False
-            cache_key = asset_obj.symbol + self.current_date
-            return cache_key in cache
+
+            with next(get_sync_session()) as db:
+                # Check stock quotes
+                stock_exists = (
+                    db.query(TestStockQuote)
+                    .filter(
+                        and_(
+                            TestStockQuote.symbol == symbol,
+                            TestStockQuote.quote_date == self.current_date,
+                            TestStockQuote.scenario == self.scenario,
+                        )
+                    )
+                    .first()
+                    is not None
+                )
+
+                if stock_exists:
+                    return True
+
+                # Check option quotes
+                option_exists = (
+                    db.query(TestOptionQuote)
+                    .filter(
+                        and_(
+                            TestOptionQuote.symbol == symbol,
+                            TestOptionQuote.quote_date == self.current_date,
+                            TestOptionQuote.scenario == self.scenario,
+                        )
+                    )
+                    .first()
+                    is not None
+                )
+
+                return option_exists
         except Exception:
             return False
 
-    def get_last_updated(self, symbol: str) -> Optional[datetime]:
+    def get_last_updated(self, symbol: str) -> datetime | None:
         """
         Get the last update time for a symbol's quote.
 
@@ -356,11 +564,11 @@ class TestDataQuoteAdapter(QuoteAdapter):
             Last update timestamp (the test data date)
         """
         try:
-            return datetime.strptime(self.current_date, "%Y-%m-%d")
+            return datetime.combine(self.current_date, datetime.min.time())
         except Exception:
             return None
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Perform health check on the adapter.
 
@@ -368,23 +576,47 @@ class TestDataQuoteAdapter(QuoteAdapter):
             Dictionary with health status and metrics
         """
         try:
-            cache = self.load_test_data()
-            symbol_count = len(
-                set(
-                    quote.asset.symbol
-                    for quote in cache.values()
-                    if quote.asset is not None
-                    and quote.quote_date.strftime("%Y-%m-%d") == self.current_date
+            with next(get_sync_session()) as db:
+                # Count unique symbols for current date and scenario
+                stock_count = (
+                    db.query(TestStockQuote.symbol)
+                    .filter(
+                        and_(
+                            TestStockQuote.quote_date == self.current_date,
+                            TestStockQuote.scenario == self.scenario,
+                        )
+                    )
+                    .distinct()
+                    .count()
                 )
-            )
+
+                option_count = (
+                    db.query(TestOptionQuote.symbol)
+                    .filter(
+                        and_(
+                            TestOptionQuote.quote_date == self.current_date,
+                            TestOptionQuote.scenario == self.scenario,
+                        )
+                    )
+                    .distinct()
+                    .count()
+                )
+
+                # Check if database has data
+                total_stock_quotes = db.query(TestStockQuote).count()
+                total_option_quotes = db.query(TestOptionQuote).count()
 
             return {
                 "name": self.name,
                 "enabled": self.enabled,
                 "status": "healthy",
-                "current_date": self.current_date,
-                "available_symbols": symbol_count,
-                "data_file_exists": self._data_file.exists(),
+                "current_date": self.current_date.strftime("%Y-%m-%d"),
+                "current_scenario": self.scenario,
+                "available_stocks": stock_count,
+                "available_options": option_count,
+                "total_stock_quotes_in_db": total_stock_quotes,
+                "total_option_quotes_in_db": total_option_quotes,
+                "database_connected": True,
                 "last_check": datetime.now(),
             }
         except Exception as e:
@@ -396,31 +628,59 @@ class TestDataQuoteAdapter(QuoteAdapter):
                 "last_check": datetime.now(),
             }
 
-    def get_available_symbols(self) -> List[str]:
+    def get_available_symbols(self) -> list[str]:
         """Get all available symbols in test data."""
-        cache = self.load_test_data()
-        symbols = set()
+        with next(get_sync_session()) as db:
+            # Get stock symbols
+            stock_symbols = (
+                db.query(TestStockQuote.symbol)
+                .filter(
+                    and_(
+                        TestStockQuote.quote_date == self.current_date,
+                        TestStockQuote.scenario == self.scenario,
+                    )
+                )
+                .distinct()
+                .all()
+            )
 
-        for quote in cache.values():
-            if quote.quote_date.strftime("%Y-%m-%d") == self.current_date:
-                symbols.add(quote.asset.symbol)
+            # Get option symbols
+            option_symbols = (
+                db.query(TestOptionQuote.symbol)
+                .filter(
+                    and_(
+                        TestOptionQuote.quote_date == self.current_date,
+                        TestOptionQuote.scenario == self.scenario,
+                    )
+                )
+                .distinct()
+                .all()
+            )
 
-        return sorted(list(symbols))
+            # Combine and return sorted list
+            all_symbols = set(
+                [s[0] for s in stock_symbols] + [s[0] for s in option_symbols]
+            )
+            return sorted(list(all_symbols))
 
-    def get_underlying_symbols(self) -> List[str]:
+    def get_underlying_symbols(self) -> list[str]:
         """Get underlying asset symbols (stocks)."""
-        cache = self.load_test_data()
-        underlyings = set()
+        with next(get_sync_session()) as db:
+            underlyings = (
+                db.query(TestStockQuote.symbol)
+                .filter(
+                    and_(
+                        TestStockQuote.quote_date == self.current_date,
+                        TestStockQuote.scenario == self.scenario,
+                    )
+                )
+                .distinct()
+                .all()
+            )
 
-        for quote in cache.values():
-            if quote.quote_date.strftime(
-                "%Y-%m-%d"
-            ) == self.current_date and not isinstance(quote.asset, Option):
-                underlyings.add(quote.asset.symbol)
+            return sorted([u[0] for u in underlyings])
 
-        return sorted(list(underlyings))
-
-    def get_test_scenarios(self) -> Dict[str, Any]:
+    def get_test_scenarios(self) -> dict[str, Any]:
         """
         Get predefined test scenarios for common testing patterns.
 
@@ -454,7 +714,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
             },
         }
 
-    def get_sample_data_info(self) -> Dict[str, Any]:
+    def get_sample_data_info(self) -> dict[str, Any]:
         """
         Get information about the sample data included.
 
@@ -493,6 +753,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
 
 # Convenience function for getting test adapter
-def get_test_adapter(date: str = "2017-03-24") -> TestDataQuoteAdapter:
+def get_test_adapter(
+    date: str = "2017-03-24", scenario: str = "default"
+) -> TestDataQuoteAdapter:
     """Get a configured test data adapter."""
-    return TestDataQuoteAdapter(date)
+    return TestDataQuoteAdapter(date, scenario)

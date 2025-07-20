@@ -2,10 +2,11 @@
 Authentication service for handling user authentication and authorization.
 """
 
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
-from jose import jwt, JWTError
 
 from app.core.config import settings
 from app.core.exceptions import NotFoundError
@@ -41,15 +42,13 @@ class AuthService:
         """Verify a password against its hash."""
         return self.pwd_context.verify(plain_password, hashed_password)
 
-    def get_user(self, username: str) -> Optional[Dict[str, Any]]:
+    def get_user(self, username: str) -> dict[str, Any] | None:
         """Get user by username."""
         if username in self.users_db:
             return self.users_db[username]
         return None
 
-    def authenticate_user(
-        self, username: str, password: str
-    ) -> Optional[Dict[str, Any]]:
+    def authenticate_user(self, username: str, password: str) -> dict[str, Any] | None:
         """Authenticate a user with username and password."""
         user = self.get_user(username)
         if not user:
@@ -59,7 +58,7 @@ class AuthService:
         return user
 
     def create_access_token(
-        self, data: dict, expires_delta: Optional[timedelta] = None
+        self, data: dict, expires_delta: timedelta | None = None
     ) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
@@ -73,7 +72,7 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
 
-    def get_current_user(self, token: str) -> Dict[str, Any]:
+    def get_current_user(self, token: str) -> dict[str, Any]:
         """Get current user from JWT token."""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])

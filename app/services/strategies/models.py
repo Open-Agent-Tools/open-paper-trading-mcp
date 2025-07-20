@@ -5,9 +5,10 @@ This module contains the core strategy models, enums, and data structures
 for the trading strategy system.
 """
 
-from typing import List, Any, Optional, Union, Literal
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from ...models.assets import Asset, Option, asset_factory
 from ...models.trading import Position
@@ -63,9 +64,7 @@ class AssetStrategy(BasicStrategy):
     asset: Asset = Field(..., description="Asset being held")
     direction: str = Field(..., description="Position direction (long/short)")
 
-    def __init__(
-        self, asset: Union[str, Asset], quantity: int = 1, **data: Any
-    ) -> None:
+    def __init__(self, asset: str | Asset, quantity: int = 1, **data: Any) -> None:
         # Normalize asset
         asset_obj = asset_factory(asset) if isinstance(asset, str) else asset
         if asset_obj is None:
@@ -85,9 +84,7 @@ class OffsetStrategy(BasicStrategy):
     strategy_type: Literal[StrategyType.OFFSET] = Field(default=StrategyType.OFFSET)
     asset: Asset = Field(..., description="Asset being offset")
 
-    def __init__(
-        self, asset: Union[str, Asset], quantity: int = 1, **data: Any
-    ) -> None:
+    def __init__(self, asset: str | Asset, quantity: int = 1, **data: Any) -> None:
         asset_obj = asset_factory(asset) if isinstance(asset, str) else asset
         if asset_obj is None:
             raise ValueError(f"Could not create asset from: {asset}")
@@ -152,7 +149,7 @@ class CoveredStrategy(BasicStrategy):
 
     def __init__(
         self,
-        asset: Union[str, Asset],
+        asset: str | Asset,
         sell_option: Option,
         quantity: int = 1,
         **data: Any,
@@ -178,12 +175,12 @@ class ComplexStrategy(BasicStrategy):
     complex_type: ComplexStrategyType = Field(
         ..., description="Complex strategy subtype"
     )
-    legs: List[Position] = Field(..., description="Strategy legs")
+    legs: list[Position] = Field(..., description="Strategy legs")
     underlying_symbol: str = Field(..., description="Underlying asset symbol")
     net_credit: float = Field(0.0, description="Net credit/debit (positive = credit)")
-    max_profit: Optional[float] = Field(None, description="Maximum profit potential")
-    max_loss: Optional[float] = Field(None, description="Maximum loss potential")
-    breakeven_points: List[float] = Field(
+    max_profit: float | None = Field(None, description="Maximum profit potential")
+    max_loss: float | None = Field(None, description="Maximum loss potential")
+    breakeven_points: list[float] = Field(
         default_factory=list, description="Breakeven prices"
     )
 
@@ -199,13 +196,13 @@ class StrategyPnL(BaseModel):
     pnl_percent: float = Field(0.0, description="P&L as percentage of cost basis")
     cost_basis: float = Field(0.0, description="Total cost basis of strategy")
     market_value: float = Field(0.0, description="Current market value")
-    max_profit: Optional[float] = Field(None, description="Maximum theoretical profit")
-    max_loss: Optional[float] = Field(None, description="Maximum theoretical loss")
-    breakeven_points: List[float] = Field(
+    max_profit: float | None = Field(None, description="Maximum theoretical profit")
+    max_loss: float | None = Field(None, description="Maximum theoretical loss")
+    breakeven_points: list[float] = Field(
         default_factory=list, description="Breakeven prices"
     )
     days_held: int = Field(0, description="Days strategy has been held")
-    annualized_return: Optional[float] = Field(
+    annualized_return: float | None = Field(
         None, description="Annualized return percentage"
     )
 

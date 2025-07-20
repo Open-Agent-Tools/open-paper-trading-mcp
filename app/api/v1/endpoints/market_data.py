@@ -5,9 +5,11 @@ These endpoints now route through TradingService for consistency
 with the unified architecture pattern.
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Dict, Any
-from app.services.trading_service import trading_service, TradingService
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from app.services.trading_service import TradingService, trading_service
 
 router = APIRouter()
 
@@ -17,10 +19,10 @@ def get_trading_service() -> TradingService:
     return trading_service
 
 
-@router.get("/price/{symbol}", response_model=Dict[str, Any])
+@router.get("/price/{symbol}", response_model=dict[str, Any])
 async def get_stock_price_endpoint(
     symbol: str, service: TradingService = Depends(get_trading_service)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get current stock price and basic metrics.
 
@@ -35,15 +37,13 @@ async def get_stock_price_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting stock price: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error getting stock price: {e!s}")
 
 
-@router.get("/info/{symbol}", response_model=Dict[str, Any])
+@router.get("/info/{symbol}", response_model=dict[str, Any])
 async def get_stock_info_endpoint(
     symbol: str, service: TradingService = Depends(get_trading_service)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get detailed company information and fundamentals for a stock.
 
@@ -58,19 +58,17 @@ async def get_stock_info_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting stock info: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error getting stock info: {e!s}")
 
 
-@router.get("/history/{symbol}", response_model=Dict[str, Any])
+@router.get("/history/{symbol}", response_model=dict[str, Any])
 async def get_price_history_endpoint(
     symbol: str,
     period: str = Query(
         "week", description="Time period: day, week, month, 3month, year, 5year"
     ),
     service: TradingService = Depends(get_trading_service),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get historical price data for a stock.
 
@@ -86,14 +84,14 @@ async def get_price_history_endpoint(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error getting price history: {str(e)}"
+            status_code=500, detail=f"Error getting price history: {e!s}"
         )
 
 
-@router.get("/news/{symbol}", response_model=Dict[str, Any])
+@router.get("/news/{symbol}", response_model=dict[str, Any])
 async def get_stock_news_endpoint(
     symbol: str, service: TradingService = Depends(get_trading_service)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get news stories for a stock.
 
@@ -108,15 +106,13 @@ async def get_stock_news_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting stock news: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error getting stock news: {e!s}")
 
 
-@router.get("/movers", response_model=Dict[str, Any])
+@router.get("/movers", response_model=dict[str, Any])
 async def get_top_movers_endpoint(
     service: TradingService = Depends(get_trading_service),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get top movers in the market.
 
@@ -131,16 +127,14 @@ async def get_top_movers_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting top movers: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error getting top movers: {e!s}")
 
 
-@router.get("/search", response_model=Dict[str, Any])
+@router.get("/search", response_model=dict[str, Any])
 async def search_stocks_endpoint(
     query: str = Query(..., description="Search query (symbol or company name)"),
     service: TradingService = Depends(get_trading_service),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Search for stocks by symbol or company name.
 
@@ -155,4 +149,4 @@ async def search_stocks_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error searching stocks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error searching stocks: {e!s}")

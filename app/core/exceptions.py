@@ -1,5 +1,6 @@
+from typing import Any
+
 from fastapi import HTTPException
-from typing import Any, Dict, Optional
 
 
 class CustomException(HTTPException):
@@ -7,7 +8,7 @@ class CustomException(HTTPException):
         self,
         status_code: int,
         detail: Any = None,
-        headers: Optional[Dict[str, Any]] = None,
+        headers: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(status_code, detail, headers)
 

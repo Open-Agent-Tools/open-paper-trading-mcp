@@ -7,19 +7,19 @@ Includes slippage modeling, volume impact, and options-specific estimation.
 
 import random
 from abc import ABC, abstractmethod
-from math import copysign, sqrt
-from typing import Optional, Dict, Union, Any, Tuple
 from datetime import datetime
+from math import copysign, sqrt
+from typing import Any
 
-from ..models.quotes import Quote, OptionQuote
 from ..models.assets import Option, asset_factory
+from ..models.quotes import OptionQuote, Quote
 
 
 class PriceEstimator(ABC):
     """Base class for price estimators."""
 
     @abstractmethod
-    def estimate(self, quote: Quote, quantity: Optional[int] = None) -> float:
+    def estimate(self, quote: Quote, quantity: int | None = None) -> float:
         """
         Estimate the price an asset would transact at.
 
@@ -39,7 +39,7 @@ class MidpointEstimator(PriceEstimator):
     Falls back to last price if bid/ask not available.
     """
 
-    def estimate(self, quote: Quote, quantity: Optional[int] = None) -> float:
+    def estimate(self, quote: Quote, quantity: int | None = None) -> float:
         """Estimate price as bid-ask midpoint or last price."""
 
         # If we have valid bid and ask, use midpoint
@@ -82,7 +82,7 @@ class SlippageEstimator(PriceEstimator):
             raise ValueError("Slippage must be between -1.0 and 1.0")
         self.slippage = slippage
 
-    def estimate(self, quote: Quote, quantity: Optional[int] = None) -> float:
+    def estimate(self, quote: Quote, quantity: int | None = None) -> float:
         """Estimate price accounting for slippage within spread."""
 
         if (
@@ -130,7 +130,7 @@ class FixedPriceEstimator(PriceEstimator):
         """
         self.price = price
 
-    def estimate(self, quote: Quote, quantity: Optional[int] = None) -> float:
+    def estimate(self, quote: Quote, quantity: int | None = None) -> float:
         """Return the fixed price regardless of quote or quantity."""
         return self.price
 
@@ -141,7 +141,7 @@ class MarketEstimator(PriceEstimator):
     Uses ask price for buys, bid price for sells.
     """
 
-    def estimate(self, quote: Quote, quantity: Optional[int] = None) -> float:
+    def estimate(self, quote: Quote, quantity: int | None = None) -> float:
         """Estimate market order execution price."""
 
         if (
@@ -179,7 +179,7 @@ class VolumeWeightedEstimator(PriceEstimator):
         """
         self.size_impact_factor = max(0.0, min(1.0, size_impact_factor))
 
-    def estimate(self, quote: Quote, quantity: Optional[int] = None) -> float:
+    def estimate(self, quote: Quote, quantity: int | None = None) -> float:
         """Estimate price considering order size vs available liquidity."""
 
         if (
@@ -255,9 +255,7 @@ def create_estimator(estimator_type: str, **kwargs: Any) -> PriceEstimator:
     elif estimator_type == "options":
         return OptionsEstimator(kwargs.get("spread_factor", 0.3))
     elif estimator_type == "random":
-        return RandomWalkEstimator(
-            kwargs.get("volatility", 0.01), kwargs.get("seed", None)
-        )
+        return RandomWalkEstimator(kwargs.get("volatility", 0.01), kwargs.get("seed"))
     else:
         raise ValueError(f"Unknown estimator type: {estimator_type}")
 
@@ -292,7 +290,7 @@ class RealisticEstimator(PriceEstimator):
         self.volatility_impact = max(0.0, min(1.0, volatility_impact))
 
     def estimate(
-        self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None
+        self, quote: Quote | OptionQuote, quantity: int | None = None
     ) -> float:
         """Estimate price using realistic market modeling."""
 
@@ -357,7 +355,7 @@ class RealisticEstimator(PriceEstimator):
             return 1.0  # After hours - no additional impact
 
         # First 30 minutes (9:30-10:00) and last 30 minutes (3:30-4:00)
-        if (hour == 9 and minute >= 30) or hour == 15 and minute >= 30:
+        if (hour == 9 and minute >= 30) or (hour == 15 and minute >= 30):
             return 1.3  # Higher volatility at open/close
 
         # Normal trading hours
@@ -383,7 +381,7 @@ class OptionsEstimator(PriceEstimator):
         self.spread_factor = max(0.0, min(1.0, spread_factor))
 
     def estimate(
-        self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None
+        self, quote: Quote | OptionQuote, quantity: int | None = None
     ) -> float:
         """Estimate option execution price."""
 
@@ -430,7 +428,7 @@ class RandomWalkEstimator(PriceEstimator):
     Useful for testing and Monte Carlo simulations.
     """
 
-    def __init__(self, volatility: float = 0.01, seed: Optional[int] = None):
+    def __init__(self, volatility: float = 0.01, seed: int | None = None):
         """
         Initialize random walk estimator.
 
@@ -443,7 +441,7 @@ class RandomWalkEstimator(PriceEstimator):
             random.seed(seed)
 
     def estimate(
-        self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None
+        self, quote: Quote | OptionQuote, quantity: int | None = None
     ) -> float:
         """Estimate price with random walk component."""
 
@@ -478,7 +476,7 @@ class MultiEstimator(PriceEstimator):
     Useful for sophisticated modeling that considers multiple factors.
     """
 
-    def __init__(self, estimators: Dict[str, Tuple[PriceEstimator, float]]) -> None:
+    def __init__(self, estimators: dict[str, tuple[PriceEstimator, float]]) -> None:
         """
         Initialize multi-estimator.
 
@@ -492,7 +490,7 @@ class MultiEstimator(PriceEstimator):
             raise ValueError("Estimator weights should sum to 1.0")
 
     def estimate(
-        self, quote: Union[Quote, OptionQuote], quantity: Optional[int] = None
+        self, quote: Quote | OptionQuote, quantity: int | None = None
     ) -> float:
         """Estimate price using weighted combination of estimators."""
 

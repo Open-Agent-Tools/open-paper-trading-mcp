@@ -3,22 +3,24 @@ Robinhood adapter for live market data integration.
 """
 
 import asyncio
-import time
-from typing import Dict, List, Optional, Any
-from datetime import datetime, date
-from functools import wraps
 import random
+import time
+from datetime import date, datetime
+from functools import wraps
+from typing import Any
+
 import robin_stocks.robinhood as rh  # type: ignore
 
-from app.adapters.base import QuoteAdapter, AdapterConfig
-from app.models.quotes import Quote, OptionQuote, OptionsChain
-from app.models.assets import Asset, Option, Stock, asset_factory
+from app.adapters.base import AdapterConfig, QuoteAdapter
 from app.auth.session_manager import get_session_manager
 from app.core.logging import logger
+from app.models.assets import Asset, Option, Stock, asset_factory
+from app.models.quotes import OptionQuote, OptionsChain, Quote
 
 
 def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
     """Decorator for adding exponential backoff retry logic to async methods."""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -29,11 +31,17 @@ def retry_with_backoff(max_retries=3, base_delay=1.0, max_delay=60.0):
                     if attempt == max_retries - 1:
                         logger.error(f"Final attempt failed for {func.__name__}: {e}")
                         raise
-                    delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
-                    logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}, retrying in {delay:.2f}s: {e}")
+                    delay = min(
+                        base_delay * (2**attempt) + random.uniform(0, 1), max_delay
+                    )
+                    logger.warning(
+                        f"Attempt {attempt + 1} failed for {func.__name__}, retrying in {delay:.2f}s: {e}"
+                    )
                     await asyncio.sleep(delay)
             return None
+
         return wrapper
+
     return decorator
 
 
@@ -48,17 +56,17 @@ class RobinhoodConfig(AdapterConfig):
 class RobinhoodAdapter(QuoteAdapter):
     """Live market data adapter using Robinhood API."""
 
-    def __init__(self, config: Optional[RobinhoodConfig] = None):
+    def __init__(self, config: RobinhoodConfig | None = None):
         self.config = config or RobinhoodConfig()
         self.session_manager = get_session_manager()
-        
+
         # Performance metrics
         self._request_count = 0
         self._error_count = 0
         self._total_request_time = 0.0
         self._cache_hits = 0
         self._cache_misses = 0
-        
+
         # Last known API status
         self._last_api_response_time = None
         self._last_error_time = None
@@ -69,25 +77,28 @@ class RobinhoodAdapter(QuoteAdapter):
         return await self.session_manager.ensure_authenticated()
 
     @retry_with_backoff(max_retries=3, base_delay=1.0)
-    async def get_quote(self, asset: Asset) -> Optional[Quote]:
+    async def get_quote(self, asset: Asset) -> Quote | None:
         """Get a single quote for an asset."""
         start_time = time.time()
         symbol = asset.symbol
-        
-        logger.info("quote_request_started", extra={
-            "symbol": symbol,
-            "asset_type": type(asset).__name__,
-            "adapter": "robinhood"
-        })
-        
+
+        logger.info(
+            "quote_request_started",
+            extra={
+                "symbol": symbol,
+                "asset_type": type(asset).__name__,
+                "adapter": "robinhood",
+            },
+        )
+
         try:
             self._request_count += 1
-            
+
             if not await self._ensure_authenticated():
-                logger.error("quote_request_auth_failed", extra={
-                    "symbol": symbol,
-                    "adapter": "robinhood"
-                })
+                logger.error(
+                    "quote_request_auth_failed",
+                    extra={"symbol": symbol, "adapter": "robinhood"},
+                )
                 self._error_count += 1
                 return None
 
@@ -96,49 +107,61 @@ class RobinhoodAdapter(QuoteAdapter):
             elif isinstance(asset, Option):
                 result = await self._get_option_quote(asset)
             else:
-                logger.warning("quote_request_unsupported_asset", extra={
-                    "symbol": symbol,
-                    "asset_type": type(asset).__name__,
-                    "adapter": "robinhood"
-                })
+                logger.warning(
+                    "quote_request_unsupported_asset",
+                    extra={
+                        "symbol": symbol,
+                        "asset_type": type(asset).__name__,
+                        "adapter": "robinhood",
+                    },
+                )
                 return None
-                
+
             duration = time.time() - start_time
             self._total_request_time += duration
             self._last_api_response_time = duration
-            
+
             if result:
-                logger.info("quote_request_completed", extra={
-                    "symbol": symbol,
-                    "price": result.price,
-                    "volume": result.volume,
-                    "duration": duration,
-                    "adapter": "robinhood"
-                })
+                logger.info(
+                    "quote_request_completed",
+                    extra={
+                        "symbol": symbol,
+                        "price": result.price,
+                        "volume": result.volume,
+                        "duration": duration,
+                        "adapter": "robinhood",
+                    },
+                )
             else:
-                logger.warning("quote_request_no_data", extra={
-                    "symbol": symbol,
-                    "duration": duration,
-                    "adapter": "robinhood"
-                })
-                
+                logger.warning(
+                    "quote_request_no_data",
+                    extra={
+                        "symbol": symbol,
+                        "duration": duration,
+                        "adapter": "robinhood",
+                    },
+                )
+
             return result
-            
+
         except Exception as e:
             duration = time.time() - start_time
             self._error_count += 1
             self._last_error_time = datetime.now()
             self._last_error_message = str(e)
-            
-            logger.error("quote_request_failed", extra={
-                "symbol": symbol,
-                "error": str(e),
-                "duration": duration,
-                "adapter": "robinhood"
-            })
+
+            logger.error(
+                "quote_request_failed",
+                extra={
+                    "symbol": symbol,
+                    "error": str(e),
+                    "duration": duration,
+                    "adapter": "robinhood",
+                },
+            )
             raise
 
-    async def _get_stock_quote(self, asset: Stock) -> Optional[Quote]:
+    async def _get_stock_quote(self, asset: Stock) -> Quote | None:
         """Get stock quote from Robinhood."""
         try:
             quote_data = rh.stocks.get_latest_price(asset.symbol)
@@ -172,7 +195,7 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting stock quote for {asset.symbol}: {e}")
             return None
 
-    async def _get_option_quote(self, asset: Option) -> Optional[OptionQuote]:
+    async def _get_option_quote(self, asset: Option) -> OptionQuote | None:
         """Get option quote from Robinhood."""
         try:
             # Find the option instrument
@@ -230,7 +253,7 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting option quote for {asset.symbol}: {e}")
             return None
 
-    async def get_quotes(self, assets: List[Asset]) -> Dict[Asset, Quote]:
+    async def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
         """Get quotes for multiple assets."""
         results = {}
         for asset in assets:
@@ -241,8 +264,8 @@ class RobinhoodAdapter(QuoteAdapter):
 
     @retry_with_backoff(max_retries=3, base_delay=1.0)
     async def get_chain(
-        self, underlying: str, expiration_date: Optional[datetime] = None
-    ) -> List[Asset]:
+        self, underlying: str, expiration_date: datetime | None = None
+    ) -> list[Asset]:
         """Get option chain for an underlying (returns list of assets)."""
         # This method returns just the assets, not full quotes
         if not await self._ensure_authenticated():
@@ -255,9 +278,7 @@ class RobinhoodAdapter(QuoteAdapter):
         assets = []
         for chain in chains_data:
             expiration = chain.get("expiration_date")
-            if expiration_date and expiration != expiration_date.strftime(
-                "%Y-%m-%d"
-            ):
+            if expiration_date and expiration != expiration_date.strftime("%Y-%m-%d"):
                 continue
 
             # Get instruments for this expiration
@@ -274,8 +295,8 @@ class RobinhoodAdapter(QuoteAdapter):
 
     @retry_with_backoff(max_retries=3, base_delay=1.0)
     async def get_options_chain(
-        self, underlying: str, expiration_date: Optional[datetime] = None
-    ) -> Optional[OptionsChain]:
+        self, underlying: str, expiration_date: datetime | None = None
+    ) -> OptionsChain | None:
         """Get complete options chain with quotes."""
         if not await self._ensure_authenticated():
             return None
@@ -287,9 +308,7 @@ class RobinhoodAdapter(QuoteAdapter):
 
         if isinstance(underlying_asset, Stock):
             underlying_quote = await self._get_stock_quote(underlying_asset)
-            underlying_price = (
-                underlying_quote.price if underlying_quote else None
-            )
+            underlying_price = underlying_quote.price if underlying_quote else None
         else:
             underlying_price = None
 
@@ -307,9 +326,7 @@ class RobinhoodAdapter(QuoteAdapter):
             if not expiration_str:
                 continue
 
-            chain_exp_date = datetime.strptime(
-                expiration_str, "%Y-%m-%d"
-            ).date()
+            chain_exp_date = datetime.strptime(expiration_str, "%Y-%m-%d").date()
 
             # Filter by expiration if specified
             if expiration_date:
@@ -368,8 +385,8 @@ class RobinhoodAdapter(QuoteAdapter):
         )
 
     def _create_option_asset(
-        self, instrument: Dict[str, Any], underlying_asset: Asset, option_type: str
-    ) -> Optional[Option]:
+        self, instrument: dict[str, Any], underlying_asset: Asset, option_type: str
+    ) -> Option | None:
         """Create an Option asset from Robinhood instrument data."""
         try:
             strike = float(instrument.get("strike_price", 0))
@@ -403,9 +420,7 @@ class RobinhoodAdapter(QuoteAdapter):
             if not await self._ensure_authenticated():
                 return False
 
-            market_hours = rh.markets.get_market_hours(
-                "XNYS", datetime.now().date()
-            )
+            market_hours = rh.markets.get_market_hours("XNYS", datetime.now().date())
             if not market_hours:
                 return False
 
@@ -416,15 +431,13 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error checking market status: {e}")
             return False
 
-    async def get_market_hours(self) -> Dict[str, Any]:
+    async def get_market_hours(self) -> dict[str, Any]:
         """Get market hours information."""
         try:
             if not await self._ensure_authenticated():
                 return {}
 
-            market_hours = rh.markets.get_market_hours(
-                "XNYS", datetime.now().date()
-            )
+            market_hours = rh.markets.get_market_hours("XNYS", datetime.now().date())
             return market_hours or {}
 
         except Exception as e:
@@ -435,7 +448,7 @@ class RobinhoodAdapter(QuoteAdapter):
     # EXTENDED STOCK DATA METHODS
     # ============================================================================
 
-    async def get_stock_info(self, symbol: str) -> Dict[str, Any]:
+    async def get_stock_info(self, symbol: str) -> dict[str, Any]:
         """Get detailed company information and fundamentals for a stock."""
         try:
             if not await self._ensure_authenticated():
@@ -445,9 +458,7 @@ class RobinhoodAdapter(QuoteAdapter):
             instruments_list = rh.stocks.get_instruments_by_symbols(symbol)
 
             if not fundamentals_list or not instruments_list:
-                return {
-                    "error": f"No company information found for symbol: {symbol}"
-                }
+                return {"error": f"No company information found for symbol: {symbol}"}
 
             fundamental = fundamentals_list[0]
             instrument = instruments_list[0]
@@ -455,8 +466,7 @@ class RobinhoodAdapter(QuoteAdapter):
 
             return {
                 "symbol": symbol.upper(),
-                "company_name": company_name
-                or instrument.get("simple_name", "N/A"),
+                "company_name": company_name or instrument.get("simple_name", "N/A"),
                 "sector": fundamental.get("sector", "N/A"),
                 "industry": fundamental.get("industry", "N/A"),
                 "description": fundamental.get("description", "N/A"),
@@ -473,7 +483,7 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting stock info for {symbol}: {e}")
             return {"error": str(e)}
 
-    async def get_price_history(self, symbol: str, period: str) -> Dict[str, Any]:
+    async def get_price_history(self, symbol: str, period: str) -> dict[str, Any]:
         """Get historical price data for a stock."""
         try:
             if not await self._ensure_authenticated():
@@ -494,9 +504,7 @@ class RobinhoodAdapter(QuoteAdapter):
             )
 
             if not historical_data:
-                return {
-                    "error": f"No historical data found for {symbol} over {period}"
-                }
+                return {"error": f"No historical data found for {symbol} over {period}"}
 
             price_points = [
                 {
@@ -522,7 +530,7 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting price history for {symbol}: {e}")
             return {"error": str(e)}
 
-    async def get_stock_news(self, symbol: str) -> Dict[str, Any]:
+    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
         """Get news stories for a stock."""
         try:
             if not await self._ensure_authenticated():
@@ -542,7 +550,7 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting news for {symbol}: {e}")
             return {"error": str(e)}
 
-    async def get_top_movers(self) -> Dict[str, Any]:
+    async def get_top_movers(self) -> dict[str, Any]:
         """Get top movers in the market."""
         try:
             if not await self._ensure_authenticated():
@@ -559,7 +567,7 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting top movers: {e}")
             return {"error": str(e)}
 
-    async def search_stocks(self, query: str) -> Dict[str, Any]:
+    async def search_stocks(self, query: str) -> dict[str, Any]:
         """Search for stocks by symbol or company name."""
         try:
             if not await self._ensure_authenticated():
@@ -593,16 +601,16 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error searching for stocks with query {query}: {e}")
             return {"error": str(e)}
 
-    def get_sample_data_info(self) -> Dict[str, Any]:
+    def get_sample_data_info(self) -> dict[str, Any]:
         """Get information about sample data."""
         return {"message": "RobinhoodAdapter uses live data, not sample data"}
 
-    def get_expiration_dates(self, underlying: str) -> List[date]:
+    def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
         # This would need to be implemented with actual Robinhood API calls
         return []
 
-    def get_test_scenarios(self) -> Dict[str, Any]:
+    def get_test_scenarios(self) -> dict[str, Any]:
         """Get available test scenarios."""
         return {"message": "RobinhoodAdapter uses live data, no test scenarios"}
 
@@ -611,23 +619,23 @@ class RobinhoodAdapter(QuoteAdapter):
         # No-op for live data adapter
         pass
 
-    def get_available_symbols(self) -> List[str]:
+    def get_available_symbols(self) -> list[str]:
         """Get list of available symbols."""
         # This would need to be implemented with actual Robinhood API calls
         return []
 
-    def get_performance_metrics(self) -> Dict[str, Any]:
+    def get_performance_metrics(self) -> dict[str, Any]:
         """Get performance metrics for the adapter."""
         avg_response_time = (
             self._total_request_time / self._request_count
-            if self._request_count > 0 else 0
+            if self._request_count > 0
+            else 0
         )
-        
+
         error_rate = (
-            self._error_count / self._request_count
-            if self._request_count > 0 else 0
+            self._error_count / self._request_count if self._request_count > 0 else 0
         )
-        
+
         return {
             "adapter_name": "robinhood",
             "request_count": self._request_count,
@@ -636,15 +644,18 @@ class RobinhoodAdapter(QuoteAdapter):
             "total_request_time": self._total_request_time,
             "avg_response_time": avg_response_time,
             "last_api_response_time": self._last_api_response_time,
-            "last_error_time": self._last_error_time.isoformat() if self._last_error_time else None,
+            "last_error_time": self._last_error_time.isoformat()
+            if self._last_error_time
+            else None,
             "last_error_message": self._last_error_message,
             "cache_hits": self._cache_hits,
             "cache_misses": self._cache_misses,
             "cache_hit_rate": (
                 self._cache_hits / (self._cache_hits + self._cache_misses)
-                if (self._cache_hits + self._cache_misses) > 0 else 0
+                if (self._cache_hits + self._cache_misses) > 0
+                else 0
             ),
-            "auth_metrics": self.session_manager.get_auth_metrics()
+            "auth_metrics": self.session_manager.get_auth_metrics(),
         }
 
     def reset_metrics(self) -> None:

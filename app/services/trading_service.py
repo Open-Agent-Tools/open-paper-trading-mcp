@@ -2,7 +2,6 @@ from datetime import date, datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -26,8 +25,14 @@ from app.schemas.orders import (
     OrderType,
 )
 
-# Database imports removed - using async patterns only
+# Import schema converters
+from app.utils.schema_converters import (
+    AccountConverter,
+    OrderConverter,
+    PositionConverter,
+)
 
+# Database imports removed - using async patterns only
 from ..adapters.base import QuoteAdapter
 from ..adapters.test_data import TestDataQuoteAdapter
 from .greeks import calculate_option_greeks
@@ -49,22 +54,27 @@ class TradingService:
             # Use adapter factory to create quote adapter based on configuration
             from app.adapters.config import get_adapter_factory
             from app.core.config import settings
-            
+
             factory = get_adapter_factory()
             quote_adapter = factory.create_adapter(settings.QUOTE_ADAPTER_TYPE)
-            
+
             if quote_adapter is None:
                 # Fall back to database test data adapter
                 quote_adapter = factory.create_adapter("test_data_db")
-                
+
                 if quote_adapter is None:
                     # Final fallback to CSV test data adapter
                     quote_adapter = TestDataQuoteAdapter()
-        
+
         self.quote_adapter = quote_adapter
         self.order_execution = OrderExecutionEngine()
         self.account_validation = AccountValidator()
         self.strategy_recognition = StrategyRecognitionService()
+
+        # Initialize schema converters
+        self.account_converter = AccountConverter(self)
+        self.order_converter = OrderConverter()
+        self.position_converter = PositionConverter(self)
 
         # Account configuration
         self.account_owner = account_owner
@@ -79,6 +89,7 @@ class TradingService:
     async def _get_async_db_session(self) -> AsyncSession:
         """Get an async database session."""
         from app.storage.database import get_async_session
+
         async_generator = get_async_session()
         session = await async_generator.__anext__()
         return session
@@ -86,12 +97,13 @@ class TradingService:
     async def _ensure_account_exists(self) -> None:
         """Ensure the account exists in the database."""
         from sqlalchemy import select
+
         db = await self._get_async_db_session()
         try:
             stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
-            
+
             if not account:
                 account = DBAccount(
                     owner=self.account_owner,
@@ -125,10 +137,10 @@ class TradingService:
     async def _get_account(self) -> DBAccount:
         """Get the current account from database."""
         from sqlalchemy import select
-        
+
         # Ensure account exists first
         await self._ensure_account_exists()
-        
+
         db = await self._get_async_db_session()
         try:
             stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
@@ -152,20 +164,20 @@ class TradingService:
             asset = asset_factory(symbol)
             if asset is None:
                 raise NotFoundError(f"Invalid symbol: {symbol}")
-            
+
             # Use the quote adapter to get real market data
             quote = await self.quote_adapter.get_quote(asset)
             if quote is None:
                 raise NotFoundError(f"Symbol {symbol} not found")
-            
+
             # Convert to StockQuote format for backward compatibility
             return StockQuote(
                 symbol=symbol.upper(),
                 price=quote.price or 0.0,
                 change=0.0,  # Not available in Quote format
                 change_percent=0.0,  # Not available in Quote format
-                volume=getattr(quote, 'volume', 0),
-                last_updated=quote.quote_date
+                volume=getattr(quote, "volume", 0),
+                last_updated=quote.quote_date,
             )
         except Exception as e:
             # If adapter fails, raise a not found error
@@ -194,62 +206,43 @@ class TradingService:
             db.add(db_order)
             await db.commit()
             await db.refresh(db_order)
-            
-            # Return schema model
-            return Order(
-                id=db_order.id,
-                symbol=db_order.symbol,
-                order_type=db_order.order_type,
-                quantity=db_order.quantity,
-                price=db_order.price,
-                condition=OrderCondition.MARKET,  # Default condition since not stored in DB
-                status=db_order.status,
-                created_at=db_order.created_at if db_order.created_at else None,  # type: ignore
-                filled_at=db_order.filled_at if db_order.filled_at else None,  # type: ignore
-                net_price=db_order.price,
-            )
+
+            # Use converter to convert to schema
+            return await self.order_converter.to_schema(db_order)
         finally:
             await db.close()
 
     async def get_orders(self) -> list[Order]:
         """Get all orders."""
         from sqlalchemy import select
+
         db = await self._get_async_db_session()
         try:
             account = await self._get_account()
-            
+
             stmt = select(DBOrder).where(DBOrder.account_id == account.id)
             result = await db.execute(stmt)
             db_orders = result.scalars().all()
 
-            return [
-                Order(
-                    id=db_order.id,
-                    symbol=db_order.symbol,
-                    order_type=db_order.order_type,
-                    quantity=db_order.quantity,
-                    price=db_order.price,
-                    condition=OrderCondition.MARKET,  # Default condition since not stored in DB
-                    status=db_order.status,
-                    created_at=db_order.created_at,  # type: ignore
-                    filled_at=db_order.filled_at,  # type: ignore
-                    net_price=db_order.price,
-                )
-                for db_order in db_orders
-            ]
+            # Use converter for all orders
+            orders = []
+            for db_order in db_orders:
+                order = await self.order_converter.to_schema(db_order)
+                orders.append(order)
+            return orders
         finally:
             await db.close()
 
     async def get_order(self, order_id: str) -> Order:
         """Get a specific order by ID."""
         from sqlalchemy import select
+
         db = await self._get_async_db_session()
         try:
             account = await self._get_account()
 
             stmt = select(DBOrder).where(
-                DBOrder.id == order_id,
-                DBOrder.account_id == account.id
+                DBOrder.id == order_id, DBOrder.account_id == account.id
             )
             result = await db.execute(stmt)
             db_order = result.scalar_one_or_none()
@@ -257,31 +250,21 @@ class TradingService:
             if not db_order:
                 raise NotFoundError(f"Order {order_id} not found")
 
-            return Order(
-                id=db_order.id,
-                symbol=db_order.symbol,
-                order_type=db_order.order_type,
-                quantity=db_order.quantity,
-                price=db_order.price,
-                condition=OrderCondition.MARKET,  # Default condition since not stored in DB
-                status=db_order.status,
-                created_at=db_order.created_at if db_order.created_at else None,  # type: ignore
-                filled_at=db_order.filled_at if db_order.filled_at else None,  # type: ignore
-                net_price=db_order.price,
-            )
+            # Use converter to convert to schema
+            return await self.order_converter.to_schema(db_order)
         finally:
             await db.close()
 
     async def cancel_order(self, order_id: str) -> dict[str, str]:
         """Cancel a specific order."""
         from sqlalchemy import select
+
         db = await self._get_async_db_session()
         try:
             account = await self._get_account()
 
             stmt = select(DBOrder).where(
-                DBOrder.id == order_id,
-                DBOrder.account_id == account.id
+                DBOrder.id == order_id, DBOrder.account_id == account.id
             )
             result = await db.execute(stmt)
             db_order = result.scalar_one_or_none()
@@ -299,6 +282,7 @@ class TradingService:
     async def get_portfolio(self) -> Portfolio:
         """Get complete portfolio information."""
         from sqlalchemy import select
+
         db = await self._get_async_db_session()
         try:
             account = await self._get_account()
@@ -307,28 +291,19 @@ class TradingService:
             result = await db.execute(stmt)
             db_positions = result.scalars().all()
 
-            # Convert database positions to schema positions
+            # Convert database positions to schema positions using converter
             positions = []
             for db_pos in db_positions:
                 # Update current price from quote adapter
                 try:
                     quote = await self.get_quote(db_pos.symbol)
                     current_price = quote.price
-                    unrealized_pnl = (
-                        current_price - db_pos.avg_price
-                    ) * db_pos.quantity
 
-                    # Don't update database - calculate on the fly
-                    positions.append(
-                        Position(
-                            symbol=db_pos.symbol,
-                            quantity=db_pos.quantity,
-                            avg_price=db_pos.avg_price,
-                            current_price=current_price,
-                            unrealized_pnl=unrealized_pnl,
-                            realized_pnl=0.0,  # Not stored in database currently
-                        )
+                    # Use position converter with current price
+                    position = await self.position_converter.to_schema(
+                        db_pos, current_price
                     )
+                    positions.append(position)
                 except NotFoundError:
                     # Skip positions with no quote data
                     continue
@@ -605,7 +580,7 @@ class TradingService:
         """Analyze portfolio for trading strategies."""
         # Get current positions from database
         positions = await self.get_positions()
-        
+
         # Convert to enhanced Position objects
         enhanced_positions = []
         for pos in positions:
@@ -628,7 +603,7 @@ class TradingService:
         """Calculate current portfolio margin requirement."""
         # Get current positions from database
         positions = await self.get_positions()
-        
+
         # Convert to enhanced Position objects
         enhanced_positions = []
         for pos in positions:
@@ -687,13 +662,13 @@ class TradingService:
             filled_at=datetime.now(),
             net_price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
         )
-        
+
         # Persist to database using the same pattern as create_order
         db = await self._get_async_db_session()
         try:
             # Query for the account ID instead of using account_owner directly
             account = await self._get_account()
-            
+
             db_order = DBOrder(
                 id=order.id,
                 symbol=order.symbol,
@@ -711,7 +686,7 @@ class TradingService:
             await db.refresh(db_order)
         finally:
             await db.close()
-        
+
         return order
 
     def find_tradable_options(
@@ -1432,7 +1407,6 @@ class TradingService:
 # Initialize adapter based on configuration
 def _get_quote_adapter() -> QuoteAdapter:
     """Get the appropriate quote adapter based on environment."""
-    import os
 
     # Use Robinhood adapter if configured for live data
     use_live_data = os.getenv("USE_LIVE_DATA", "False").lower() == "true"
@@ -1451,8 +1425,9 @@ def _get_quote_adapter() -> QuoteAdapter:
 
 
 # Global service instance - will be created lazily to avoid sync database calls during import
-import os
+
 trading_service = None
+
 
 def get_trading_service() -> TradingService:
     """Get or create the global trading service instance."""

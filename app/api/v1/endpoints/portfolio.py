@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.models.trading import Position, Portfolio, PortfolioSummary
-from app.services.trading_service import TradingService, trading_service
 from app.core.exceptions import NotFoundError
+from app.models.trading import Portfolio, PortfolioSummary, Position
+from app.services.trading_service import TradingService, trading_service
 
 router = APIRouter()
 
@@ -23,7 +22,7 @@ async def get_portfolio_summary(service: TradingService = Depends(get_trading_se
     return await service.get_portfolio_summary()
 
 
-@router.get("/positions", response_model=List[Position])
+@router.get("/positions", response_model=list[Position])
 async def get_positions(service: TradingService = Depends(get_trading_service)):
     return await service.get_positions()
 
@@ -58,7 +57,7 @@ async def get_portfolio_greeks(service: TradingService = Depends(get_trading_ser
         return await service.get_portfolio_greeks()
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error calculating portfolio Greeks: {str(e)}"
+            status_code=500, detail=f"Error calculating portfolio Greeks: {e!s}"
         )
 
 
@@ -71,5 +70,5 @@ async def get_portfolio_strategies(
         return await service.get_portfolio_strategies()
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error analyzing strategies: {str(e)}"
+            status_code=500, detail=f"Error analyzing strategies: {e!s}"
         )

@@ -5,9 +5,10 @@ Demonstrates how to use both REST API and MCP tools for options trading.
 
 import asyncio
 import json
-import aiohttp
-from typing import Dict, Any
 from datetime import date, timedelta
+from typing import Any
+
+import aiohttp
 
 
 class RestApiExamples:
@@ -25,7 +26,7 @@ class RestApiExamples:
         if self.session:
             await self.session.close()
 
-    async def create_account_example(self) -> Dict[str, Any]:
+    async def create_account_example(self) -> dict[str, Any]:
         """Example: Create a new trading account."""
         print("=== CREATE ACCOUNT EXAMPLE ===")
 
@@ -44,7 +45,7 @@ class RestApiExamples:
         print(f"Created account: {result}")
         return result
 
-    async def get_account_info_example(self, account_id: str) -> Dict[str, Any]:
+    async def get_account_info_example(self, account_id: str) -> dict[str, Any]:
         """Example: Get account information and balances."""
         print(f"=== GET ACCOUNT INFO: {account_id} ===")
 
@@ -61,7 +62,7 @@ class RestApiExamples:
 
         return result
 
-    async def place_simple_order_example(self, account_id: str) -> Dict[str, Any]:
+    async def place_simple_order_example(self, account_id: str) -> dict[str, Any]:
         """Example: Place a simple stock buy order."""
         print("=== PLACE SIMPLE STOCK ORDER ===")
 
@@ -83,7 +84,7 @@ class RestApiExamples:
         print(f"Order placed: {result}")
         return result
 
-    async def place_multi_leg_order_example(self, account_id: str) -> Dict[str, Any]:
+    async def place_multi_leg_order_example(self, account_id: str) -> dict[str, Any]:
         """Example: Place a multi-leg options order (bull call spread)."""
         print("=== PLACE MULTI-LEG OPTIONS ORDER ===")
 
@@ -121,7 +122,7 @@ class RestApiExamples:
         print(f"Multi-leg order placed: {result}")
         return result
 
-    async def get_options_chain_example(self, symbol: str) -> Dict[str, Any]:
+    async def get_options_chain_example(self, symbol: str) -> dict[str, Any]:
         """Example: Get options chain for a symbol."""
         print(f"=== GET OPTIONS CHAIN: {symbol} ===")
 
@@ -155,7 +156,7 @@ class RestApiExamples:
 
         return {}
 
-    async def get_portfolio_analysis_example(self, account_id: str) -> Dict[str, Any]:
+    async def get_portfolio_analysis_example(self, account_id: str) -> dict[str, Any]:
         """Example: Get portfolio analysis and strategy breakdown."""
         print(f"=== PORTFOLIO ANALYSIS: {account_id} ===")
 
@@ -185,7 +186,7 @@ class RestApiExamples:
 
         return {"positions": positions, "strategies": strategies}
 
-    async def calculate_greeks_example(self, option_symbol: str) -> Dict[str, Any]:
+    async def calculate_greeks_example(self, option_symbol: str) -> dict[str, Any]:
         """Example: Calculate option Greeks."""
         print(f"=== CALCULATE GREEKS: {option_symbol} ===")
 
@@ -214,7 +215,7 @@ class RestApiExamples:
 class McpToolsExamples:
     """Examples for using MCP tools."""
 
-    async def create_account_with_mcp(self) -> Dict[str, Any]:
+    async def create_account_with_mcp(self) -> dict[str, Any]:
         """Example: Create account using MCP tools."""
         print("=== MCP: CREATE ACCOUNT ===")
 
@@ -234,7 +235,7 @@ class McpToolsExamples:
 
         return tool_call
 
-    async def place_order_with_mcp(self) -> Dict[str, Any]:
+    async def place_order_with_mcp(self) -> dict[str, Any]:
         """Example: Place order using MCP tools."""
         print("=== MCP: PLACE ORDER ===")
 
@@ -255,7 +256,7 @@ class McpToolsExamples:
 
         return tool_call
 
-    async def create_multi_leg_order_with_mcp(self) -> Dict[str, Any]:
+    async def create_multi_leg_order_with_mcp(self) -> dict[str, Any]:
         """Example: Create multi-leg order using MCP tools."""
         print("=== MCP: CREATE MULTI-LEG ORDER ===")
 
@@ -302,7 +303,7 @@ class McpToolsExamples:
 
         return tool_call
 
-    async def get_strategy_analysis_with_mcp(self) -> Dict[str, Any]:
+    async def get_strategy_analysis_with_mcp(self) -> dict[str, Any]:
         """Example: Get strategy analysis using MCP tools."""
         print("=== MCP: STRATEGY ANALYSIS ===")
 
@@ -322,7 +323,7 @@ class McpToolsExamples:
 
         return tool_call
 
-    async def simulate_expiration_with_mcp(self) -> Dict[str, Any]:
+    async def simulate_expiration_with_mcp(self) -> dict[str, Any]:
         """Example: Simulate option expiration using MCP tools."""
         print("=== MCP: SIMULATE OPTION EXPIRATION ===")
 

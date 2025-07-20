@@ -9,19 +9,19 @@ Checks all Python files for import issues including:
 """
 
 import ast
-import sys
-from pathlib import Path
-from typing import Dict, List, Any
 import importlib.util
 import re
+import sys
+from pathlib import Path
+from typing import Any
 
 
 class ImportChecker:
     def __init__(self, project_root: Path):
         self.project_root = project_root
         self.app_root = project_root / "app"
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
         self.checked_files = 0
         self.total_imports = 0
 
@@ -50,7 +50,7 @@ class ImportChecker:
         relative_path = file_path.relative_to(self.project_root)
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
         except Exception as e:
             self.errors.append(f"{relative_path}: Failed to read file - {e}")
@@ -122,7 +122,7 @@ class ImportChecker:
             return ""
 
     def check_import(
-        self, imp: Dict[str, Any], file_path: Path, relative_path: Path
+        self, imp: dict[str, Any], file_path: Path, relative_path: Path
     ) -> None:
         """Check a single import statement."""
         line_info = f"{relative_path}:{imp['line']}"
@@ -230,7 +230,7 @@ class ImportChecker:
     def _name_in_file(self, file_path: Path, name: str) -> bool:
         """Check if a name is defined in a file."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             # Check for direct definitions

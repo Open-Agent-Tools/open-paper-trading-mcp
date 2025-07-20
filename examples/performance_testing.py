@@ -3,25 +3,27 @@ Performance Testing Examples - Phase 5.4 implementation.
 Demonstrates performance testing for Greeks calculations, database operations, and API endpoints.
 """
 
-import time
 import statistics
-from typing import Dict, Any, Callable
-from decimal import Decimal
-from datetime import datetime
-import psutil
+import time
 import tracemalloc
+from collections.abc import Callable
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
 
+import psutil
+
+from app.models.trading import (
+    Order,
+    OrderCondition,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    Position,
+)
 from app.services.greeks import calculate_option_greeks
 from app.services.order_execution import OrderExecutionService
 from app.services.strategies.recognition import StrategyRecognitionService
-from app.models.trading import (
-    Order,
-    Position,
-    OrderType,
-    OrderSide,
-    OrderCondition,
-    OrderStatus,
-)
 
 
 class PerformanceTester:
@@ -30,7 +32,7 @@ class PerformanceTester:
     def __init__(self):
         self.results = {}
 
-    def time_function(self, func: Callable, *args, **kwargs) -> Dict[str, Any]:
+    def time_function(self, func: Callable, *args, **kwargs) -> dict[str, Any]:
         """Time a function execution with memory tracking."""
         tracemalloc.start()
         start_time = time.perf_counter()
@@ -62,7 +64,7 @@ class PerformanceTester:
 
     async def time_async_function(
         self, func: Callable, *args, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Time an async function execution with memory tracking."""
         tracemalloc.start()
         start_time = time.perf_counter()
@@ -94,7 +96,7 @@ class PerformanceTester:
 
     def run_benchmark(
         self, name: str, func: Callable, iterations: int = 100, *args, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a benchmark with multiple iterations."""
         print(f"\nRunning benchmark: {name} ({iterations} iterations)")
 
@@ -149,7 +151,7 @@ class PerformanceTester:
         self.print_benchmark_result(name, benchmark_result)
         return benchmark_result
 
-    def print_benchmark_result(self, name: str, result: Dict[str, Any]):
+    def print_benchmark_result(self, name: str, result: dict[str, Any]):
         """Print formatted benchmark results."""
         print(f"\n{name} Results:")
         print(f"  Success Rate: {result['success_rate']:.1%}")

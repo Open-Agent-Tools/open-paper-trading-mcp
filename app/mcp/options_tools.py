@@ -2,8 +2,10 @@
 MCP tools for options data operations.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
+
 from app.services.trading_service import trading_service
 
 
@@ -15,17 +17,17 @@ class GetOptionsChainsArgs(BaseModel):
 
 class FindTradableOptionsArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
-    expiration_date: Optional[str] = Field(
+    expiration_date: str | None = Field(
         None, description="Expiration date in YYYY-MM-DD format"
     )
-    option_type: Optional[str] = Field(None, description="Option type: 'call' or 'put'")
+    option_type: str | None = Field(None, description="Option type: 'call' or 'put'")
 
 
 class GetOptionMarketDataArgs(BaseModel):
     option_id: str = Field(..., description="Unique option contract ID")
 
 
-async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
+async def get_options_chains(args: GetOptionsChainsArgs) -> dict[str, Any]:
     """
     Get complete option chains for a stock symbol.
     """
@@ -39,7 +41,7 @@ async def get_options_chains(args: GetOptionsChainsArgs) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]:
+async def find_tradable_options(args: FindTradableOptionsArgs) -> dict[str, Any]:
     """
     Find tradable options for a symbol with optional filtering.
     """
@@ -52,7 +54,7 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> Dict[str, Any]
         return {"error": str(e)}
 
 
-async def get_option_market_data(args: GetOptionMarketDataArgs) -> Dict[str, Any]:
+async def get_option_market_data(args: GetOptionMarketDataArgs) -> dict[str, Any]:
     """
     Get market data for a specific option contract.
     """

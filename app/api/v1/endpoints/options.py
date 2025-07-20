@@ -7,18 +7,18 @@ Provides comprehensive options trading functionality including:
 - Strategy analysis
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.core.exceptions import NotFoundError, ValidationError
+from app.models.quotes import GreeksResponse, OptionsChainResponse
 from app.schemas.orders import (
     Order,
 )
-from app.models.quotes import OptionsChainResponse, GreeksResponse
 from app.services.trading_service import TradingService, trading_service
-from app.core.exceptions import NotFoundError, ValidationError
-
 
 router = APIRouter()
 
@@ -55,18 +55,18 @@ def get_trading_service() -> TradingService:
 class MultiLegOrderRequest(BaseModel):
     """Request model for multi-leg orders."""
 
-    legs: List[Dict[str, Any]] = Field(..., description="Order legs")
+    legs: list[dict[str, Any]] = Field(..., description="Order legs")
     order_type: str = Field("limit", description="Order type")
-    net_price: Optional[float] = Field(None, description="Net price for order")
+    net_price: float | None = Field(None, description="Net price for order")
 
 
 class GreeksRequest(BaseModel):
     """Request model for Greeks calculation."""
 
-    underlying_price: Optional[float] = Field(
+    underlying_price: float | None = Field(
         None, description="Override underlying price"
     )
-    volatility: Optional[float] = Field(None, description="Override implied volatility")
+    volatility: float | None = Field(None, description="Override implied volatility")
 
 
 class StrategyAnalysisRequest(BaseModel):
@@ -85,7 +85,7 @@ class StrategyAnalysisRequest(BaseModel):
 class ExpirationSimulationRequest(BaseModel):
     """Request model for expiration simulation."""
 
-    processing_date: Optional[str] = Field(
+    processing_date: str | None = Field(
         None, description="Processing date (YYYY-MM-DD)"
     )
     dry_run: bool = Field(True, description="Dry run mode")
@@ -96,11 +96,11 @@ class ExpirationSimulationRequest(BaseModel):
 @router.get("/{symbol}/chain", response_model=OptionsChainResponse)
 async def get_options_chain(
     symbol: str,
-    expiration_date: Optional[str] = Query(
+    expiration_date: str | None = Query(
         None, description="Expiration date filter (YYYY-MM-DD)"
     ),
-    min_strike: Optional[float] = Query(None, description="Minimum strike price"),
-    max_strike: Optional[float] = Query(None, description="Maximum strike price"),
+    min_strike: float | None = Query(None, description="Minimum strike price"),
+    max_strike: float | None = Query(None, description="Maximum strike price"),
     include_greeks: bool = Query(True, description="Include Greeks in response"),
     service: TradingService = Depends(get_trading_service),
 ) -> OptionsChainResponse:
@@ -123,19 +123,19 @@ async def get_options_chain(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {e!s}")
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error retrieving options chain: {str(e)}"
+            status_code=500, detail=f"Error retrieving options chain: {e!s}"
         )
 
 
-@router.get("/{symbol}/expirations", response_model=Dict[str, Any])
+@router.get("/{symbol}/expirations", response_model=dict[str, Any])
 async def get_expiration_dates(
     symbol: str, service: TradingService = Depends(get_trading_service)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get available expiration dates for an underlying symbol.
 
@@ -156,7 +156,7 @@ async def get_expiration_dates(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error retrieving expiration dates: {str(e)}"
+            status_code=500, detail=f"Error retrieving expiration dates: {e!s}"
         )
 
 
@@ -181,7 +181,7 @@ async def create_multi_leg_order(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error creating multi-leg order: {str(e)}"
+            status_code=500, detail=f"Error creating multi-leg order: {e!s}"
         )
 
 
@@ -189,12 +189,10 @@ async def create_multi_leg_order(
 @router.get("/{option_symbol}/greeks", response_model=GreeksResponse)
 async def calculate_option_greeks(
     option_symbol: str,
-    underlying_price: Optional[float] = Query(
+    underlying_price: float | None = Query(
         None, description="Override underlying price"
     ),
-    volatility: Optional[float] = Query(
-        None, description="Override implied volatility"
-    ),
+    volatility: float | None = Query(None, description="Override implied volatility"),
     service: TradingService = Depends(get_trading_service),
 ) -> GreeksResponse:
     """
@@ -211,17 +209,15 @@ async def calculate_option_greeks(
     except (NotFoundError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error calculating Greeks: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error calculating Greeks: {e!s}")
 
 
 # Strategy Analysis Endpoints
-@router.post("/strategies/analyze", response_model=Dict[str, Any])
+@router.post("/strategies/analyze", response_model=dict[str, Any])
 async def analyze_portfolio_strategies(
     request: StrategyAnalysisRequest,
     service: TradingService = Depends(get_trading_service),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Perform comprehensive strategy analysis for current portfolio.
 
@@ -238,22 +234,22 @@ async def analyze_portfolio_strategies(
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error in strategy analysis: {str(e)}"
+            status_code=500, detail=f"Error in strategy analysis: {e!s}"
         )
 
 
 # Unified Options Data Endpoints
-@router.get("/{symbol}/search", response_model=Dict[str, Any])
+@router.get("/{symbol}/search", response_model=dict[str, Any])
 async def find_tradable_options_endpoint(
     symbol: str,
-    expiration_date: Optional[str] = Query(
+    expiration_date: str | None = Query(
         None, description="Expiration date filter (YYYY-MM-DD)"
     ),
-    option_type: Optional[str] = Query(
+    option_type: str | None = Query(
         None, description="Option type filter: 'call' or 'put'"
     ),
     service: TradingService = Depends(get_trading_service),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find tradable options for a symbol with optional filtering.
 
@@ -265,14 +261,14 @@ async def find_tradable_options_endpoint(
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error finding tradable options: {str(e)}"
+            status_code=500, detail=f"Error finding tradable options: {e!s}"
         )
 
 
-@router.get("/market-data/{option_id}", response_model=Dict[str, Any])
+@router.get("/market-data/{option_id}", response_model=dict[str, Any])
 async def get_option_market_data_endpoint(
     option_id: str, service: TradingService = Depends(get_trading_service)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get comprehensive market data for a specific option contract.
 
@@ -288,5 +284,5 @@ async def get_option_market_data_endpoint(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error getting option market data: {str(e)}"
+            status_code=500, detail=f"Error getting option market data: {e!s}"
         )

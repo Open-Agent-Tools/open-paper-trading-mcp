@@ -5,21 +5,20 @@ This module provides sophisticated strategy analysis including P&L calculation,
 Greeks aggregation, complex strategy detection, and optimization recommendations.
 """
 
-from typing import List, Dict, Any, Optional, Union
 from datetime import date
+from typing import Any
 
-from ...models.assets import Option, Call, Put
+from ...models.assets import Call, Option, Put
+from ...models.quotes import OptionQuote, Quote
 from ...models.trading import Position
-from ...models.quotes import Quote, OptionQuote
-
 from .models import (
-    BasicStrategy,
     AssetStrategy,
-    SpreadStrategy,
-    CoveredStrategy,
+    BasicStrategy,
     ComplexStrategy,
-    StrategyPnL,
+    CoveredStrategy,
+    SpreadStrategy,
     StrategyGreeks,
+    StrategyPnL,
 )
 from .recognition import StrategyRecognitionService
 
@@ -32,10 +31,10 @@ class AdvancedStrategyAnalyzer:
 
     def analyze_strategy_pnl(
         self,
-        positions: List[Position],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        entry_date: Optional[date] = None,
-    ) -> List[StrategyPnL]:
+        positions: list[Position],
+        current_quotes: dict[str, Quote | OptionQuote],
+        entry_date: date | None = None,
+    ) -> list[StrategyPnL]:
         """
         Calculate comprehensive P&L analysis for all strategies.
 
@@ -60,8 +59,8 @@ class AdvancedStrategyAnalyzer:
 
     def aggregate_strategy_greeks(
         self,
-        positions: List[Position],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        positions: list[Position],
+        current_quotes: dict[str, Quote | OptionQuote],
     ) -> StrategyGreeks:
         """
         Aggregate Greeks across all strategy positions.
@@ -134,8 +133,8 @@ class AdvancedStrategyAnalyzer:
         return total_greeks
 
     def detect_complex_strategies(
-        self, positions: List[Position]
-    ) -> List[ComplexStrategy]:
+        self, positions: list[Position]
+    ) -> list[ComplexStrategy]:
         """
         Detect complex multi-leg strategies.
 
@@ -148,7 +147,7 @@ class AdvancedStrategyAnalyzer:
         complex_strategies = []
 
         # Group positions by underlying
-        by_underlying: Dict[str, List[Position]] = {}
+        by_underlying: dict[str, list[Position]] = {}
         for position in positions:
             if isinstance(position.asset, Option):
                 underlying = position.asset.underlying.symbol
@@ -167,9 +166,9 @@ class AdvancedStrategyAnalyzer:
 
     def generate_optimization_recommendations(
         self,
-        positions: List[Position],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-    ) -> List[Dict[str, Any]]:
+        positions: list[Position],
+        current_quotes: dict[str, Quote | OptionQuote],
+    ) -> list[dict[str, Any]]:
         """
         Generate strategy optimization recommendations.
 
@@ -231,9 +230,9 @@ class AdvancedStrategyAnalyzer:
     def _calculate_strategy_pnl(
         self,
         strategy: BasicStrategy,
-        all_positions: List[Position],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        entry_date: Optional[date],
+        all_positions: list[Position],
+        current_quotes: dict[str, Quote | OptionQuote],
+        entry_date: date | None,
     ) -> StrategyPnL:
         """Calculate P&L for a specific strategy."""
 
@@ -292,8 +291,8 @@ class AdvancedStrategyAnalyzer:
         )
 
     def _get_strategy_positions(
-        self, strategy: BasicStrategy, all_positions: List[Position]
-    ) -> List[Position]:
+        self, strategy: BasicStrategy, all_positions: list[Position]
+    ) -> list[Position]:
         """Get positions that belong to a specific strategy."""
         # Simplified matching - in a real implementation, this would be more sophisticated
         strategy_positions = []
@@ -325,8 +324,8 @@ class AdvancedStrategyAnalyzer:
             return strategy.strategy_type.title()
 
     def _detect_complex_for_underlying(
-        self, underlying_symbol: str, positions: List[Position]
-    ) -> List[ComplexStrategy]:
+        self, underlying_symbol: str, positions: list[Position]
+    ) -> list[ComplexStrategy]:
         """Detect complex strategies for a specific underlying."""
         complex_strategies = []
 
@@ -355,38 +354,38 @@ class AdvancedStrategyAnalyzer:
         return complex_strategies
 
     def _detect_iron_condors(
-        self, calls: List[Position], puts: List[Position], underlying_symbol: str
-    ) -> List[ComplexStrategy]:
+        self, calls: list[Position], puts: list[Position], underlying_symbol: str
+    ) -> list[ComplexStrategy]:
         """Detect iron condor strategies."""
         # Simplified detection - in a real implementation this would be more sophisticated
         return []
 
     def _detect_straddles_strangles(
-        self, calls: List[Position], puts: List[Position], underlying_symbol: str
-    ) -> List[ComplexStrategy]:
+        self, calls: list[Position], puts: list[Position], underlying_symbol: str
+    ) -> list[ComplexStrategy]:
         """Detect straddle and strangle strategies."""
         # Simplified detection - in a real implementation this would be more sophisticated
         return []
 
     def _detect_butterflies(
-        self, calls: List[Position], puts: List[Position], underlying_symbol: str
-    ) -> List[ComplexStrategy]:
+        self, calls: list[Position], puts: list[Position], underlying_symbol: str
+    ) -> list[ComplexStrategy]:
         """Detect butterfly strategies."""
         # Simplified detection - in a real implementation this would be more sophisticated
         return []
 
     def _detect_condors(
-        self, calls: List[Position], puts: List[Position], underlying_symbol: str
-    ) -> List[ComplexStrategy]:
+        self, calls: list[Position], puts: list[Position], underlying_symbol: str
+    ) -> list[ComplexStrategy]:
         """Detect condor strategies."""
         # Simplified detection - in a real implementation this would be more sophisticated
         return []
 
     def _generate_strategy_specific_recommendations(
         self,
-        positions: List[Position],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-    ) -> List[Dict[str, Any]]:
+        positions: list[Position],
+        current_quotes: dict[str, Quote | OptionQuote],
+    ) -> list[dict[str, Any]]:
         """Generate strategy-specific optimization recommendations."""
         recommendations = []
 
@@ -412,32 +411,32 @@ class AdvancedStrategyAnalyzer:
 
 # Convenience functions for Phase 3 features
 def analyze_advanced_strategy_pnl(
-    positions: List[Position],
-    current_quotes: Dict[str, Union[Quote, OptionQuote]],
-    entry_date: Optional[date] = None,
-) -> List[StrategyPnL]:
+    positions: list[Position],
+    current_quotes: dict[str, Quote | OptionQuote],
+    entry_date: date | None = None,
+) -> list[StrategyPnL]:
     """Analyze comprehensive P&L for all strategies."""
     analyzer = AdvancedStrategyAnalyzer()
     return analyzer.analyze_strategy_pnl(positions, current_quotes, entry_date)
 
 
 def aggregate_portfolio_greeks(
-    positions: List[Position], current_quotes: Dict[str, Union[Quote, OptionQuote]]
+    positions: list[Position], current_quotes: dict[str, Quote | OptionQuote]
 ) -> StrategyGreeks:
     """Aggregate Greeks across entire portfolio."""
     analyzer = AdvancedStrategyAnalyzer()
     return analyzer.aggregate_strategy_greeks(positions, current_quotes)
 
 
-def detect_complex_strategies(positions: List[Position]) -> List[ComplexStrategy]:
+def detect_complex_strategies(positions: list[Position]) -> list[ComplexStrategy]:
     """Detect complex multi-leg strategies in portfolio."""
     analyzer = AdvancedStrategyAnalyzer()
     return analyzer.detect_complex_strategies(positions)
 
 
 def get_portfolio_optimization_recommendations(
-    positions: List[Position], current_quotes: Dict[str, Union[Quote, OptionQuote]]
-) -> List[Dict[str, Any]]:
+    positions: list[Position], current_quotes: dict[str, Quote | OptionQuote]
+) -> list[dict[str, Any]]:
     """Get optimization recommendations for portfolio."""
     analyzer = AdvancedStrategyAnalyzer()
     return analyzer.generate_optimization_recommendations(positions, current_quotes)

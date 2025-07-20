@@ -2,17 +2,18 @@
 Adapter configuration management system.
 """
 
-import os
-import json
 import asyncio
-from typing import Dict, List, Optional, Any, Type, Union
+import json
+import os
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from dataclasses import dataclass, asdict, field
+from typing import Any
 
-from .base import QuoteAdapter, AdapterConfig, AdapterRegistry
-from .test_data import TestDataQuoteAdapter
-from .cache import CachedQuoteAdapter, QuoteCache
 from app.core.logging import logger
+
+from .base import AdapterConfig, AdapterRegistry, QuoteAdapter
+from .cache import CachedQuoteAdapter, QuoteCache
+from .test_data import TestDataQuoteAdapter
 
 
 @dataclass
@@ -20,7 +21,7 @@ class AdapterFactoryConfig:
     """Configuration for adapter factory."""
 
     # Adapter type mappings
-    adapter_types: Dict[str, str] = field(
+    adapter_types: dict[str, str] = field(
         default_factory=lambda: {
             "test_data": "app.adapters.test_data.TestDataQuoteAdapter",
             "test_data_db": "app.adapters.test_data_db.TestDataDBQuoteAdapter",
@@ -32,7 +33,7 @@ class AdapterFactoryConfig:
     )
 
     # Default adapter configurations
-    default_configs: Dict[str, Dict[str, Any]] = field(
+    default_configs: dict[str, dict[str, Any]] = field(
         default_factory=lambda: {
             "test_data": {
                 "enabled": True,
@@ -80,7 +81,7 @@ class AdapterFactoryConfig:
     )
 
     # Global caching settings
-    cache_config: Dict[str, Any] = field(
+    cache_config: dict[str, Any] = field(
         default_factory=lambda: {
             "enabled": True,
             "default_ttl": 60.0,
@@ -90,19 +91,27 @@ class AdapterFactoryConfig:
     )
 
     # Cache warming configuration
-    cache_warming_config: Dict[str, Any] = field(
+    cache_warming_config: dict[str, Any] = field(
         default_factory=lambda: {
             "enabled": True,
             "warm_on_startup": True,
             "warm_interval": 300.0,  # 5 minutes
             "popular_symbols": [
-                "AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", 
-                "NVDA", "META", "NFLX", "SPY", "QQQ"
+                "AAPL",
+                "GOOGL",
+                "MSFT",
+                "TSLA",
+                "AMZN",
+                "NVDA",
+                "META",
+                "NFLX",
+                "SPY",
+                "QQQ",
             ],
             "max_concurrent_requests": 5,
             "timeout_per_request": 10.0,
             "retry_failed_symbols": True,
-            "log_cache_stats": True
+            "log_cache_stats": True,
         }
     )
 
@@ -112,7 +121,7 @@ class AdapterFactory:
     Factory for creating and configuring quote adapters.
     """
 
-    def __init__(self, config: Optional[AdapterFactoryConfig] = None):
+    def __init__(self, config: AdapterFactoryConfig | None = None):
         """
         Initialize adapter factory.
 
@@ -120,13 +129,15 @@ class AdapterFactory:
             config: Factory configuration, creates default if None
         """
         self.config = config or AdapterFactoryConfig()
-        self._adapter_cache: Dict[str, Type[QuoteAdapter]] = {}
-        self._cache_warming_task: Optional[asyncio.Task] = None
-        self._cache_warming_enabled = self.config.cache_warming_config.get("enabled", False)
+        self._adapter_cache: dict[str, type[QuoteAdapter]] = {}
+        self._cache_warming_task: asyncio.Task | None = None
+        self._cache_warming_enabled = self.config.cache_warming_config.get(
+            "enabled", False
+        )
 
     def create_adapter(
-        self, adapter_type: str, adapter_config: Optional[AdapterConfig] = None
-    ) -> Optional[QuoteAdapter]:
+        self, adapter_type: str, adapter_config: AdapterConfig | None = None
+    ) -> QuoteAdapter | None:
         """
         Create an adapter instance.
 
@@ -167,7 +178,7 @@ class AdapterFactory:
             elif adapter_type == "robinhood":
                 # RobinhoodAdapter has its own config class
                 from .robinhood import RobinhoodConfig
-                
+
                 robinhood_config = RobinhoodConfig(
                     name="robinhood",
                     priority=expanded_config.priority,
@@ -187,9 +198,9 @@ class AdapterFactory:
     def create_cached_adapter(
         self,
         adapter_type: str,
-        adapter_config: Optional[AdapterConfig] = None,
-        cache: Optional[QuoteCache] = None,
-    ) -> Optional[CachedQuoteAdapter]:
+        adapter_config: AdapterConfig | None = None,
+        cache: QuoteCache | None = None,
+    ) -> CachedQuoteAdapter | None:
         """
         Create a cached adapter instance.
 
@@ -215,7 +226,7 @@ class AdapterFactory:
         return CachedQuoteAdapter(base_adapter, cache)
 
     def configure_registry(
-        self, registry: AdapterRegistry, enabled_adapters: Optional[List[str]] = None
+        self, registry: AdapterRegistry, enabled_adapters: list[str] | None = None
     ) -> None:
         """
         Configure an adapter registry with default adapters.
@@ -244,7 +255,7 @@ class AdapterFactory:
                 continue
 
             try:
-                adapter: Optional[Union[QuoteAdapter, CachedQuoteAdapter]]
+                adapter: QuoteAdapter | CachedQuoteAdapter | None
                 if cache_enabled:
                     adapter = self.create_cached_adapter(
                         adapter_type, cache=shared_cache
@@ -259,7 +270,7 @@ class AdapterFactory:
             except Exception as e:
                 print(f"Failed to register adapter {adapter_type}: {e}")
 
-    def _get_adapter_class(self, adapter_type: str) -> Optional[Type[Any]]:
+    def _get_adapter_class(self, adapter_type: str) -> type[Any] | None:
         """Get adapter class by type."""
         if adapter_type in self._adapter_cache:
             return self._adapter_cache[adapter_type]
@@ -343,7 +354,7 @@ class AdapterFactory:
             config=expanded_config,
         )
 
-    def _get_available_adapters(self) -> List[str]:
+    def _get_available_adapters(self) -> list[str]:
         """Get list of available adapter types."""
         return list(self.config.adapter_types.keys())
 
@@ -355,7 +366,7 @@ class AdapterFactory:
             config_path: Path to configuration file
         """
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config_data = json.load(f)
 
             # Update configuration
@@ -387,55 +398,63 @@ class AdapterFactory:
         except Exception as e:
             print(f"Failed to save config file {config_path}: {e}")
 
-    async def warm_cache(self, adapter: QuoteAdapter, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
+    async def warm_cache(
+        self, adapter: QuoteAdapter, symbols: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Warm cache by pre-loading quotes for popular symbols.
-        
+
         Args:
             adapter: Quote adapter to use for warming
             symbols: List of symbols to warm, uses popular symbols if None
-            
+
         Returns:
             Dictionary with warming statistics
         """
         if not self._cache_warming_enabled:
             return {"enabled": False, "message": "Cache warming is disabled"}
-            
+
         symbols = symbols or self.config.cache_warming_config.get("popular_symbols", [])
-        max_concurrent = self.config.cache_warming_config.get("max_concurrent_requests", 5)
-        timeout_per_request = self.config.cache_warming_config.get("timeout_per_request", 10.0)
-        retry_failed = self.config.cache_warming_config.get("retry_failed_symbols", True)
-        
+        max_concurrent = self.config.cache_warming_config.get(
+            "max_concurrent_requests", 5
+        )
+        timeout_per_request = self.config.cache_warming_config.get(
+            "timeout_per_request", 10.0
+        )
+        retry_failed = self.config.cache_warming_config.get(
+            "retry_failed_symbols", True
+        )
+
         logger.info(f"Starting cache warming for {len(symbols)} symbols")
-        
+
         start_time = asyncio.get_event_loop().time()
         successful_symbols = []
         failed_symbols = []
-        
+
         # Process symbols in batches to avoid overwhelming the API
         semaphore = asyncio.Semaphore(max_concurrent)
-        
+
         async def warm_single_symbol(symbol: str) -> bool:
             async with semaphore:
                 try:
                     # Create stock asset for the symbol
                     from app.models.assets import Stock
+
                     asset = Stock(symbol=symbol, name=f"{symbol} Stock")
-                    
+
                     # Get quote with timeout
                     quote = await asyncio.wait_for(
-                        adapter.get_quote(asset), 
-                        timeout=timeout_per_request
+                        adapter.get_quote(asset), timeout=timeout_per_request
                     )
-                    
+
                     if quote is not None:
                         successful_symbols.append(symbol)
                         return True
                     else:
                         failed_symbols.append(symbol)
                         return False
-                        
-                except asyncio.TimeoutError:
+
+                except TimeoutError:
                     logger.warning(f"Timeout warming cache for symbol: {symbol}")
                     failed_symbols.append(symbol)
                     return False
@@ -443,20 +462,22 @@ class AdapterFactory:
                     logger.warning(f"Error warming cache for symbol {symbol}: {e}")
                     failed_symbols.append(symbol)
                     return False
-        
+
         # Start warming tasks for all symbols
         tasks = [warm_single_symbol(symbol) for symbol in symbols]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Retry failed symbols if configured
         if retry_failed and failed_symbols:
             logger.info(f"Retrying {len(failed_symbols)} failed symbols")
-            retry_tasks = [warm_single_symbol(symbol) for symbol in failed_symbols.copy()]
+            retry_tasks = [
+                warm_single_symbol(symbol) for symbol in failed_symbols.copy()
+            ]
             retry_results = await asyncio.gather(*retry_tasks, return_exceptions=True)
-        
+
         end_time = asyncio.get_event_loop().time()
         duration = end_time - start_time
-        
+
         stats = {
             "enabled": True,
             "total_symbols": len(symbols),
@@ -465,28 +486,30 @@ class AdapterFactory:
             "success_rate": len(successful_symbols) / len(symbols) if symbols else 0,
             "duration_seconds": duration,
             "successful_symbols": successful_symbols,
-            "failed_symbols": failed_symbols
+            "failed_symbols": failed_symbols,
         }
-        
+
         if self.config.cache_warming_config.get("log_cache_stats", True):
-            logger.info(f"Cache warming completed: {stats['successful']}/{stats['total_symbols']} "
-                       f"symbols ({stats['success_rate']:.1%}) in {duration:.2f}s")
-        
+            logger.info(
+                f"Cache warming completed: {stats['successful']}/{stats['total_symbols']} "
+                f"symbols ({stats['success_rate']:.1%}) in {duration:.2f}s"
+            )
+
         return stats
 
     async def start_cache_warming(self, adapter: QuoteAdapter) -> None:
         """
         Start periodic cache warming task.
-        
+
         Args:
             adapter: Quote adapter to use for warming
         """
         if not self._cache_warming_enabled:
             return
-            
+
         warm_interval = self.config.cache_warming_config.get("warm_interval", 300.0)
         warm_on_startup = self.config.cache_warming_config.get("warm_on_startup", True)
-        
+
         async def warming_loop():
             # Warm cache on startup if configured
             if warm_on_startup:
@@ -494,7 +517,7 @@ class AdapterFactory:
                     await self.warm_cache(adapter)
                 except Exception as e:
                     logger.error(f"Error during startup cache warming: {e}")
-            
+
             # Start periodic warming loop
             while True:
                 try:
@@ -506,7 +529,7 @@ class AdapterFactory:
                 except Exception as e:
                     logger.error(f"Error during periodic cache warming: {e}")
                     # Continue the loop even if warming fails
-                    
+
         # Start the warming task
         self._cache_warming_task = asyncio.create_task(warming_loop())
         logger.info(f"Started cache warming task with {warm_interval}s interval")
@@ -521,12 +544,13 @@ class AdapterFactory:
                 pass
             logger.info("Cache warming task stopped")
 
-    def get_cache_warming_status(self) -> Dict[str, Any]:
+    def get_cache_warming_status(self) -> dict[str, Any]:
         """Get current cache warming status."""
         return {
             "enabled": self._cache_warming_enabled,
-            "task_running": self._cache_warming_task is not None and not self._cache_warming_task.done(),
-            "config": self.config.cache_warming_config
+            "task_running": self._cache_warming_task is not None
+            and not self._cache_warming_task.done(),
+            "config": self.config.cache_warming_config,
         }
 
 
@@ -554,7 +578,7 @@ def configure_default_registry() -> AdapterRegistry:
     return adapter_registry
 
 
-def create_test_adapter(date: str = "2017-03-24") -> Optional[TestDataQuoteAdapter]:
+def create_test_adapter(date: str = "2017-03-24") -> TestDataQuoteAdapter | None:
     """
     Create a test data adapter with caching.
 

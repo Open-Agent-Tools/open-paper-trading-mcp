@@ -4,9 +4,10 @@ Asset classes for different financial instruments.
 Asset models with improvements for FastAPI/MCP architecture.
 """
 
-from datetime import datetime, date
-from typing import Optional, Union, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from datetime import date, datetime
+from typing import Any, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def asset_factory(symbol: Union[str, "Asset", None] = None) -> Optional["Asset"]:
@@ -51,13 +52,9 @@ class Asset(BaseModel):
     underlying: Optional["Asset"] = Field(
         default=None, description="Underlying asset for options"
     )
-    option_type: Optional[str] = Field(
-        default=None, description="Option type (call/put)"
-    )
-    strike: Optional[float] = Field(
-        default=None, description="Strike price for options"
-    )
-    expiration_date: Optional[date] = Field(
+    option_type: str | None = Field(default=None, description="Option type (call/put)")
+    strike: float | None = Field(default=None, description="Strike price for options")
+    expiration_date: date | None = Field(
         default=None, description="Expiration date for options"
     )
 
@@ -96,11 +93,11 @@ class Option(Asset):
 
     def __init__(
         self,
-        symbol: Optional[str] = None,
-        underlying: Optional[Union[str, Asset]] = None,
-        option_type: Optional[str] = None,
-        strike: Optional[float] = None,
-        expiration_date: Optional[Union[str, date, datetime]] = None,
+        symbol: str | None = None,
+        underlying: str | Asset | None = None,
+        option_type: str | None = None,
+        strike: float | None = None,
+        expiration_date: str | date | datetime | None = None,
         **data: Any,
     ) -> None:
         if symbol is not None:
@@ -110,9 +107,7 @@ class Option(Asset):
                 {
                     "symbol": symbol,
                     "asset_type": parsed["option_type"],
-                    "underlying": Stock(
-                        symbol=str(parsed["underlying"])
-                    ),
+                    "underlying": Stock(symbol=str(parsed["underlying"])),
                     "option_type": parsed["option_type"],
                     "strike": parsed["strike"],
                     "expiration_date": parsed["expiration_date"],
@@ -160,7 +155,7 @@ class Option(Asset):
             super().__init__(**data)
 
     @staticmethod
-    def _parse_option_symbol(symbol: str) -> dict[str, Union[str, float, date]]:
+    def _parse_option_symbol(symbol: str) -> dict[str, str | float | date]:
         """
         Parse option symbol like AAPL240119C00195000.
 
@@ -195,7 +190,7 @@ class Option(Asset):
             raise ValueError(f"Invalid option symbol format: {symbol}") from e
 
     @staticmethod
-    def _parse_date(date_input: Union[str, date, datetime]) -> date:
+    def _parse_date(date_input: str | date | datetime) -> date:
         """Parse various date formats into a date object."""
         if isinstance(date_input, date):
             return date_input
@@ -225,9 +220,7 @@ class Option(Asset):
         """Calculate extrinsic (time) value of the option."""
         return option_price - self.get_intrinsic_value(underlying_price)
 
-    def get_days_to_expiration(
-        self, as_of_date: Optional[Union[date, datetime]] = None
-    ) -> int:
+    def get_days_to_expiration(self, as_of_date: date | datetime | None = None) -> int:
         """Calculate days until expiration."""
         if as_of_date is None:
             as_of_date = date.today()
@@ -250,10 +243,10 @@ class Call(Option):
 
     def __init__(
         self,
-        symbol: Optional[str] = None,
-        underlying: Optional[Union[str, Asset]] = None,
-        strike: Optional[float] = None,
-        expiration_date: Optional[Union[str, date]] = None,
+        symbol: str | None = None,
+        underlying: str | Asset | None = None,
+        strike: float | None = None,
+        expiration_date: str | date | None = None,
         **data: Any,
     ) -> None:
         super().__init__(
@@ -271,10 +264,10 @@ class Put(Option):
 
     def __init__(
         self,
-        symbol: Optional[str] = None,
-        underlying: Optional[Union[str, Asset]] = None,
-        strike: Optional[float] = None,
-        expiration_date: Optional[Union[str, date]] = None,
+        symbol: str | None = None,
+        underlying: str | Asset | None = None,
+        strike: float | None = None,
+        expiration_date: str | date | None = None,
         **data: Any,
     ) -> None:
         super().__init__(

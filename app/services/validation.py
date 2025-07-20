@@ -4,12 +4,11 @@ Account and order validation service.
 Adapted from reference implementation with enhanced validation capabilities.
 """
 
-from typing import List, Optional
 from datetime import date
 
-from ..schemas.orders import MultiLegOrder, OrderLeg, OrderType
-from ..models.trading import Position
 from ..models.assets import Asset, Option
+from ..models.trading import Position
+from ..schemas.orders import MultiLegOrder, OrderLeg, OrderType
 
 
 class ValidationError(Exception):
@@ -28,7 +27,7 @@ class AccountValidator:
     def validate_account_state(
         self,
         cash_balance: float,
-        positions: List[Position],
+        positions: list[Position],
     ) -> bool:
         """
         Validate account state after an order execution.
@@ -59,7 +58,7 @@ class AccountValidator:
         self,
         order: MultiLegOrder,
         cash_balance: float,
-        positions: List[Position],
+        positions: list[Position],
         estimated_cost: float,
     ) -> bool:
         """
@@ -144,7 +143,7 @@ class AccountValidator:
                 )
 
     def _validate_closing_positions(
-        self, legs: List[OrderLeg], positions: List[Position]
+        self, legs: list[OrderLeg], positions: list[Position]
     ) -> None:
         """Validate sufficient positions exist for closing orders."""
 
@@ -182,7 +181,7 @@ class AccountValidator:
                         f"Required: {required_quantity}, Available: {available_quantity}"
                     )
 
-    def _validate_options_rules(self, legs: List[OrderLeg]) -> None:
+    def _validate_options_rules(self, legs: list[OrderLeg]) -> None:
         """Validate options-specific trading rules."""
 
         for leg in legs:
@@ -209,9 +208,9 @@ class AccountValidator:
 
     def validate_position_limits(
         self,
-        positions: List[Position],
-        max_position_size: Optional[float] = None,
-        max_total_exposure: Optional[float] = None,
+        positions: list[Position],
+        max_position_size: float | None = None,
+        max_total_exposure: float | None = None,
     ) -> bool:
         """
         Validate position size and exposure limits.

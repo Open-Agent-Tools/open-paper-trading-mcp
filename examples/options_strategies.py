@@ -3,21 +3,21 @@ Educational examples for common options strategies - Phase 5.3 implementation.
 Demonstrates how to construct and analyze popular options trading strategies.
 """
 
-from decimal import Decimal
 from datetime import date, timedelta
-from typing import Dict, Any
+from decimal import Decimal
+from typing import Any
 
 from app.models.trading import (
     MultiLegOrder,
-    OrderLeg,
-    OrderType,
-    OrderSide,
     OrderCondition,
+    OrderLeg,
+    OrderSide,
+    OrderType,
 )
-from app.services.order_execution import OrderExecutionService
-from app.services.strategies.recognition import StrategyRecognitionService
-from app.services.order_impact import OrderImpactService
 from app.services.greeks import calculate_option_greeks
+from app.services.order_execution import OrderExecutionService
+from app.services.order_impact import OrderImpactService
+from app.services.strategies.recognition import StrategyRecognitionService
 
 
 class OptionsStrategyExamples:
@@ -28,7 +28,7 @@ class OptionsStrategyExamples:
         self.strategy_service = StrategyRecognitionService()
         self.impact_service = OrderImpactService()
 
-    def covered_call_example(self) -> Dict[str, Any]:
+    def covered_call_example(self) -> dict[str, Any]:
         """
         Covered Call Strategy Example
 
@@ -81,7 +81,7 @@ class OptionsStrategyExamples:
             "analysis": "Conservative income strategy - collects premium while capping upside",
         }
 
-    def cash_secured_put_example(self) -> Dict[str, Any]:
+    def cash_secured_put_example(self) -> dict[str, Any]:
         """
         Cash-Secured Put Strategy Example
 
@@ -144,7 +144,7 @@ class OptionsStrategyExamples:
             "analysis": "Income strategy - get paid to potentially buy stock at discount",
         }
 
-    def bull_call_spread_example(self) -> Dict[str, Any]:
+    def bull_call_spread_example(self) -> dict[str, Any]:
         """
         Bull Call Spread Strategy Example
 
@@ -222,7 +222,7 @@ class OptionsStrategyExamples:
             "analysis": "Limited risk, limited reward bullish strategy",
         }
 
-    def iron_condor_example(self) -> Dict[str, Any]:
+    def iron_condor_example(self) -> dict[str, Any]:
         """
         Iron Condor Strategy Example
 
@@ -337,7 +337,7 @@ class OptionsStrategyExamples:
             "analysis": "Neutral strategy that profits from low volatility",
         }
 
-    def protective_put_example(self) -> Dict[str, Any]:
+    def protective_put_example(self) -> dict[str, Any]:
         """
         Protective Put Strategy Example
 

@@ -6,15 +6,16 @@ compliance validation, and sophisticated pre-trade checks.
 """
 
 from datetime import date
-from typing import List, Dict, Any, Optional, Union
 from enum import Enum
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.models.assets import Option, asset_factory
-from app.schemas.orders import Order, MultiLegOrder
-from app.models.quotes import Quote, OptionQuote
-from app.services.validation import AccountValidator, ValidationError
+from app.models.quotes import OptionQuote, Quote
+from app.schemas.orders import MultiLegOrder, Order
 from app.services.strategies import AdvancedStrategyAnalyzer
+from app.services.validation import AccountValidator, ValidationError
 
 
 class ValidationSeverity(str, Enum):
@@ -43,10 +44,10 @@ class ValidationMessage(BaseModel):
     severity: ValidationSeverity = Field(..., description="Message severity")
     code: str = Field(..., description="Unique validation code")
     message: str = Field(..., description="Human-readable message")
-    details: Dict[str, Any] = Field(
+    details: dict[str, Any] = Field(
         default_factory=dict, description="Additional details"
     )
-    suggested_action: Optional[str] = Field(
+    suggested_action: str | None = Field(
         None, description="Suggested corrective action"
     )
 
@@ -56,13 +57,13 @@ class ValidationResult(BaseModel):
 
     is_valid: bool = Field(..., description="Overall validation status")
     can_execute: bool = Field(..., description="Whether order can be executed")
-    messages: List[ValidationMessage] = Field(
+    messages: list[ValidationMessage] = Field(
         default_factory=list, description="Validation messages"
     )
     estimated_cost: float = Field(0.0, description="Estimated order cost")
 
     @property
-    def errors(self) -> List[ValidationMessage]:
+    def errors(self) -> list[ValidationMessage]:
         """Get error messages."""
         return [
             msg
@@ -71,14 +72,14 @@ class ValidationResult(BaseModel):
         ]
 
     @property
-    def warnings(self) -> List[ValidationMessage]:
+    def warnings(self) -> list[ValidationMessage]:
         """Get warning messages."""
         return [
             msg for msg in self.messages if msg.severity == ValidationSeverity.WARNING
         ]
 
     @property
-    def infos(self) -> List[ValidationMessage]:
+    def infos(self) -> list[ValidationMessage]:
         """Get info messages."""
         return [msg for msg in self.messages if msg.severity == ValidationSeverity.INFO]
 
@@ -130,10 +131,10 @@ class AdvancedOrderValidator:
 
     def validate_order(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
-        account_limits: Optional[AccountLimits] = None,
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder,
+        current_quotes: dict[str, Quote | OptionQuote],
+        account_limits: AccountLimits | None = None,
     ) -> ValidationResult:
         """
         Perform comprehensive order validation.
@@ -199,9 +200,9 @@ class AdvancedOrderValidator:
 
     def _validate_basic_requirements(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder,
+        current_quotes: dict[str, Quote | OptionQuote],
         result: ValidationResult,
     ) -> None:
         """Validate basic order requirements."""
@@ -229,15 +230,15 @@ class AdvancedOrderValidator:
                     rule=ValidationRule.BASIC,
                     severity=ValidationSeverity.ERROR,
                     code="BASIC_VALIDATION_ERROR",
-                    message=f"Basic validation failed: {str(e)}",
+                    message=f"Basic validation failed: {e!s}",
                     suggested_action=None,
                 )
             )
 
     def _validate_options_requirements(
         self,
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        order: Order | MultiLegOrder,
+        current_quotes: dict[str, Quote | OptionQuote],
         account_limits: AccountLimits,
         result: ValidationResult,
     ) -> None:
@@ -327,7 +328,7 @@ class AdvancedOrderValidator:
     def _validate_strike_price(
         self,
         option: Option,
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        current_quotes: dict[str, Quote | OptionQuote],
         account_limits: AccountLimits,
         result: ValidationResult,
     ) -> None:
@@ -466,8 +467,8 @@ class AdvancedOrderValidator:
 
     def _validate_compliance_rules(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder,
         account_limits: AccountLimits,
         result: ValidationResult,
     ) -> None:
@@ -511,9 +512,9 @@ class AdvancedOrderValidator:
 
     def _validate_strategy_rules(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder,
+        current_quotes: dict[str, Quote | OptionQuote],
         result: ValidationResult,
     ) -> None:
         """Validate strategy-specific rules."""
@@ -527,8 +528,8 @@ class AdvancedOrderValidator:
 
     def _validate_liquidity_requirements(
         self,
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        order: Order | MultiLegOrder,
+        current_quotes: dict[str, Quote | OptionQuote],
         result: ValidationResult,
     ) -> None:
         """Validate liquidity and execution feasibility."""
@@ -587,7 +588,7 @@ class AdvancedOrderValidator:
     def _validate_option_liquidity(
         self,
         symbol: str,
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        current_quotes: dict[str, Quote | OptionQuote],
         result: ValidationResult,
     ) -> None:
         """Validate option-specific liquidity."""
@@ -629,8 +630,8 @@ class AdvancedOrderValidator:
 
     def _calculate_estimated_cost(
         self,
-        order: Union[Order, MultiLegOrder],
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        order: Order | MultiLegOrder,
+        current_quotes: dict[str, Quote | OptionQuote],
     ) -> float:
         """Calculate estimated cost of order."""
 
@@ -656,7 +657,7 @@ class AdvancedOrderValidator:
 
         return total_cost
 
-    def _is_options_order(self, order: Union[Order, MultiLegOrder]) -> bool:
+    def _is_options_order(self, order: Order | MultiLegOrder) -> bool:
         """Check if order involves options."""
         if isinstance(order, MultiLegOrder):
             return any(isinstance(leg.asset, Option) for leg in order.legs)
@@ -664,14 +665,14 @@ class AdvancedOrderValidator:
             return isinstance(asset_factory(order.symbol), Option)
 
     def _is_potential_day_trade(
-        self, order: Union[Order, MultiLegOrder], account_data: Dict[str, Any]
+        self, order: Order | MultiLegOrder, account_data: dict[str, Any]
     ) -> bool:
         """Check if order could be a day trade."""
         # Basic implementation - check if we have existing positions
         # In a real implementation, this would check trade history
         return False
 
-    def _get_required_options_level(self, order: Union[Order, MultiLegOrder]) -> int:
+    def _get_required_options_level(self, order: Order | MultiLegOrder) -> int:
         """Get required options level for order."""
         # Basic implementation - return level based on order complexity
         if isinstance(order, MultiLegOrder):
@@ -682,7 +683,7 @@ class AdvancedOrderValidator:
     def _validate_multileg_strategy(
         self,
         order: MultiLegOrder,
-        current_quotes: Dict[str, Union[Quote, OptionQuote]],
+        current_quotes: dict[str, Quote | OptionQuote],
         result: ValidationResult,
     ) -> None:
         """Validate multi-leg strategy coherence."""
@@ -702,8 +703,8 @@ class AdvancedOrderValidator:
 
     def _validate_position_conflicts(
         self,
-        order: Union[Order, MultiLegOrder],
-        account_data: Dict[str, Any],
+        order: Order | MultiLegOrder,
+        account_data: dict[str, Any],
         result: ValidationResult,
     ) -> None:
         """Validate for position conflicts."""
@@ -713,10 +714,10 @@ class AdvancedOrderValidator:
 
 # Convenience functions
 def validate_order_comprehensive(
-    account_data: Dict[str, Any],
-    order: Union[Order, MultiLegOrder],
-    current_quotes: Dict[str, Union[Quote, OptionQuote]],
-    account_limits: Optional[AccountLimits] = None,
+    account_data: dict[str, Any],
+    order: Order | MultiLegOrder,
+    current_quotes: dict[str, Quote | OptionQuote],
+    account_limits: AccountLimits | None = None,
 ) -> ValidationResult:
     """Perform comprehensive order validation."""
     validator = AdvancedOrderValidator()

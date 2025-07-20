@@ -5,8 +5,10 @@ These tools now route through TradingService for consistency
 with the unified architecture pattern.
 """
 
-from typing import Any, Dict
+from typing import Any
+
 from pydantic import BaseModel, Field
+
 from app.services.trading_service import trading_service
 
 
@@ -37,7 +39,7 @@ class SearchStocksArgs(BaseModel):
     query: str = Field(..., description="Search query (symbol or company name)")
 
 
-async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
+async def get_stock_price(args: GetStockPriceArgs) -> dict[str, Any]:
     """
     Get current stock price and basic metrics.
 
@@ -52,7 +54,7 @@ async def get_stock_price(args: GetStockPriceArgs) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
+async def get_stock_info(args: GetStockInfoArgs) -> dict[str, Any]:
     """
     Get detailed company information and fundamentals for a stock.
 
@@ -67,7 +69,7 @@ async def get_stock_info(args: GetStockInfoArgs) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
+async def get_price_history(args: GetPriceHistoryArgs) -> dict[str, Any]:
     """
     Get historical price data for a stock.
 
@@ -82,7 +84,7 @@ async def get_price_history(args: GetPriceHistoryArgs) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def get_stock_news(args: GetStockNewsArgs) -> Dict[str, Any]:
+async def get_stock_news(args: GetStockNewsArgs) -> dict[str, Any]:
     """
     Get news stories for a stock.
 
@@ -97,7 +99,7 @@ async def get_stock_news(args: GetStockNewsArgs) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def get_top_movers() -> Dict[str, Any]:
+async def get_top_movers() -> dict[str, Any]:
     """
     Get top movers in the market.
 
@@ -110,7 +112,7 @@ async def get_top_movers() -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def search_stocks(args: SearchStocksArgs) -> Dict[str, Any]:
+async def search_stocks(args: SearchStocksArgs) -> dict[str, Any]:
     """
     Search for stocks by symbol or company name.
 

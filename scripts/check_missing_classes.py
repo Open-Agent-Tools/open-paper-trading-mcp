@@ -7,18 +7,17 @@ in files that actually exist, avoiding environment dependency issues.
 import ast
 import sys
 from pathlib import Path
-from typing import List
 
 
 class MissingClassChecker:
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self.errors: List[str] = []
+        self.errors: list[str] = []
 
     def check_file_imports(self, file_path: Path) -> None:
         """Check imports in a single file for missing classes/functions."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
         except Exception:
             return
@@ -83,7 +82,7 @@ class MissingClassChecker:
     def name_exists_in_file(self, file_path: Path, name: str) -> bool:
         """Check if a name is defined in a file using AST parsing."""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             tree = ast.parse(content)

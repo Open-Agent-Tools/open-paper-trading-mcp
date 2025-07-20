@@ -5,13 +5,13 @@ This module contains all Pydantic models for account management:
 - Account schemas with positions and balance tracking
 """
 
-from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.positions import Position
+from app.schemas.validation import AccountValidationMixin
 
 
-class Account(BaseModel):
+class Account(BaseModel, AccountValidationMixin):
     """
     Represents a trading account.
     """
@@ -20,11 +20,11 @@ class Account(BaseModel):
 
     id: str = Field(..., description="Unique account identifier")
     cash_balance: float = Field(..., description="Available cash balance")
-    positions: List[Position] = Field(
+    positions: list[Position] = Field(
         default_factory=list, description="Current positions held in the account"
     )
-    name: Optional[str] = Field(None, description="Account name")
-    owner: Optional[str] = Field(None, description="Account owner")
+    name: str | None = Field(None, description="Account name")
+    owner: str | None = Field(None, description="Account owner")
 
     # Alias for backward compatibility
     @property

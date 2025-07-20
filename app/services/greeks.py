@@ -5,13 +5,13 @@ Pure Python implementation adapted from reference implementation, with improveme
 """
 
 import math
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from app.models.assets import Option
 
 if TYPE_CHECKING:
-    from app.models.quotes import OptionQuote
     from app.models.assets import Option
+    from app.models.quotes import OptionQuote
 
 
 def calculate_option_greeks(
@@ -22,7 +22,7 @@ def calculate_option_greeks(
     option_price: float,
     volatility: float = 0.2,
     dividend_yield: float = 0.0,
-) -> Dict[str, Optional[float]]:
+) -> dict[str, float | None]:
     """
     Calculate option Greeks using Black-Scholes model.
 
@@ -39,7 +39,7 @@ def calculate_option_greeks(
     """
 
     # Initialize output with None values
-    greeks: Dict[str, float | None] = {
+    greeks: dict[str, float | None] = {
         "iv": None,
         "delta": None,
         "gamma": None,
@@ -162,14 +162,14 @@ def _black_scholes_put(
 
 def _implied_volatility_call(
     S: float, K: float, r: float, q: float, T: float, market_price: float
-) -> Optional[float]:
+) -> float | None:
     """Calculate implied volatility for call option using Newton-Raphson method."""
     return _implied_volatility_newton_raphson("call", S, K, r, q, T, market_price)
 
 
 def _implied_volatility_put(
     S: float, K: float, r: float, q: float, T: float, market_price: float
-) -> Optional[float]:
+) -> float | None:
     """Calculate implied volatility for put option using Newton-Raphson method."""
     return _implied_volatility_newton_raphson("put", S, K, r, q, T, market_price)
 
@@ -184,7 +184,7 @@ def _implied_volatility_newton_raphson(
     market_price: float,
     max_iterations: int = 100,
     tolerance: float = 1e-6,
-) -> Optional[float]:
+) -> float | None:
     """Calculate implied volatility using Newton-Raphson method."""
 
     # Initial guess for volatility
@@ -221,7 +221,7 @@ def _implied_volatility_newton_raphson(
 
 def _calculate_all_greeks(
     option_type: str, S: float, K: float, r: float, q: float, T: float, sigma: float
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Calculate all Greeks given implied volatility."""
 
     d1 = _d1(S, K, r, q, T, sigma)

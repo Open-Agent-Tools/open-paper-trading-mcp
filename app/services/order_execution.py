@@ -4,10 +4,12 @@ Order Execution Engine.
 Handles the execution of orders, including cash balance updates.
 """
 
-from typing import List, Dict, Optional, Protocol
-from math import copysign
 from datetime import datetime
+from math import copysign
+from typing import Protocol
 
+from ..models.assets import Option
+from ..models.quotes import Quote
 from ..schemas.orders import (
     MultiLegOrder,
     Order,
@@ -15,10 +17,8 @@ from ..schemas.orders import (
     OrderType,
 )
 from ..schemas.positions import Position
-from ..models.assets import Option
+from .estimators import MidpointEstimator, PriceEstimator
 from .validation import AccountValidator
-from ..models.quotes import Quote
-from .estimators import PriceEstimator, MidpointEstimator
 
 
 class QuoteServiceProtocol(Protocol):
@@ -40,10 +40,10 @@ class OrderExecutionResult:
         self,
         success: bool,
         message: str = "",
-        order_id: Optional[str] = None,
+        order_id: str | None = None,
         cash_change: float = 0.0,
-        positions_created: Optional[List[Position]] = None,
-        positions_modified: Optional[List[Position]] = None,
+        positions_created: list[Position] | None = None,
+        positions_modified: list[Position] | None = None,
     ):
         self.success = success
         self.message = message
@@ -59,20 +59,20 @@ class OrderExecutionEngine:
 
     def __init__(
         self,
-        validator: Optional[AccountValidator] = None,
+        validator: AccountValidator | None = None,
     ) -> None:
         """Initialize with validation services."""
         self.validator = validator or AccountValidator()
         self.default_estimator = MidpointEstimator()
-        self.quote_service: Optional[QuoteServiceProtocol] = None
+        self.quote_service: QuoteServiceProtocol | None = None
 
     async def execute_order(
         self,
         account_id: str,
         order: MultiLegOrder,
         current_cash: float,
-        current_positions: List[Position],
-        estimator: Optional[PriceEstimator] = None,
+        current_positions: list[Position],
+        estimator: PriceEstimator | None = None,
     ) -> OrderExecutionResult:
         """
         Execute a multi-leg order with full validation and position management.
@@ -161,7 +161,7 @@ class OrderExecutionEngine:
         except Exception as e:
             return OrderExecutionResult(
                 success=False,
-                message=f"Order execution failed: {str(e)}",
+                message=f"Order execution failed: {e!s}",
                 order_id=order.id,
             )
 
@@ -170,8 +170,8 @@ class OrderExecutionEngine:
         account_id: str,
         order: Order,
         current_cash: float,
-        current_positions: List[Position],
-        estimator: Optional[PriceEstimator] = None,
+        current_positions: list[Position],
+        estimator: PriceEstimator | None = None,
     ) -> OrderExecutionResult:
         """Execute a simple single-leg order."""
 
@@ -203,8 +203,8 @@ class OrderExecutionEngine:
             )
 
     async def _calculate_leg_prices(
-        self, legs: List[OrderLeg], estimator: PriceEstimator
-    ) -> Dict[OrderLeg, float]:
+        self, legs: list[OrderLeg], estimator: PriceEstimator
+    ) -> dict[OrderLeg, float]:
         """Calculate fill price for each leg using the estimator."""
         leg_prices = {}
 
@@ -243,7 +243,7 @@ class OrderExecutionEngine:
         return True  # Default to fill
 
     def _validate_closing_positions(
-        self, legs: List[OrderLeg], current_positions: List[Position]
+        self, legs: list[OrderLeg], current_positions: list[Position]
     ) -> None:
         """Validate that sufficient positions exist for closing orders."""
         for leg in legs:
@@ -273,7 +273,7 @@ class OrderExecutionEngine:
                     )
 
     def _calculate_cash_requirement(
-        self, legs: List[OrderLeg], leg_prices: Dict[OrderLeg, float]
+        self, legs: list[OrderLeg], leg_prices: dict[OrderLeg, float]
     ) -> float:
         """Calculate total cash requirement (negative means cash received)."""
         total_cash_impact = 0.0
@@ -335,8 +335,8 @@ class OrderExecutionEngine:
         return position
 
     def _close_position(
-        self, leg: OrderLeg, current_positions: List[Position], fill_price: float
-    ) -> List[Position]:
+        self, leg: OrderLeg, current_positions: list[Position], fill_price: float
+    ) -> list[Position]:
         """Close positions using FIFO method, return modified positions."""
 
         # Find closable positions

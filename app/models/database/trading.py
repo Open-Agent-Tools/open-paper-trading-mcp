@@ -1,24 +1,25 @@
 import uuid
-from typing import Optional, List
+
 from sqlalchemy import (
-    Column,
-    String,
-    Float,
-    DateTime,
-    ForeignKey,
-    Integer,
-    Enum,
-    Boolean,
-    Date,
+    ARRAY,
     JSON,
-    Text,
-    Index,
-    Numeric,
     BigInteger,
-    UUID,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
 )
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+
 from app.models.database.base import Base
 from app.schemas.orders import OrderStatus, OrderType
 
@@ -34,20 +35,20 @@ class Account(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
     # Relationships
-    positions: Mapped[List["Position"]] = relationship(
+    positions: Mapped[list["Position"]] = relationship(
         "Position", back_populates="account"
     )
-    orders: Mapped[List["Order"]] = relationship("Order", back_populates="account")
-    transactions: Mapped[List["Transaction"]] = relationship(
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="account")
+    transactions: Mapped[list["Transaction"]] = relationship(
         "Transaction", back_populates="account"
     )
-    multi_leg_orders: Mapped[List["MultiLegOrder"]] = relationship(
+    multi_leg_orders: Mapped[list["MultiLegOrder"]] = relationship(
         "MultiLegOrder", back_populates="account"
     )
-    recognized_strategies: Mapped[List["RecognizedStrategy"]] = relationship(
+    recognized_strategies: Mapped[list["RecognizedStrategy"]] = relationship(
         "RecognizedStrategy", back_populates="account"
     )
-    greeks_snapshots: Mapped[List["PortfolioGreeksSnapshot"]] = relationship(
+    greeks_snapshots: Mapped[list["PortfolioGreeksSnapshot"]] = relationship(
         "PortfolioGreeksSnapshot", back_populates="account"
     )
 
@@ -77,14 +78,14 @@ class Order(Base):
     symbol: Mapped[str] = mapped_column(String, index=True)
     order_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
     quantity: Mapped[int] = mapped_column(Integer)
-    price: Mapped[Optional[float]] = mapped_column(
+    price: Mapped[float | None] = mapped_column(
         Float, nullable=True
     )  # Null for market orders
     status: Mapped[OrderStatus] = mapped_column(
         Enum(OrderStatus), default=OrderStatus.PENDING
     )
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
-    filled_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    filled_at: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     account: Mapped["Account"] = relationship("Account", back_populates="orders")
@@ -97,7 +98,7 @@ class Transaction(Base):
         String, primary_key=True, default=lambda: str(uuid.uuid4())
     )
     account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
-    order_id: Mapped[Optional[str]] = mapped_column(
+    order_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("orders.id"), nullable=True
     )
     symbol: Mapped[str] = mapped_column(String, index=True)
@@ -132,33 +133,35 @@ class OptionQuoteHistory(Base):
     option_type: Mapped[str] = mapped_column(String)  # 'call' or 'put'
 
     # Quote data
-    bid: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    ask: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    bid: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ask: Mapped[float | None] = mapped_column(Float, nullable=True)
     price: Mapped[float] = mapped_column(Float)
-    volume: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    open_interest: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    volume: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    open_interest: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Greeks
-    delta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    gamma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    theta: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    vega: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    rho: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    delta: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gamma: Mapped[float | None] = mapped_column(Float, nullable=True)
+    theta: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vega: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rho: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Advanced Greeks
-    charm: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    vanna: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    speed: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    zomma: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    color: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    charm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vanna: Mapped[float | None] = mapped_column(Float, nullable=True)
+    speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    zomma: Mapped[float | None] = mapped_column(Float, nullable=True)
+    color: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Market data
-    implied_volatility: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    underlying_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    implied_volatility: Mapped[float | None] = mapped_column(Float, nullable=True)
+    underlying_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     quote_time: Mapped[DateTime] = mapped_column(DateTime, index=True)
 
     # Test scenario field for Phase 3
-    test_scenario: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    test_scenario: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True
+    )
 
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
@@ -173,17 +176,17 @@ class TestStockQuote(Base):
     )
     symbol: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     quote_date: Mapped[Date] = mapped_column(Date, nullable=False, index=True)
-    bid: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
-    ask: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
-    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
-    volume: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
-    scenario: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    bid: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
+    ask: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
+    price: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
+    volume: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    scenario: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
     # Composite indexes for efficient queries
     __table_args__ = (
-        Index('idx_test_stock_symbol_date', 'symbol', 'quote_date'),
-        Index('idx_test_stock_scenario', 'scenario', 'quote_date'),
+        Index("idx_test_stock_symbol_date", "symbol", "quote_date"),
+        Index("idx_test_stock_scenario", "scenario", "quote_date"),
     )
 
 
@@ -199,22 +202,46 @@ class TestOptionQuote(Base):
     underlying: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     expiration: Mapped[Date] = mapped_column(Date, nullable=False)
     strike: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    option_type: Mapped[str] = mapped_column(String(4), nullable=False)  # 'call' or 'put'
+    option_type: Mapped[str] = mapped_column(
+        String(4), nullable=False
+    )  # 'call' or 'put'
     quote_date: Mapped[Date] = mapped_column(Date, nullable=False, index=True)
-    bid: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
-    ask: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
-    price: Mapped[Optional[float]] = mapped_column(Numeric(10, 4), nullable=True)
-    volume: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
-    scenario: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    bid: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
+    ask: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
+    price: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
+    volume: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    scenario: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
     # Composite indexes for efficient queries
     __table_args__ = (
-        Index('idx_test_option_symbol_date', 'symbol', 'quote_date'),
-        Index('idx_test_option_underlying_date', 'underlying', 'quote_date'),
-        Index('idx_test_option_scenario', 'scenario', 'quote_date'),
-        Index('idx_test_option_expiry_strike', 'expiration', 'strike'),
+        Index("idx_test_option_symbol_date", "symbol", "quote_date"),
+        Index("idx_test_option_underlying_date", "underlying", "quote_date"),
+        Index("idx_test_option_scenario", "scenario", "quote_date"),
+        Index("idx_test_option_expiry_strike", "expiration", "strike"),
     )
+
+
+class TestScenario(Base):
+    """Test scenarios for managing different test datasets."""
+
+    __tablename__ = "test_scenarios"
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    start_date: Mapped[Date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[Date] = mapped_column(Date, nullable=False)
+    symbols: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False)
+    market_condition: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # 'volatile', 'calm', 'trending'
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+
+    # Add index for efficient scenario queries
+    __table_args__ = (Index("idx_test_scenario_dates", "start_date", "end_date"),)
 
 
 class MultiLegOrder(Base):
@@ -229,28 +256,28 @@ class MultiLegOrder(Base):
 
     # Order details
     order_type: Mapped[str] = mapped_column(String, default="limit")  # limit, market
-    net_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    net_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     status: Mapped[OrderStatus] = mapped_column(
         Enum(OrderStatus), default=OrderStatus.PENDING
     )
 
     # Strategy identification
-    strategy_type: Mapped[Optional[str]] = mapped_column(
+    strategy_type: Mapped[str | None] = mapped_column(
         String, nullable=True
     )  # spread, straddle, etc.
-    underlying_symbol: Mapped[Optional[str]] = mapped_column(
+    underlying_symbol: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
 
     # Metadata
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
-    filled_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    filled_at: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     account: Mapped["Account"] = relationship(
         "Account", back_populates="multi_leg_orders"
     )
-    legs: Mapped[List["OrderLeg"]] = relationship(
+    legs: Mapped[list["OrderLeg"]] = relationship(
         "OrderLeg", back_populates="multi_leg_order", cascade="all, delete-orphan"
     )
 
@@ -274,19 +301,19 @@ class OrderLeg(Base):
     # Order details
     quantity: Mapped[int] = mapped_column(Integer)
     order_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
-    price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Option-specific fields (null for stocks)
-    strike: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    expiration_date: Mapped[Optional[Date]] = mapped_column(Date, nullable=True)
-    option_type: Mapped[Optional[str]] = mapped_column(
+    strike: Mapped[float | None] = mapped_column(Float, nullable=True)
+    expiration_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
+    option_type: Mapped[str | None] = mapped_column(
         String, nullable=True
     )  # 'call' or 'put'
-    underlying_symbol: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    underlying_symbol: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Execution details
     filled_quantity: Mapped[int] = mapped_column(Integer, default=0)
-    filled_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    filled_price: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Relationships
     multi_leg_order: Mapped["MultiLegOrder"] = relationship(
@@ -311,9 +338,9 @@ class RecognizedStrategy(Base):
 
     # Financial metrics
     cost_basis: Mapped[float] = mapped_column(Float, default=0.0)
-    max_profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    max_loss: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    breakeven_points: Mapped[Optional[str]] = mapped_column(
+    max_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
+    breakeven_points: Mapped[str | None] = mapped_column(
         JSON, nullable=True
     )  # List of breakeven prices
 

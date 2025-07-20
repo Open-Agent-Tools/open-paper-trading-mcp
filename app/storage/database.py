@@ -1,7 +1,9 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.core.config import settings
-from typing import AsyncGenerator
 
 # Check for a testing environment
 TESTING = os.getenv("TESTING", "False").lower() == "true"
@@ -10,28 +12,26 @@ if TESTING:
     # For testing, use async SQLite with aiosqlite driver
     ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
     async_engine = create_async_engine(
-        ASYNC_DATABASE_URL, 
-        connect_args={"check_same_thread": False},
-        echo=False
+        ASYNC_DATABASE_URL, connect_args={"check_same_thread": False}, echo=False
     )
 else:
     # Production: Use async PostgreSQL with asyncpg driver
     database_url = settings.DATABASE_URL
     if "+asyncpg" not in database_url:
-        ASYNC_DATABASE_URL = database_url.replace("postgresql://", "postgresql+asyncpg://")
+        ASYNC_DATABASE_URL = database_url.replace(
+            "postgresql://", "postgresql+asyncpg://"
+        )
     else:
         ASYNC_DATABASE_URL = database_url
     async_engine = create_async_engine(ASYNC_DATABASE_URL)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
-    async_engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
+    async_engine, class_=AsyncSession, expire_on_commit=False
 )
 
 # Export async engine and session for direct access
-__all__ = ["async_engine", "AsyncSessionLocal", "get_async_session", "init_db"]
+__all__ = ["AsyncSessionLocal", "async_engine", "get_async_session", "get_async_db", "init_db"]
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
@@ -40,6 +40,10 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
     async with AsyncSessionLocal() as session:
         yield session
+
+
+# Alias for FastAPI dependency injection
+get_async_db = get_async_session
 
 
 async def init_db() -> None:

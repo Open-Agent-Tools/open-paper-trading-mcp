@@ -5,16 +5,15 @@ This module handles grouping positions into basic trading strategies
 and provides analysis of strategy composition.
 """
 
-from typing import List, Dict, Any
+from typing import Any
 
 from ...models.assets import Option, asset_factory
 from ...models.trading import Position
-
 from .models import (
-    BasicStrategy,
     AssetStrategy,
-    SpreadStrategy,
+    BasicStrategy,
     CoveredStrategy,
+    SpreadStrategy,
     SpreadType,
 )
 
@@ -26,8 +25,8 @@ class StrategyRecognitionService:
         pass
 
     def group_positions_by_strategy(
-        self, positions: List[Position]
-    ) -> List[BasicStrategy]:
+        self, positions: list[Position]
+    ) -> list[BasicStrategy]:
         """
         Group positions into basic trading strategies.
 
@@ -53,7 +52,7 @@ class StrategyRecognitionService:
 
         return all_strategies
 
-    def _get_underlying_symbols(self, positions: List[Position]) -> List[str]:
+    def _get_underlying_symbols(self, positions: list[Position]) -> list[str]:
         """Extract unique underlying symbols from positions."""
         underlyings = set()
 
@@ -69,8 +68,8 @@ class StrategyRecognitionService:
         return list(underlyings)
 
     def _group_strategies_for_underlying(
-        self, underlying_symbol: str, all_positions: List[Position]
-    ) -> List[BasicStrategy]:
+        self, underlying_symbol: str, all_positions: list[Position]
+    ) -> list[BasicStrategy]:
         """Group strategies for a specific underlying asset."""
 
         # Filter positions for this underlying
@@ -81,7 +80,7 @@ class StrategyRecognitionService:
         if not positions:
             return []
 
-        strategies: List[BasicStrategy] = []
+        strategies: list[BasicStrategy] = []
 
         # Calculate equity positions
         long_equity_qty = sum(
@@ -204,8 +203,8 @@ class StrategyRecognitionService:
         return strategies
 
     def _filter_positions_for_underlying(
-        self, underlying_symbol: str, positions: List[Position]
-    ) -> List[Position]:
+        self, underlying_symbol: str, positions: list[Position]
+    ) -> list[Position]:
         """Filter positions that relate to a specific underlying."""
         filtered = []
 
@@ -222,8 +221,8 @@ class StrategyRecognitionService:
         return filtered
 
     def _create_individual_option_strategies(
-        self, positions: List[Position], option_type: str, negative: bool
-    ) -> List[AssetStrategy]:
+        self, positions: list[Position], option_type: str, negative: bool
+    ) -> list[AssetStrategy]:
         """Create individual AssetStrategy objects for options of a given type and direction."""
         strategies = []
 
@@ -246,9 +245,9 @@ class StrategyRecognitionService:
 
         return strategies
 
-    def get_strategy_summary(self, strategies: List[BasicStrategy]) -> Dict[str, Any]:
+    def get_strategy_summary(self, strategies: list[BasicStrategy]) -> dict[str, Any]:
         """Generate summary statistics for a list of strategies."""
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "total_strategies": len(strategies),
             "strategy_counts": {"asset": 0, "offset": 0, "spread": 0, "covered": 0},
             "spread_details": {
@@ -306,13 +305,13 @@ class StrategyRecognitionService:
 
 
 # Convenience functions
-def group_into_basic_strategies(positions: List[Position]) -> List[BasicStrategy]:
+def group_into_basic_strategies(positions: list[Position]) -> list[BasicStrategy]:
     """Group positions into basic trading strategies."""
     service = StrategyRecognitionService()
     return service.group_positions_by_strategy(positions)
 
 
-def analyze_strategy_portfolio(positions: List[Position]) -> Dict[str, Any]:
+def analyze_strategy_portfolio(positions: list[Position]) -> dict[str, Any]:
     """Analyze a portfolio's strategy composition."""
     service = StrategyRecognitionService()
     strategies = service.group_positions_by_strategy(positions)

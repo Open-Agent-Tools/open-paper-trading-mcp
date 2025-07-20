@@ -1,11 +1,11 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from typing import Optional
-from datetime import timedelta
 
-from app.services.auth_service import AuthService, auth_service
 from app.core.exceptions import NotFoundError
+from app.services.auth_service import AuthService, auth_service
 
 router = APIRouter()
 
@@ -19,8 +19,8 @@ class Token(BaseModel):
 
 class User(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
+    email: str | None = None
+    full_name: str | None = None
 
 
 def get_auth_service() -> AuthService:

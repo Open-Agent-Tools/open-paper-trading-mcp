@@ -1,15 +1,16 @@
-from pydantic import BaseModel, Field
 import json
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
-from app.services.trading_service import trading_service
+from pydantic import BaseModel, Field
+
+from app.models.assets import Option, asset_factory
 from app.schemas.orders import (
+    OrderCondition,
     OrderCreate,
     OrderType,
-    OrderCondition,
 )
-from app.models.assets import asset_factory, Option
+from app.services.trading_service import trading_service
 
 
 class GetQuoteArgs(BaseModel):
@@ -53,7 +54,7 @@ def get_stock_quote(args: GetQuoteArgs) -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error getting quote: {str(e)}"
+        return f"Error getting quote: {e!s}"
 
 
 async def create_buy_order(args: CreateOrderArgs) -> str:
@@ -82,7 +83,7 @@ async def create_buy_order(args: CreateOrderArgs) -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error creating buy order: {str(e)}"
+        return f"Error creating buy order: {e!s}"
 
 
 async def create_sell_order(args: CreateOrderArgs) -> str:
@@ -111,7 +112,7 @@ async def create_sell_order(args: CreateOrderArgs) -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error creating sell order: {str(e)}"
+        return f"Error creating sell order: {e!s}"
 
 
 async def get_all_orders() -> str:
@@ -138,7 +139,7 @@ async def get_all_orders() -> str:
             )
         return json.dumps(orders_data, indent=2)
     except Exception as e:
-        return f"Error getting orders: {str(e)}"
+        return f"Error getting orders: {e!s}"
 
 
 async def get_order(args: GetOrderArgs) -> str:
@@ -161,7 +162,7 @@ async def get_order(args: GetOrderArgs) -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error getting order: {str(e)}"
+        return f"Error getting order: {e!s}"
 
 
 def cancel_order(args: CancelOrderArgs) -> str:
@@ -170,7 +171,7 @@ def cancel_order(args: CancelOrderArgs) -> str:
         result = trading_service.cancel_order(args.order_id)
         return json.dumps(result, indent=2)
     except Exception as e:
-        return f"Error cancelling order: {str(e)}"
+        return f"Error cancelling order: {e!s}"
 
 
 async def get_portfolio() -> str:
@@ -201,7 +202,7 @@ async def get_portfolio() -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error getting portfolio: {str(e)}"
+        return f"Error getting portfolio: {e!s}"
 
 
 async def get_portfolio_summary() -> str:
@@ -221,7 +222,7 @@ async def get_portfolio_summary() -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error getting portfolio summary: {str(e)}"
+        return f"Error getting portfolio summary: {e!s}"
 
 
 async def get_all_positions() -> str:
@@ -242,7 +243,7 @@ async def get_all_positions() -> str:
             )
         return json.dumps(positions_data, indent=2)
     except Exception as e:
-        return f"Error getting positions: {str(e)}"
+        return f"Error getting positions: {e!s}"
 
 
 async def get_position(args: GetPositionArgs) -> str:
@@ -261,7 +262,7 @@ async def get_position(args: GetPositionArgs) -> str:
             indent=2,
         )
     except Exception as e:
-        return f"Error getting position: {str(e)}"
+        return f"Error getting position: {e!s}"
 
 
 # ============================================================================
@@ -271,11 +272,11 @@ async def get_position(args: GetPositionArgs) -> str:
 
 class GetOptionsChainArgs(BaseModel):
     symbol: str = Field(..., description="Underlying symbol (e.g., AAPL)")
-    expiration_date: Optional[str] = Field(
+    expiration_date: str | None = Field(
         None, description="Expiration date (YYYY-MM-DD), None for all"
     )
-    min_strike: Optional[float] = Field(None, description="Minimum strike price filter")
-    max_strike: Optional[float] = Field(None, description="Maximum strike price filter")
+    min_strike: float | None = Field(None, description="Minimum strike price filter")
+    max_strike: float | None = Field(None, description="Maximum strike price filter")
 
 
 class GetExpirationDatesArgs(BaseModel):
@@ -283,7 +284,7 @@ class GetExpirationDatesArgs(BaseModel):
 
 
 class CreateMultiLegOrderArgs(BaseModel):
-    legs: List[Dict[str, Any]] = Field(
+    legs: list[dict[str, Any]] = Field(
         ..., description="Order legs with symbol, quantity, order_type, price"
     )
     order_type: str = Field("limit", description="Order type (limit, market)")
@@ -293,7 +294,7 @@ class CalculateGreeksArgs(BaseModel):
     option_symbol: str = Field(
         ..., description="Option symbol (e.g., AAPL240119C00195000)"
     )
-    underlying_price: Optional[float] = Field(
+    underlying_price: float | None = Field(
         None, description="Underlying price override"
     )
 
@@ -307,7 +308,7 @@ class GetStrategyAnalysisArgs(BaseModel):
 
 
 class SimulateExpirationArgs(BaseModel):
-    processing_date: Optional[str] = Field(
+    processing_date: str | None = Field(
         None, description="Expiration processing date (YYYY-MM-DD)"
     )
     dry_run: bool = Field(True, description="Dry run mode (don't modify account)")
@@ -332,7 +333,7 @@ def get_options_chain(args: GetOptionsChainArgs) -> str:
         return json.dumps(chain_data, indent=2)
 
     except Exception as e:
-        return f"Error getting options chain: {str(e)}"
+        return f"Error getting options chain: {e!s}"
 
 
 def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
@@ -351,7 +352,7 @@ def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
         )
 
     except Exception as e:
-        return f"Error getting expiration dates: {str(e)}"
+        return f"Error getting expiration dates: {e!s}"
 
 
 def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
@@ -387,7 +388,7 @@ def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
         )
 
     except Exception as e:
-        return f"Error creating multi-leg order: {str(e)}"
+        return f"Error creating multi-leg order: {e!s}"
 
 
 def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
@@ -399,7 +400,7 @@ def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
 
         # Add option details
         asset = asset_factory(args.option_symbol)
-        result: Dict[str, Any] = dict(greeks)  # Copy the greeks dict
+        result: dict[str, Any] = dict(greeks)  # Copy the greeks dict
         if isinstance(asset, Option):
             result.update(
                 {
@@ -415,7 +416,7 @@ def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
         return json.dumps(result, indent=2)
 
     except Exception as e:
-        return f"Error calculating Greeks: {str(e)}"
+        return f"Error calculating Greeks: {e!s}"
 
 
 def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
@@ -430,7 +431,7 @@ def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
         return json.dumps(analysis_result, indent=2)
 
     except Exception as e:
-        return f"Error in strategy analysis: {str(e)}"
+        return f"Error in strategy analysis: {e!s}"
 
 
 def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
@@ -443,15 +444,15 @@ def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
         return json.dumps(result, indent=2)
 
     except Exception as e:
-        return f"Error simulating option expiration: {str(e)}"
+        return f"Error simulating option expiration: {e!s}"
 
 
 class FindTradableOptionsArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
-    expiration_date: Optional[str] = Field(
+    expiration_date: str | None = Field(
         None, description="Expiration date in YYYY-MM-DD format"
     )
-    option_type: Optional[str] = Field(None, description="Option type: 'call' or 'put'")
+    option_type: str | None = Field(None, description="Option type: 'call' or 'put'")
 
 
 class GetOptionMarketDataArgs(BaseModel):
@@ -471,7 +472,7 @@ def find_tradable_options(args: FindTradableOptionsArgs) -> str:
         )
         return json.dumps(result, indent=2)
     except Exception as e:
-        return f"Error finding tradable options: {str(e)}"
+        return f"Error finding tradable options: {e!s}"
 
 
 def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
@@ -485,4 +486,4 @@ def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
         result = trading_service.get_option_market_data(args.option_id)
         return json.dumps(result, indent=2)
     except Exception as e:
-        return f"Error getting option market data: {str(e)}"
+        return f"Error getting option market data: {e!s}"

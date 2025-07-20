@@ -3,9 +3,9 @@
 Development utility script for Open Paper Trading MCP
 """
 
+import os
 import subprocess
 import sys
-import os
 
 
 def run_command(cmd: str) -> str | None:

@@ -6,51 +6,59 @@ This module contains all Pydantic models for position management:
 - Portfolio and portfolio summary schemas
 """
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List, Union, Dict, Any
 from datetime import date
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator
+
 from app.models.assets import Asset, Option, asset_factory
+from app.schemas.validation import PositionValidationMixin, validate_symbol
 
 
-class Position(BaseModel):
+class Position(BaseModel, PositionValidationMixin):
     """Enhanced position model with options support and Greeks."""
 
     symbol: str = Field(..., description="Asset symbol")
+
+    @field_validator("symbol")
+    @classmethod
+    def validate_symbol_format(cls, v: str) -> str:
+        """Validate and normalize symbol format."""
+        return validate_symbol(v)
+
     quantity: int = Field(..., description="Number of shares/contracts owned")
     avg_price: float = Field(..., description="Average purchase price (cost basis)")
-    current_price: Optional[float] = Field(
+    current_price: float | None = Field(
         default=None, description="Current market price"
     )
-    unrealized_pnl: Optional[float] = Field(
+    unrealized_pnl: float | None = Field(
         default=None, description="Unrealized profit/loss"
     )
     realized_pnl: float = Field(default=0.0, description="Realized profit/loss")
 
     # Asset information
-    asset: Optional[Asset] = Field(
-        default=None, description="Asset object with details"
-    )
+    asset: Asset | None = Field(default=None, description="Asset object with details")
 
     # Options-specific fields (None for stocks)
-    option_type: Optional[str] = Field(
+    option_type: str | None = Field(
         default=None, description="Option type: call or put"
     )
-    strike: Optional[float] = Field(default=None, description="Strike price")
-    expiration_date: Optional[date] = Field(default=None, description="Expiration date")
-    underlying_symbol: Optional[str] = Field(
+    strike: float | None = Field(default=None, description="Strike price")
+    expiration_date: date | None = Field(default=None, description="Expiration date")
+    underlying_symbol: str | None = Field(
         default=None, description="Underlying asset symbol"
     )
 
     # Greeks (for options positions)
-    delta: Optional[float] = Field(default=None, description="Position delta")
-    gamma: Optional[float] = Field(default=None, description="Position gamma")
-    theta: Optional[float] = Field(default=None, description="Position theta")
-    vega: Optional[float] = Field(default=None, description="Position vega")
-    rho: Optional[float] = Field(default=None, description="Position rho")
-    iv: Optional[float] = Field(default=None, description="Implied volatility")
+    delta: float | None = Field(default=None, description="Position delta")
+    gamma: float | None = Field(default=None, description="Position gamma")
+    theta: float | None = Field(default=None, description="Position theta")
+    vega: float | None = Field(default=None, description="Position vega")
+    rho: float | None = Field(default=None, description="Position rho")
+    iv: float | None = Field(default=None, description="Implied volatility")
 
     @field_validator("asset", mode="before")
-    def normalize_asset(cls, v: Union[str, Asset]) -> Optional[Asset]:
+    def normalize_asset(cls, v: str | Asset) -> Asset | None:
         if isinstance(v, str):
             return asset_factory(v)
         return v
@@ -71,29 +79,29 @@ class Position(BaseModel):
         return abs(self.avg_price * self.quantity) * self.multiplier
 
     @property
-    def market_value(self) -> Optional[float]:
+    def market_value(self) -> float | None:
         """Current market value of the position."""
         if self.current_price is None:
             return None
         return self.current_price * self.quantity * self.multiplier
 
     @property
-    def total_pnl(self) -> Optional[float]:
+    def total_pnl(self) -> float | None:
         """Total profit/loss (unrealized + realized)."""
         if self.unrealized_pnl is None:
             return self.realized_pnl
         return self.unrealized_pnl + self.realized_pnl
 
     @property
-    def pnl_percent(self) -> Optional[float]:
+    def pnl_percent(self) -> float | None:
         """P&L as percentage of cost basis."""
         if self.total_pnl is None or self.total_cost_basis == 0:
             return None
         return (self.total_pnl / self.total_cost_basis) * 100
 
     def calculate_unrealized_pnl(
-        self, current_price: Optional[float] = None
-    ) -> Optional[float]:
+        self, current_price: float | None = None
+    ) -> float | None:
         """Calculate unrealized P&L with optional price override."""
         price = current_price or self.current_price
         if price is None:
@@ -105,7 +113,7 @@ class Position(BaseModel):
         return pnl
 
     def update_market_data(
-        self, current_price: float, quote: Optional[Any] = None
+        self, current_price: float, quote: Any | None = None
     ) -> None:
         """Update position with current market data and Greeks."""
         self.current_price = current_price
@@ -149,7 +157,7 @@ class Position(BaseModel):
             )
             self.iv = getattr(quote, "iv", None)
 
-    def get_close_cost(self, current_price: Optional[float] = None) -> Optional[float]:
+    def get_close_cost(self, current_price: float | None = None) -> float | None:
         """Cost to close the position (negative means you receive money)."""
         price = current_price or self.current_price
         if price is None:
@@ -161,8 +169,8 @@ class Position(BaseModel):
         return -price * self.quantity * self.multiplier
 
     def simulate_close(
-        self, current_price: Optional[float] = None
-    ) -> Dict[str, Union[float, str]]:
+        self, current_price: float | None = None
+    ) -> dict[str, float | str]:
         """Simulate closing the position and return impact."""
         price = current_price or self.current_price
         if price is None:
@@ -185,7 +193,7 @@ class Position(BaseModel):
 class Portfolio(BaseModel):
     cash_balance: float = Field(..., description="Available cash balance")
     total_value: float = Field(..., description="Total portfolio value")
-    positions: List[Position] = Field(..., description="List of current positions")
+    positions: list[Position] = Field(..., description="List of current positions")
     daily_pnl: float = Field(..., description="Daily profit/loss")
     total_pnl: float = Field(..., description="Total profit/loss")
 

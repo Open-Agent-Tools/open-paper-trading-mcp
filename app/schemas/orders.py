@@ -7,11 +7,13 @@ This module contains all Pydantic models for order management:
 - Order creation and validation schemas
 """
 
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
-from typing import Optional, List, Union
 from datetime import datetime
 from enum import Enum
+
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
+
 from app.models.assets import Asset, asset_factory
+from app.schemas.validation import OrderValidationMixin, validate_symbol
 
 
 class OrderType(str, Enum):
@@ -61,12 +63,12 @@ class OrderLeg(BaseModel):
     order_type: OrderType = Field(
         ..., description="Order type (BTO/STO/BTC/STC for options)"
     )
-    price: Optional[float] = Field(
+    price: float | None = Field(
         None, description="Price per share/contract (None for market orders)"
     )
 
     @field_validator("asset", mode="before")
-    def normalize_asset(cls, v: Union[str, Asset]) -> Asset:
+    def normalize_asset(cls, v: str | Asset) -> Asset:
         result = asset_factory(v) if isinstance(v, str) else v
         if result is None:
             raise ValueError(f"Invalid asset: {v}")
@@ -83,9 +85,7 @@ class OrderLeg(BaseModel):
 
     @field_validator("price")
     @classmethod
-    def set_price_sign(
-        cls, v: Optional[float], info: ValidationInfo
-    ) -> Optional[float]:
+    def set_price_sign(cls, v: float | None, info: ValidationInfo) -> float | None:
         if v is None:
             return v
         order_type = info.data.get("order_type")
@@ -95,28 +95,33 @@ class OrderLeg(BaseModel):
             return abs(v)
 
 
-class Order(BaseModel):
+class Order(BaseModel, OrderValidationMixin):
     """Single-leg order (backwards compatible)."""
 
-    id: Optional[str] = None
+    id: str | None = None
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
+
+    @field_validator("symbol")
+    @classmethod
+    def validate_symbol_format(cls, v: str) -> str:
+        """Validate and normalize symbol format."""
+        return validate_symbol(v)
+
     order_type: OrderType = Field(..., description="Order type: buy or sell")
     quantity: int = Field(..., gt=0, description="Number of shares to trade")
-    price: Optional[float] = Field(
-        None, description="Price per share (None for market)"
-    )
+    price: float | None = Field(None, description="Price per share (None for market)")
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
     status: OrderStatus = OrderStatus.PENDING
-    created_at: Optional[datetime] = None
-    filled_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    filled_at: datetime | None = None
 
     # Additional attributes for compatibility
-    legs: List[OrderLeg] = Field(
+    legs: list[OrderLeg] = Field(
         default_factory=list, description="Order legs (empty for single-leg orders)"
     )
-    net_price: Optional[float] = Field(None, description="Net price for the order")
+    net_price: float | None = Field(None, description="Net price for the order")
 
     def to_leg(self) -> OrderLeg:
         return OrderLeg(
@@ -130,20 +135,20 @@ class Order(BaseModel):
 class MultiLegOrder(BaseModel):
     """Multi-leg order for complex strategies."""
 
-    id: Optional[str] = None
-    legs: List[OrderLeg] = Field(..., description="Order legs")
+    id: str | None = None
+    legs: list[OrderLeg] = Field(..., description="Order legs")
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
-    limit_price: Optional[float] = Field(
+    limit_price: float | None = Field(
         None, description="Net limit price for the strategy"
     )
     status: OrderStatus = OrderStatus.PENDING
-    created_at: Optional[datetime] = None
-    filled_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    filled_at: datetime | None = None
 
     @field_validator("legs")
-    def validate_no_duplicate_assets(cls, v: List[OrderLeg]) -> List[OrderLeg]:
+    def validate_no_duplicate_assets(cls, v: list[OrderLeg]) -> list[OrderLeg]:
         symbols = [
             leg.asset.symbol if hasattr(leg.asset, "symbol") else str(leg.asset)
             for leg in v
@@ -154,10 +159,10 @@ class MultiLegOrder(BaseModel):
 
     def add_leg(
         self,
-        asset: Union[str, Asset],
+        asset: str | Asset,
         quantity: int,
         order_type: OrderType,
-        price: Optional[float] = None,
+        price: float | None = None,
     ) -> "MultiLegOrder":
         # Convert string to Asset if needed
         asset_obj = asset_factory(asset) if isinstance(asset, str) else asset
@@ -170,27 +175,27 @@ class MultiLegOrder(BaseModel):
         return self
 
     def buy_to_open(
-        self, asset: Union[str, Asset], quantity: int, price: Optional[float] = None
+        self, asset: str | Asset, quantity: int, price: float | None = None
     ) -> "MultiLegOrder":
         return self.add_leg(asset, quantity, OrderType.BTO, price)
 
     def sell_to_open(
-        self, asset: Union[str, Asset], quantity: int, price: Optional[float] = None
+        self, asset: str | Asset, quantity: int, price: float | None = None
     ) -> "MultiLegOrder":
         return self.add_leg(asset, quantity, OrderType.STO, price)
 
     def buy_to_close(
-        self, asset: Union[str, Asset], quantity: int, price: Optional[float] = None
+        self, asset: str | Asset, quantity: int, price: float | None = None
     ) -> "MultiLegOrder":
         return self.add_leg(asset, quantity, OrderType.BTC, price)
 
     def sell_to_close(
-        self, asset: Union[str, Asset], quantity: int, price: Optional[float] = None
+        self, asset: str | Asset, quantity: int, price: float | None = None
     ) -> "MultiLegOrder":
         return self.add_leg(asset, quantity, OrderType.STC, price)
 
     @property
-    def net_price(self) -> Optional[float]:
+    def net_price(self) -> float | None:
         if any(leg.price is None for leg in self.legs):
             return None
         return sum(
@@ -216,9 +221,7 @@ class OrderCreate(BaseModel):
     symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
     order_type: OrderType = Field(..., description="Order type: buy or sell")
     quantity: int = Field(..., gt=0, description="Number of shares to trade")
-    price: Optional[float] = Field(
-        None, description="Price per share (None for market)"
-    )
+    price: float | None = Field(None, description="Price per share (None for market)")
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
@@ -230,14 +233,14 @@ class OrderLegCreate(BaseModel):
     asset: str = Field(..., description="Asset symbol")
     quantity: int = Field(..., description="Quantity to trade")
     order_type: OrderType = Field(..., description="Order type (BTO/STO/BTC/STC)")
-    price: Optional[float] = Field(None, description="Price per share/contract")
+    price: float | None = Field(None, description="Price per share/contract")
 
 
 class MultiLegOrderCreate(BaseModel):
     """Create a multi-leg order."""
 
-    legs: List[OrderLegCreate] = Field(..., description="Order legs")
+    legs: list[OrderLegCreate] = Field(..., description="Order legs")
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
-    limit_price: Optional[float] = Field(None, description="Net limit price")
+    limit_price: float | None = Field(None, description="Net limit price")

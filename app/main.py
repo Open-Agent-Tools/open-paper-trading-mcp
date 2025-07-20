@@ -1,23 +1,23 @@
+import os
+import threading
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from typing import Any
+
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
-import os
-import threading
-from contextlib import asynccontextmanager
-from typing import Dict, Any, AsyncGenerator, Optional
 
+from app.adapters.config import get_adapter_factory
 from app.api.routes import api_router
+from app.auth.robinhood_auth import get_robinhood_client
 from app.core.config import settings
 from app.core.exceptions import CustomException
-from app.storage.database import async_engine
-from app.models.database.base import Base
-from app.auth.robinhood_auth import get_robinhood_client
 from app.core.logging import setup_logging
-from app.adapters.config import get_adapter_factory
 
 # Import the unified MCP server instance
-mcp_instance: Optional[Any] = None
+mcp_instance: Any | None = None
 try:
     from app.mcp.server import mcp as mcp_instance
 
@@ -30,6 +30,7 @@ async def initialize_database() -> None:
     print("Initializing database...")
     try:
         from app.storage.database import init_db
+
         await init_db()
         print("Database initialized successfully.")
     except Exception as e:
@@ -50,7 +51,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start cache warming
     adapter_factory = get_adapter_factory()
-    
+
     # Get the configured adapter (robinhood if available, otherwise fallback to test)
     try:
         adapter = adapter_factory.create_adapter("robinhood")
@@ -70,7 +71,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
     # Shutdown
     print("Shutting down FastAPI server...")
-    
+
     # Stop cache warming
     try:
         await adapter_factory.stop_cache_warming()
@@ -109,7 +110,7 @@ async def custom_exception_handler(
 
 
 @app.get("/")
-async def root() -> Dict[str, Any]:
+async def root() -> dict[str, Any]:
     return {
         "message": "Welcome to Open Paper Trading MCP API",
         "endpoints": {
@@ -123,11 +124,6 @@ async def root() -> Dict[str, Any]:
             },
         },
     }
-
-
-@app.get("/health")
-async def health_check() -> Dict[str, Any]:
-    return {"status": "healthy", "servers": ["fastapi", "mcp"]}
 
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

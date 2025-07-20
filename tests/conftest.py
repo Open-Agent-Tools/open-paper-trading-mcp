@@ -1,16 +1,17 @@
 import os
+from collections.abc import AsyncGenerator
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
-from typing import Generator, Any, AsyncGenerator
-from unittest.mock import MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Set the TESTING environment variable BEFORE importing the app
 os.environ["TESTING"] = "True"
 
 from app.main import app
-from app.storage.database import get_async_session, AsyncSessionLocal, async_engine
 from app.models.database.base import Base
+from app.storage.database import AsyncSessionLocal, async_engine, get_async_session
 
 
 @pytest.fixture(scope="function")
@@ -19,14 +20,14 @@ async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
     # Create tables
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     # Create session
     async with AsyncSessionLocal() as session:
         try:
             yield session
         finally:
             await session.close()
-    
+
     # Clean up tables
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

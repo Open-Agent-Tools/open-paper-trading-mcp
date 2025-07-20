@@ -88,7 +88,7 @@ def process_test_file(file_path: Path) -> bool:
     """Process a single test file and return True if changes were made."""
 
     try:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             original_content = f.read()
 
         content = original_content

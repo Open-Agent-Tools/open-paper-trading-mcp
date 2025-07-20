@@ -2,22 +2,21 @@
 
 import json
 import os
-from typing import List, Optional
-from datetime import datetime
 import uuid
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.base import AccountAdapter
-from app.schemas.accounts import Account
 from app.models.database.trading import Account as DBAccount
+from app.schemas.accounts import Account
 from app.storage.database import AsyncSessionLocal
 
 
 class DatabaseAccountAdapter(AccountAdapter):
     """Database-backed account adapter."""
 
-    def __init__(self, db_session: Optional[AsyncSession] = None):
+    def __init__(self, db_session: AsyncSession | None = None):
         self._db = db_session
 
     @property
@@ -27,7 +26,7 @@ class DatabaseAccountAdapter(AccountAdapter):
             self._db = AsyncSessionLocal()
         return self._db
 
-    def get_account(self, account_id: str) -> Optional[Account]:
+    def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
         db_account = self.db.query(DBAccount).filter(DBAccount.id == account_id).first()
         if not db_account:
@@ -64,7 +63,7 @@ class DatabaseAccountAdapter(AccountAdapter):
 
         self.db.commit()
 
-    def get_account_ids(self) -> List[str]:
+    def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
         return [acc.id for acc in self.db.query(DBAccount.id).all()]
 
@@ -93,14 +92,14 @@ class LocalFileSystemAccountAdapter(AccountAdapter):
         """Get file path for an account."""
         return os.path.join(self.root_path, f"{account_id}.json")
 
-    def get_account(self, account_id: str) -> Optional[Account]:
+    def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
         path = self._get_account_path(account_id)
         if not os.path.exists(path):
             return None
 
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = json.load(f)
                 return Account(**data)
         except Exception:
@@ -112,7 +111,7 @@ class LocalFileSystemAccountAdapter(AccountAdapter):
         with open(path, "w") as f:
             json.dump(account.model_dump(), f, indent=2, default=str)
 
-    def get_account_ids(self) -> List[str]:
+    def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
         account_ids = []
         for filename in os.listdir(self.root_path):
@@ -134,7 +133,7 @@ class LocalFileSystemAccountAdapter(AccountAdapter):
 
 
 def account_factory(
-    name: Optional[str] = None, owner: Optional[str] = None, cash: float = 100000.0
+    name: str | None = None, owner: str | None = None, cash: float = 100000.0
 ) -> Account:
     """Factory function to create new accounts."""
     account_id = str(uuid.uuid4())[:8]  # Short ID like reference implementation

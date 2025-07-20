@@ -5,17 +5,16 @@ Circular dependency analysis script for the Open Paper Trading MCP project.
 
 import ast
 import sys
-from pathlib import Path
-from typing import Set, Dict, List, Tuple
 from collections import defaultdict
+from pathlib import Path
 
 
 class ImportAnalyzer(ast.NodeVisitor):
     """AST visitor to extract import information from Python files."""
 
     def __init__(self) -> None:
-        self.imports: List[str] = []
-        self.from_imports: List[Tuple[str, str]] = []
+        self.imports: list[str] = []
+        self.from_imports: list[tuple[str, str]] = []
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -27,10 +26,10 @@ class ImportAnalyzer(ast.NodeVisitor):
                 self.from_imports.append((node.module, alias.name))
 
 
-def analyze_file(file_path: Path) -> Tuple[List[str], List[Tuple[str, str]]]:
+def analyze_file(file_path: Path) -> tuple[list[str], list[tuple[str, str]]]:
     """Analyze a Python file and extract its imports."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         tree = ast.parse(content)
@@ -86,12 +85,12 @@ def get_package_name(file_path: Path, app_root: Path) -> str:
         return ""
 
 
-def find_cycles(graph: Dict[str, Set[str]]) -> List[List[str]]:
+def find_cycles(graph: dict[str, set[str]]) -> list[list[str]]:
     """Find cycles in a directed graph using DFS."""
     cycles = []
     visited = set()
     rec_stack = set()
-    path: List[str] = []
+    path: list[str] = []
 
     def dfs(node: str) -> bool:
         if node in rec_stack:
@@ -141,9 +140,9 @@ def analyze_project_dependencies() -> bool:
     print(f"Analyzing {len(python_files)} Python files...")
 
     # Build dependency graph
-    dependencies: Dict[str, Set[str]] = defaultdict(set)
-    file_to_module: Dict[Path, str] = {}
-    module_to_file: Dict[str, Path] = {}
+    dependencies: dict[str, set[str]] = defaultdict(set)
+    file_to_module: dict[Path, str] = {}
+    module_to_file: dict[str, Path] = {}
 
     # First pass: map files to modules
     for file_path in python_files:

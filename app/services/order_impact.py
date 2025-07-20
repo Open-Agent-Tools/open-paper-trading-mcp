@@ -5,18 +5,19 @@ Adapted from reference implementation OrderImpact with enhanced analysis capabil
 Provides before/after simulation of orders to assess their impact on accounts.
 """
 
-from typing import List, Dict, Any, Optional, Union
-from datetime import datetime
-from pydantic import BaseModel, Field
 from copy import deepcopy
+from datetime import datetime
+from typing import Any
 
+from pydantic import BaseModel, Field
+
+from ..models.assets import Asset, Option
+from ..models.trading import Position
 from ..schemas.orders import (
-    Order,
     MultiLegOrder,
+    Order,
     OrderLeg,
 )
-from ..models.trading import Position
-from ..models.assets import Asset, Option
 from .validation import AccountValidator, ValidationError
 
 
@@ -24,7 +25,7 @@ class AccountSnapshot(BaseModel):
     """Snapshot of account state for impact analysis."""
 
     cash_balance: float = Field(..., description="Available cash")
-    positions: List[Position] = Field(
+    positions: list[Position] = Field(
         default_factory=list, description="Current positions"
     )
     total_value: float = Field(..., description="Total account value")
@@ -38,11 +39,9 @@ class OrderImpactAnalysis(BaseModel):
     """Complete analysis of order impact on account."""
 
     # Order information
-    order_id: Optional[str] = Field(None, description="Order identifier")
+    order_id: str | None = Field(None, description="Order identifier")
     order_type: str = Field(..., description="Type of order analyzed")
-    estimated_fill_price: Optional[float] = Field(
-        None, description="Estimated fill price"
-    )
+    estimated_fill_price: float | None = Field(None, description="Estimated fill price")
     commission: float = Field(default=0.0, description="Estimated commission")
 
     # Before/after snapshots
@@ -52,12 +51,12 @@ class OrderImpactAnalysis(BaseModel):
     # Impact calculations
     cash_impact: float = Field(..., description="Change in cash balance")
     buying_power_impact: float = Field(..., description="Change in buying power")
-    position_impact: Dict[str, Any] = Field(
+    position_impact: dict[str, Any] = Field(
         default_factory=dict, description="Changes to positions"
     )
 
     # Risk assessments
-    validation_errors: List[str] = Field(
+    validation_errors: list[str] = Field(
         default_factory=list, description="Validation errors"
     )
     approval_status: str = Field(..., description="Order approval status")
@@ -68,17 +67,17 @@ class OrderImpactService:
 
     def __init__(
         self,
-        validator: Optional[AccountValidator] = None,
+        validator: AccountValidator | None = None,
     ) -> None:
         """Initialize with validation services."""
         self.validator = validator or AccountValidator()
 
     def analyze_order_impact(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder, List[OrderLeg]],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder | list[OrderLeg],
         quote_adapter: Any = None,
-        estimated_fill_prices: Optional[Dict[str, float]] = None,
+        estimated_fill_prices: dict[str, float] | None = None,
     ) -> OrderImpactAnalysis:
         """
         Analyze the complete impact of an order on an account.
@@ -96,7 +95,7 @@ class OrderImpactService:
         before_snapshot = self._create_account_snapshot(account_data, quote_adapter)
 
         # Initialize validation errors
-        validation_errors: List[str] = []
+        validation_errors: list[str] = []
 
         # Simulate order execution
         after_account_data = self._simulate_order_execution(
@@ -135,10 +134,10 @@ class OrderImpactService:
 
     def preview_order(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder,
         quote_adapter: Any = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Quick preview of order impact for UI display.
 
@@ -156,7 +155,7 @@ class OrderImpactService:
         }
 
     def _create_account_snapshot(
-        self, account_data: Dict[str, Any], quote_adapter: Any = None
+        self, account_data: dict[str, Any], quote_adapter: Any = None
     ) -> AccountSnapshot:
         """Create a snapshot of current account state."""
 
@@ -165,7 +164,7 @@ class OrderImpactService:
         positions = account_data.get("positions", [])
 
         # Convert to Position objects if needed
-        position_objects: List[Position] = []
+        position_objects: list[Position] = []
         for pos in positions:
             if isinstance(pos, Position):
                 position_objects.append(pos)
@@ -191,11 +190,11 @@ class OrderImpactService:
 
     def _simulate_order_execution(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder, List[OrderLeg]],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder | list[OrderLeg],
         quote_adapter: Any = None,
-        estimated_fill_prices: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        estimated_fill_prices: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Simulate order execution and return modified account data."""
 
         # Deep copy account data to avoid modifying original
@@ -219,10 +218,10 @@ class OrderImpactService:
 
     def _simulate_leg_execution(
         self,
-        account_data: Dict[str, Any],
+        account_data: dict[str, Any],
         leg: OrderLeg,
         quote_adapter: Any = None,
-        estimated_fill_prices: Optional[Dict[str, float]] = None,
+        estimated_fill_prices: dict[str, float] | None = None,
     ) -> None:
         """Simulate execution of a single order leg."""
 
@@ -255,7 +254,7 @@ class OrderImpactService:
 
     def _update_position_in_simulation(
         self,
-        account_data: Dict[str, Any],
+        account_data: dict[str, Any],
         symbol: str,
         quantity: int,
         fill_price: float,
@@ -311,7 +310,7 @@ class OrderImpactService:
                     pos.avg_price = new_avg_price
         else:
             # Create new position
-            new_position: Dict[str, Any] = {
+            new_position: dict[str, Any] = {
                 "symbol": symbol,
                 "quantity": quantity,
                 "avg_price": fill_price,
@@ -335,11 +334,11 @@ class OrderImpactService:
             positions.append(new_position)
 
     def _analyze_position_changes(
-        self, before_positions: List[Position], after_positions: List[Position]
-    ) -> Dict[str, Any]:
+        self, before_positions: list[Position], after_positions: list[Position]
+    ) -> dict[str, Any]:
         """Analyze changes in positions."""
 
-        changes: Dict[str, Any] = {
+        changes: dict[str, Any] = {
             "new_positions": [],
             "closed_positions": [],
             "modified_positions": [],
@@ -385,11 +384,11 @@ class OrderImpactService:
         return changes
 
     def _calculate_greeks_impact(
-        self, before_positions: List[Position], after_positions: List[Position]
-    ) -> Dict[str, Optional[float]]:
+        self, before_positions: list[Position], after_positions: list[Position]
+    ) -> dict[str, float | None]:
         """Calculate impact on portfolio Greeks."""
 
-        def sum_position_greeks(positions: List[Position], greek: str) -> float:
+        def sum_position_greeks(positions: list[Position], greek: str) -> float:
             return sum(
                 getattr(pos, greek, 0) or 0 for pos in positions if pos.is_option
             )
@@ -415,10 +414,10 @@ class OrderImpactService:
 
     def _validate_order(
         self,
-        account_data: Dict[str, Any],
-        order: Union[Order, MultiLegOrder, List[OrderLeg]],
+        account_data: dict[str, Any],
+        order: Order | MultiLegOrder | list[OrderLeg],
         quote_adapter: Any = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Validate order using account validation service."""
 
         try:
@@ -428,11 +427,11 @@ class OrderImpactService:
                 positions=account_data.get("positions", []),
             )
         except ValidationError as e:
-            return [f"Validation error: {str(e)}"]
+            return [f"Validation error: {e!s}"]
 
         return []
 
-    def _has_covering_position(self, option: Option, positions: List[Position]) -> bool:
+    def _has_covering_position(self, option: Option, positions: list[Position]) -> bool:
         """Check if there's a position that covers the naked option."""
 
         for pos in positions:
@@ -458,7 +457,7 @@ class OrderImpactService:
         return False
 
     def _get_order_type_description(
-        self, order: Union[Order, MultiLegOrder, List[OrderLeg]]
+        self, order: Order | MultiLegOrder | list[OrderLeg]
     ) -> str:
         """Get human-readable description of order type."""
 
@@ -473,9 +472,9 @@ class OrderImpactService:
 
     def _get_estimated_fill_price(
         self,
-        order: Union[Order, MultiLegOrder, List[OrderLeg]],
-        estimated_fill_prices: Optional[Dict[str, float]] = None,
-    ) -> Optional[float]:
+        order: Order | MultiLegOrder | list[OrderLeg],
+        estimated_fill_prices: dict[str, float] | None = None,
+    ) -> float | None:
         """Get estimated fill price for the order."""
 
         if isinstance(order, Order):
@@ -491,10 +490,10 @@ class OrderImpactService:
 
 # Convenience functions
 def analyze_order_impact(
-    account_data: Dict[str, Any],
-    order: Union[Order, MultiLegOrder],
+    account_data: dict[str, Any],
+    order: Order | MultiLegOrder,
     quote_adapter: Any = None,
-    estimated_fill_prices: Optional[Dict[str, float]] = None,
+    estimated_fill_prices: dict[str, float] | None = None,
 ) -> OrderImpactAnalysis:
     """Quick order impact analysis."""
     service = OrderImpactService()
@@ -504,10 +503,10 @@ def analyze_order_impact(
 
 
 def preview_order_impact(
-    account_data: Dict[str, Any],
-    order: Union[Order, MultiLegOrder],
+    account_data: dict[str, Any],
+    order: Order | MultiLegOrder,
     quote_adapter: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Quick order preview for UI."""
     service = OrderImpactService()
     return service.preview_order(account_data, order, quote_adapter)

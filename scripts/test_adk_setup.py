@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Test script to verify ADK evaluation setup."""
 
-import os
-import sys
 import json
+import os
 import subprocess
+import sys
 
 
 def check_file_exists(path: str, description: str) -> bool:
@@ -46,7 +46,7 @@ def check_test_content() -> bool:
     print("\n🔍 Checking test content...")
 
     try:
-        with open("tests/evals/list_available_tools_test.json", "r") as f:
+        with open("tests/evals/list_available_tools_test.json") as f:
             test_data = json.load(f)
 
         # Check structure

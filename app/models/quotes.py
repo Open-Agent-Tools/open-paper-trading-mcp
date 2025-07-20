@@ -4,21 +4,23 @@ Quote classes for market data and options pricing.
 Quote models with Pydantic validation and FastAPI integration.
 """
 
-from datetime import datetime, date
-from typing import Optional, Union, List, Dict, Any
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from datetime import date, datetime
+from typing import Any, Union
+
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
+
 from .assets import Asset, Option, asset_factory
 
 
 def quote_factory(
-    quote_date: Union[datetime, date, str],
-    asset: Union[str, Asset],
-    price: Optional[float] = None,
+    quote_date: datetime | date | str,
+    asset: str | Asset,
+    price: float | None = None,
     bid: float = 0.0,
     ask: float = 0.0,
     bid_size: int = 0,
     ask_size: int = 0,
-    underlying_price: Optional[float] = None,
+    underlying_price: float | None = None,
 ) -> Union["Quote", "OptionQuote"]:
     """
     Create the appropriate quote type based on the asset.
@@ -77,22 +79,22 @@ class Quote(BaseModel):
 
     asset: Asset = Field(..., description="Asset being quoted")
     quote_date: datetime = Field(..., description="Quote timestamp")
-    price: Optional[float] = Field(None, description="Last trade price")
+    price: float | None = Field(None, description="Last trade price")
     bid: float = Field(0.0, ge=0, description="Bid price")
     ask: float = Field(0.0, ge=0, description="Ask price")
     bid_size: int = Field(0, ge=0, description="Bid size")
     ask_size: int = Field(0, ge=0, description="Ask size")
-    volume: Optional[int] = Field(None, ge=0, description="Trading volume")
+    volume: int | None = Field(None, ge=0, description="Trading volume")
 
     # Greeks (optional for options)
-    delta: Optional[float] = Field(default=None, description="Delta greek")
-    gamma: Optional[float] = Field(default=None, description="Gamma greek")
-    theta: Optional[float] = Field(default=None, description="Theta greek")
-    vega: Optional[float] = Field(default=None, description="Vega greek")
-    rho: Optional[float] = Field(default=None, description="Rho greek")
+    delta: float | None = Field(default=None, description="Delta greek")
+    gamma: float | None = Field(default=None, description="Gamma greek")
+    theta: float | None = Field(default=None, description="Theta greek")
+    vega: float | None = Field(default=None, description="Vega greek")
+    rho: float | None = Field(default=None, description="Rho greek")
 
     @field_validator("asset", mode="before")
-    def normalize_asset(cls, v: Union[str, Asset]) -> Asset:
+    def normalize_asset(cls, v: str | Asset) -> Asset:
         if isinstance(v, str):
             asset = asset_factory(v)
             if asset is None:
@@ -101,7 +103,7 @@ class Quote(BaseModel):
         return v
 
     @field_validator("quote_date", mode="before")
-    def normalize_date(cls, v: Union[str, date, datetime]) -> datetime:
+    def normalize_date(cls, v: str | date | datetime) -> datetime:
         if isinstance(v, str):
             return datetime.fromisoformat(v.replace("Z", "+00:00"))
         elif isinstance(v, date) and not isinstance(v, datetime):
@@ -110,9 +112,7 @@ class Quote(BaseModel):
 
     @field_validator("price")
     @classmethod
-    def calculate_midpoint(
-        cls, v: Optional[float], info: ValidationInfo
-    ) -> Optional[float]:
+    def calculate_midpoint(cls, v: float | None, info: ValidationInfo) -> float | None:
         """Calculate midpoint if price not provided."""
         if v is None:
             bid = info.data.get("bid", 0.0)
@@ -144,37 +144,35 @@ class Quote(BaseModel):
 class OptionQuote(Quote):
     """Quote for options with Greeks."""
 
-    underlying_price: Optional[float] = Field(
-        None, description="Underlying asset price"
-    )
+    underlying_price: float | None = Field(None, description="Underlying asset price")
 
     # Greeks (will be calculated if underlying_price is available)
-    delta: Optional[float] = Field(None, description="Delta (price sensitivity)")
-    gamma: Optional[float] = Field(None, description="Gamma (delta sensitivity)")
-    theta: Optional[float] = Field(None, description="Theta (time decay)")
-    vega: Optional[float] = Field(None, description="Vega (volatility sensitivity)")
-    rho: Optional[float] = Field(None, description="Rho (interest rate sensitivity)")
-    iv: Optional[float] = Field(None, description="Implied volatility")
+    delta: float | None = Field(None, description="Delta (price sensitivity)")
+    gamma: float | None = Field(None, description="Gamma (delta sensitivity)")
+    theta: float | None = Field(None, description="Theta (time decay)")
+    vega: float | None = Field(None, description="Vega (volatility sensitivity)")
+    rho: float | None = Field(None, description="Rho (interest rate sensitivity)")
+    iv: float | None = Field(None, description="Implied volatility")
 
     # Additional Greeks
-    vanna: Optional[float] = Field(
+    vanna: float | None = Field(
         None, description="Vanna (delta sensitivity to volatility)"
     )
-    charm: Optional[float] = Field(None, description="Charm (delta decay)")
-    speed: Optional[float] = Field(None, description="Speed (gamma sensitivity)")
-    zomma: Optional[float] = Field(
+    charm: float | None = Field(None, description="Charm (delta decay)")
+    speed: float | None = Field(None, description="Speed (gamma sensitivity)")
+    zomma: float | None = Field(
         None, description="Zomma (gamma sensitivity to volatility)"
     )
-    color: Optional[float] = Field(None, description="Color (gamma decay)")
-    veta: Optional[float] = Field(None, description="Veta (vega decay)")
-    vomma: Optional[float] = Field(
+    color: float | None = Field(None, description="Color (gamma decay)")
+    veta: float | None = Field(None, description="Veta (vega decay)")
+    vomma: float | None = Field(
         None, description="Vomma (vega sensitivity to volatility)"
     )
-    ultima: Optional[float] = Field(None, description="Ultima (vomma sensitivity)")
-    dual_delta: Optional[float] = Field(None, description="Dual delta")
+    ultima: float | None = Field(None, description="Ultima (vomma sensitivity)")
+    dual_delta: float | None = Field(None, description="Dual delta")
 
     # Market data
-    open_interest: Optional[int] = Field(None, description="Open interest")
+    open_interest: int | None = Field(None, description="Open interest")
 
     @field_validator("asset")
     def validate_option_asset(cls, v: Asset) -> Asset:
@@ -205,24 +203,24 @@ class OptionQuote(Quote):
             pass
 
     @property
-    def days_to_expiration(self) -> Optional[int]:
+    def days_to_expiration(self) -> int | None:
         """Days until expiration."""
         if isinstance(self.asset, Option):
             return self.asset.get_days_to_expiration(self.quote_date.date())
         return None
 
     @property
-    def strike(self) -> Optional[float]:
+    def strike(self) -> float | None:
         """Strike price."""
         return self.asset.strike if isinstance(self.asset, Option) else None
 
     @property
-    def expiration_date(self) -> Optional[date]:
+    def expiration_date(self) -> date | None:
         """Expiration date."""
         return self.asset.expiration_date if isinstance(self.asset, Option) else None
 
     @property
-    def option_type(self) -> Optional[str]:
+    def option_type(self) -> str | None:
         """Option type (call/put)."""
         return self.asset.option_type if isinstance(self.asset, Option) else None
 
@@ -230,14 +228,14 @@ class OptionQuote(Quote):
         """Check if Greeks are available."""
         return self.iv is not None
 
-    def get_intrinsic_value(self, underlying_price: Optional[float] = None) -> float:
+    def get_intrinsic_value(self, underlying_price: float | None = None) -> float:
         """Calculate intrinsic value."""
         price = underlying_price or self.underlying_price
         if price is None or not isinstance(self.asset, Option):
             return 0.0
         return self.asset.get_intrinsic_value(price)
 
-    def get_extrinsic_value(self, underlying_price: Optional[float] = None) -> float:
+    def get_extrinsic_value(self, underlying_price: float | None = None) -> float:
         """Calculate extrinsic (time) value."""
         price = underlying_price or self.underlying_price
         if (
@@ -254,10 +252,10 @@ class OptionQuote(Quote):
 class QuoteResponse(BaseModel):
     """API response wrapper for quotes."""
 
-    quote: Union[Quote, OptionQuote] = Field(..., description="Quote data")
+    quote: Quote | OptionQuote = Field(..., description="Quote data")
     data_source: str = Field(..., description="Data source identifier")
     cached: bool = Field(False, description="Whether data was served from cache")
-    cache_age_seconds: Optional[int] = Field(
+    cache_age_seconds: int | None = Field(
         None, description="Age of cached data in seconds"
     )
 
@@ -267,21 +265,19 @@ class OptionsChain(BaseModel):
 
     underlying_symbol: str = Field(..., description="Underlying asset symbol")
     expiration_date: date = Field(..., description="Options expiration date")
-    underlying_price: Optional[float] = Field(
-        None, description="Current underlying price"
-    )
-    calls: List[OptionQuote] = Field(default_factory=list, description="Call options")
-    puts: List[OptionQuote] = Field(default_factory=list, description="Put options")
+    underlying_price: float | None = Field(None, description="Current underlying price")
+    calls: list[OptionQuote] = Field(default_factory=list, description="Call options")
+    puts: list[OptionQuote] = Field(default_factory=list, description="Put options")
     quote_time: datetime = Field(
         default_factory=datetime.now, description="Quote timestamp"
     )
 
     @property
-    def all_options(self) -> List[OptionQuote]:
+    def all_options(self) -> list[OptionQuote]:
         """All options (calls + puts)."""
         return self.calls + self.puts
 
-    def get_strikes(self) -> List[float]:
+    def get_strikes(self) -> list[float]:
         """Get all available strike prices."""
         strikes = set()
         for option in self.all_options:
@@ -289,16 +285,16 @@ class OptionsChain(BaseModel):
                 strikes.add(option.strike)
         return sorted(list(strikes))
 
-    def get_calls_by_strike(self, strike: float) -> List[OptionQuote]:
+    def get_calls_by_strike(self, strike: float) -> list[OptionQuote]:
         """Get call options for a specific strike."""
         return [opt for opt in self.calls if opt.strike == strike]
 
-    def get_puts_by_strike(self, strike: float) -> List[OptionQuote]:
+    def get_puts_by_strike(self, strike: float) -> list[OptionQuote]:
         """Get put options for a specific strike."""
         return [opt for opt in self.puts if opt.strike == strike]
 
     def filter_by_strike_range(
-        self, min_strike: Optional[float] = None, max_strike: Optional[float] = None
+        self, min_strike: float | None = None, max_strike: float | None = None
     ) -> "OptionsChain":
         """
         Filter options by strike price range.
@@ -364,7 +360,7 @@ class OptionsChain(BaseModel):
 
         return self.filter_by_strike_range(min_strike, max_strike)
 
-    def get_atm_options(self, tolerance: float = 0.05) -> Dict[str, List[OptionQuote]]:
+    def get_atm_options(self, tolerance: float = 0.05) -> dict[str, list[OptionQuote]]:
         """
         Get at-the-money options.
 
@@ -394,7 +390,7 @@ class OptionsChain(BaseModel):
 
         return {"calls": atm_calls, "puts": atm_puts}
 
-    def get_itm_options(self) -> Dict[str, List[OptionQuote]]:
+    def get_itm_options(self) -> dict[str, list[OptionQuote]]:
         """
         Get in-the-money options.
 
@@ -417,7 +413,7 @@ class OptionsChain(BaseModel):
 
         return {"calls": itm_calls, "puts": itm_puts}
 
-    def get_otm_options(self) -> Dict[str, List[OptionQuote]]:
+    def get_otm_options(self) -> dict[str, list[OptionQuote]]:
         """
         Get out-of-the-money options.
 
@@ -442,7 +438,7 @@ class OptionsChain(BaseModel):
 
     def get_option_by_delta(
         self, target_delta: float, option_type: str = "call"
-    ) -> Optional[OptionQuote]:
+    ) -> OptionQuote | None:
         """
         Find option closest to target delta.
 
@@ -500,7 +496,7 @@ class OptionsChain(BaseModel):
             quote_time=self.quote_time,
         )
 
-    def get_summary_stats(self) -> Dict[str, Any]:
+    def get_summary_stats(self) -> dict[str, Any]:
         """
         Get summary statistics for the options chain.
 
@@ -553,17 +549,15 @@ class OptionsChainResponse(BaseModel):
     """API response for options chain data."""
 
     underlying_symbol: str = Field(..., description="Underlying asset symbol")
-    underlying_price: Optional[float] = Field(
-        None, description="Current underlying price"
-    )
-    expiration_date: Optional[str] = Field(
+    underlying_price: float | None = Field(None, description="Current underlying price")
+    expiration_date: str | None = Field(
         None, description="Expiration date (ISO format)"
     )
     quote_time: str = Field(..., description="Quote timestamp (ISO format)")
-    calls: List[Dict[str, Any]] = Field(
+    calls: list[dict[str, Any]] = Field(
         default_factory=list, description="Call options data"
     )
-    puts: List[Dict[str, Any]] = Field(
+    puts: list[dict[str, Any]] = Field(
         default_factory=list, description="Put options data"
     )
     data_source: str = Field(..., description="Data source identifier")
@@ -578,23 +572,23 @@ class GreeksResponse(BaseModel):
     strike: float = Field(..., description="Strike price")
     expiration_date: str = Field(..., description="Expiration date (ISO format)")
     option_type: str = Field(..., description="Option type (call/put)")
-    days_to_expiration: Optional[int] = Field(None, description="Days to expiration")
+    days_to_expiration: int | None = Field(None, description="Days to expiration")
 
     # Greeks
-    delta: Optional[float] = Field(None, description="Delta")
-    gamma: Optional[float] = Field(None, description="Gamma")
-    theta: Optional[float] = Field(None, description="Theta")
-    vega: Optional[float] = Field(None, description="Vega")
-    rho: Optional[float] = Field(None, description="Rho")
-    charm: Optional[float] = Field(None, description="Charm")
-    vanna: Optional[float] = Field(None, description="Vanna")
-    speed: Optional[float] = Field(None, description="Speed")
-    zomma: Optional[float] = Field(None, description="Zomma")
-    color: Optional[float] = Field(None, description="Color")
+    delta: float | None = Field(None, description="Delta")
+    gamma: float | None = Field(None, description="Gamma")
+    theta: float | None = Field(None, description="Theta")
+    vega: float | None = Field(None, description="Vega")
+    rho: float | None = Field(None, description="Rho")
+    charm: float | None = Field(None, description="Charm")
+    vanna: float | None = Field(None, description="Vanna")
+    speed: float | None = Field(None, description="Speed")
+    zomma: float | None = Field(None, description="Zomma")
+    color: float | None = Field(None, description="Color")
 
     # Additional data
-    implied_volatility: Optional[float] = Field(None, description="Implied volatility")
-    underlying_price: Optional[float] = Field(None, description="Underlying price")
-    option_price: Optional[float] = Field(None, description="Option price")
+    implied_volatility: float | None = Field(None, description="Implied volatility")
+    underlying_price: float | None = Field(None, description="Underlying price")
+    option_price: float | None = Field(None, description="Option price")
     data_source: str = Field(..., description="Data source identifier")
     cached: bool = Field(False, description="Whether data was served from cache")

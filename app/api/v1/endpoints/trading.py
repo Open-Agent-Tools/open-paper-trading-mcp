@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.schemas.orders import Order, OrderCreate, MultiLegOrderCreate
-from app.models.trading import StockQuote
-from app.services.trading_service import TradingService, trading_service
 from app.core.exceptions import NotFoundError, ValidationError
+from app.models.trading import StockQuote
+from app.schemas.orders import MultiLegOrderCreate, Order, OrderCreate
+from app.services.trading_service import TradingService, trading_service
 
 router = APIRouter()
 
@@ -34,7 +33,7 @@ async def create_order(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/orders", response_model=List[Order])
+@router.get("/orders", response_model=list[Order])
 async def get_orders(service: TradingService = Depends(get_trading_service)):
     return await service.get_orders()
 
