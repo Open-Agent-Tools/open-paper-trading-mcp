@@ -145,7 +145,7 @@ class OptionsExpirationEngine:
                 quantity_val = position.get("quantity", 0)
                 quantity = (
                     int(quantity_val)
-                    if isinstance(quantity_val, (int, float, str))
+                    if isinstance(quantity_val, int | float | str)
                     else 0
                 )
             else:
@@ -221,12 +221,12 @@ class OptionsExpirationEngine:
         long_equity = sum(
             int(pos["quantity"])
             for pos in equity_positions
-            if isinstance(pos["quantity"], (int, float)) and int(pos["quantity"]) > 0
+            if isinstance(pos["quantity"], int | float) and int(pos["quantity"]) > 0
         )
         short_equity = sum(
             int(pos["quantity"])
             for pos in equity_positions
-            if isinstance(pos["quantity"], (int, float)) and int(pos["quantity"]) < 0
+            if isinstance(pos["quantity"], int | float) and int(pos["quantity"]) < 0
         )
 
         # Process each expired position
@@ -535,7 +535,7 @@ class OptionsExpirationEngine:
                 quantity_val = position.get("quantity", 0)
                 quantity = (
                     int(quantity_val)
-                    if isinstance(quantity_val, (int, float, str))
+                    if isinstance(quantity_val, int | float | str)
                     else 0
                 )
             else:
@@ -580,7 +580,7 @@ class OptionsExpirationEngine:
                 pos_quantity_val = pos.get("quantity", 0)
                 pos_quantity = (
                     int(pos_quantity_val)
-                    if isinstance(pos_quantity_val, (int, float, str))
+                    if isinstance(pos_quantity_val, int | float | str)
                     else 0
                 )
             else:
@@ -598,7 +598,7 @@ class OptionsExpirationEngine:
                 pos_quantity_val = position.get("quantity", 0)
                 pos_quantity = (
                     int(pos_quantity_val)
-                    if isinstance(pos_quantity_val, (int, float, str))
+                    if isinstance(pos_quantity_val, int | float | str)
                     else 0
                 )
             else:
@@ -608,7 +608,7 @@ class OptionsExpirationEngine:
                 # This position has enough to complete the drain
                 if isinstance(position, dict):
                     current_qty = position["quantity"]
-                    if isinstance(current_qty, (int, float, str)):
+                    if isinstance(current_qty, int | float | str):
                         position["quantity"] = int(current_qty) + remaining_quantity
                     else:
                         position["quantity"] = remaining_quantity

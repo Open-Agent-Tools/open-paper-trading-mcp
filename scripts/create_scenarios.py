@@ -84,7 +84,7 @@ async def create_test_scenarios() -> int:
     updated_count = 0
 
     async for db in get_async_session():
-        for scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
+        for _scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
             # Check if scenario already exists
             existing = await db.execute(
                 select(TestScenario).where(TestScenario.name == scenario_data["name"])

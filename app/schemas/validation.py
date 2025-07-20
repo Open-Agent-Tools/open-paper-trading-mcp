@@ -192,7 +192,7 @@ def validate_percentage(value: float | None, field_name: str = "value") -> float
     if value is None:
         return None
 
-    if not isinstance(value, (int, float)):
+    if not isinstance(value, int | float):
         raise ValueError(f"{field_name} must be a number")
 
     # Allow reasonable ranges for Greeks and other percentages
@@ -219,7 +219,7 @@ def validate_pnl(value: float | None, field_name: str = "P&L") -> float | None:
     if value is None:
         return None
 
-    if not isinstance(value, (int, float)):
+    if not isinstance(value, int | float):
         raise ValueError(f"{field_name} must be a number")
 
     # Check for unreasonably large P&L values
@@ -282,21 +282,20 @@ def validate_position_consistency(position) -> bool:
         and hasattr(position, "avg_price")
         and hasattr(position, "quantity")
         and hasattr(position, "unrealized_pnl")
-    ):
-        if position.current_price and position.avg_price and position.quantity:
-            expected_pnl = (
-                position.current_price - position.avg_price
-            ) * position.quantity
+    ) and position.current_price and position.avg_price and position.quantity:
+        expected_pnl = (
+            position.current_price - position.avg_price
+        ) * position.quantity
 
-            # Allow small floating point differences
-            if (
-                position.unrealized_pnl
-                and abs(position.unrealized_pnl - expected_pnl) > 0.01
-            ):
-                raise ValueError(
-                    f"Inconsistent P&L calculation: Expected ${expected_pnl:.2f}, "
-                    f"got ${position.unrealized_pnl:.2f}"
-                )
+        # Allow small floating point differences
+        if (
+            position.unrealized_pnl
+            and abs(position.unrealized_pnl - expected_pnl) > 0.01
+        ):
+            raise ValueError(
+                f"Inconsistent P&L calculation: Expected ${expected_pnl:.2f}, "
+                f"got ${position.unrealized_pnl:.2f}"
+            )
 
     # Validate that avg_price is positive for actual positions
     if hasattr(position, "avg_price") and hasattr(position, "quantity"):

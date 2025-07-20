@@ -661,7 +661,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
             all_symbols = set(
                 [s[0] for s in stock_symbols] + [s[0] for s in option_symbols]
             )
-            return sorted(list(all_symbols))
+            return sorted(all_symbols)
 
     def get_underlying_symbols(self) -> list[str]:
         """Get underlying asset symbols (stocks)."""

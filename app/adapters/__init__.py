@@ -29,27 +29,27 @@ from .config import (
 from .test_data import TestDataError, TestDataQuoteAdapter, get_test_adapter
 
 __all__ = [
-    # Base classes
-    "QuoteAdapter",
     "AdapterConfig",
-    "AdapterRegistry",
-    "adapter_registry",
-    "get_adapter_registry",
-    # Caching
-    "QuoteCache",
-    "CacheEntry",
-    "CachedQuoteAdapter",
-    "get_global_cache",
-    "cached_adapter",
     # Configuration
     "AdapterFactory",
     "AdapterFactoryConfig",
-    "get_adapter_factory",
-    "configure_default_registry",
-    "create_test_adapter",
+    "AdapterRegistry",
+    "CacheEntry",
+    "CachedQuoteAdapter",
+    # Base classes
+    "QuoteAdapter",
+    # Caching
+    "QuoteCache",
+    "TestDataError",
     # Test data
     "TestDataQuoteAdapter",
-    "TestDataError",
+    "adapter_registry",
+    "cached_adapter",
+    "configure_default_registry",
+    "create_test_adapter",
+    "get_adapter_factory",
+    "get_adapter_registry",
+    "get_global_cache",
     "get_test_adapter",
 ]
 

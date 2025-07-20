@@ -59,7 +59,7 @@ class Asset(BaseModel):
     )
 
     @field_validator("symbol", mode="before")
-    def normalize_symbol(cls, v: str) -> str:
+    def normalize_symbol(self, v: str) -> str:
         if isinstance(v, str):
             return v.upper().strip()
         return v

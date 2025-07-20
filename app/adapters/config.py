@@ -3,6 +3,7 @@ Adapter configuration management system.
 """
 
 import asyncio
+import contextlib
 import json
 import os
 from dataclasses import asdict, dataclass, field
@@ -538,10 +539,8 @@ class AdapterFactory:
         """Stop the cache warming task."""
         if self._cache_warming_task and not self._cache_warming_task.done():
             self._cache_warming_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cache_warming_task
-            except asyncio.CancelledError:
-                pass
             logger.info("Cache warming task stopped")
 
     def get_cache_warming_status(self) -> dict[str, Any]:

@@ -89,7 +89,7 @@ class ImportChecker:
                         if level <= len(parts):
                             parent_parts = parts[:-level]
                             if module:
-                                module = ".".join(parent_parts + [module])
+                                module = ".".join([*parent_parts, module])
                             else:
                                 module = ".".join(parent_parts)
 
@@ -195,10 +195,7 @@ class ImportChecker:
             return True
 
         # Check for module file
-        if module_path.with_suffix(".py").exists():
-            return True
-
-        return False
+        return bool(module_path.with_suffix(".py").exists())
 
     def _name_exists_in_module(self, module_name: str, name: str) -> bool:
         """Check if a name exists in a module."""

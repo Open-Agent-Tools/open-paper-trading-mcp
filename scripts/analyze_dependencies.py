@@ -96,7 +96,7 @@ def find_cycles(graph: dict[str, set[str]]) -> list[list[str]]:
         if node in rec_stack:
             # Found cycle
             cycle_start = path.index(node)
-            cycle = path[cycle_start:] + [node]
+            cycle = [*path[cycle_start:], node]
             cycles.append(cycle)
             return True
 
@@ -166,7 +166,7 @@ def analyze_project_dependencies() -> bool:
                 dependencies[current_module].add(normalized)
 
         # Process from imports
-        for module, name in from_imports:
+        for module, _name in from_imports:
             normalized = normalize_module_name(module, current_package)
             if normalized.startswith("app."):
                 dependencies[current_module].add(normalized)

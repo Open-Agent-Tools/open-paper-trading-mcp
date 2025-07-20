@@ -406,10 +406,10 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
     def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
         dates = []
-        for symbol, option_quote in self._option_cache.items():
+        for _symbol, option_quote in self._option_cache.items():
             if option_quote.underlying == underlying:
                 dates.append(option_quote.expiration)
-        return sorted(list(set(dates)))
+        return sorted(set(dates))
 
     def get_test_scenarios(self) -> dict[str, Any]:
         """Get available test scenarios."""
@@ -424,7 +424,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         symbols = set()
         symbols.update(self._stock_cache.keys())
         symbols.update(self._option_cache.keys())
-        return sorted(list(symbols))
+        return sorted(symbols)
 
     def get_performance_metrics(self) -> dict[str, Any]:
         """Get performance metrics for the adapter."""

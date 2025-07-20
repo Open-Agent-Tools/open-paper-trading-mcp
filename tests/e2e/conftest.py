@@ -195,7 +195,7 @@ class E2ETestHelpers:
 
     @staticmethod
     async def create_and_fill_order(
-        client: AsyncClient, account_id: str, order_data: dict, fill_price: float = None
+        client: AsyncClient, account_id: str, order_data: dict, fill_price: float | None = None
     ) -> dict:
         """Create an order and immediately fill it."""
         # Create order

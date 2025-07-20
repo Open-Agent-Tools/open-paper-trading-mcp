@@ -68,7 +68,7 @@ class OrderLeg(BaseModel):
     )
 
     @field_validator("asset", mode="before")
-    def normalize_asset(cls, v: str | Asset) -> Asset:
+    def normalize_asset(self, v: str | Asset) -> Asset:
         result = asset_factory(v) if isinstance(v, str) else v
         if result is None:
             raise ValueError(f"Invalid asset: {v}")
@@ -148,7 +148,7 @@ class MultiLegOrder(BaseModel):
     filled_at: datetime | None = None
 
     @field_validator("legs")
-    def validate_no_duplicate_assets(cls, v: list[OrderLeg]) -> list[OrderLeg]:
+    def validate_no_duplicate_assets(self, v: list[OrderLeg]) -> list[OrderLeg]:
         symbols = [
             leg.asset.symbol if hasattr(leg.asset, "symbol") else str(leg.asset)
             for leg in v

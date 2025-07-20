@@ -1296,14 +1296,13 @@ class TradingService:
                                 elif (
                                     asset.option_type
                                     and asset.option_type.upper() == "PUT"
+                                ) and (
+                                    underlying_quote.price is not None
+                                    and asset.strike is not None
                                 ):
-                                    if (
-                                        underlying_quote.price is not None
-                                        and asset.strike is not None
-                                    ):
-                                        intrinsic_value = max(
-                                            0, asset.strike - underlying_quote.price
-                                        )
+                                    intrinsic_value = max(
+                                        0, asset.strike - underlying_quote.price
+                                    )
 
                                 # Calculate impact
                                 multiplier = 100  # Standard option multiplier

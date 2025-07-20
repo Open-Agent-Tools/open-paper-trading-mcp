@@ -58,7 +58,7 @@ class Position(BaseModel, PositionValidationMixin):
     iv: float | None = Field(default=None, description="Implied volatility")
 
     @field_validator("asset", mode="before")
-    def normalize_asset(cls, v: str | Asset) -> Asset | None:
+    def normalize_asset(self, v: str | Asset) -> Asset | None:
         if isinstance(v, str):
             return asset_factory(v)
         return v

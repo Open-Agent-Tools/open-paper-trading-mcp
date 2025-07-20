@@ -234,11 +234,10 @@ def create_asset_strategies(
     # Option positions
     for position in filtered_positions:
         asset = asset_factory(position.symbol)
-        if isinstance(asset, Option):
-            if position.quantity != 0:
-                strategies.append(
-                    AssetStrategy(asset=asset, quantity=position.quantity)
-                )
+        if isinstance(asset, Option) and position.quantity != 0:
+            strategies.append(
+                AssetStrategy(asset=asset, quantity=position.quantity)
+            )
 
     return strategies
 

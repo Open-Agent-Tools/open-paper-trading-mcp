@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.quote_adapter import QuoteAdapter
+from app.adapters.base import QuoteAdapter
 from app.core.config import settings
 from app.services.trading_service import TradingService
 from app.storage.database import get_async_db

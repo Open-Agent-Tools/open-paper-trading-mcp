@@ -106,9 +106,7 @@ def _validate_inputs(
         return False
     if days_to_expiration <= 0:
         return False
-    if option_price <= 0:
-        return False
-    return True
+    return not option_price <= 0
 
 
 def _normal_cdf(x: float) -> float:

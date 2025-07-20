@@ -201,9 +201,9 @@ class TestDataMigrator:
     def _get_available_dates(self, data: list[tuple]) -> list[str]:
         """Get list of available dates from the data."""
         dates = set()
-        for symbol, quote_date, bid, ask in data:
+        for _symbol, quote_date, _bid, _ask in data:
             dates.add(quote_date)
-        return sorted(list(dates))
+        return sorted(dates)
 
     async def _clear_existing_data(self) -> None:
         """Clear existing test data from database."""
@@ -394,7 +394,7 @@ class TestDataMigrator:
             "stocks_generated": stock_count,
             "options_generated": option_count,
             "total_generated": stock_count + option_count,
-            "scenarios": list(set(q["scenario"] for q in stock_quotes)),
+            "scenarios": list({q["scenario"] for q in stock_quotes}),
         }
 
     def _generate_stock_quote(
@@ -574,7 +574,7 @@ class TestDataMigrator:
 
         count = 0
         async for db in get_async_session():
-            for scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
+            for _scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
                 scenario = TestScenario(
                     name=scenario_data["name"],
                     description=scenario_data["description"],

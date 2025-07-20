@@ -1,7 +1,7 @@
 import os
 import threading
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 import uvicorn
@@ -18,11 +18,9 @@ from app.core.logging import setup_logging
 
 # Import the unified MCP server instance
 mcp_instance: Any | None = None
-try:
+with suppress(ImportError):
     from app.mcp.server import mcp as mcp_instance
 
-except ImportError:
-    pass
 
 
 async def initialize_database() -> None:
@@ -162,7 +160,7 @@ def main() -> None:
         "app.main:app",
         host="0.0.0.0",
         port=2080,
-        reload=True if os.getenv("ENVIRONMENT") == "development" else False,
+        reload=os.getenv("ENVIRONMENT") == "development",
     )
 
 

@@ -104,46 +104,13 @@ python scripts/dev.py check
 
 ## 📋 Feature Roadmap
 
-### Phase 0: Infrastructure ✅ COMPLETE
-- **Dual Interface**: REST API + MCP tools in one application
-- **Mock Trading**: Simulated orders with hardcoded market data  
-- **Portfolio Tracking**: Basic position and P&L calculations
-- **Docker Setup**: Full containerization with PostgreSQL
-- **Type Safety**: 100% typed with Pydantic validation
+See [TODO.md](TODO.md) for the detailed, up-to-date development roadmap. The high-level phases are:
 
-### Phase 1: Core Trading Engine ✅ COMPLETED
-- **Database Integration**: Persistent storage for all trading data
-- **Account Management**: Multi-account support with ownership tracking
-- **Real Market Data**: Polygon.io integration for live prices
-- **Order Execution**: Realistic fill simulation with balance checks
-- **Portfolio History**: Track performance over time
-
-### Phase 2: Options Trading & Greeks 📊 PLANNED
-- **Options Chain Support**: Real-time options quotes and Greeks calculations
-- **Complex Orders**: Multi-leg strategies (covered calls, spreads, straddles)
-- **Automatic Expiration**: Handle option expirations and assignments
-- **Options Education**: Interactive learning tools for options mechanics
-
-### Phase 3: Backtesting Framework 📈 PLANNED
-- **Historical Data**: Integrated data feeds for strategy testing
-- **Strategy Engine**: Plugin architecture for custom trading algorithms
-- **Performance Analytics**: Sharpe ratio, drawdown, win rate analysis
-- **Simulation Quality**: Realistic slippage, commissions, and market impact
-- **Comparative Analysis**: A/B testing multiple strategies
-
-### Phase 4: Advanced Features 🚀 PLANNED
-- **Machine Learning**: Integrate ML models for predictive analytics
-- **Paper Trading Competitions**: Multi-user contests and leaderboards
-- **Advanced Charts**: Technical analysis tools and indicators
-- **News Integration**: Sentiment analysis and event-driven trading
-- **International Markets**: Multi-currency and global exchange support
-
-### Phase 5: Educational & Community 🎓 PLANNED
-- **Interactive Tutorials**: Guided lessons for beginners to advanced
-- **Strategy Library**: Community-contributed trading algorithms
-- **Mentorship Tools**: Pair experienced traders with learners
-- **Certification System**: Skills validation and achievement tracking
-- **Research Tools**: Academic features for finance education
+-   **Phase 1: Advanced Order Management**: Stop-loss, stop-limit, and other advanced order types.
+-   **Phase 2: Caching & Performance Infrastructure**: Redis caching and async task processing for scalability.
+-   **Phase 3: User Authentication & Multi-Tenancy**: A production-grade, secure user management system.
+-   **Phase 4: Backtesting & Strategy Framework**: Historical backtesting and strategy development tools.
+-   **Phase 5: Advanced Features & User Experience**: Frontend dashboard, advanced MCP tools, and educational features.
 
 ## 🤖 MCP Tools Reference
 
@@ -235,10 +202,10 @@ See [ADK Testing Guide](tests/evals/ADK-testing-evals.md) for details.
 
 ## 📊 Development Status
 
-### ✅ Completed (as of 2025-01-16)
+### ✅ Completed
 - **Phase 0**: Infrastructure setup with Docker, PostgreSQL, and ADK test runner
 - **Phase 1**: Complete architectural refactoring and type safety
-  - 100% MyPy compliance achieved (0 errors in 72 source files)
+  - 100% MyPy compliance achieved
   - Full PostgreSQL database integration
   - Clean service layer architecture
   - Comprehensive type annotations throughout

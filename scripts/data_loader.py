@@ -369,7 +369,7 @@ class DataLoader:
         created_count = 0
 
         async for db in get_async_session():
-            for scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
+            for _scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
                 # Check if scenario already exists
                 existing = await db.execute(
                     db.query(TestScenario).where(

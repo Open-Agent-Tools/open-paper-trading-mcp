@@ -96,7 +96,7 @@ class TestOrderFlow:
             "condition": "limit",
         }
 
-        order = await e2e_helpers.create_and_fill_order(
+        await e2e_helpers.create_and_fill_order(
             test_client, account_id, order_data, fill_price=2795.0
         )
 
@@ -147,7 +147,7 @@ class TestOrderFlow:
             "condition": "limit",
         }
 
-        sell_order = await e2e_helpers.create_and_fill_order(
+        await e2e_helpers.create_and_fill_order(
             test_client, account_id, sell_order_data, fill_price=155.0
         )
 
@@ -226,7 +226,7 @@ class TestOrderFlow:
     ):
         """Test various invalid order scenarios."""
         account_id = created_test_account
-        current_balance = await e2e_helpers.get_account_balance(test_client, account_id)
+        await e2e_helpers.get_account_balance(test_client, account_id)
 
         # Test insufficient funds
         expensive_order_data = {

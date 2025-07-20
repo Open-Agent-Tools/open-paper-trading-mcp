@@ -249,7 +249,7 @@ class TestDataValidator:
             .all()
         )
 
-        available_date_set = set(d[0] for d in available_dates)
+        available_date_set = {d[0] for d in available_dates}
 
         # Check if we have data for start and end dates
         if scenario_obj.start_date not in available_date_set:
@@ -278,22 +278,22 @@ class TestDataValidator:
             True if validation passes, False otherwise
         """
         # Get stock symbols
-        stock_symbols = set(
+        stock_symbols = {
             s[0]
             for s in db.query(TestStockQuote.symbol)
             .filter(TestStockQuote.scenario == scenario)
             .distinct()
             .all()
-        )
+        }
 
         # Get option underlying symbols
-        option_underlyings = set(
+        option_underlyings = {
             u[0]
             for u in db.query(TestOptionQuote.underlying)
             .filter(TestOptionQuote.scenario == scenario)
             .distinct()
             .all()
-        )
+        }
 
         # Check that all option underlyings have stock data
         missing_underlyings = option_underlyings - stock_symbols

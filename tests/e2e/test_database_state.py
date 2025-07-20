@@ -276,7 +276,7 @@ class TestDatabaseState:
             },  # Partial sell
         ]
 
-        for i, op in enumerate(operations):
+        for _i, op in enumerate(operations):
             order_data = {
                 "symbol": op["symbol"],
                 "order_type": op["action"],

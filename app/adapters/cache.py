@@ -235,7 +235,7 @@ class QuoteCache:
             # Sort by age (newest first)
             entries.sort(
                 key=lambda x: float(x["age_seconds"])
-                if isinstance(x["age_seconds"], (int, float, str))
+                if isinstance(x["age_seconds"], int | float | str)
                 else 0.0
             )
             return entries
@@ -267,7 +267,7 @@ class CachedQuoteAdapter:
 
         # Try cache first
         cached_quote = self.cache.get(cache_key)
-        if cached_quote is not None and isinstance(cached_quote, (Quote, OptionQuote)):
+        if cached_quote is not None and isinstance(cached_quote, Quote | OptionQuote):
             return cached_quote
 
         # Fetch from adapter
@@ -277,7 +277,7 @@ class CachedQuoteAdapter:
         if asset is None:
             return None
         quote = self.adapter.get_quote(asset)
-        if quote is not None and isinstance(quote, (Quote, OptionQuote)):
+        if quote is not None and isinstance(quote, Quote | OptionQuote):
             self.cache.put(cache_key, quote)
             return quote
 
@@ -293,7 +293,7 @@ class CachedQuoteAdapter:
             cache_key = f"quote:{symbol}:{getattr(self.adapter, 'name', 'unknown')}"
             cached_quote = self.cache.get(cache_key)
             if cached_quote is not None and isinstance(
-                cached_quote, (Quote, OptionQuote)
+                cached_quote, Quote | OptionQuote
             ):
                 results[symbol] = cached_quote
             else:
