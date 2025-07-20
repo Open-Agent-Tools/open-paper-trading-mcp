@@ -465,7 +465,7 @@ class AdapterFactory:
 
         # Start warming tasks for all symbols
         tasks = [warm_single_symbol(symbol) for symbol in symbols]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
         # Retry failed symbols if configured
         if retry_failed and failed_symbols:
@@ -473,7 +473,7 @@ class AdapterFactory:
             retry_tasks = [
                 warm_single_symbol(symbol) for symbol in failed_symbols.copy()
             ]
-            retry_results = await asyncio.gather(*retry_tasks, return_exceptions=True)
+            await asyncio.gather(*retry_tasks, return_exceptions=True)
 
         end_time = asyncio.get_event_loop().time()
         duration = end_time - start_time
