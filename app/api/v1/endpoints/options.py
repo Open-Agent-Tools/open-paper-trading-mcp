@@ -136,7 +136,7 @@ async def get_expiration_dates(
     Returns sorted list of expiration dates with metadata.
     """
     try:
-        dates = service.get_expiration_dates(symbol)
+        dates = await service.get_expiration_dates(symbol)
 
         return {
             "underlying_symbol": symbol,
@@ -166,7 +166,7 @@ async def create_multi_leg_order(
     Supports complex strategies like spreads, straddles, and condors.
     """
     try:
-        order = service.create_multi_leg_order_from_request(
+        order = await service.create_multi_leg_order_from_request(
             request.legs, request.order_type, request.net_price
         )
         return order
@@ -251,7 +251,7 @@ async def find_tradable_options_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.find_tradable_options(symbol, expiration_date, option_type)
+        result = await service.find_tradable_options(symbol, expiration_date, option_type)
         return result
     except Exception as e:
         raise HTTPException(
@@ -270,7 +270,7 @@ async def get_option_market_data_endpoint(
     through the unified TradingService interface.
     """
     try:
-        result = service.get_option_market_data(option_id)
+        result = await service.get_option_market_data(option_id)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result

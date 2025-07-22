@@ -242,10 +242,13 @@ class TestRobinhoodAdapter:
         """Test stock quote retrieval with API error."""
         stock = Stock(symbol="AAPL", name="Apple Inc.")
 
-        with patch(
-            "robin_stocks.robinhood.stocks.get_latest_price",
-            side_effect=Exception("API Error"),
-        ), pytest.raises(Exception, match="API Error"):
+        with (
+            patch(
+                "robin_stocks.robinhood.stocks.get_latest_price",
+                side_effect=Exception("API Error"),
+            ),
+            pytest.raises(Exception, match="API Error"),
+        ):
             await adapter.get_quote(stock)
 
         assert adapter._request_count == 1

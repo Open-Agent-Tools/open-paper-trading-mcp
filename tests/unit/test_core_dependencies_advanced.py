@@ -219,9 +219,12 @@ class TestApplicationStateManagement:
         delattr(mock_app, "state")
 
         # Mock getattr to simulate AttributeError handling
-        with patch(
-            "app.core.dependencies.getattr", side_effect=AttributeError("No state")
-        ), pytest.raises(AttributeError):
+        with (
+            patch(
+                "app.core.dependencies.getattr", side_effect=AttributeError("No state")
+            ),
+            pytest.raises(AttributeError),
+        ):
             get_trading_service(mock_request)
 
     def test_app_state_initialization_pattern(self):

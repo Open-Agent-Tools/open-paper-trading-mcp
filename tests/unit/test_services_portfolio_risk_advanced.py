@@ -885,9 +885,7 @@ class TestRiskBudgeting:
             }
 
             # Mock optimization to equal contributions
-            dict.fromkeys(
-                ["AAPL", "GOOGL", "JPM", "JNJ", "XOM"], 0.2
-            )
+            dict.fromkeys(["AAPL", "GOOGL", "JPM", "JNJ", "XOM"], 0.2)
 
             erc_weights = await risk_analyzer.calculate_erc_weights(
                 diversified_portfolio

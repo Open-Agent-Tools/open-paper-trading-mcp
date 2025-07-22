@@ -4,4 +4,6 @@
 
 class TestQueryOptimizationService:
     def test_placeholder(self):
-        raise AssertionError("Test stubs for query optimization service not implemented")
+        raise AssertionError(
+            "Test stubs for query optimization service not implemented"
+        )

@@ -47,7 +47,7 @@ async def get_stock_info_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.get_stock_info(symbol)
+        result = await service.get_stock_info(symbol)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result
@@ -72,7 +72,7 @@ async def get_price_history_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.get_price_history(symbol, period)
+        result = await service.get_price_history(symbol, period)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result
@@ -95,7 +95,7 @@ async def get_stock_news_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.get_stock_news(symbol)
+        result = await service.get_stock_news(symbol)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result
@@ -116,7 +116,7 @@ async def get_top_movers_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.get_top_movers()
+        result = await service.get_top_movers()
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result
@@ -138,7 +138,7 @@ async def search_stocks_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.search_stocks(query)
+        result = await service.search_stocks(query)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result

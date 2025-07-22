@@ -51,9 +51,7 @@ class TestCoreModuleStructure:
         import sys
 
         # Clear any previously imported core modules (in a test context)
-        [
-            name for name in sys.modules if name.startswith("app.core.")
-        ]
+        [name for name in sys.modules if name.startswith("app.core.")]
 
         for module_name in [
             "app.core.config",

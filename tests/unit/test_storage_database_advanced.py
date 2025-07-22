@@ -602,9 +602,7 @@ class TestEnvironmentConfiguration:
         # Clear any cached modules and reload
         import sys
 
-        modules_to_reload = [
-            k for k in sys.modules if k.startswith("app.storage")
-        ]
+        modules_to_reload = [k for k in sys.modules if k.startswith("app.storage")]
         for module in modules_to_reload:
             if module in sys.modules:
                 del sys.modules[module]
