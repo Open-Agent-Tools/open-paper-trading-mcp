@@ -36,13 +36,13 @@ __all__ = [
     "AdapterRegistry",
     "CacheEntry",
     "CachedQuoteAdapter",
+    # Test data
+    "DevDataQuoteAdapter",
     # Base classes
     "QuoteAdapter",
     # Caching
     "QuoteCache",
     "TestDataError",
-    # Test data
-    "DevDataQuoteAdapter",
     "adapter_registry",
     "cached_adapter",
     "configure_default_registry",

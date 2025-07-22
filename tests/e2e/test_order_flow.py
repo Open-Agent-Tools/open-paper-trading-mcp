@@ -26,7 +26,7 @@ class TestOrderFlow:
         portfolio_response = await test_client.get("/api/v1/portfolio/")
         assert portfolio_response.status_code == 200
         portfolio = portfolio_response.json()
-        initial_balance = portfolio["cash_balance"]
+        portfolio["cash_balance"]
 
         # 2. Create market order
         order_data = {
@@ -57,7 +57,7 @@ class TestOrderFlow:
         # 5. Check if positions exist (may be empty initially)
         positions_response = await test_client.get("/api/v1/portfolio/positions")
         assert positions_response.status_code == 200
-        positions = positions_response.json()
+        positions_response.json()
 
         # 6. For testing, just verify the order exists in the system
         orders_response = await test_client.get("/api/v1/trading/orders")
@@ -78,7 +78,7 @@ class TestOrderFlow:
         portfolio_response = await test_client.get("/api/v1/portfolio/")
         assert portfolio_response.status_code == 200
         portfolio = portfolio_response.json()
-        initial_balance = portfolio["cash_balance"]
+        portfolio["cash_balance"]
 
         # Create limit order
         order_data = {
@@ -325,7 +325,7 @@ class TestOrderFlow:
         initial_portfolio_response = await test_client.get("/api/v1/portfolio/")
         assert initial_portfolio_response.status_code == 200
         initial_portfolio = initial_portfolio_response.json()
-        initial_balance = initial_portfolio["cash_balance"]
+        initial_portfolio["cash_balance"]
 
         # Execute several trades
         trades = [
@@ -361,8 +361,8 @@ class TestOrderFlow:
         assert "total_value" in portfolio
 
         # Verify we have basic portfolio calculations
-        assert isinstance(portfolio["cash_balance"], (int, float))
-        assert isinstance(portfolio["total_value"], (int, float))
+        assert isinstance(portfolio["cash_balance"], int | float)
+        assert isinstance(portfolio["total_value"], int | float)
 
         # Verify orders were created (they may not be filled immediately)
         orders_response = await test_client.get("/api/v1/trading/orders")

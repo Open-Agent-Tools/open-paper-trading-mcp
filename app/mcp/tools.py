@@ -5,11 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.models.assets import Option, asset_factory
-from app.schemas.orders import (
-    OrderCondition,
-    OrderCreate,
-    OrderType,
-)
+from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
 
 # MCP tools will receive TradingService instance as dependency

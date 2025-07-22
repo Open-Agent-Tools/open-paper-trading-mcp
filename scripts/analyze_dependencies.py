@@ -236,9 +236,8 @@ def get_imports_from_file(file_path: Path) -> set:
 def get_local_modules(project_root: Path) -> set:
     local_modules = set()
     for path in project_root.iterdir():
-        if path.is_dir():
-            if (path / "__init__.py").exists():
-                local_modules.add(path.name)
+        if path.is_dir() and (path / "__init__.py").exists():
+            local_modules.add(path.name)
     return local_modules
 
 
@@ -250,16 +249,16 @@ def analyze_dependencies():
     try:
         pyproject_data = toml.load(pyproject_path)
         # Adjusting for [project] table for dependencies
-        dependencies = set(
+        dependencies = {
             pkg.split("[")[0].split(">")[0].split("<")[0].split("=")[0]
             for pkg in pyproject_data.get("project", {}).get("dependencies", [])
-        )
-        dev_dependencies = set(
+        }
+        dev_dependencies = {
             pkg.split("[")[0].split(">")[0].split("<")[0].split("=")[0]
             for pkg in pyproject_data.get("project", {})
             .get("optional-dependencies", {})
             .get("dev", [])
-        )
+        }
         all_declared_deps = dependencies.union(dev_dependencies)
         all_declared_deps.discard("python")
     except Exception as e:

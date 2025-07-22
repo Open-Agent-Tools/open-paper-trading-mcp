@@ -15,9 +15,7 @@ from app.services.order_notifications import (
 )
 
 # Performance Benchmarks
-from app.services.performance_benchmarks import (
-    BenchmarkResult,
-)
+from app.services.performance_benchmarks import BenchmarkResult
 
 # Portfolio Risk Metrics
 from app.services.portfolio_risk_metrics import (

@@ -136,7 +136,7 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
     from app.core.exceptions import ValidationError
 
     # Convert ValueError to ValidationError for consistent handling
-    validation_error = ValidationError(str(exc))
+    ValidationError(str(exc))
 
     error_content = {
         "error": {

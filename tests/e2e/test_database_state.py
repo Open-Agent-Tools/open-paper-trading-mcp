@@ -9,15 +9,9 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.database.trading import (
-    Account as DBAccount,
-)
-from app.models.database.trading import (
-    Order as DBOrder,
-)
-from app.models.database.trading import (
-    Position as DBPosition,
-)
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Order as DBOrder
+from app.models.database.trading import Position as DBPosition
 from app.schemas.orders import OrderStatus, OrderType
 from app.services.trading_service import TradingService
 from tests.e2e.conftest import E2ETestHelpers
@@ -144,7 +138,6 @@ class TestDatabaseState:
         """Test concurrent database operations don't corrupt data."""
         import asyncio
 
-        account_id = created_test_account
 
         async def create_order(symbol: str, quantity: int):
             """Helper to create an order."""
@@ -276,7 +269,6 @@ class TestDatabaseState:
         e2e_helpers: E2ETestHelpers,
     ):
         """Test portfolio consistency across multiple operations."""
-        account_id = created_test_account
 
         # Perform sequence of operations
         operations = [

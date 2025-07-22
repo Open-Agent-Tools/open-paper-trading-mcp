@@ -11,15 +11,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.models.database.trading import (
-    Account as DBAccount,
-)
-from app.models.database.trading import (
-    Order as DBOrder,
-)
-from app.models.database.trading import (
-    Position as DBPosition,
-)
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Order as DBOrder
+from app.models.database.trading import Position as DBPosition
 from app.schemas.orders import OrderCreate, OrderType
 from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService

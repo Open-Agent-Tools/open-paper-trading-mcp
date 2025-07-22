@@ -22,14 +22,8 @@ class TestModelsImports:
 
     def test_database_models_import(self):
         """Test import of database models."""
-        from app.models.database.trading import (
-            Account,
-            Order,
-            Transaction,
-        )
-        from app.models.database.trading import (
-            Position as DBPosition,
-        )
+        from app.models.database.trading import Account, Order, Transaction
+        from app.models.database.trading import Position as DBPosition
 
         assert Account is not None
         assert Order is not None

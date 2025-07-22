@@ -216,12 +216,11 @@ class OrderConverter:
                 updated_order.stop_price = min(order.stop_price, new_stop_price)
 
         # Check if should trigger
-        should_trigger = False
         if updated_order.stop_price:
             if is_protective_stop:
-                should_trigger = current_price <= updated_order.stop_price
+                pass
             else:
-                should_trigger = current_price >= updated_order.stop_price
+                pass
 
         return updated_order
 

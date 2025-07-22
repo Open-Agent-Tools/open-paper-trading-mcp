@@ -16,9 +16,7 @@ from pydantic import BaseModel, Field
 from app.core.dependencies import get_trading_service
 from app.core.exceptions import NotFoundError, ValidationError
 from app.models.quotes import GreeksResponse, OptionsChainResponse
-from app.schemas.orders import (
-    Order,
-)
+from app.schemas.orders import Order
 from app.services.trading_service import TradingService
 
 router = APIRouter()

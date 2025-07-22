@@ -6,6 +6,7 @@ order states and transitions without holding excessive data in memory.
 """
 
 import asyncio
+import contextlib
 import logging
 import threading
 import weakref
@@ -131,10 +132,8 @@ class MemoryEfficientOrderTracker:
         # Cancel cleanup task
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Order state tracker stopped")
 
@@ -455,10 +454,8 @@ class MemoryEfficientOrderTracker:
                 except Exception as e:
                     logger.error(f"Error in state change callback: {e}")
                     # Remove failing callback
-                    try:
+                    with contextlib.suppress(ValueError):
                         self.state_change_callbacks.remove(weak_callback)
-                    except ValueError:
-                        pass
 
     def reset(self) -> None:
         """Reset all tracking data (useful for testing)."""

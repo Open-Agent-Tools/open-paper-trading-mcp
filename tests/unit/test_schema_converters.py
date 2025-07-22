@@ -8,15 +8,9 @@ from datetime import datetime
 
 import pytest
 
-from app.models.database.trading import (
-    Account as DBAccount,
-)
-from app.models.database.trading import (
-    Order as DBOrder,
-)
-from app.models.database.trading import (
-    Position as DBPosition,
-)
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Order as DBOrder
+from app.models.database.trading import Position as DBPosition
 from app.schemas.accounts import Account
 from app.schemas.orders import Order, OrderCondition, OrderStatus, OrderType
 from app.schemas.positions import Position

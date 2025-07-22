@@ -23,9 +23,8 @@ from .analyzer import (
     detect_complex_strategies,
     get_portfolio_optimization_recommendations,
 )
-from .models import (
+from .models import (  # Base strategy models; Analysis models; Enums
     AssetStrategy,
-    # Base strategy models
     BasicStrategy,
     ComplexStrategy,
     ComplexStrategyType,
@@ -34,9 +33,7 @@ from .models import (
     SpreadStrategy,
     SpreadType,
     StrategyGreeks,
-    # Analysis models
     StrategyPnL,
-    # Enums
     StrategyType,
 )
 

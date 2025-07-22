@@ -7,6 +7,7 @@ of the API request/response cycle and handles sophisticated order types.
 """
 
 import asyncio
+import contextlib
 import logging
 import threading
 from collections import defaultdict
@@ -182,10 +183,8 @@ class OrderExecutionEngine:
 
         if self.monitoring_task:
             self.monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         self.executor.shutdown(wait=True)
         logger.info("Order Execution Engine stopped")
@@ -268,7 +267,7 @@ class OrderExecutionEngine:
         logger.info("Order monitoring loop stopped")
 
     async def _check_trigger_conditions(
-        self, symbol: str = None, price: float = None
+        self, symbol: str | None = None, price: float | None = None
     ) -> None:
         """Check all trigger conditions against current market data."""
         logger.debug(
@@ -440,7 +439,7 @@ class OrderExecutionEngine:
         """Execute a converted order through the trading service."""
         try:
             # Use the trading service to execute the order
-            result = await self.trading_service.execute_order(order)
+            await self.trading_service.execute_order(order)
 
             logger.info(f"Executed converted order: {order.id}")
 

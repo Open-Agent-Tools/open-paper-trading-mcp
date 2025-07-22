@@ -104,7 +104,7 @@ class PortfolioRiskCalculator:
         self,
         portfolio: Portfolio,
         historical_data: dict[str, list[float]] | None = None,
-        confidence_levels: list[float] = None,
+        confidence_levels: list[float] | None = None,
     ) -> PortfolioRiskSummary:
         """
         Calculate comprehensive portfolio risk metrics.

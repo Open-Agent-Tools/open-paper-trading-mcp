@@ -9,15 +9,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 from app.models.assets import asset_factory
-from app.models.database.trading import (
-    Account as DBAccount,
-)
-from app.models.database.trading import (
-    Order as DBOrder,
-)
-from app.models.database.trading import (
-    Position as DBPosition,
-)
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Order as DBOrder
+from app.models.database.trading import Position as DBPosition
 from app.schemas.accounts import Account
 from app.schemas.orders import Order, OrderCondition
 from app.schemas.positions import Position

@@ -13,11 +13,7 @@ from pydantic import BaseModel, Field
 
 from ...schemas.positions import Position
 from ..models.assets import Asset, Option
-from ..schemas.orders import (
-    MultiLegOrder,
-    Order,
-    OrderLeg,
-)
+from ..schemas.orders import MultiLegOrder, Order, OrderLeg
 from .validation import AccountValidator, ValidationError
 
 

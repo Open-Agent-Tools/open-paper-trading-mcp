@@ -419,7 +419,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
         for _symbol, option_quote in self._option_cache.items():
             if option_quote.underlying == underlying:
                 dates.append(option_quote.expiration)
-        return sorted(set(d.date() if hasattr(d, "date") else d for d in dates))
+        return sorted({d.date() if hasattr(d, "date") else d for d in dates})
 
     def get_test_scenarios(self) -> dict[str, Any]:
         """Get available test scenarios."""

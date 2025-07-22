@@ -10,12 +10,7 @@ from typing import Protocol
 
 from ..models.assets import Option
 from ..models.quotes import Quote
-from ..schemas.orders import (
-    MultiLegOrder,
-    Order,
-    OrderLeg,
-    OrderType,
-)
+from ..schemas.orders import MultiLegOrder, Order, OrderLeg, OrderType
 from ..schemas.positions import Position
 from .estimators import MidpointEstimator, PriceEstimator
 from .validation import AccountValidator

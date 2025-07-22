@@ -6,6 +6,7 @@ execution updates, and important trading events.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -188,17 +189,16 @@ class WebhookNotificationSender(NotificationSender):
                 "data": notification.data,
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self.webhook_url,
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=10),
-                ) as response:
-                    if response.status < 400:
-                        return True
-                    else:
-                        logger.error(f"Webhook returned status {response.status}")
-                        return False
+            async with aiohttp.ClientSession() as session, session.post(
+                self.webhook_url,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as response:
+                if response.status < 400:
+                    return True
+                else:
+                    logger.error(f"Webhook returned status {response.status}")
+                    return False
 
         except Exception as e:
             logger.error(f"Failed to send webhook notification: {e}")
@@ -304,10 +304,8 @@ class OrderNotificationManager:
 
         if self.worker_task:
             self.worker_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.worker_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Order notification manager stopped")
 

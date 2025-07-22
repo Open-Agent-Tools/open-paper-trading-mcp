@@ -330,9 +330,8 @@ class ComplexOrderValidator:
             if (
                 asset1.strike == asset2.strike
                 and asset1.expiration_date == asset2.expiration_date
-            ):
-                if asset1.option_type != asset2.option_type:
-                    return StrategyType.STRADDLE
+            ) and asset1.option_type != asset2.option_type:
+                return StrategyType.STRADDLE
 
             # Different strikes, same expiration
             if (
@@ -348,9 +347,8 @@ class ComplexOrderValidator:
             if (
                 asset1.strike == asset2.strike
                 and asset1.expiration_date != asset2.expiration_date
-            ):
-                if asset1.option_type == asset2.option_type:
-                    return StrategyType.CALENDAR_SPREAD
+            ) and asset1.option_type == asset2.option_type:
+                return StrategyType.CALENDAR_SPREAD
 
         return StrategyType.CUSTOM
 
@@ -362,7 +360,7 @@ class ComplexOrderValidator:
         if not all(isinstance(a, Option) for a in assets):
             return StrategyType.CUSTOM
 
-        underlyings = set(a.underlying.symbol for a in assets)
+        underlyings = {a.underlying.symbol for a in assets}
         if len(underlyings) != 1:
             return StrategyType.CUSTOM
 
@@ -373,12 +371,11 @@ class ComplexOrderValidator:
         ]
 
         # Classic butterfly: +1, -2, +1 or -1, +2, -1
-        if len(set(strikes)) == 3:
-            if (
-                quantities[0] * quantities[2] > 0
-                and quantities[1] == -2 * quantities[0]
-            ):
-                return StrategyType.BUTTERFLY
+        if len(set(strikes)) == 3 and (
+            quantities[0] * quantities[2] > 0
+            and quantities[1] == -2 * quantities[0]
+        ):
+            return StrategyType.BUTTERFLY
 
         return StrategyType.CUSTOM
 
@@ -390,7 +387,7 @@ class ComplexOrderValidator:
         if not all(isinstance(a, Option) for a in assets):
             return StrategyType.CUSTOM
 
-        underlyings = set(a.underlying.symbol for a in assets)
+        underlyings = {a.underlying.symbol for a in assets}
         if len(underlyings) != 1:
             return StrategyType.CUSTOM
 
@@ -413,8 +410,8 @@ class ComplexOrderValidator:
                 return StrategyType.IRON_CONDOR
 
         # Check for iron butterfly
-        if len(set(a.strike for a in assets)) == 3:
-            middle_strike = sorted(set(a.strike for a in assets))[1]
+        if len({a.strike for a in assets}) == 3:
+            middle_strike = sorted({a.strike for a in assets})[1]
             middle_legs = [l for l in order.legs if l.asset.strike == middle_strike]
 
             if len(middle_legs) == 2:
@@ -785,13 +782,10 @@ class ComplexOrderValidator:
         if len(order.legs) != 2:
             return "Invalid vertical spread"
 
-        leg1, leg2 = order.legs[0], order.legs[1]
+        leg1, _leg2 = order.legs[0], order.legs[1]
 
         # Determine spread type
-        if leg1.quantity > 0:
-            position = "Bull"
-        else:
-            position = "Bear"
+        position = "Bull" if leg1.quantity > 0 else "Bear"
 
         if isinstance(leg1.asset, Option):
             option_type = leg1.asset.option_type.title()

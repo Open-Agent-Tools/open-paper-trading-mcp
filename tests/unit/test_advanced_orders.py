@@ -446,7 +446,7 @@ class TestOrderLifecycleManager:
         )
 
         # Create order in lifecycle manager
-        lifecycle_state = lifecycle_manager.create_order(order)
+        lifecycle_manager.create_order(order)
 
         # Make transitions and check the history is tracked
         lifecycle_manager.transition_order(
@@ -571,9 +571,9 @@ async def test_integration_order_flow():
     mock_service.execute_order = AsyncMock()
 
     # Create components
-    converter = OrderConverter()
+    OrderConverter()
     execution_engine = OrderExecutionEngine(mock_service)
-    lifecycle_manager = OrderLifecycleManager()
+    OrderLifecycleManager()
     tracker = MemoryEfficientOrderTracker()
 
     # Start components

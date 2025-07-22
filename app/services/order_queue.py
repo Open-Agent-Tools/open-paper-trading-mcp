@@ -6,6 +6,7 @@ priority handling, batch processing, and flow control mechanisms.
 """
 
 import asyncio
+import contextlib
 import heapq
 import logging
 from collections import defaultdict
@@ -176,10 +177,8 @@ class OrderQueue:
         # Cancel batch timer
         if self.batch_timer_task:
             self.batch_timer_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.batch_timer_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Order queue stopped")
 

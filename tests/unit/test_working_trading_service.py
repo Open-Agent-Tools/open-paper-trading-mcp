@@ -138,10 +138,9 @@ class TestTradingServiceWorking:
         service._get_account = mock_get_account
 
         # Mock the order creation
-        mock_order_id = "test-order-123"
 
         # Create order request
-        order_request = OrderCreate(
+        OrderCreate(
             symbol="AAPL",
             order_type=OrderType.BUY,
             quantity=100,
@@ -186,9 +185,9 @@ class TestTradingServiceComponents:
         for method_name in async_methods:
             if hasattr(service, method_name):
                 method = getattr(service, method_name)
-                assert inspect.iscoroutinefunction(
-                    method
-                ), f"{method_name} should be async"
+                assert inspect.iscoroutinefunction(method), (
+                    f"{method_name} should be async"
+                )
 
     def test_service_error_handling(self):
         """Test service handles missing dependencies gracefully."""

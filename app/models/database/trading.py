@@ -18,16 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.types import (
-    JSON,
-    Boolean,
-    Date,
-    DateTime,
-    Float,
-    Integer,
-    String,
-    Text,
-)
+from sqlalchemy.types import JSON, Boolean, Date, DateTime, Float, Integer, String, Text
 
 from app.models.database.base import Base
 from app.schemas.orders import OrderStatus, OrderType

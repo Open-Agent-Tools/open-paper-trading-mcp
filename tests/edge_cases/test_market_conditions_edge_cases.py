@@ -128,15 +128,15 @@ class TestMarketHoursValidation:
         ]
 
         for holiday in holidays:
-            assert self._is_market_holiday(
-                holiday
-            ), f"{holiday} should be recognized as market holiday"
+            assert self._is_market_holiday(holiday), (
+                f"{holiday} should be recognized as market holiday"
+            )
 
         # Regular trading day
         regular_day = date(2024, 3, 13)  # Wednesday
-        assert not self._is_market_holiday(
-            regular_day
-        ), "Regular day should not be holiday"
+        assert not self._is_market_holiday(regular_day), (
+            "Regular day should not be holiday"
+        )
 
     def _is_market_hours(self, dt: datetime) -> bool:
         """Check if datetime is during market hours."""
@@ -256,9 +256,9 @@ class TestStockHaltsAndCircuitBreakers:
                 should_process = await execution_engine._should_process_order(
                     circuit_breaker_order
                 )
-                assert (
-                    not should_process
-                ), "Orders should be paused during circuit breaker"
+                assert not should_process, (
+                    "Orders should be paused during circuit breaker"
+                )
 
         finally:
             await execution_engine.stop()
@@ -444,7 +444,7 @@ class TestDataFeedFailures:
             execution_engine.add_trigger_order(recovery_order)
 
             # Multiple attempts should eventually succeed
-            for attempt in range(5):
+            for _attempt in range(5):
                 try:
                     await execution_engine._check_trigger_conditions("RECOVER", 140.00)
                     break
@@ -493,7 +493,7 @@ class TestExtremeMarketConditions:
     @pytest.mark.asyncio
     async def test_high_volatility_conditions(self):
         """Test system behavior during high volatility."""
-        execution_engine_mock = AsyncMock()
+        AsyncMock()
         state_tracker = MemoryEfficientOrderTracker()
 
         await state_tracker.start()

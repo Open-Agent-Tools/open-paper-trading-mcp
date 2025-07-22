@@ -7,15 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.models.assets import Option, asset_factory
-from app.models.database.trading import (
-    Account as DBAccount,
-)
-from app.models.database.trading import (
-    Order as DBOrder,
-)
-from app.models.database.trading import (
-    Position as DBPosition,
-)
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Order as DBOrder
+from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
 from app.schemas.orders import (
     Order,

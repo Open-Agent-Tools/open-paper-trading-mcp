@@ -178,7 +178,7 @@ class TestBasicOrderLifecycle:
         )
 
         # Track through queue system
-        queue_id = await system["order_queue"].enqueue_order(
+        await system["order_queue"].enqueue_order(
             order, QueuePriority.NORMAL
         )
 

@@ -5,6 +5,7 @@ This suite targets the highest-impact, easiest coverage opportunities
 to push us over the 70% coverage threshold.
 """
 
+import contextlib
 from datetime import date, datetime
 
 import pytest
@@ -21,14 +22,12 @@ from app.schemas.orders import *
 from app.schemas.positions import *
 from app.storage.database import *
 
-try:
+with contextlib.suppress(ImportError):
     from app.schemas.trading import *
-except ImportError:
-    pass
-try:
+with contextlib.suppress(ImportError):
     from app.schemas.validation import *
-except ImportError:
-    pass
+import contextlib
+
 from app.adapters.base import *
 from app.adapters.test_data import *
 from app.services.auth_service import AuthService
@@ -117,18 +116,10 @@ class TestComprehensiveModuleCoverage:
         assert hasattr(Base, "metadata")
 
         # Test database models specifically from database.trading
-        from app.models.database.trading import (
-            Account as DBAccount,
-        )
-        from app.models.database.trading import (
-            Order as DBOrder,
-        )
-        from app.models.database.trading import (
-            Position as DBPosition,
-        )
-        from app.models.database.trading import (
-            Transaction as DBTransaction,
-        )
+        from app.models.database.trading import Account as DBAccount
+        from app.models.database.trading import Order as DBOrder
+        from app.models.database.trading import Position as DBPosition
+        from app.models.database.trading import Transaction as DBTransaction
 
         db_models = [DBAccount, DBOrder, DBPosition, DBTransaction]
         for model in db_models:
@@ -338,18 +329,10 @@ class TestComprehensiveModuleCoverage:
     def test_database_models_comprehensive(self):
         """Test all database models comprehensively."""
         # Import database models specifically
-        from app.models.database.trading import (
-            Account as DBAccount,
-        )
-        from app.models.database.trading import (
-            Order as DBOrder,
-        )
-        from app.models.database.trading import (
-            Position as DBPosition,
-        )
-        from app.models.database.trading import (
-            Transaction as DBTransaction,
-        )
+        from app.models.database.trading import Account as DBAccount
+        from app.models.database.trading import Order as DBOrder
+        from app.models.database.trading import Position as DBPosition
+        from app.models.database.trading import Transaction as DBTransaction
 
         # Test Account model
         account = DBAccount(owner="testuser", cash_balance=100000.0)
@@ -573,10 +556,8 @@ class TestComprehensiveModuleCoverage:
         ]
 
         for module in major_modules:
-            try:
+            with contextlib.suppress(ImportError):
                 __import__(module)
-            except ImportError:
-                pass
 
     def test_trading_schemas_comprehensive(self):
         """Test trading schemas module."""
@@ -593,7 +574,7 @@ class TestComprehensiveModuleCoverage:
         # Test database model creation - use database model, not schema
         from app.models.database.trading import Account as DBAccount
 
-        db_account = DBAccount(owner="test", cash_balance=5000.0)
+        DBAccount(owner="test", cash_balance=5000.0)
 
         # Test async conversion functions exist
         conversion_functions = [

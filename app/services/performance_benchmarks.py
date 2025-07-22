@@ -7,6 +7,7 @@ analysis, and performance optimization recommendations.
 """
 
 import asyncio
+import contextlib
 import logging
 import threading
 import time
@@ -133,10 +134,8 @@ class PerformanceMonitor:
 
         if self.monitoring_task:
             self.monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Performance monitoring stopped")
 
@@ -484,7 +483,7 @@ class PerformanceMonitor:
                 self.metrics[operation].clear()
                 # Clear related counters
                 keys_to_clear = [
-                    k for k in self.counters.keys() if k.startswith(operation)
+                    k for k in self.counters if k.startswith(operation)
                 ]
                 for key in keys_to_clear:
                     del self.counters[key]

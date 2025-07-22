@@ -55,7 +55,7 @@ class TestTradingServiceBasic:
 
         # Assert
         assert price > 0
-        assert isinstance(price, (int, float, Decimal))
+        assert isinstance(price, int | float | Decimal)
 
     def test_quote_adapter_assignment(self):
         """Test quote adapter is properly assigned."""

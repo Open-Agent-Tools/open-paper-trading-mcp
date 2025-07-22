@@ -197,7 +197,7 @@ class TestSchemaConvertersHighCoverage:
         # Should raise ConversionError without account_id
         try:
             converter.to_database(schema_order)
-            assert False, "Should have raised ConversionError"
+            raise AssertionError("Should have raised ConversionError")
         except Exception as e:
             # Error handling coverage achieved
             assert "account_id" in str(e) or "required" in str(e)
@@ -216,7 +216,7 @@ class TestSchemaConvertersHighCoverage:
         # Should raise ConversionError without account_id
         try:
             converter.to_database(schema_position)
-            assert False, "Should have raised ConversionError"
+            raise AssertionError("Should have raised ConversionError")
         except Exception as e:
             # Error handling coverage achieved
             assert "account_id" in str(e) or "required" in str(e)

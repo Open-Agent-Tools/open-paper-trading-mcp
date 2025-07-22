@@ -6,6 +6,8 @@ for end-to-end testing scenarios.
 """
 
 import asyncio
+import builtins
+import contextlib
 
 import pytest
 import pytest_asyncio
@@ -84,10 +86,8 @@ async def test_async_session() -> AsyncSession:
                 # Try to commit any pending transactions
                 await session.commit()
             except Exception:
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     await session.rollback()
-                except:
-                    pass
                 raise
             finally:
                 await session.close()
