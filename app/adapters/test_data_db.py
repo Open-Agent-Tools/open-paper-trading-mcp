@@ -5,6 +5,7 @@ This adapter retrieves test data from the database instead of CSV files,
 providing better performance and consistency.
 """
 
+import contextlib
 from datetime import date, datetime
 from typing import Any
 
@@ -196,7 +197,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
             and asset.strike
             and asset.expiration_date
         ):
-            try:
+            with contextlib.suppress(Exception):
                 greeks = calculate_option_greeks(
                     option_type=asset.option_type.lower(),
                     strike=asset.strike,
@@ -205,9 +206,6 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     option_price=price,  # Use the option price from the quote
                     volatility=0.25,  # 25% implied volatility
                 )
-            except Exception:
-                # If Greeks calculation fails, continue without them
-                pass
 
         return OptionQuote(
             asset=asset,
@@ -255,13 +253,11 @@ class DevDataQuoteAdapter(QuoteAdapter):
             if option_quote.underlying == underlying:
                 # Create option asset
                 asset = asset_factory(symbol)
-                if isinstance(asset, Option):
-                    # Filter by expiration if specified
-                    if (
-                        expiration_date is None
-                        or asset.expiration_date == expiration_date.date()
-                    ):
-                        assets.append(asset)
+                if isinstance(asset, Option) and (
+                    expiration_date is None
+                    or asset.expiration_date == expiration_date.date()
+                ):
+                    assets.append(asset)
 
         return assets
 
