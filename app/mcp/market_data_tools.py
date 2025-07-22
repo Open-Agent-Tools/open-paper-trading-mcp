@@ -9,7 +9,9 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.services.trading_service import trading_service
+from app.services.trading_service import TradingService
+
+trading_service = TradingService()
 
 
 class GetStockPriceArgs(BaseModel):
@@ -48,7 +50,7 @@ async def get_stock_price(args: GetStockPriceArgs) -> dict[str, Any]:
     symbol = args.symbol.strip().upper()
 
     try:
-        result = trading_service.get_stock_price(symbol)
+        result = await trading_service.get_stock_price(symbol)
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -63,7 +65,7 @@ async def get_stock_info(args: GetStockInfoArgs) -> dict[str, Any]:
     symbol = args.symbol.strip().upper()
 
     try:
-        result = trading_service.get_stock_info(symbol)
+        result = await trading_service.get_stock_info(symbol)
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -78,7 +80,7 @@ async def get_price_history(args: GetPriceHistoryArgs) -> dict[str, Any]:
     symbol = args.symbol.strip().upper()
 
     try:
-        result = trading_service.get_price_history(symbol, args.period)
+        result = await trading_service.get_price_history(symbol, args.period)
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -93,7 +95,7 @@ async def get_stock_news(args: GetStockNewsArgs) -> dict[str, Any]:
     symbol = args.symbol.strip().upper()
 
     try:
-        result = trading_service.get_stock_news(symbol)
+        result = await trading_service.get_stock_news(symbol)
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -106,7 +108,7 @@ async def get_top_movers() -> dict[str, Any]:
     This function now routes through TradingService for unified data access.
     """
     try:
-        result = trading_service.get_top_movers()
+        result = await trading_service.get_top_movers()
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -121,7 +123,7 @@ async def search_stocks(args: SearchStocksArgs) -> dict[str, Any]:
     query = args.query.strip()
 
     try:
-        result = trading_service.search_stocks(query)
+        result = await trading_service.search_stocks(query)
         return result
     except Exception as e:
         return {"error": str(e)}

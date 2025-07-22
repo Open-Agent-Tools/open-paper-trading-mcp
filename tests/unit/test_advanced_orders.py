@@ -17,12 +17,16 @@ import pytest
 from app.schemas.orders import Order, OrderStatus, OrderType
 from app.services.market_impact import FillResult, MarketImpactSimulator
 from app.services.order_conversion import OrderConversionError, OrderConverter
-from app.services.order_execution_engine import (OrderExecutionEngine,
-                                                 TriggerCondition)
-from app.services.order_lifecycle import (OrderEvent, OrderLifecycleError,
-                                          OrderLifecycleManager)
-from app.services.order_state_tracker import (MemoryEfficientOrderTracker,
-                                              StateChangeEvent)
+from app.services.order_execution_engine import OrderExecutionEngine, TriggerCondition
+from app.services.order_lifecycle import (
+    OrderEvent,
+    OrderLifecycleError,
+    OrderLifecycleManager,
+)
+from app.services.order_state_tracker import (
+    MemoryEfficientOrderTracker,
+    StateChangeEvent,
+)
 
 
 class TestAdvancedOrderTypes:

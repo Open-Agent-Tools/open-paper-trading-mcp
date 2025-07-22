@@ -17,8 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.adapters.test_data import DevDataQuoteAdapter
 from app.models.assets import Option, asset_factory
-from app.models.database.trading import (DevOptionQuote, DevScenario,
-                                         DevStockQuote)
+from app.models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 
 
 class TestDatabaseAdapter:
@@ -137,9 +136,7 @@ class TestDatabaseAdapter:
         """Test date range query functionality."""
         # Mock database records for date range
         mock_records = [mock_stock_quote]
-        mock_session.query.return_value.filter.return_value.order_by.return_value.all.return_value = (
-            mock_records
-        )
+        mock_session.query.return_value.filter.return_value.order_by.return_value.all.return_value = mock_records
 
         with patch("app.adapters.test_data.get_sync_session") as mock_get_session:
             mock_get_session.return_value = iter([mock_session])
@@ -226,9 +223,7 @@ class TestDatabaseAdapter:
         """Test getting available dates."""
         # Mock available dates
         mock_dates = [(date(2017, 1, 27),), (date(2017, 1, 28),)]
-        mock_session.query.return_value.filter.return_value.distinct.return_value.all.return_value = (
-            mock_dates
-        )
+        mock_session.query.return_value.filter.return_value.distinct.return_value.all.return_value = mock_dates
 
         with patch("app.adapters.test_data.get_sync_session") as mock_get_session:
             mock_get_session.return_value = iter([mock_session])
@@ -271,9 +266,7 @@ class TestDatabaseAdapter:
         # Mock expiration dates
         future_date = date(2017, 2, 3)
         mock_expirations = [(future_date,)]
-        mock_session.query.return_value.filter.return_value.distinct.return_value.all.return_value = (
-            mock_expirations
-        )
+        mock_session.query.return_value.filter.return_value.distinct.return_value.all.return_value = mock_expirations
 
         with patch("app.adapters.test_data.get_sync_session") as mock_get_session:
             mock_get_session.return_value = iter([mock_session])
@@ -290,9 +283,7 @@ class TestDatabaseAdapter:
     async def test_health_check(self, adapter, mock_session):
         """Test adapter health check."""
         # Mock database counts
-        mock_session.query.return_value.filter.return_value.distinct.return_value.count.return_value = (
-            5
-        )
+        mock_session.query.return_value.filter.return_value.distinct.return_value.count.return_value = 5
         mock_session.query.return_value.count.return_value = 100
 
         with patch("app.adapters.test_data.get_sync_session") as mock_get_session:

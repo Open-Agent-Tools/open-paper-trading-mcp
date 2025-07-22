@@ -9,8 +9,12 @@ from typing import Any, cast
 
 from ...schemas.positions import Position
 from ..models.assets import Option, asset_factory
-from .strategies.models import (AssetStrategy, BasicStrategy, CoveredStrategy,
-                                SpreadStrategy)
+from .strategies.models import (
+    AssetStrategy,
+    BasicStrategy,
+    CoveredStrategy,
+    SpreadStrategy,
+)
 
 
 def group_into_basic_strategies(positions: list[Position]) -> list[BasicStrategy]:

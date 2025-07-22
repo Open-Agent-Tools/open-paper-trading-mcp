@@ -5,15 +5,23 @@ Tests complex order validation, multi-leg orders, enums,
 field validators, order composition patterns, and advanced order types.
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 from pydantic import ValidationError
 
-from app.models.assets import Stock, Option, Call, Put, asset_factory
+from app.models.assets import Option, Stock
 from app.schemas.orders import (
-    Order, OrderType, OrderStatus, OrderCondition, OrderSide,
-    OrderLeg, OrderLegCreate, MultiLegOrder, MultiLegOrderCreate,
-    OrderCreate
+    MultiLegOrder,
+    MultiLegOrderCreate,
+    Order,
+    OrderCondition,
+    OrderCreate,
+    OrderLeg,
+    OrderLegCreate,
+    OrderSide,
+    OrderStatus,
+    OrderType,
 )
 
 
@@ -23,9 +31,15 @@ class TestOrderEnums:
     def test_order_type_enum_values(self):
         """Test all OrderType enum values."""
         expected_values = {
-            "buy", "sell", "buy_to_open", "sell_to_open",
-            "buy_to_close", "sell_to_close", "stop_loss",
-            "stop_limit", "trailing_stop"
+            "buy",
+            "sell",
+            "buy_to_open",
+            "sell_to_open",
+            "buy_to_close",
+            "sell_to_close",
+            "stop_loss",
+            "stop_limit",
+            "trailing_stop",
         }
         actual_values = {ot.value for ot in OrderType}
         assert actual_values == expected_values
@@ -33,8 +47,13 @@ class TestOrderEnums:
     def test_order_status_enum_values(self):
         """Test all OrderStatus enum values."""
         expected_values = {
-            "pending", "triggered", "filled", "cancelled",
-            "rejected", "partially_filled", "expired"
+            "pending",
+            "triggered",
+            "filled",
+            "cancelled",
+            "rejected",
+            "partially_filled",
+            "expired",
         }
         actual_values = {os.value for os in OrderStatus}
         assert actual_values == expected_values
@@ -65,12 +84,9 @@ class TestOrderLeg:
     def test_order_leg_creation_basic(self):
         """Test creating basic order leg."""
         leg = OrderLeg(
-            asset="AAPL",
-            quantity=100,
-            order_type=OrderType.BUY,
-            price=150.0
+            asset="AAPL", quantity=100, order_type=OrderType.BUY, price=150.0
         )
-        
+
         assert leg.asset.symbol == "AAPL"
         assert leg.quantity == 100
         assert leg.order_type == OrderType.BUY
@@ -79,12 +95,9 @@ class TestOrderLeg:
     def test_order_leg_asset_normalization(self):
         """Test asset normalization from string."""
         leg = OrderLeg(
-            asset="aapl",
-            quantity=100,
-            order_type=OrderType.BUY,
-            price=150.0
+            asset="aapl", quantity=100, order_type=OrderType.BUY, price=150.0
         )
-        
+
         assert leg.asset.symbol == "AAPL"
         assert isinstance(leg.asset, Stock)
 
@@ -92,12 +105,9 @@ class TestOrderLeg:
         """Test order leg with Asset object."""
         stock = Stock(symbol="GOOGL")
         leg = OrderLeg(
-            asset=stock,
-            quantity=50,
-            order_type=OrderType.SELL,
-            price=2800.0
+            asset=stock, quantity=50, order_type=OrderType.SELL, price=2800.0
         )
-        
+
         assert leg.asset.symbol == "GOOGL"
         assert leg.asset is stock
 
@@ -105,25 +115,17 @@ class TestOrderLeg:
         """Test order leg with option asset."""
         option_symbol = "AAPL240119C00195000"
         leg = OrderLeg(
-            asset=option_symbol,
-            quantity=10,
-            order_type=OrderType.BTO,
-            price=5.50
+            asset=option_symbol, quantity=10, order_type=OrderType.BTO, price=5.50
         )
-        
+
         assert leg.asset.symbol == option_symbol
         assert isinstance(leg.asset, Option)
 
     def test_order_leg_invalid_asset(self):
         """Test order leg with invalid asset."""
         with pytest.raises(ValidationError) as exc_info:
-            OrderLeg(
-                asset="",
-                quantity=100,
-                order_type=OrderType.BUY,
-                price=150.0
-            )
-        
+            OrderLeg(asset="", quantity=100, order_type=OrderType.BUY, price=150.0)
+
         error = exc_info.value.errors()[0]
         assert "Invalid asset" in error["msg"]
 
@@ -133,9 +135,9 @@ class TestOrderLeg:
             asset="AAPL",
             quantity=-100,  # Negative input
             order_type=OrderType.BUY,
-            price=150.0
+            price=150.0,
         )
-        
+
         assert leg.quantity == 100  # Should be positive for buy
 
     def test_order_leg_quantity_sign_adjustment_sell(self):
@@ -144,9 +146,9 @@ class TestOrderLeg:
             asset="AAPL",
             quantity=100,  # Positive input
             order_type=OrderType.SELL,
-            price=150.0
+            price=150.0,
         )
-        
+
         assert leg.quantity == -100  # Should be negative for sell
 
     def test_order_leg_quantity_sign_adjustment_options(self):
@@ -156,7 +158,7 @@ class TestOrderLeg:
             asset="AAPL240119C00195000",
             quantity=-10,
             order_type=OrderType.BTO,
-            price=5.50
+            price=5.50,
         )
         assert bto_leg.quantity == 10
 
@@ -165,7 +167,7 @@ class TestOrderLeg:
             asset="AAPL240119C00195000",
             quantity=10,
             order_type=OrderType.STO,
-            price=5.50
+            price=5.50,
         )
         assert sto_leg.quantity == -10
 
@@ -174,7 +176,7 @@ class TestOrderLeg:
             asset="AAPL240119C00195000",
             quantity=-10,
             order_type=OrderType.BTC,
-            price=5.50
+            price=5.50,
         )
         assert btc_leg.quantity == 10
 
@@ -183,7 +185,7 @@ class TestOrderLeg:
             asset="AAPL240119C00195000",
             quantity=10,
             order_type=OrderType.STC,
-            price=5.50
+            price=5.50,
         )
         assert stc_leg.quantity == -10
 
@@ -191,31 +193,20 @@ class TestOrderLeg:
         """Test price sign adjustment based on order type."""
         # Buy orders - price should be positive
         buy_leg = OrderLeg(
-            asset="AAPL",
-            quantity=100,
-            order_type=OrderType.BUY,
-            price=-150.0
+            asset="AAPL", quantity=100, order_type=OrderType.BUY, price=-150.0
         )
         assert buy_leg.price == 150.0
 
         # Sell orders - price should be negative
         sell_leg = OrderLeg(
-            asset="AAPL",
-            quantity=100,
-            order_type=OrderType.SELL,
-            price=150.0
+            asset="AAPL", quantity=100, order_type=OrderType.SELL, price=150.0
         )
         assert sell_leg.price == -150.0
 
     def test_order_leg_none_price(self):
         """Test order leg with None price (market order)."""
-        leg = OrderLeg(
-            asset="AAPL",
-            quantity=100,
-            order_type=OrderType.BUY,
-            price=None
-        )
-        
+        leg = OrderLeg(asset="AAPL", quantity=100, order_type=OrderType.BUY, price=None)
+
         assert leg.price is None
 
 
@@ -225,12 +216,9 @@ class TestOrder:
     def test_order_creation_basic(self):
         """Test creating basic order."""
         order = Order(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100,
-            price=150.0
+            symbol="AAPL", order_type=OrderType.BUY, quantity=100, price=150.0
         )
-        
+
         assert order.symbol == "AAPL"
         assert order.order_type == OrderType.BUY
         assert order.quantity == 100
@@ -240,64 +228,44 @@ class TestOrder:
 
     def test_order_symbol_validation_and_normalization(self):
         """Test symbol validation and normalization."""
-        order = Order(
-            symbol="aapl",
-            order_type=OrderType.BUY,
-            quantity=100
-        )
-        
+        order = Order(symbol="aapl", order_type=OrderType.BUY, quantity=100)
+
         assert order.symbol == "AAPL"
 
     def test_order_symbol_validation_invalid(self):
         """Test invalid symbol validation."""
         with pytest.raises(ValidationError) as exc_info:
-            Order(
-                symbol="",
-                order_type=OrderType.BUY,
-                quantity=100
-            )
-        
+            Order(symbol="", order_type=OrderType.BUY, quantity=100)
+
         error = exc_info.value.errors()[0]
         assert "Symbol cannot be empty" in error["msg"]
 
     def test_order_quantity_validation_positive(self):
         """Test quantity must be positive."""
-        order = Order(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100
-        )
+        order = Order(symbol="AAPL", order_type=OrderType.BUY, quantity=100)
         assert order.quantity == 100
 
     def test_order_quantity_validation_zero(self):
         """Test quantity cannot be zero."""
         with pytest.raises(ValidationError) as exc_info:
-            Order(
-                symbol="AAPL",
-                order_type=OrderType.BUY,
-                quantity=0
-            )
-        
+            Order(symbol="AAPL", order_type=OrderType.BUY, quantity=0)
+
         error = exc_info.value.errors()[0]
         assert error["type"] == "greater_than"
 
     def test_order_quantity_validation_negative(self):
         """Test quantity cannot be negative."""
         with pytest.raises(ValidationError) as exc_info:
-            Order(
-                symbol="AAPL",
-                order_type=OrderType.BUY,
-                quantity=-100
-            )
-        
+            Order(symbol="AAPL", order_type=OrderType.BUY, quantity=-100)
+
         error = exc_info.value.errors()[0]
         assert error["type"] == "greater_than"
 
     def test_order_with_all_fields(self):
         """Test order with all fields populated."""
-        created_at = datetime.now(timezone.utc)
-        filled_at = datetime.now(timezone.utc)
-        
+        created_at = datetime.now(UTC)
+        filled_at = datetime.now(UTC)
+
         order = Order(
             id="order_123",
             symbol="GOOGL",
@@ -309,9 +277,9 @@ class TestOrder:
             created_at=created_at,
             filled_at=filled_at,
             stop_price=2750.0,
-            trail_percent=5.0
+            trail_percent=5.0,
         )
-        
+
         assert order.id == "order_123"
         assert order.symbol == "GOOGL"
         assert order.order_type == OrderType.SELL
@@ -327,14 +295,11 @@ class TestOrder:
     def test_order_to_leg_conversion(self):
         """Test converting Order to OrderLeg."""
         order = Order(
-            symbol="MSFT",
-            order_type=OrderType.BUY,
-            quantity=200,
-            price=300.0
+            symbol="MSFT", order_type=OrderType.BUY, quantity=200, price=300.0
         )
-        
+
         leg = order.to_leg()
-        
+
         assert leg.asset.symbol == "MSFT"
         assert leg.quantity == 200
         assert leg.order_type == OrderType.BUY
@@ -347,9 +312,9 @@ class TestOrder:
                 symbol="AAPL",
                 order_type=OrderType.STOP_LOSS,
                 quantity=100,
-                stop_price=None
+                stop_price=None,
             )
-        
+
         error = exc_info.value.errors()[0]
         assert "Stop price is required" in error["msg"]
 
@@ -359,7 +324,7 @@ class TestOrder:
             symbol="AAPL",
             order_type=OrderType.STOP_LOSS,
             quantity=100,
-            stop_price=140.0
+            stop_price=140.0,
         )
         assert order.stop_price == 140.0
 
@@ -371,21 +336,17 @@ class TestOrder:
                 order_type=OrderType.TRAILING_STOP,
                 quantity=100,
                 trail_percent=5.0,
-                trail_amount=10.0
+                trail_amount=10.0,
             )
-        
+
         error = exc_info.value.errors()[0]
         assert "cannot have both trail_percent and trail_amount" in error["msg"]
 
     def test_order_trailing_stop_validation_neither_param(self):
         """Test trailing stop requires either percent or amount."""
         with pytest.raises(ValidationError) as exc_info:
-            Order(
-                symbol="AAPL",
-                order_type=OrderType.TRAILING_STOP,
-                quantity=100
-            )
-        
+            Order(symbol="AAPL", order_type=OrderType.TRAILING_STOP, quantity=100)
+
         error = exc_info.value.errors()[0]
         assert "require either trail_percent or trail_amount" in error["msg"]
 
@@ -395,7 +356,7 @@ class TestOrder:
             symbol="AAPL",
             order_type=OrderType.TRAILING_STOP,
             quantity=100,
-            trail_percent=5.0
+            trail_percent=5.0,
         )
         assert order.trail_percent == 5.0
         assert order.trail_amount is None
@@ -406,7 +367,7 @@ class TestOrder:
             symbol="AAPL",
             order_type=OrderType.TRAILING_STOP,
             quantity=100,
-            trail_amount=10.0
+            trail_amount=10.0,
         )
         assert order.trail_amount == 10.0
         assert order.trail_percent is None
@@ -417,15 +378,17 @@ class TestMultiLegOrder:
 
     def test_multi_leg_order_creation_basic(self):
         """Test creating basic multi-leg order."""
-        leg1 = OrderLeg(asset="AAPL", quantity=100, order_type=OrderType.BTO, price=5.50)
-        leg2 = OrderLeg(asset="AAPL", quantity=-100, order_type=OrderType.STO, price=6.00)
-        
-        order = MultiLegOrder(
-            legs=[leg1, leg2],
-            condition=OrderCondition.LIMIT,
-            limit_price=0.50
+        leg1 = OrderLeg(
+            asset="AAPL", quantity=100, order_type=OrderType.BTO, price=5.50
         )
-        
+        leg2 = OrderLeg(
+            asset="AAPL", quantity=-100, order_type=OrderType.STO, price=6.00
+        )
+
+        order = MultiLegOrder(
+            legs=[leg1, leg2], condition=OrderCondition.LIMIT, limit_price=0.50
+        )
+
         assert len(order.legs) == 2
         assert order.condition == OrderCondition.LIMIT
         assert order.limit_price == 0.50
@@ -433,22 +396,26 @@ class TestMultiLegOrder:
 
     def test_multi_leg_order_duplicate_assets_validation(self):
         """Test validation prevents duplicate assets."""
-        leg1 = OrderLeg(asset="AAPL", quantity=100, order_type=OrderType.BTO, price=5.50)
-        leg2 = OrderLeg(asset="AAPL", quantity=-100, order_type=OrderType.STO, price=6.00)
-        
+        leg1 = OrderLeg(
+            asset="AAPL", quantity=100, order_type=OrderType.BTO, price=5.50
+        )
+        leg2 = OrderLeg(
+            asset="AAPL", quantity=-100, order_type=OrderType.STO, price=6.00
+        )
+
         # This should pass because we allow multiple legs of same underlying
         with pytest.raises(ValidationError) as exc_info:
             MultiLegOrder(legs=[leg1, leg2])
-        
+
         error = exc_info.value.errors()[0]
         assert "Duplicate assets not allowed" in error["msg"]
 
     def test_multi_leg_order_add_leg_method(self):
         """Test adding leg to multi-leg order."""
         order = MultiLegOrder(legs=[])
-        
+
         order.add_leg("AAPL", 100, OrderType.BTO, 5.50)
-        
+
         assert len(order.legs) == 1
         assert order.legs[0].asset.symbol == "AAPL"
         assert order.legs[0].quantity == 100
@@ -458,18 +425,18 @@ class TestMultiLegOrder:
     def test_multi_leg_order_add_leg_invalid_asset(self):
         """Test adding invalid asset leg."""
         order = MultiLegOrder(legs=[])
-        
+
         with pytest.raises(ValueError) as exc_info:
             order.add_leg("", 100, OrderType.BTO, 5.50)
-        
+
         assert "Invalid asset" in str(exc_info.value)
 
     def test_multi_leg_order_buy_to_open_method(self):
         """Test buy_to_open convenience method."""
         order = MultiLegOrder(legs=[])
-        
+
         result = order.buy_to_open("AAPL", 100, 5.50)
-        
+
         assert result is order  # Should return self for chaining
         assert len(order.legs) == 1
         assert order.legs[0].order_type == OrderType.BTO
@@ -477,9 +444,9 @@ class TestMultiLegOrder:
     def test_multi_leg_order_sell_to_open_method(self):
         """Test sell_to_open convenience method."""
         order = MultiLegOrder(legs=[])
-        
+
         result = order.sell_to_open("AAPL", 100, 6.00)
-        
+
         assert result is order
         assert len(order.legs) == 1
         assert order.legs[0].order_type == OrderType.STO
@@ -487,9 +454,9 @@ class TestMultiLegOrder:
     def test_multi_leg_order_buy_to_close_method(self):
         """Test buy_to_close convenience method."""
         order = MultiLegOrder(legs=[])
-        
+
         result = order.buy_to_close("AAPL", 100, 5.75)
-        
+
         assert result is order
         assert len(order.legs) == 1
         assert order.legs[0].order_type == OrderType.BTC
@@ -497,9 +464,9 @@ class TestMultiLegOrder:
     def test_multi_leg_order_sell_to_close_method(self):
         """Test sell_to_close convenience method."""
         order = MultiLegOrder(legs=[])
-        
+
         result = order.sell_to_close("AAPL", 100, 5.25)
-        
+
         assert result is order
         assert len(order.legs) == 1
         assert order.legs[0].order_type == OrderType.STC
@@ -511,7 +478,7 @@ class TestMultiLegOrder:
             .buy_to_open("AAPL240119C00195000", 10, 5.50)
             .sell_to_open("AAPL240119C00200000", 10, 3.25)
         )
-        
+
         assert len(order.legs) == 2
         assert order.legs[0].order_type == OrderType.BTO
         assert order.legs[1].order_type == OrderType.STO
@@ -519,10 +486,12 @@ class TestMultiLegOrder:
     def test_multi_leg_order_net_price_property(self):
         """Test net_price property calculation."""
         leg1 = OrderLeg(asset="AAPL", quantity=10, order_type=OrderType.BTO, price=5.50)
-        leg2 = OrderLeg(asset="AAPL", quantity=-10, order_type=OrderType.STO, price=3.25)
-        
+        leg2 = OrderLeg(
+            asset="AAPL", quantity=-10, order_type=OrderType.STO, price=3.25
+        )
+
         order = MultiLegOrder(legs=[leg1, leg2])
-        
+
         # Net price = 5.50 * 10 + 3.25 * 10 = 55.0 + 32.5 = 87.5
         expected_net = 5.50 * 10 + 3.25 * 10
         assert order.net_price == expected_net
@@ -530,33 +499,43 @@ class TestMultiLegOrder:
     def test_multi_leg_order_net_price_with_none_price(self):
         """Test net_price property with None prices."""
         leg1 = OrderLeg(asset="AAPL", quantity=10, order_type=OrderType.BTO, price=None)
-        leg2 = OrderLeg(asset="AAPL", quantity=-10, order_type=OrderType.STO, price=3.25)
-        
+        leg2 = OrderLeg(
+            asset="AAPL", quantity=-10, order_type=OrderType.STO, price=3.25
+        )
+
         order = MultiLegOrder(legs=[leg1, leg2])
-        
+
         assert order.net_price is None
 
     def test_multi_leg_order_is_opening_order_property(self):
         """Test is_opening_order property."""
         # Opening order
-        opening_leg = OrderLeg(asset="AAPL", quantity=10, order_type=OrderType.BTO, price=5.50)
+        opening_leg = OrderLeg(
+            asset="AAPL", quantity=10, order_type=OrderType.BTO, price=5.50
+        )
         opening_order = MultiLegOrder(legs=[opening_leg])
         assert opening_order.is_opening_order is True
 
         # Closing order
-        closing_leg = OrderLeg(asset="AAPL", quantity=-10, order_type=OrderType.STC, price=5.50)
+        closing_leg = OrderLeg(
+            asset="AAPL", quantity=-10, order_type=OrderType.STC, price=5.50
+        )
         closing_order = MultiLegOrder(legs=[closing_leg])
         assert closing_order.is_opening_order is False
 
     def test_multi_leg_order_is_closing_order_property(self):
         """Test is_closing_order property."""
         # Closing order
-        closing_leg = OrderLeg(asset="AAPL", quantity=-10, order_type=OrderType.BTC, price=5.50)
+        closing_leg = OrderLeg(
+            asset="AAPL", quantity=-10, order_type=OrderType.BTC, price=5.50
+        )
         closing_order = MultiLegOrder(legs=[closing_leg])
         assert closing_order.is_closing_order is True
 
         # Opening order
-        opening_leg = OrderLeg(asset="AAPL", quantity=10, order_type=OrderType.STO, price=5.50)
+        opening_leg = OrderLeg(
+            asset="AAPL", quantity=10, order_type=OrderType.STO, price=5.50
+        )
         opening_order = MultiLegOrder(legs=[opening_leg])
         assert opening_order.is_closing_order is False
 
@@ -567,12 +546,9 @@ class TestOrderCreateSchemas:
     def test_order_create_basic(self):
         """Test basic OrderCreate schema."""
         order_create = OrderCreate(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100,
-            price=150.0
+            symbol="AAPL", order_type=OrderType.BUY, quantity=100, price=150.0
         )
-        
+
         assert order_create.symbol == "AAPL"
         assert order_create.order_type == OrderType.BUY
         assert order_create.quantity == 100
@@ -585,9 +561,9 @@ class TestOrderCreateSchemas:
             asset="AAPL240119C00195000",
             quantity=10,
             order_type=OrderType.BTO,
-            price=5.50
+            price=5.50,
         )
-        
+
         assert leg_create.asset == "AAPL240119C00195000"
         assert leg_create.quantity == 10
         assert leg_create.order_type == OrderType.BTO
@@ -595,15 +571,17 @@ class TestOrderCreateSchemas:
 
     def test_multi_leg_order_create_basic(self):
         """Test basic MultiLegOrderCreate schema."""
-        leg1 = OrderLegCreate(asset="AAPL", quantity=10, order_type=OrderType.BTO, price=5.50)
-        leg2 = OrderLegCreate(asset="AAPL", quantity=-10, order_type=OrderType.STO, price=3.25)
-        
-        order_create = MultiLegOrderCreate(
-            legs=[leg1, leg2],
-            condition=OrderCondition.LIMIT,
-            limit_price=2.25
+        leg1 = OrderLegCreate(
+            asset="AAPL", quantity=10, order_type=OrderType.BTO, price=5.50
         )
-        
+        leg2 = OrderLegCreate(
+            asset="AAPL", quantity=-10, order_type=OrderType.STO, price=3.25
+        )
+
+        order_create = MultiLegOrderCreate(
+            legs=[leg1, leg2], condition=OrderCondition.LIMIT, limit_price=2.25
+        )
+
         assert len(order_create.legs) == 2
         assert order_create.condition == OrderCondition.LIMIT
         assert order_create.limit_price == 2.25
@@ -614,29 +592,18 @@ class TestOrderValidationMixin:
 
     def test_order_type_validation_valid(self):
         """Test valid order type validation."""
-        order = Order(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100
-        )
+        order = Order(symbol="AAPL", order_type=OrderType.BUY, quantity=100)
         assert order.order_type == OrderType.BUY
 
     def test_order_quantity_validation_nonzero(self):
         """Test quantity validation from mixin."""
-        order = Order(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100
-        )
+        order = Order(symbol="AAPL", order_type=OrderType.BUY, quantity=100)
         assert order.quantity == 100
 
     def test_order_price_validation_positive(self):
         """Test price validation when provided."""
         order = Order(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100,
-            price=150.0
+            symbol="AAPL", order_type=OrderType.BUY, quantity=100, price=150.0
         )
         assert order.price == 150.0
 
@@ -650,22 +617,20 @@ class TestOrderComplexScenarios:
             asset="AAPL240119C00195000",
             quantity=10,
             order_type=OrderType.BTO,
-            price=5.50
+            price=5.50,
         )
-        
+
         put_leg = OrderLeg(
             asset="AAPL240119P00190000",
             quantity=-10,
             order_type=OrderType.STO,
-            price=4.25
+            price=4.25,
         )
-        
+
         spread_order = MultiLegOrder(
-            legs=[call_leg, put_leg],
-            condition=OrderCondition.LIMIT,
-            limit_price=1.25
+            legs=[call_leg, put_leg], condition=OrderCondition.LIMIT, limit_price=1.25
         )
-        
+
         assert len(spread_order.legs) == 2
         assert spread_order.legs[0].asset.symbol == "AAPL240119C00195000"
         assert spread_order.legs[1].asset.symbol == "AAPL240119P00190000"
@@ -679,33 +644,31 @@ class TestOrderComplexScenarios:
             .sell_to_open("AAPL240119C00210000", 10, 3.00)
             .buy_to_open("AAPL240119C00215000", 10, 2.25)
         )
-        
+
         assert len(order.legs) == 4
-        assert all(leg.order_type in [OrderType.BTO, OrderType.STO] for leg in order.legs)
+        assert all(
+            leg.order_type in [OrderType.BTO, OrderType.STO] for leg in order.legs
+        )
 
     def test_order_serialization_with_datetimes(self):
         """Test order serialization with datetime fields."""
-        created_at = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
-        
+        created_at = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
+
         order = Order(
             id="datetime_test",
             symbol="AAPL",
             order_type=OrderType.BUY,
             quantity=100,
             price=150.0,
-            created_at=created_at
+            created_at=created_at,
         )
-        
+
         data = order.model_dump()
         assert data["created_at"] == created_at
 
     def test_order_legs_default_empty(self):
         """Test order legs default to empty list."""
-        order = Order(
-            symbol="AAPL",
-            order_type=OrderType.BUY,
-            quantity=100
-        )
-        
+        order = Order(symbol="AAPL", order_type=OrderType.BUY, quantity=100)
+
         assert order.legs == []
         assert isinstance(order.legs, list)

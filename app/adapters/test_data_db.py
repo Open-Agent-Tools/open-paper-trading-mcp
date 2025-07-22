@@ -411,11 +411,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
 
     def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
-        dates = []
+        dates: list[date] = []
         for _symbol, option_quote in self._option_cache.items():
             if option_quote.underlying == underlying:
-                dates.append(option_quote.expiration)
-        return sorted({d.date() if hasattr(d, "date") else d for d in dates})
+                expiration = option_quote.expiration
+                if hasattr(expiration, "date"):
+                    dates.append(expiration.date())
+                elif isinstance(expiration, date):
+                    dates.append(expiration)
+        return sorted(set(dates))
 
     def get_test_scenarios(self) -> dict[str, Any]:
         """Get available test scenarios."""

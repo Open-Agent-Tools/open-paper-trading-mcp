@@ -83,6 +83,11 @@ class OrderConverter:
             price=None,  # Market order has no price
             status=OrderStatus.PENDING,
             created_at=triggered_at or datetime.utcnow(),
+            condition=OrderCondition.MARKET,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
+            net_price=None,
         )
 
         # Log conversion
@@ -145,6 +150,11 @@ class OrderConverter:
             price=order.price,  # Use the limit price
             status=OrderStatus.PENDING,
             created_at=triggered_at or datetime.utcnow(),
+            condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
+            net_price=None,
         )
 
         # Log conversion
@@ -194,12 +204,14 @@ class OrderConverter:
             else:
                 # For buy stops, trail above the current price as it falls
                 new_stop_price = current_price * (1 + order.trail_percent / 100)
-        else:
+        elif order.trail_amount is not None:
             # Dollar amount-based trailing
             if is_protective_stop:
                 new_stop_price = current_price - order.trail_amount
             else:
                 new_stop_price = current_price + order.trail_amount
+        else:
+            raise OrderConversionError("Invalid trailing stop order")
 
         # Update stop price if it's more favorable
         updated_order = order.model_copy()
@@ -259,6 +271,10 @@ class OrderConverter:
             condition=OrderCondition.MARKET,
             status=OrderStatus.PENDING,
             created_at=triggered_at or datetime.utcnow(),
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
+            net_price=None,
         )
 
         # Log conversion

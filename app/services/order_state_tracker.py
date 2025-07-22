@@ -169,8 +169,12 @@ class MemoryEfficientOrderTracker:
 
             # Update metrics
             if self.config.enable_metrics:
-                self.metrics["total_events"] += 1
-                self.metrics["events_by_type"][event] += 1
+                self.metrics["total_events"] = (
+                    int(self.metrics.get("total_events", 0)) + 1
+                )
+                events_by_type = self.metrics["events_by_type"]
+                if isinstance(events_by_type, defaultdict):
+                    events_by_type[event.value] += 1
                 self.metrics["active_orders"] = len(self.current_states)
 
         # Trigger callbacks asynchronously (only if event loop is running)
@@ -193,7 +197,7 @@ class MemoryEfficientOrderTracker:
     ) -> list[OrderStateSnapshot]:
         """Get state history for an order."""
         with self._lock:
-            snapshots = list(self.order_snapshots[order_id])
+            snapshots = list(self.order_snapshots.get(order_id, []))
 
             if limit:
                 snapshots = snapshots[-limit:]
@@ -227,7 +231,7 @@ class MemoryEfficientOrderTracker:
     ) -> list[OrderStateSnapshot]:
         """Get recent state change events with filtering."""
         cutoff = datetime.utcnow() - timedelta(minutes=minutes)
-        events = []
+        events: list[OrderStateSnapshot] = []
 
         with self._lock:
             for order_snapshots in self.order_snapshots.values():
@@ -261,7 +265,7 @@ class MemoryEfficientOrderTracker:
         """Get status transitions for an order."""
         history = self.get_order_history(order_id)
 
-        transitions = []
+        transitions: list[tuple[OrderStatus, OrderStatus]] = []
         for i in range(1, len(history)):
             prev_status = history[i - 1].status
             curr_status = history[i].status
@@ -295,7 +299,9 @@ class MemoryEfficientOrderTracker:
     def get_fill_rate_by_symbol(self, hours: int = 24) -> dict[str, dict[str, Any]]:
         """Calculate fill rates by symbol for recent orders."""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
-        symbol_stats = defaultdict(lambda: {"total": 0, "filled": 0})
+        symbol_stats: dict[str, dict[str, int]] = defaultdict(
+            lambda: {"total": 0, "filled": 0}
+        )
 
         with self._lock:
             for snapshot in self.current_states.values():
@@ -308,7 +314,7 @@ class MemoryEfficientOrderTracker:
                     symbol_stats[snapshot.symbol]["filled"] += 1
 
         # Calculate rates
-        result = {}
+        result: dict[str, dict[str, Any]] = {}
         for symbol, stats in symbol_stats.items():
             result[symbol] = {
                 "total_orders": stats["total"],
@@ -367,14 +373,16 @@ class MemoryEfficientOrderTracker:
 
             orders_cleaned = 0
             snapshots_removed = 0
-            orders_to_remove = []
+            orders_to_remove: list[str] = []
 
             for order_id, snapshots in self.order_snapshots.items():
                 # Remove old snapshots
                 original_length = len(snapshots)
 
                 # Keep snapshots that are recent or represent final states
-                filtered_snapshots = deque(maxlen=self.config.max_snapshots_per_order)
+                filtered_snapshots: deque[OrderStateSnapshot] = deque(
+                    maxlen=self.config.max_snapshots_per_order
+                )
 
                 for snapshot in snapshots:
                     # Keep recent snapshots

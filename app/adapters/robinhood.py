@@ -68,9 +68,9 @@ class RobinhoodAdapter(QuoteAdapter):
         self._cache_misses = 0
 
         # Last known API status
-        self._last_api_response_time = None
-        self._last_error_time = None
-        self._last_error_message = None
+        self._last_api_response_time: float | None = None
+        self._last_error_time: datetime | None = None
+        self._last_error_message: str | None = None
 
     async def _ensure_authenticated(self) -> bool:
         """Ensure we have valid authentication."""

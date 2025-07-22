@@ -379,7 +379,7 @@ class PositionSizingCalculator:
             # Skip positions with no current price
             if position.current_price is None:
                 continue
-                
+
             # Simplified - assume equal volatility for existing positions
             pos_risk = (
                 abs(position.quantity) * position.current_price * 0.02
@@ -541,7 +541,12 @@ class PositionSizingCalculator:
         max_affordable = int(available_cash / price)
 
         # Apply all constraints
-        shares = max(min_shares, min(shares, max_shares, max_affordable))
+        shares = int(
+            max(
+                float(min_shares),
+                min(float(shares), float(max_shares), float(max_affordable)),
+            )
+        )
 
         return shares
 

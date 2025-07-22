@@ -123,13 +123,13 @@ class RiskAnalyzer:
     Performs various risk checks before order execution to ensure
     compliance with risk limits and prevent excessive exposure.
     """
-    
+
     def _get_safe_price(self, quote: Quote) -> float:
         """Get price from quote, falling back to midpoint if price is None."""
         if quote.price is not None:
             return quote.price
         return quote.midpoint
-        
+
     def _get_safe_position_price(self, position: Position) -> float:
         """Get current price from position, falling back to avg_price if current_price is None."""
         if position.current_price is not None:
@@ -240,7 +240,9 @@ class RiskAnalyzer:
         # Estimate new total value (simplified)
         total_value_after = total_value_before
         if order.order_type in [OrderType.BUY, OrderType.BTO]:
-            total_value_after += self._get_safe_price(current_quote) * abs(order.quantity) - order_cost
+            total_value_after += (
+                self._get_safe_price(current_quote) * abs(order.quantity) - order_cost
+            )
 
         buying_power_after = cash_after  # Simplified
         leverage_after = self._calculate_leverage_after(portfolio, order, current_quote)
@@ -339,10 +341,9 @@ class RiskAnalyzer:
             new_value = 0.0
         elif abs(new_quantity) > abs(current_quantity):
             # Adding to position
-            total_cost = (
-                abs(current_quantity) * current_avg_price
-                + abs(order.quantity) * self._get_safe_price(current_quote)
-            )
+            total_cost = abs(current_quantity) * current_avg_price + abs(
+                order.quantity
+            ) * self._get_safe_price(current_quote)
             new_avg_price = total_cost / abs(new_quantity)
             new_value = abs(new_quantity) * self._get_safe_price(current_quote)
         else:
@@ -354,7 +355,9 @@ class RiskAnalyzer:
         pnl_impact = 0.0
         if order.order_type in [OrderType.SELL, OrderType.STC]:
             # Realizing P&L
-            pnl_impact = (self._get_safe_price(current_quote) - current_avg_price) * abs(order.quantity)
+            pnl_impact = (
+                self._get_safe_price(current_quote) - current_avg_price
+            ) * abs(order.quantity)
 
         # Concentration
         concentration_before = (
@@ -461,7 +464,9 @@ class RiskAnalyzer:
         sector_value = 0.0
         for position in portfolio.positions:
             if self.sector_mappings.get(position.symbol) == sector:
-                sector_value += abs(position.quantity) * self._get_safe_position_price(position)
+                sector_value += abs(position.quantity) * self._get_safe_position_price(
+                    position
+                )
 
         # Add order impact
         order_value = abs(order.quantity) * portfolio_impact.total_value_after
@@ -551,7 +556,9 @@ class RiskAnalyzer:
         high_vol_value = 0.0
         for position in portfolio.positions:
             if self.volatility_rankings.get(position.symbol, "normal") == "high":
-                high_vol_value += abs(position.quantity) * self._get_safe_position_price(position)
+                high_vol_value += abs(
+                    position.quantity
+                ) * self._get_safe_position_price(position)
 
         # Check if order is high volatility
         if self.volatility_rankings.get(order.symbol, "normal") == "high":
@@ -576,7 +583,11 @@ class RiskAnalyzer:
 
     def _calculate_order_cost(self, order: Order, current_quote: Quote) -> float:
         """Calculate the total cost of an order including fees."""
-        price = order.price if order.price is not None else self._get_safe_price(current_quote)
+        price = (
+            order.price
+            if order.price is not None
+            else self._get_safe_price(current_quote)
+        )
         base_cost = abs(order.quantity) * price
 
         # Add estimated commission
@@ -637,7 +648,8 @@ class RiskAnalyzer:
             return 0.0
 
         total_position_value = sum(
-            abs(p.quantity) * self._get_safe_position_price(p) for p in portfolio.positions
+            abs(p.quantity) * self._get_safe_position_price(p)
+            for p in portfolio.positions
         )
 
         return total_position_value / portfolio.cash_balance
@@ -650,7 +662,8 @@ class RiskAnalyzer:
         order_value = abs(order.quantity) * self._get_safe_price(current_quote)
 
         total_position_value = sum(
-            abs(p.quantity) * self._get_safe_position_price(p) for p in portfolio.positions
+            abs(p.quantity) * self._get_safe_position_price(p)
+            for p in portfolio.positions
         )
 
         if order.order_type in [OrderType.BUY, OrderType.BTO]:
@@ -695,7 +708,7 @@ class RiskAnalyzer:
         theta = greeks.get("theta", 0) or 0
         vega = greeks.get("vega", 0) or 0
         rho = greeks.get("rho", 0) or 0
-        
+
         return {
             "delta_change": delta * quantity_multiplier,
             "gamma_change": gamma * quantity_multiplier,

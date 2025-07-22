@@ -50,7 +50,7 @@ class OptimizedOrderQueries:
         )
 
         result = self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_orders_by_status_and_type(
         self,
@@ -75,7 +75,7 @@ class OptimizedOrderQueries:
         )
 
         result = self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_orders_for_symbol(
         self, symbol: str, status: OrderStatus | None = None, limit: int = 100
@@ -97,7 +97,7 @@ class OptimizedOrderQueries:
         )
 
         result = self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_account_orders_summary(
         self,
@@ -161,7 +161,7 @@ class OptimizedOrderQueries:
         )
 
         result = self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_order_execution_metrics(
         self, start_date: datetime, end_date: datetime
@@ -222,7 +222,7 @@ class OptimizedOrderQueries:
         Get orders that may need stop loss triggering.
         Uses: idx_orders_trigger_fields
         """
-        candidates = []
+        candidates: list[tuple[Order, float]] = []
 
         # Get orders with stop prices
         stop_orders_query = (
@@ -243,12 +243,15 @@ class OptimizedOrderQueries:
                 # Check if stop should trigger
                 should_trigger = False
 
-                if (
-                    order.order_type == OrderType.BUY
-                    and current_price >= order.stop_price
-                ) or (
-                    order.order_type == OrderType.SELL
-                    and current_price <= order.stop_price
+                if order.stop_price is not None and (
+                    (
+                        order.order_type == OrderType.BUY
+                        and current_price >= order.stop_price
+                    )
+                    or (
+                        order.order_type == OrderType.SELL
+                        and current_price <= order.stop_price
+                    )
                 ):
                     should_trigger = True
 
@@ -264,7 +267,7 @@ class OptimizedOrderQueries:
         Get orders that may need trailing stop updates.
         Uses: idx_orders_trailing_stops
         """
-        candidates = []
+        candidates: list[tuple[Order, float, float]] = []
 
         # Get orders with trailing stops
         trailing_query = (
@@ -286,11 +289,12 @@ class OptimizedOrderQueries:
         for order in trailing_orders:
             if order.symbol in current_prices:
                 current_price = current_prices[order.symbol]
+                trail_amount: float = 0.0
 
                 # Calculate new trailing stop
                 if order.trail_percent:
                     trail_amount = current_price * (order.trail_percent / 100)
-                else:
+                elif order.trail_amount:
                     trail_amount = order.trail_amount
 
                 if order.order_type == OrderType.SELL:
@@ -312,7 +316,7 @@ class OptimizedOrderQueries:
         ).group_by(Order.status)
 
         result = self.session.execute(depth_query)
-        return {row.status: row.count for row in result}
+        return {row[0]: row[1] for row in result}
 
     async def get_high_frequency_symbols(
         self, hours: int = 24, min_orders: int = 10
@@ -345,7 +349,9 @@ class OptimizedOrderQueries:
         Bulk update order status for performance.
         Uses primary key lookups for efficiency.
         """
-        update_values = {"status": new_status}
+        update_values: dict[str, str | datetime | list[str]] = {
+            "status": new_status.value
+        }
 
         if filled_at:
             update_values["filled_at"] = filled_at
@@ -377,7 +383,7 @@ class OptimizedOrderQueries:
             },
         )
 
-        return result.rowcount
+        return int(result.rowcount) if result.rowcount is not None else 0
 
     async def cleanup_old_completed_orders(
         self, days_old: int = 90, batch_size: int = 1000
@@ -397,7 +403,7 @@ class OptimizedOrderQueries:
         )
 
         total_result = self.session.execute(count_query)
-        total_count = total_result.scalar()
+        total_count = total_result.scalar() or 0
 
         logger.info(f"Found {total_count} old orders to archive/cleanup")
 

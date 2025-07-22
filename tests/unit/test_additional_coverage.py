@@ -25,8 +25,10 @@ class TestAdvancedValidation:
     def test_advanced_validation_dataclasses(self):
         """Test advanced validation dataclasses can be imported."""
         try:
-            from app.services.advanced_validation import (ValidationResult,
-                                                          ValidationSeverity)
+            from app.services.advanced_validation import (
+                ValidationResult,
+                ValidationSeverity,
+            )
 
             result = ValidationResult(
                 is_valid=True,
@@ -65,8 +67,7 @@ class TestExpirationService:
     def test_expiration_dataclasses(self):
         """Test expiration dataclasses can be imported."""
         try:
-            from app.services.expiration import (ExpirationResult,
-                                                 ExpirationScenario)
+            from app.services.expiration import ExpirationResult, ExpirationScenario
 
             scenario = ExpirationScenario(
                 underlying_price=150.0,
@@ -85,8 +86,7 @@ class TestOrderValidationAdvanced:
     def test_order_validation_advanced_import(self):
         """Test advanced order validation can be imported."""
         try:
-            from app.services.order_validation_advanced import \
-                AdvancedOrderValidator
+            from app.services.order_validation_advanced import AdvancedOrderValidator
 
             validator = AdvancedOrderValidator()
             assert validator is not None
@@ -96,8 +96,7 @@ class TestOrderValidationAdvanced:
     def test_strategy_validator_import(self):
         """Test strategy validator can be imported."""
         try:
-            from app.services.order_validation_advanced import \
-                StrategyValidator
+            from app.services.order_validation_advanced import StrategyValidator
 
             validator = StrategyValidator()
             assert validator is not None

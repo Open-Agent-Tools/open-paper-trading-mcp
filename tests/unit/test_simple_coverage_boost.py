@@ -194,8 +194,7 @@ class TestCoreComponents:
 
     def test_exception_classes(self):
         """Test exception classes can be imported and used."""
-        from app.core.exceptions import (NotFoundError, TradingError,
-                                         ValidationError)
+        from app.core.exceptions import NotFoundError, TradingError, ValidationError
 
         # Test that exceptions can be raised and caught
         with pytest.raises(NotFoundError):

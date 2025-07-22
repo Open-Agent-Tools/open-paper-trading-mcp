@@ -11,6 +11,7 @@ import pytest
 
 from app.adapters.base import AdapterConfig, QuoteAdapter
 from app.adapters.test_data import DevDataQuoteAdapter
+
 # Core imports for high-impact coverage
 from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
@@ -23,10 +24,13 @@ from app.schemas.positions import Portfolio
 from app.schemas.positions import Position as SchemaPosition
 from app.services.auth_service import AuthService
 from app.services.trading_service import TradingService
-from app.storage.database import (AsyncSessionLocal, async_engine,
-                                  get_async_session)
-from app.utils.schema_converters import (AccountConverter, OrderConverter,
-                                         PositionConverter, SchemaConverter)
+from app.storage.database import AsyncSessionLocal, async_engine, get_async_session
+from app.utils.schema_converters import (
+    AccountConverter,
+    OrderConverter,
+    PositionConverter,
+    SchemaConverter,
+)
 
 
 class TestCoreConfiguration:
@@ -439,9 +443,9 @@ class TestServices:
         for method_name in async_methods:
             if hasattr(service, method_name):
                 method = getattr(service, method_name)
-                assert inspect.iscoroutinefunction(
-                    method
-                ), f"{method_name} should be async"
+                assert inspect.iscoroutinefunction(method), (
+                    f"{method_name} should be async"
+                )
 
     def test_trading_service_database_session(self):
         """Test TradingService database session access."""

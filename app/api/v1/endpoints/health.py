@@ -75,28 +75,31 @@ async def check_quote_adapter_health() -> dict[str, Any]:
             }
 
         # Test quote retrieval for a common symbol
-        quote = await adapter.get_quote("AAPL")
+        from app.models.assets import Stock
 
-        if quote and quote.price > 0:
+        asset = Stock(symbol="AAPL", name="Apple Inc.")
+        quote = await adapter.get_quote(asset)
+
+        if quote and quote.price is not None and quote.price > 0:
             response_time = (time.time() - start_time) * 1000  # ms
 
             return {
                 "status": HealthStatus.HEALTHY,
-                "adapter_type": adapter.adapter_type,
+                "adapter_type": getattr(adapter, "name", "unknown"),
                 "response_time_ms": round(response_time, 2),
                 "message": "Quote adapter is operational",
                 "sample_quote": {
-                    "symbol": quote.symbol,
+                    "symbol": quote.asset.symbol,
                     "price": quote.price,
                     "timestamp": (
-                        quote.timestamp.isoformat() if quote.timestamp else None
+                        quote.quote_date.isoformat() if quote.quote_date else None
                     ),
                 },
             }
         else:
             return {
                 "status": HealthStatus.DEGRADED,
-                "adapter_type": adapter.adapter_type,
+                "adapter_type": getattr(adapter, "name", "unknown"),
                 "response_time_ms": round((time.time() - start_time) * 1000, 2),
                 "message": "Quote adapter returned invalid data",
             }

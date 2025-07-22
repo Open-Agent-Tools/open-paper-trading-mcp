@@ -76,20 +76,20 @@ class AccountConverter(SchemaConverter[DBAccount, Account]):
             positions=positions,
         )
 
-    def to_database(self, account: Account, **kwargs) -> DBAccount:
+    def to_database(self, schema: Account, **kwargs) -> DBAccount:
         """
         Convert Account schema to DBAccount.
 
         Args:
-            account: Account API schema
+            schema: Account API schema
 
         Returns:
             Database account model
         """
         return DBAccount(
-            id=account.id,
-            owner=account.owner or account.name or "unknown",
-            cash_balance=account.cash_balance,
+            id=schema.id,
+            owner=schema.owner or schema.name or "unknown",
+            cash_balance=schema.cash_balance,
         )
 
 
@@ -119,14 +119,17 @@ class OrderConverter(SchemaConverter[DBOrder, Order]):
             condition=OrderCondition.MARKET,  # Default condition
             legs=[],  # Will be populated for multi-leg orders
             net_price=db_order.price,  # Same as price for simple orders
+            stop_price=db_order.stop_price,
+            trail_percent=db_order.trail_percent,
+            trail_amount=db_order.trail_amount,
         )
 
-    def to_database(self, order: Order, **kwargs) -> DBOrder:
+    def to_database(self, schema: Order, **kwargs) -> DBOrder:
         """
         Convert Order schema to DBOrder.
 
         Args:
-            order: Order API schema
+            schema: Order API schema
             account_id: Required account ID not in schema
 
         Returns:
@@ -137,15 +140,15 @@ class OrderConverter(SchemaConverter[DBOrder, Order]):
             raise ConversionError("account_id is required for order conversion")
 
         return DBOrder(
-            id=order.id,
+            id=schema.id,
             account_id=account_id,  # Required field not in schema
-            symbol=order.symbol,
-            order_type=order.order_type,
-            quantity=order.quantity,
-            price=order.price,
-            status=order.status,
-            created_at=order.created_at,
-            filled_at=order.filled_at,
+            symbol=schema.symbol,
+            order_type=schema.order_type,
+            quantity=schema.quantity,
+            price=schema.price,
+            status=schema.status,
+            created_at=schema.created_at,
+            filled_at=schema.filled_at,
         )
 
 
@@ -283,12 +286,12 @@ class PositionConverter(SchemaConverter[DBPosition, Position]):
             iv=None,
         )
 
-    def to_database(self, position: Position, **kwargs) -> DBPosition:
+    def to_database(self, schema: Position, **kwargs) -> DBPosition:
         """
         Convert Position schema to DBPosition.
 
         Args:
-            position: Position API schema
+            schema: Position API schema
             account_id: Required account ID not in schema
 
         Returns:
@@ -300,9 +303,9 @@ class PositionConverter(SchemaConverter[DBPosition, Position]):
 
         return DBPosition(
             account_id=account_id,
-            symbol=position.symbol,
-            quantity=position.quantity,
-            avg_price=position.avg_price,
+            symbol=schema.symbol,
+            quantity=schema.quantity,
+            avg_price=schema.avg_price,
         )
 
 

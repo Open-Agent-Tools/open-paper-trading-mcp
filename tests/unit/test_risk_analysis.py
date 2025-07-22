@@ -150,7 +150,9 @@ class TestRiskAnalyzerInitialization:
 class TestPortfolioImpactCalculation:
     """Test portfolio impact calculation."""
 
-    def test_calculate_portfolio_impact_buy(self, risk_analyzer, mock_portfolio, mock_quote):
+    def test_calculate_portfolio_impact_buy(
+        self, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test portfolio impact calculation for buy order."""
         # Arrange
         order = Order(
@@ -164,7 +166,9 @@ class TestPortfolioImpactCalculation:
         )
 
         # Act
-        impact = risk_analyzer._calculate_portfolio_impact(order, mock_portfolio, mock_quote)
+        impact = risk_analyzer._calculate_portfolio_impact(
+            order, mock_portfolio, mock_quote
+        )
 
         # Assert
         assert isinstance(impact, PortfolioImpact)
@@ -175,7 +179,9 @@ class TestPortfolioImpactCalculation:
         assert impact.buying_power_after < 10000.0  # Buying power should decrease
         assert len(impact.positions_affected) > 0  # Should affect AAPL position
 
-    def test_calculate_portfolio_impact_sell(self, risk_analyzer, mock_portfolio, mock_quote):
+    def test_calculate_portfolio_impact_sell(
+        self, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test portfolio impact calculation for sell order."""
         # Arrange
         order = Order(
@@ -189,7 +195,9 @@ class TestPortfolioImpactCalculation:
         )
 
         # Act
-        impact = risk_analyzer._calculate_portfolio_impact(order, mock_portfolio, mock_quote)
+        impact = risk_analyzer._calculate_portfolio_impact(
+            order, mock_portfolio, mock_quote
+        )
 
         # Assert
         assert isinstance(impact, PortfolioImpact)
@@ -200,7 +208,9 @@ class TestPortfolioImpactCalculation:
         assert impact.buying_power_after > 10000.0  # Buying power should increase
         assert len(impact.positions_affected) > 0  # Should affect AAPL position
 
-    def test_calculate_portfolio_impact_new_position(self, risk_analyzer, mock_portfolio, mock_quote):
+    def test_calculate_portfolio_impact_new_position(
+        self, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test portfolio impact calculation for new position."""
         # Arrange
         order = Order(
@@ -224,7 +234,9 @@ class TestPortfolioImpactCalculation:
         )
 
         # Act
-        impact = risk_analyzer._calculate_portfolio_impact(order, mock_portfolio, googl_quote)
+        impact = risk_analyzer._calculate_portfolio_impact(
+            order, mock_portfolio, googl_quote
+        )
 
         # Assert
         assert isinstance(impact, PortfolioImpact)
@@ -238,7 +250,9 @@ class TestPortfolioImpactCalculation:
 class TestPositionImpactCalculation:
     """Test position impact calculation."""
 
-    def test_calculate_position_impacts_existing(self, risk_analyzer, mock_portfolio, mock_quote):
+    def test_calculate_position_impacts_existing(
+        self, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test position impact calculation for existing position."""
         # Arrange
         order = Order(
@@ -252,7 +266,9 @@ class TestPositionImpactCalculation:
         )
 
         # Act
-        impacts = risk_analyzer._calculate_position_impacts(order, mock_portfolio, mock_quote)
+        impacts = risk_analyzer._calculate_position_impacts(
+            order, mock_portfolio, mock_quote
+        )
 
         # Assert
         assert len(impacts) == 1  # Should affect one position
@@ -266,7 +282,9 @@ class TestPositionImpactCalculation:
         assert impact.current_value == 15000.0  # 100 * 150.0
         assert impact.new_value == 22500.0  # 150 * 150.0
 
-    def test_calculate_single_position_impact(self, risk_analyzer, mock_portfolio, mock_quote):
+    def test_calculate_single_position_impact(
+        self, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test single position impact calculation."""
         # Arrange
         position = mock_portfolio.positions[0]  # AAPL position
@@ -301,7 +319,9 @@ class TestPositionImpactCalculation:
 class TestRiskChecks:
     """Test risk check functionality."""
 
-    def test_check_position_concentration(self, mock_asset_factory, risk_analyzer, mock_portfolio):
+    def test_check_position_concentration(
+        self, mock_asset_factory, risk_analyzer, mock_portfolio
+    ):
         """Test position concentration check."""
         # Arrange
         order = Order(
@@ -455,7 +475,9 @@ class TestRiskChecks:
 class TestRiskAnalysis:
     """Test complete risk analysis functionality."""
 
-    def test_analyze_order_low_risk(self, mock_asset_factory, risk_analyzer, mock_portfolio, mock_quote):
+    def test_analyze_order_low_risk(
+        self, mock_asset_factory, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test risk analysis for low-risk order."""
         # Arrange
         order = Order(
@@ -484,7 +506,9 @@ class TestRiskAnalysis:
         assert result.estimated_cost > 0
         assert result.margin_requirement > 0
 
-    def test_analyze_order_high_risk(self, mock_asset_factory, risk_analyzer, mock_portfolio, mock_quote):
+    def test_analyze_order_high_risk(
+        self, mock_asset_factory, risk_analyzer, mock_portfolio, mock_quote
+    ):
         """Test risk analysis for high-risk order."""
         # Arrange
         order = Order(
@@ -507,15 +531,26 @@ class TestRiskAnalysis:
 
         # Assert
         assert isinstance(result, RiskAnalysisResult)
-        assert result.risk_level in [RiskLevel.HIGH, RiskLevel.EXTREME]  # Depending on violations
+        assert result.risk_level in [
+            RiskLevel.HIGH,
+            RiskLevel.EXTREME,
+        ]  # Depending on violations
         assert len(result.violations) > 0
-        assert any(v.check_type == RiskCheckType.POSITION_CONCENTRATION for v in result.violations)
+        assert any(
+            v.check_type == RiskCheckType.POSITION_CONCENTRATION
+            for v in result.violations
+        )
         assert result.estimated_cost > 0
         assert result.margin_requirement > 0
 
     @patch("app.services.risk_analysis.calculate_option_greeks")
     def test_analyze_order_options(
-        self, mock_calculate_greeks, mock_asset_factory, risk_analyzer, mock_portfolio, mock_option_quote
+        self,
+        mock_calculate_greeks,
+        mock_asset_factory,
+        risk_analyzer,
+        mock_portfolio,
+        mock_option_quote,
     ):
         """Test risk analysis for options order."""
         # Arrange
@@ -660,13 +695,15 @@ class TestRiskUtilityFunctions:
         # Arrange
         order = MagicMock()
         order.symbol = "AAPL"
-        
+
         portfolio_impact = MagicMock()
         portfolio_impact.cash_after = 4000.0  # Below 5000 warning threshold
         portfolio_impact.positions_affected = [
-            MagicMock(symbol="AAPL", concentration_after=0.16)  # Above 15% warning threshold
+            MagicMock(
+                symbol="AAPL", concentration_after=0.16
+            )  # Above 15% warning threshold
         ]
-        
+
         violations = []
 
         # Act
@@ -676,5 +713,7 @@ class TestRiskUtilityFunctions:
 
         # Assert
         assert len(warnings) > 0
-        assert any("cash balance will be low" in warning.lower() for warning in warnings)
+        assert any(
+            "cash balance will be low" in warning.lower() for warning in warnings
+        )
         assert any("represent 16.0% of portfolio" in warning for warning in warnings)

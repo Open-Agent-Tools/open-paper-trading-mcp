@@ -20,6 +20,7 @@ os.environ["TEST_DATABASE_URL"] = (
 os.environ["QUOTE_ADAPTER_TYPE"] = "test"  # Use test data adapter
 
 from app.main import app
+
 # Import models to ensure they're registered with Base
 from app.models.database import trading  # noqa: F401
 from app.models.database.base import Base
@@ -110,9 +111,11 @@ def client(async_db_session: AsyncSession) -> TestClient:
     app.dependency_overrides[get_async_session] = override_get_async_session
 
     # Initialize TradingService for testing and store in app state
-    from app.services.trading_service import (TradingService,
-                                              _get_quote_adapter,
-                                              set_global_trading_service)
+    from app.services.trading_service import (
+        TradingService,
+        _get_quote_adapter,
+        set_global_trading_service,
+    )
 
     trading_service = TradingService(_get_quote_adapter())
     app.state.trading_service = trading_service

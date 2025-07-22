@@ -5,13 +5,14 @@ Tests position calculations, Greeks, options support, validation mixins,
 portfolio calculations, and complex position scenarios.
 """
 
-import pytest
-from datetime import date, datetime
+from datetime import date
 from unittest.mock import MagicMock
+
+import pytest
 from pydantic import ValidationError
 
-from app.models.assets import Stock, Option, Call, Put, asset_factory
-from app.schemas.positions import Position, Portfolio, PortfolioSummary
+from app.models.assets import Option, Stock
+from app.schemas.positions import Portfolio, PortfolioSummary, Position
 
 
 class TestPositionSchema:
@@ -24,9 +25,9 @@ class TestPositionSchema:
             quantity=100,
             avg_price=150.0,
             current_price=155.0,
-            unrealized_pnl=500.0
+            unrealized_pnl=500.0,
         )
-        
+
         assert position.symbol == "AAPL"
         assert position.quantity == 100
         assert position.avg_price == 150.0
@@ -36,12 +37,8 @@ class TestPositionSchema:
 
     def test_position_creation_with_defaults(self):
         """Test position creation with default values."""
-        position = Position(
-            symbol="GOOGL",
-            quantity=50,
-            avg_price=2800.0
-        )
-        
+        position = Position(symbol="GOOGL", quantity=50, avg_price=2800.0)
+
         assert position.symbol == "GOOGL"
         assert position.quantity == 50
         assert position.avg_price == 2800.0
@@ -52,23 +49,15 @@ class TestPositionSchema:
 
     def test_position_symbol_validation_and_normalization(self):
         """Test symbol validation and normalization."""
-        position = Position(
-            symbol="aapl",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="aapl", quantity=100, avg_price=150.0)
+
         assert position.symbol == "AAPL"
 
     def test_position_symbol_validation_empty(self):
         """Test empty symbol validation."""
         with pytest.raises(ValidationError) as exc_info:
-            Position(
-                symbol="",
-                quantity=100,
-                avg_price=150.0
-            )
-        
+            Position(symbol="", quantity=100, avg_price=150.0)
+
         error = exc_info.value.errors()[0]
         assert "Symbol cannot be empty" in error["msg"]
 
@@ -88,9 +77,9 @@ class TestPositionSchema:
             theta=-0.025,
             vega=0.12,
             rho=0.08,
-            iv=0.25
+            iv=0.25,
         )
-        
+
         assert position.option_type == "call"
         assert position.strike == 195.0
         assert position.expiration_date == date(2024, 1, 19)
@@ -104,13 +93,8 @@ class TestPositionSchema:
 
     def test_position_asset_normalization_from_string(self):
         """Test asset normalization from string."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            asset="AAPL"
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0, asset="AAPL")
+
         assert position.asset is not None
         assert position.asset.symbol == "AAPL"
         assert isinstance(position.asset, Stock)
@@ -119,12 +103,9 @@ class TestPositionSchema:
         """Test asset normalization from option string."""
         option_symbol = "AAPL240119C00195000"
         position = Position(
-            symbol=option_symbol,
-            quantity=10,
-            avg_price=5.50,
-            asset=option_symbol
+            symbol=option_symbol, quantity=10, avg_price=5.50, asset=option_symbol
         )
-        
+
         assert position.asset is not None
         assert position.asset.symbol == option_symbol
         assert isinstance(position.asset, Option)
@@ -140,16 +121,16 @@ class TestPositionProperties:
             underlying=Stock(symbol="AAPL"),
             option_type="call",
             strike=195.0,
-            expiration_date=date(2024, 1, 19)
+            expiration_date=date(2024, 1, 19),
         )
-        
+
         position = Position(
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            asset=option_asset
+            asset=option_asset,
         )
-        
+
         assert position.is_option is True
 
     def test_is_option_property_with_option_type(self):
@@ -158,29 +139,21 @@ class TestPositionProperties:
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            option_type="call"
+            option_type="call",
         )
-        
+
         assert position.is_option is True
 
     def test_is_option_property_stock(self):
         """Test is_option property for stock position."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         assert position.is_option is False
 
     def test_multiplier_property_stock(self):
         """Test multiplier property for stock (1x)."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         assert position.multiplier == 1
 
     def test_multiplier_property_option(self):
@@ -189,19 +162,15 @@ class TestPositionProperties:
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            option_type="call"
+            option_type="call",
         )
-        
+
         assert position.multiplier == 100
 
     def test_total_cost_basis_property_stock(self):
         """Test total_cost_basis property for stock."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         # |150.0 * 100| * 1 = 15,000
         assert position.total_cost_basis == 15000.0
 
@@ -211,44 +180,34 @@ class TestPositionProperties:
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            option_type="call"
+            option_type="call",
         )
-        
+
         # |5.50 * 10| * 100 = 5,500
         assert position.total_cost_basis == 5500.0
 
     def test_total_cost_basis_property_negative_quantity(self):
         """Test total_cost_basis with negative quantity (short position)."""
-        position = Position(
-            symbol="AAPL",
-            quantity=-100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=-100, avg_price=150.0)
+
         # |150.0 * -100| * 1 = 15,000 (absolute value)
         assert position.total_cost_basis == 15000.0
 
     def test_market_value_property_with_current_price(self):
         """Test market_value property with current price."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=155.0
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=155.0
         )
-        
+
         # 155.0 * 100 * 1 = 15,500
         assert position.market_value == 15500.0
 
     def test_market_value_property_without_current_price(self):
         """Test market_value property without current price."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=None
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=None
         )
-        
+
         assert position.market_value is None
 
     def test_market_value_property_option(self):
@@ -258,9 +217,9 @@ class TestPositionProperties:
             quantity=10,
             avg_price=5.50,
             current_price=6.00,
-            option_type="call"
+            option_type="call",
         )
-        
+
         # 6.00 * 10 * 100 = 6,000
         assert position.market_value == 6000.0
 
@@ -271,9 +230,9 @@ class TestPositionProperties:
             quantity=100,
             avg_price=150.0,
             unrealized_pnl=500.0,
-            realized_pnl=200.0
+            realized_pnl=200.0,
         )
-        
+
         assert position.total_pnl == 700.0
 
     def test_total_pnl_property_without_unrealized(self):
@@ -283,9 +242,9 @@ class TestPositionProperties:
             quantity=100,
             avg_price=150.0,
             unrealized_pnl=None,
-            realized_pnl=200.0
+            realized_pnl=200.0,
         )
-        
+
         assert position.total_pnl == 200.0
 
     def test_pnl_percent_property_positive(self):
@@ -295,9 +254,9 @@ class TestPositionProperties:
             quantity=100,
             avg_price=150.0,
             unrealized_pnl=1500.0,  # 10% gain
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
-        
+
         # Total P&L: 1500.0, Cost basis: 15,000, Percentage: 10%
         assert position.pnl_percent == 10.0
 
@@ -308,9 +267,9 @@ class TestPositionProperties:
             quantity=100,
             avg_price=150.0,
             unrealized_pnl=-750.0,  # 5% loss
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
-        
+
         # Total P&L: -750.0, Cost basis: 15,000, Percentage: -5%
         assert position.pnl_percent == -5.0
 
@@ -321,20 +280,17 @@ class TestPositionProperties:
             quantity=100,
             avg_price=150.0,
             unrealized_pnl=None,
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
-        
+
         assert position.pnl_percent is None
 
     def test_pnl_percent_property_zero_cost_basis(self):
         """Test pnl_percent property with zero cost basis."""
         position = Position(
-            symbol="AAPL",
-            quantity=0,
-            avg_price=150.0,
-            unrealized_pnl=500.0
+            symbol="AAPL", quantity=0, avg_price=150.0, unrealized_pnl=500.0
         )
-        
+
         assert position.pnl_percent is None
 
 
@@ -343,43 +299,31 @@ class TestPositionCalculations:
 
     def test_calculate_unrealized_pnl_long_position_gain(self):
         """Test unrealized P&L calculation for long position gain."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         # Current price higher than avg price
         pnl = position.calculate_unrealized_pnl(155.0)
-        
+
         # (155.0 - 150.0) * 100 * 1 = 500.0
         assert pnl == 500.0
 
     def test_calculate_unrealized_pnl_long_position_loss(self):
         """Test unrealized P&L calculation for long position loss."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         # Current price lower than avg price
         pnl = position.calculate_unrealized_pnl(145.0)
-        
+
         # (145.0 - 150.0) * 100 * 1 = -500.0
         assert pnl == -500.0
 
     def test_calculate_unrealized_pnl_short_position_gain(self):
         """Test unrealized P&L calculation for short position gain."""
-        position = Position(
-            symbol="AAPL",
-            quantity=-100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=-100, avg_price=150.0)
+
         # Current price lower than avg price (good for short)
         pnl = position.calculate_unrealized_pnl(145.0)
-        
+
         # (145.0 - 150.0) * -100 * 1 = 500.0
         assert pnl == 500.0
 
@@ -389,47 +333,36 @@ class TestPositionCalculations:
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            option_type="call"
+            option_type="call",
         )
-        
+
         pnl = position.calculate_unrealized_pnl(6.00)
-        
+
         # (6.00 - 5.50) * 10 * 100 = 500.0
         assert pnl == 500.0
 
     def test_calculate_unrealized_pnl_no_price(self):
         """Test unrealized P&L calculation with no price."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         pnl = position.calculate_unrealized_pnl(None)
         assert pnl is None
 
     def test_calculate_unrealized_pnl_use_current_price(self):
         """Test unrealized P&L calculation using position's current price."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=155.0
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=155.0
         )
-        
+
         pnl = position.calculate_unrealized_pnl()
         assert pnl == 500.0
 
     def test_update_market_data_basic(self):
         """Test updating position with market data."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         position.update_market_data(155.0)
-        
+
         assert position.current_price == 155.0
         assert position.unrealized_pnl == 500.0
 
@@ -439,9 +372,9 @@ class TestPositionCalculations:
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            option_type="call"
+            option_type="call",
         )
-        
+
         # Mock quote with Greeks
         mock_quote = MagicMock()
         mock_quote.delta = 0.65
@@ -450,9 +383,9 @@ class TestPositionCalculations:
         mock_quote.vega = 0.12
         mock_quote.rho = 0.08
         mock_quote.iv = 0.25
-        
+
         position.update_market_data(6.00, mock_quote)
-        
+
         assert position.current_price == 6.00
         assert position.unrealized_pnl == 500.0
         # Greeks should be scaled by quantity * multiplier
@@ -465,18 +398,14 @@ class TestPositionCalculations:
 
     def test_update_market_data_stock_no_greeks(self):
         """Test updating stock position doesn't calculate Greeks."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
+
         # Mock quote with Greeks (should be ignored for stocks)
         mock_quote = MagicMock()
         mock_quote.delta = 0.65
-        
+
         position.update_market_data(155.0, mock_quote)
-        
+
         assert position.current_price == 155.0
         assert position.unrealized_pnl == 500.0
         assert position.delta is None  # Should remain None for stocks
@@ -484,14 +413,11 @@ class TestPositionCalculations:
     def test_get_close_cost_long_position(self):
         """Test get_close_cost for long position."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=155.0
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=155.0
         )
-        
+
         close_cost = position.get_close_cost()
-        
+
         # To close long position, we sell: -155.0 * 100 * 1 = -15,500
         # Negative means we receive money
         assert close_cost == -15500.0
@@ -499,14 +425,11 @@ class TestPositionCalculations:
     def test_get_close_cost_short_position(self):
         """Test get_close_cost for short position."""
         position = Position(
-            symbol="AAPL",
-            quantity=-100,
-            avg_price=150.0,
-            current_price=155.0
+            symbol="AAPL", quantity=-100, avg_price=150.0, current_price=155.0
         )
-        
+
         close_cost = position.get_close_cost()
-        
+
         # To close short position, we buy: -155.0 * -100 * 1 = 15,500
         # Positive means we pay money
         assert close_cost == 15500.0
@@ -518,37 +441,31 @@ class TestPositionCalculations:
             quantity=10,
             avg_price=5.50,
             current_price=6.00,
-            option_type="call"
+            option_type="call",
         )
-        
+
         close_cost = position.get_close_cost()
-        
+
         # To close long option position: -6.00 * 10 * 100 = -6,000
         assert close_cost == -6000.0
 
     def test_get_close_cost_no_current_price(self):
         """Test get_close_cost with no current price."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=None
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=None
         )
-        
+
         close_cost = position.get_close_cost()
         assert close_cost is None
 
     def test_get_close_cost_with_override_price(self):
         """Test get_close_cost with price override."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=155.0
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=155.0
         )
-        
+
         close_cost = position.get_close_cost(160.0)
-        
+
         # Using override price: -160.0 * 100 * 1 = -16,000
         assert close_cost == -16000.0
 
@@ -559,13 +476,13 @@ class TestPositionCalculations:
             quantity=100,
             avg_price=150.0,
             current_price=155.0,
-            realized_pnl=100.0
+            realized_pnl=100.0,
         )
-        
+
         result = position.simulate_close()
-        
+
         assert result["close_cost"] == -15500.0  # Receive money
-        assert result["realized_pnl"] == 500.0   # Unrealized becomes realized
+        assert result["realized_pnl"] == 500.0  # Unrealized becomes realized
         assert result["total_realized_pnl"] == 600.0  # 100 + 500
         assert result["cash_impact"] == -15500.0
 
@@ -576,27 +493,24 @@ class TestPositionCalculations:
             quantity=-100,
             avg_price=150.0,
             current_price=145.0,  # Price dropped, good for short
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
-        
+
         result = position.simulate_close()
-        
-        assert result["close_cost"] == 14500.0   # Pay to buy back
-        assert result["realized_pnl"] == 500.0   # Profit from price drop
+
+        assert result["close_cost"] == 14500.0  # Pay to buy back
+        assert result["realized_pnl"] == 500.0  # Profit from price drop
         assert result["total_realized_pnl"] == 500.0
         assert result["cash_impact"] == 14500.0
 
     def test_simulate_close_no_price(self):
         """Test simulate_close with no price available."""
         position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0,
-            current_price=None
+            symbol="AAPL", quantity=100, avg_price=150.0, current_price=None
         )
-        
+
         result = position.simulate_close()
-        
+
         assert "error" in result
         assert result["error"] == "No price available"
 
@@ -607,11 +521,11 @@ class TestPositionCalculations:
             quantity=100,
             avg_price=150.0,
             current_price=155.0,
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
-        
+
         result = position.simulate_close(160.0)
-        
+
         assert result["close_cost"] == -16000.0
         assert result["realized_pnl"] == 1000.0  # (160-150) * 100
         assert result["total_realized_pnl"] == 1000.0
@@ -622,44 +536,29 @@ class TestPositionValidationMixin:
 
     def test_avg_price_validation_positive(self):
         """Test average price must be positive."""
-        position = Position(
-            symbol="AAPL",
-            quantity=100,
-            avg_price=150.0
-        )
+        position = Position(symbol="AAPL", quantity=100, avg_price=150.0)
         assert position.avg_price == 150.0
 
     def test_avg_price_validation_zero(self):
         """Test average price cannot be zero."""
         with pytest.raises(ValidationError) as exc_info:
-            Position(
-                symbol="AAPL",
-                quantity=100,
-                avg_price=0.0
-            )
-        
+            Position(symbol="AAPL", quantity=100, avg_price=0.0)
+
         error = exc_info.value.errors()[0]
         assert "Average price must be positive" in error["msg"]
 
     def test_avg_price_validation_negative(self):
         """Test average price cannot be negative."""
         with pytest.raises(ValidationError) as exc_info:
-            Position(
-                symbol="AAPL",
-                quantity=100,
-                avg_price=-150.0
-            )
-        
+            Position(symbol="AAPL", quantity=100, avg_price=-150.0)
+
         error = exc_info.value.errors()[0]
         assert "Average price must be positive" in error["msg"]
 
     def test_strike_validation_positive(self):
         """Test strike price must be positive when provided."""
         position = Position(
-            symbol="AAPL240119C00195000",
-            quantity=10,
-            avg_price=5.50,
-            strike=195.0
+            symbol="AAPL240119C00195000", quantity=10, avg_price=5.50, strike=195.0
         )
         assert position.strike == 195.0
 
@@ -667,12 +566,9 @@ class TestPositionValidationMixin:
         """Test strike price cannot be zero."""
         with pytest.raises(ValidationError) as exc_info:
             Position(
-                symbol="AAPL240119C00195000",
-                quantity=10,
-                avg_price=5.50,
-                strike=0.0
+                symbol="AAPL240119C00195000", quantity=10, avg_price=5.50, strike=0.0
             )
-        
+
         error = exc_info.value.errors()[0]
         assert "Strike price must be positive" in error["msg"]
 
@@ -680,12 +576,9 @@ class TestPositionValidationMixin:
         """Test strike price cannot be negative."""
         with pytest.raises(ValidationError) as exc_info:
             Position(
-                symbol="AAPL240119C00195000",
-                quantity=10,
-                avg_price=5.50,
-                strike=-195.0
+                symbol="AAPL240119C00195000", quantity=10, avg_price=5.50, strike=-195.0
             )
-        
+
         error = exc_info.value.errors()[0]
         assert "Strike price must be positive" in error["msg"]
 
@@ -696,7 +589,7 @@ class TestPositionValidationMixin:
             symbol="AAPL251231C00200000",
             quantity=10,
             avg_price=5.50,
-            expiration_date=future_date
+            expiration_date=future_date,
         )
         assert position.expiration_date == future_date
 
@@ -708,9 +601,9 @@ class TestPositionValidationMixin:
                 symbol="AAPL200101C00200000",
                 quantity=10,
                 avg_price=5.50,
-                expiration_date=past_date
+                expiration_date=past_date,
             )
-        
+
         error = exc_info.value.errors()[0]
         assert "Expiration date must be in the future" in error["msg"]
 
@@ -720,15 +613,12 @@ class TestPositionValidationMixin:
             symbol="AAPL240119C00195000",
             quantity=10,
             avg_price=5.50,
-            option_type="call"
+            option_type="call",
         )
         assert call_position.option_type == "call"
-        
+
         put_position = Position(
-            symbol="AAPL240119P00190000",
-            quantity=10,
-            avg_price=4.25,
-            option_type="put"
+            symbol="AAPL240119P00190000", quantity=10, avg_price=4.25, option_type="put"
         )
         assert put_position.option_type == "put"
 
@@ -739,9 +629,9 @@ class TestPositionValidationMixin:
                 symbol="AAPL240119C00195000",
                 quantity=10,
                 avg_price=5.50,
-                option_type="invalid"
+                option_type="invalid",
             )
-        
+
         error = exc_info.value.errors()[0]
         assert 'Option type must be "call" or "put"' in error["msg"]
 
@@ -756,17 +646,17 @@ class TestPortfolioSchema:
             quantity=100,
             avg_price=150.0,
             current_price=155.0,
-            unrealized_pnl=500.0
+            unrealized_pnl=500.0,
         )
-        
+
         portfolio = Portfolio(
             cash_balance=10000.0,
             total_value=25500.0,
             positions=[position],
             daily_pnl=250.0,
-            total_pnl=1500.0
+            total_pnl=1500.0,
         )
-        
+
         assert portfolio.cash_balance == 10000.0
         assert portfolio.total_value == 25500.0
         assert len(portfolio.positions) == 1
@@ -781,9 +671,9 @@ class TestPortfolioSchema:
             total_value=50000.0,
             positions=[],
             daily_pnl=0.0,
-            total_pnl=0.0
+            total_pnl=0.0,
         )
-        
+
         assert portfolio.positions == []
         assert portfolio.cash_balance == portfolio.total_value
 
@@ -800,9 +690,9 @@ class TestPortfolioSummary:
             daily_pnl=1250.0,
             daily_pnl_percent=1.67,
             total_pnl=5000.0,
-            total_pnl_percent=7.14
+            total_pnl_percent=7.14,
         )
-        
+
         assert summary.total_value == 75000.0
         assert summary.cash_balance == 25000.0
         assert summary.invested_value == 50000.0
@@ -817,12 +707,8 @@ class TestPositionEdgeCases:
 
     def test_zero_quantity_position(self):
         """Test position with zero quantity."""
-        position = Position(
-            symbol="AAPL",
-            quantity=0,
-            avg_price=150.0
-        )
-        
+        position = Position(symbol="AAPL", quantity=0, avg_price=150.0)
+
         assert position.quantity == 0
         assert position.total_cost_basis == 0.0
         assert position.market_value == 0.0
@@ -830,12 +716,9 @@ class TestPositionEdgeCases:
     def test_very_large_position(self):
         """Test position with very large quantities."""
         position = Position(
-            symbol="AAPL",
-            quantity=1000000,
-            avg_price=150.0,
-            current_price=155.0
+            symbol="AAPL", quantity=1000000, avg_price=150.0, current_price=155.0
         )
-        
+
         assert position.total_cost_basis == 150_000_000.0
         assert position.market_value == 155_000_000.0
         assert position.calculate_unrealized_pnl() == 5_000_000.0
@@ -847,9 +730,9 @@ class TestPositionEdgeCases:
             symbol="AAPL",
             quantity=50,  # Representing 0.5 shares as 50 fractional units
             avg_price=150.0,
-            current_price=155.0
+            current_price=155.0,
         )
-        
+
         pnl = position.calculate_unrealized_pnl()
         assert pnl == 250.0  # (155-150) * 50 * 1
 
@@ -865,9 +748,9 @@ class TestPositionEdgeCases:
             gamma=0.001,
             theta=-5.0,
             vega=2.5,
-            iv=3.5  # 350% IV
+            iv=3.5,  # 350% IV
         )
-        
+
         # Verify extreme but valid values are handled
         assert position.delta == 0.95
         assert position.theta == -5.0
@@ -882,9 +765,9 @@ class TestPositionEdgeCases:
             current_price=0.005,  # Lost half value
             option_type="call",
             strike=300.0,
-            underlying_symbol="AAPL"
+            underlying_symbol="AAPL",
         )
-        
+
         # Should handle penny options correctly
         assert position.avg_price == 0.01
         assert position.current_price == 0.005
@@ -903,15 +786,15 @@ class TestPositionSerialization:
             avg_price=150.0,
             current_price=155.0,
             unrealized_pnl=500.0,
-            realized_pnl=100.0
+            realized_pnl=100.0,
         )
-        
+
         # Serialize to dict
         data = original_position.model_dump()
-        
+
         # Deserialize back
         restored_position = Position(**data)
-        
+
         assert restored_position.symbol == original_position.symbol
         assert restored_position.quantity == original_position.quantity
         assert restored_position.avg_price == original_position.avg_price
@@ -922,7 +805,7 @@ class TestPositionSerialization:
     def test_position_json_roundtrip_with_option_fields(self):
         """Test position JSON serialization with option fields."""
         exp_date = date(2024, 1, 19)
-        
+
         original_position = Position(
             symbol="AAPL240119C00195000",
             quantity=10,
@@ -937,15 +820,15 @@ class TestPositionSerialization:
             theta=-25.0,
             vega=120.0,
             rho=80.0,
-            iv=0.25
+            iv=0.25,
         )
-        
+
         # Serialize to dict
         data = original_position.model_dump()
-        
+
         # Deserialize back
         restored_position = Position(**data)
-        
+
         assert restored_position.option_type == "call"
         assert restored_position.strike == 195.0
         assert restored_position.expiration_date == exp_date

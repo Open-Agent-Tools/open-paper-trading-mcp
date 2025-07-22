@@ -6,7 +6,7 @@ enforces valid state transitions, and provides accurate order information.
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,8 +15,6 @@ from app.services.order_lifecycle import (
     OrderEvent,
     OrderLifecycleError,
     OrderLifecycleManager,
-    OrderLifecycleState,
-    OrderStateTransition,
 )
 
 
@@ -206,7 +204,9 @@ class TestOrderLifecycleManager:
         assert lifecycle_state.current_status == OrderStatus.CANCELLED
         assert len(lifecycle_state.transitions) == 2
         assert lifecycle_state.transitions[1].event == OrderEvent.CANCELLED
-        assert lifecycle_state.transitions[1].details == {"reason": "Testing cancellation"}
+        assert lifecycle_state.transitions[1].details == {
+            "reason": "Testing cancellation"
+        }
         assert lifecycle_state.is_terminal is True
 
         # Verify the order was moved to completed_orders
@@ -549,7 +549,9 @@ class TestOrderLifecycleManager:
         assert stats["active_orders"] == 1
         assert stats["completed_orders"] == 1
         assert stats["status_breakdown"]["pending"] == 1
-        assert stats["status_breakdown"]["filled"] == 0  # Filled order is in completed_orders
+        assert (
+            stats["status_breakdown"]["filled"] == 0
+        )  # Filled order is in completed_orders
 
     def test_is_valid_transition(self, lifecycle_manager):
         """Test checking if a transition is valid."""

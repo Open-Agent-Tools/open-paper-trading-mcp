@@ -335,7 +335,7 @@ async def get_options_chain(args: GetOptionsChainArgs) -> str:
             expiration = datetime.strptime(args.expiration_date, "%Y-%m-%d").date()
 
         # Get options chain
-        chain_data = await get_mcp_trading_service().get_formatted_options_chain(
+        chain_data = get_mcp_trading_service().get_formatted_options_chain(
             args.symbol,
             expiration_date=expiration,
             min_strike=args.min_strike,
@@ -351,7 +351,7 @@ async def get_options_chain(args: GetOptionsChainArgs) -> str:
 async def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
     """Get available expiration dates for an underlying symbol."""
     try:
-        dates = await get_mcp_trading_service().get_expiration_dates(args.symbol)
+        dates = get_mcp_trading_service().get_expiration_dates(args.symbol)
         dates_data = [d.isoformat() for d in dates]
 
         return json.dumps(
@@ -479,7 +479,7 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> str:
     that works with both test data and live market data.
     """
     try:
-        result = await get_mcp_trading_service().find_tradable_options(
+        result = get_mcp_trading_service().find_tradable_options(
             args.symbol, args.expiration_date, args.option_type
         )
         return json.dumps(result, indent=2)
@@ -495,7 +495,7 @@ async def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
     pricing, and volume information.
     """
     try:
-        result = await get_mcp_trading_service().get_option_market_data(args.option_id)
+        result = get_mcp_trading_service().get_option_market_data(args.option_id)
         return json.dumps(result, indent=2)
     except Exception as e:
         return f"Error getting option market data: {e!s}"

@@ -11,18 +11,28 @@ from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Order as DBOrder
 from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
-from app.schemas.orders import (Order, OrderCondition, OrderCreate,
-                                OrderStatus, OrderType)
+from app.schemas.orders import (
+    Order,
+    OrderCondition,
+    OrderCreate,
+    OrderStatus,
+    OrderType,
+)
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.schemas.trading import StockQuote
+
 # Import schema converters
-from app.utils.schema_converters import (AccountConverter, OrderConverter,
-                                         PositionConverter)
+from app.utils.schema_converters import (
+    AccountConverter,
+    OrderConverter,
+    PositionConverter,
+)
 
 # Database imports removed - using async patterns only
 from ..adapters.base import QuoteAdapter
 from ..adapters.test_data import DevDataQuoteAdapter
 from .greeks import calculate_option_greeks
+
 # Import new services
 from .order_execution import OrderExecutionEngine
 from .strategies import StrategyRecognitionService
@@ -468,7 +478,9 @@ class TradingService:
     ) -> dict[str, Any]:
         """Get comprehensive Greeks response for an option symbol."""
         # Calculate Greeks
-        greeks = self.calculate_greeks(option_symbol, underlying_price=underlying_price)
+        greeks = await self.calculate_greeks(
+            option_symbol, underlying_price=underlying_price
+        )
 
         # Get option details and quote
         asset = asset_factory(option_symbol)
@@ -517,7 +529,7 @@ class TradingService:
         # No fallback - raise error if adapter cannot provide quote
         raise NotFoundError(f"No quote available for {symbol}")
 
-    def get_options_chain(
+    async def get_options_chain(
         self, underlying: str, expiration_date: date | None = None
     ) -> OptionsChain:
         """Get complete options chain for an underlying."""
@@ -526,7 +538,7 @@ class TradingService:
             if expiration_date
             else None
         )
-        chain = self.quote_adapter.get_options_chain(underlying, exp_datetime)
+        chain = await self.quote_adapter.get_options_chain(underlying, exp_datetime)
         if chain is None:
             raise NotFoundError(f"No options chain found for {underlying}")
         return chain
@@ -647,6 +659,9 @@ class TradingService:
             created_at=datetime.now(),
             filled_at=datetime.now(),
             net_price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         # Persist to database using the same pattern as create_order
@@ -675,7 +690,7 @@ class TradingService:
 
         return order
 
-    def find_tradable_options(
+    async def find_tradable_options(
         self,
         symbol: str,
         expiration_date: str | None = None,
@@ -693,7 +708,7 @@ class TradingService:
             if expiration_date:
                 exp_date = datetime.strptime(expiration_date, "%Y-%m-%d")
 
-            chain = self.get_options_chain(
+            chain = await self.get_options_chain(
                 symbol, exp_date.date() if exp_date else None
             )
 
@@ -754,7 +769,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_option_market_data(self, option_id: str) -> dict[str, Any]:
+    async def get_option_market_data(self, option_id: str) -> dict[str, Any]:
         """
         Get market data for a specific option contract.
 
@@ -770,7 +785,7 @@ class TradingService:
             if not isinstance(asset, Option):
                 return {"error": f"Invalid option symbol: {option_id}"}
 
-            quote = self.get_enhanced_quote(option_id)
+            quote = await self.get_enhanced_quote(option_id)
             if not isinstance(quote, OptionQuote):
                 return {"error": f"No market data available for {option_id}"}
 
@@ -860,7 +875,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_stock_info(self, symbol: str) -> dict[str, Any]:
+    async def get_stock_info(self, symbol: str) -> dict[str, Any]:
         """
         Get detailed company information and fundamentals for a stock.
 
@@ -874,10 +889,10 @@ class TradingService:
 
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_stock_info"):
-                return self.quote_adapter.get_stock_info(symbol)
+                return await self.quote_adapter.get_stock_info(symbol)
             else:
                 # Fallback to basic quote data
-                quote = self.get_enhanced_quote(symbol)
+                quote = await self.get_enhanced_quote(symbol)
                 if not quote:
                     return {
                         "error": f"No company information found for symbol: {symbol}"
@@ -902,7 +917,9 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_price_history(self, symbol: str, period: str = "week") -> dict[str, Any]:
+    async def get_price_history(
+        self, symbol: str, period: str = "week"
+    ) -> dict[str, Any]:
         """
         Get historical price data for a stock.
 
@@ -916,10 +933,10 @@ class TradingService:
 
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_price_history"):
-                return self.quote_adapter.get_price_history(symbol, period)
+                return await self.quote_adapter.get_price_history(symbol, period)
             else:
                 # Fallback to current quote only
-                quote = self.get_enhanced_quote(symbol)
+                quote = await self.get_enhanced_quote(symbol)
                 if not quote:
                     return {
                         "error": f"No historical data found for {symbol} over {period}"
@@ -946,7 +963,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_stock_news(self, symbol: str) -> dict[str, Any]:
+    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
         """
         Get news stories for a stock.
 
@@ -960,7 +977,7 @@ class TradingService:
 
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_stock_news"):
-                return self.quote_adapter.get_stock_news(symbol)
+                return await self.quote_adapter.get_stock_news(symbol)
             else:
                 return {
                     "symbol": symbol.upper(),
@@ -971,7 +988,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_top_movers(self) -> dict[str, Any]:
+    async def get_top_movers(self) -> dict[str, Any]:
         """
         Get top movers in the market.
 
@@ -981,7 +998,7 @@ class TradingService:
         try:
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_top_movers"):
-                return self.quote_adapter.get_top_movers()
+                return await self.quote_adapter.get_top_movers()
             else:
                 # Fallback to available symbols with basic data
                 symbols = self.get_available_symbols()[:10]  # Top 10
@@ -989,7 +1006,7 @@ class TradingService:
 
                 for symbol in symbols:
                     try:
-                        price_data = self.get_stock_price(symbol)
+                        price_data = await self.get_stock_price(symbol)
                         if "error" not in price_data:
                             movers.append(
                                 {
@@ -1011,7 +1028,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def search_stocks(self, query: str) -> dict[str, Any]:
+    async def search_stocks(self, query: str) -> dict[str, Any]:
         """
         Search for stocks by symbol or company name.
 
@@ -1021,7 +1038,7 @@ class TradingService:
         try:
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "search_stocks"):
-                return self.quote_adapter.search_stocks(query)
+                return await self.quote_adapter.search_stocks(query)
             else:
                 # Fallback to symbol matching from available symbols
                 query_upper = query.upper()
@@ -1049,7 +1066,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_formatted_options_chain(
+    async def get_formatted_options_chain(
         self,
         symbol: str,
         expiration_date: date | None = None,
@@ -1072,7 +1089,7 @@ class TradingService:
         """
         try:
             # Get the raw options chain
-            chain = self.get_options_chain(symbol, expiration_date)
+            chain = await self.get_options_chain(symbol, expiration_date)
 
             # Format the response
             formatted_calls = []
@@ -1168,7 +1185,7 @@ class TradingService:
         except Exception as e:
             return {"error": str(e)}
 
-    def create_multi_leg_order_from_request(
+    async def create_multi_leg_order_from_request(
         self,
         legs: list[dict[str, Any]],
         order_type: str,
@@ -1222,7 +1239,7 @@ class TradingService:
             mock_order_data = MockOrderData(structured_legs)
 
             # Use the existing create_multi_leg_order method
-            return self.create_multi_leg_order(mock_order_data)
+            return await self.create_multi_leg_order(mock_order_data)
 
         except Exception as e:
             raise ValueError(f"Failed to create multi-leg order: {e!s}") from e
@@ -1263,8 +1280,10 @@ class TradingService:
                         if asset.expiration_date <= process_date:
                             # Get current quote to determine intrinsic value
                             try:
-                                option_quote = self.get_enhanced_quote(position.symbol)
-                                underlying_quote = self.get_enhanced_quote(
+                                option_quote = await self.get_enhanced_quote(
+                                    position.symbol
+                                )
+                                underlying_quote = await self.get_enhanced_quote(
                                     asset.underlying.symbol
                                 )
 

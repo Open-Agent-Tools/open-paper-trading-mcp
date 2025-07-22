@@ -1,18 +1,18 @@
 """Tests for RobinhoodAdapter with comprehensive mocking."""
 
-import pytest
 import asyncio
-from unittest.mock import Mock, MagicMock, patch, AsyncMock, call
-from datetime import datetime, date
-from typing import Any, Dict, List
+from datetime import date, datetime
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 
 from app.adapters.robinhood import (
     RobinhoodAdapter,
     RobinhoodConfig,
     retry_with_backoff,
 )
-from app.models.assets import Stock, Option
-from app.models.quotes import Quote, OptionQuote, OptionsChain
+from app.models.assets import Option, Stock
+from app.models.quotes import OptionQuote, OptionsChain, Quote
 
 
 class TestRobinhoodConfig:
@@ -21,7 +21,7 @@ class TestRobinhoodConfig:
     def test_default_config(self):
         """Test default configuration values."""
         config = RobinhoodConfig()
-        
+
         assert config.name == "robinhood"
         assert config.priority == 1
         assert config.cache_ttl == 300.0
@@ -30,12 +30,9 @@ class TestRobinhoodConfig:
     def test_custom_config(self):
         """Test custom configuration values."""
         config = RobinhoodConfig(
-            name="custom-robinhood",
-            priority=5,
-            cache_ttl=600.0,
-            enabled=False
+            name="custom-robinhood", priority=5, cache_ttl=600.0, enabled=False
         )
-        
+
         assert config.name == "custom-robinhood"
         assert config.priority == 5
         assert config.cache_ttl == 600.0
@@ -48,6 +45,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_successful_execution(self):
         """Test that successful execution works without retries."""
+
         @retry_with_backoff(max_retries=3)
         async def success_func():
             return "success"
@@ -75,6 +73,7 @@ class TestRetryDecorator:
     @pytest.mark.asyncio
     async def test_retry_exhaustion(self):
         """Test that exceptions are re-raised after max retries."""
+
         @retry_with_backoff(max_retries=2, base_delay=0.1)
         async def fail_func():
             raise ValueError("Persistent error")
@@ -99,9 +98,9 @@ class TestRetryDecorator:
                 raise ValueError("Retry me")
             return "success"
 
-        with patch('asyncio.sleep', side_effect=mock_sleep):
+        with patch("asyncio.sleep", side_effect=mock_sleep):
             result = await retry_func()
-            
+
         assert result == "success"
         assert len(sleep_calls) == 2  # 2 retries
         # Verify exponential backoff (base * 2^attempt + jitter)
@@ -117,17 +116,22 @@ class TestRobinhoodAdapter:
         """Mock session manager."""
         mock_manager = MagicMock()
         mock_manager.ensure_authenticated = AsyncMock(return_value=True)
-        mock_manager.get_auth_metrics = MagicMock(return_value={
-            "total_login_attempts": 1,
-            "successful_logins": 1,
-            "last_login_time": datetime.now().isoformat()
-        })
+        mock_manager.get_auth_metrics = MagicMock(
+            return_value={
+                "total_login_attempts": 1,
+                "successful_logins": 1,
+                "last_login_time": datetime.now().isoformat(),
+            }
+        )
         return mock_manager
 
     @pytest.fixture
     def adapter(self, mock_session_manager):
         """Create adapter with mocked dependencies."""
-        with patch('app.adapters.robinhood.get_session_manager', return_value=mock_session_manager):
+        with patch(
+            "app.adapters.robinhood.get_session_manager",
+            return_value=mock_session_manager,
+        ):
             adapter = RobinhoodAdapter()
         return adapter
 
@@ -146,10 +150,13 @@ class TestRobinhoodAdapter:
     def test_adapter_initialization_with_custom_config(self, mock_session_manager):
         """Test adapter initialization with custom config."""
         config = RobinhoodConfig(name="custom", priority=10, cache_ttl=120.0)
-        
-        with patch('app.adapters.robinhood.get_session_manager', return_value=mock_session_manager):
+
+        with patch(
+            "app.adapters.robinhood.get_session_manager",
+            return_value=mock_session_manager,
+        ):
             adapter = RobinhoodAdapter(config)
-        
+
         assert adapter.config.name == "custom"
         assert adapter.config.priority == 10
         assert adapter.config.cache_ttl == 120.0
@@ -158,7 +165,7 @@ class TestRobinhoodAdapter:
     async def test_ensure_authenticated_success(self, adapter, mock_session_manager):
         """Test successful authentication check."""
         mock_session_manager.ensure_authenticated.return_value = True
-        
+
         result = await adapter._ensure_authenticated()
         assert result is True
         mock_session_manager.ensure_authenticated.assert_called_once()
@@ -167,7 +174,7 @@ class TestRobinhoodAdapter:
     async def test_ensure_authenticated_failure(self, adapter, mock_session_manager):
         """Test failed authentication check."""
         mock_session_manager.ensure_authenticated.return_value = False
-        
+
         result = await adapter._ensure_authenticated()
         assert result is False
 
@@ -175,19 +182,23 @@ class TestRobinhoodAdapter:
     async def test_get_stock_quote_success(self, adapter):
         """Test successful stock quote retrieval."""
         stock = Stock(symbol="AAPL", name="Apple Inc.")
-        
+
         # Mock robin_stocks responses
         mock_price_data = ["150.00"]
-        mock_fundamentals_data = [{
-            "volume": "1000000",
-            "market_cap": "2500000000000"
-        }]
-        
-        with patch('robin_stocks.robinhood.stocks.get_latest_price', return_value=mock_price_data), \
-             patch('robin_stocks.robinhood.stocks.get_fundamentals', return_value=mock_fundamentals_data):
-            
+        mock_fundamentals_data = [{"volume": "1000000", "market_cap": "2500000000000"}]
+
+        with (
+            patch(
+                "robin_stocks.robinhood.stocks.get_latest_price",
+                return_value=mock_price_data,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_fundamentals",
+                return_value=mock_fundamentals_data,
+            ),
+        ):
             quote = await adapter.get_quote(stock)
-        
+
         assert quote is not None
         assert isinstance(quote, Quote)
         assert quote.asset.symbol == "AAPL"
@@ -202,13 +213,14 @@ class TestRobinhoodAdapter:
     async def test_get_stock_quote_no_data(self, adapter):
         """Test stock quote retrieval with no data."""
         stock = Stock(symbol="INVALID", name="Invalid Stock")
-        
+
         # Mock empty responses
-        with patch('robin_stocks.robinhood.stocks.get_latest_price', return_value=[]), \
-             patch('robin_stocks.robinhood.stocks.get_fundamentals', return_value=[]):
-            
+        with (
+            patch("robin_stocks.robinhood.stocks.get_latest_price", return_value=[]),
+            patch("robin_stocks.robinhood.stocks.get_fundamentals", return_value=[]),
+        ):
             quote = await adapter.get_quote(stock)
-        
+
         assert quote is None
         assert adapter._request_count == 1
         assert adapter._error_count == 0
@@ -218,9 +230,9 @@ class TestRobinhoodAdapter:
         """Test stock quote retrieval with authentication failure."""
         stock = Stock(symbol="AAPL", name="Apple Inc.")
         mock_session_manager.ensure_authenticated.return_value = False
-        
+
         quote = await adapter.get_quote(stock)
-        
+
         assert quote is None
         assert adapter._request_count == 1
         assert adapter._error_count == 1
@@ -229,11 +241,13 @@ class TestRobinhoodAdapter:
     async def test_get_stock_quote_api_error(self, adapter):
         """Test stock quote retrieval with API error."""
         stock = Stock(symbol="AAPL", name="Apple Inc.")
-        
-        with patch('robin_stocks.robinhood.stocks.get_latest_price', side_effect=Exception("API Error")):
-            with pytest.raises(Exception, match="API Error"):
-                await adapter.get_quote(stock)
-        
+
+        with patch(
+            "robin_stocks.robinhood.stocks.get_latest_price",
+            side_effect=Exception("API Error"),
+        ), pytest.raises(Exception, match="API Error"):
+            await adapter.get_quote(stock)
+
         assert adapter._request_count == 1
         assert adapter._error_count == 1
         assert adapter._last_error_message == "API Error"
@@ -247,27 +261,40 @@ class TestRobinhoodAdapter:
             underlying=underlying,
             option_type="CALL",
             strike=150.0,
-            expiration_date=date(2024, 1, 19)
+            expiration_date=date(2024, 1, 19),
         )
-        
+
         # Mock robin_stocks responses
         mock_option_data = [{"id": "option-123"}]
         mock_market_data = {
             "bid_price": "5.25",
             "ask_price": "5.75",
             "volume": "1000",
-            "open_interest": "5000"
+            "open_interest": "5000",
         }
         mock_stock_price = ["150.00"]
         mock_stock_fundamentals = [{}]
-        
-        with patch('robin_stocks.robinhood.options.find_options_by_expiration_and_strike', return_value=mock_option_data), \
-             patch('robin_stocks.robinhood.options.get_option_market_data_by_id', return_value=mock_market_data), \
-             patch('robin_stocks.robinhood.stocks.get_latest_price', return_value=mock_stock_price), \
-             patch('robin_stocks.robinhood.stocks.get_fundamentals', return_value=mock_stock_fundamentals):
-            
+
+        with (
+            patch(
+                "robin_stocks.robinhood.options.find_options_by_expiration_and_strike",
+                return_value=mock_option_data,
+            ),
+            patch(
+                "robin_stocks.robinhood.options.get_option_market_data_by_id",
+                return_value=mock_market_data,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_latest_price",
+                return_value=mock_stock_price,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_fundamentals",
+                return_value=mock_stock_fundamentals,
+            ),
+        ):
             quote = await adapter.get_quote(option)
-        
+
         assert quote is not None
         assert isinstance(quote, OptionQuote)
         assert quote.asset.symbol == "AAPL240119C00150000"
@@ -287,12 +314,15 @@ class TestRobinhoodAdapter:
             underlying=underlying,
             option_type="CALL",
             strike=150.0,
-            expiration_date=date(2024, 1, 19)
+            expiration_date=date(2024, 1, 19),
         )
-        
-        with patch('robin_stocks.robinhood.options.find_options_by_expiration_and_strike', return_value=[]):
+
+        with patch(
+            "robin_stocks.robinhood.options.find_options_by_expiration_and_strike",
+            return_value=[],
+        ):
             quote = await adapter.get_quote(option)
-        
+
         assert quote is None
 
     @pytest.mark.asyncio
@@ -300,7 +330,7 @@ class TestRobinhoodAdapter:
         """Test getting multiple quotes."""
         stock1 = Stock(symbol="AAPL", name="Apple Inc.")
         stock2 = Stock(symbol="GOOGL", name="Alphabet Inc.")
-        
+
         # Mock responses for both stocks
         def mock_get_latest_price(symbol):
             if symbol == "AAPL":
@@ -308,15 +338,22 @@ class TestRobinhoodAdapter:
             elif symbol == "GOOGL":
                 return ["2500.00"]
             return []
-        
+
         def mock_get_fundamentals(symbol):
             return [{"volume": "1000000"}]
-        
-        with patch('robin_stocks.robinhood.stocks.get_latest_price', side_effect=mock_get_latest_price), \
-             patch('robin_stocks.robinhood.stocks.get_fundamentals', side_effect=mock_get_fundamentals):
-            
+
+        with (
+            patch(
+                "robin_stocks.robinhood.stocks.get_latest_price",
+                side_effect=mock_get_latest_price,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_fundamentals",
+                side_effect=mock_get_fundamentals,
+            ),
+        ):
             quotes = await adapter.get_quotes([stock1, stock2])
-        
+
         assert len(quotes) == 2
         assert stock1 in quotes
         assert stock2 in quotes
@@ -326,28 +363,31 @@ class TestRobinhoodAdapter:
     @pytest.mark.asyncio
     async def test_get_chain_success(self, adapter):
         """Test getting option chain assets."""
-        mock_chains_data = [
-            {"expiration_date": "2024-01-19"}
-        ]
-        mock_instruments = [
-            {"url": "https://robinhood.com/instruments/option-123/"}
-        ]
-        
-        with patch('robin_stocks.robinhood.options.get_chains', return_value=mock_chains_data), \
-             patch('robin_stocks.robinhood.options.get_option_instruments', return_value=mock_instruments), \
-             patch('app.models.assets.asset_factory') as mock_factory:
-            
+        mock_chains_data = [{"expiration_date": "2024-01-19"}]
+        mock_instruments = [{"url": "https://robinhood.com/instruments/option-123/"}]
+
+        with (
+            patch(
+                "robin_stocks.robinhood.options.get_chains",
+                return_value=mock_chains_data,
+            ),
+            patch(
+                "robin_stocks.robinhood.options.get_option_instruments",
+                return_value=mock_instruments,
+            ),
+            patch("app.models.assets.asset_factory") as mock_factory,
+        ):
             mock_option = Option(
                 symbol="AAPL240119C00150000",
                 underlying=Stock(symbol="AAPL", name="Apple Inc."),
                 option_type="CALL",
                 strike=150.0,
-                expiration_date=date(2024, 1, 19)
+                expiration_date=date(2024, 1, 19),
             )
             mock_factory.return_value = mock_option
-            
+
             assets = await adapter.get_chain("AAPL")
-        
+
         assert len(assets) == 1
         assert assets[0] == mock_option
 
@@ -355,9 +395,9 @@ class TestRobinhoodAdapter:
     async def test_get_chain_auth_failure(self, adapter, mock_session_manager):
         """Test getting option chain with auth failure."""
         mock_session_manager.ensure_authenticated.return_value = False
-        
+
         assets = await adapter.get_chain("AAPL")
-        
+
         assert assets == []
 
     @pytest.mark.asyncio
@@ -367,36 +407,40 @@ class TestRobinhoodAdapter:
         mock_stock_price = ["150.00"]
         mock_stock_fundamentals = [{}]
         mock_call_instruments = [
-            {
-                "strike_price": "150.00",
-                "expiration_date": "2024-01-19"
-            }
+            {"strike_price": "150.00", "expiration_date": "2024-01-19"}
         ]
         mock_put_instruments = [
-            {
-                "strike_price": "150.00", 
-                "expiration_date": "2024-01-19"
-            }
+            {"strike_price": "150.00", "expiration_date": "2024-01-19"}
         ]
         mock_option_data_call = [{"id": "call-123"}]
         mock_option_data_put = [{"id": "put-123"}]
-        mock_call_market_data = {
-            "bid_price": "5.25",
-            "ask_price": "5.75"
-        }
-        mock_put_market_data = {
-            "bid_price": "3.15",
-            "ask_price": "3.65"
-        }
-        
-        with patch('robin_stocks.robinhood.options.get_chains', return_value=mock_chains_data), \
-             patch('robin_stocks.robinhood.stocks.get_latest_price', return_value=mock_stock_price), \
-             patch('robin_stocks.robinhood.stocks.get_fundamentals', return_value=mock_stock_fundamentals), \
-             patch('robin_stocks.robinhood.options.get_option_instruments') as mock_get_instruments, \
-             patch('robin_stocks.robinhood.options.find_options_by_expiration_and_strike') as mock_find_options, \
-             patch('robin_stocks.robinhood.options.get_option_market_data_by_id') as mock_get_market_data, \
-             patch('app.models.assets.asset_factory') as mock_factory:
-            
+        mock_call_market_data = {"bid_price": "5.25", "ask_price": "5.75"}
+        mock_put_market_data = {"bid_price": "3.15", "ask_price": "3.65"}
+
+        with (
+            patch(
+                "robin_stocks.robinhood.options.get_chains",
+                return_value=mock_chains_data,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_latest_price",
+                return_value=mock_stock_price,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_fundamentals",
+                return_value=mock_stock_fundamentals,
+            ),
+            patch(
+                "robin_stocks.robinhood.options.get_option_instruments"
+            ) as mock_get_instruments,
+            patch(
+                "robin_stocks.robinhood.options.find_options_by_expiration_and_strike"
+            ) as mock_find_options,
+            patch(
+                "robin_stocks.robinhood.options.get_option_market_data_by_id"
+            ) as mock_get_market_data,
+            patch("app.models.assets.asset_factory") as mock_factory,
+        ):
             # Setup mock returns for different calls
             def get_instruments_side_effect(underlying, expiration, option_type):
                 if option_type == "call":
@@ -404,48 +448,48 @@ class TestRobinhoodAdapter:
                 elif option_type == "put":
                     return mock_put_instruments
                 return []
-            
+
             def find_options_side_effect(underlying, expiration, strike, option_type):
                 if option_type.lower() == "call":
                     return mock_option_data_call
                 elif option_type.lower() == "put":
                     return mock_option_data_put
                 return []
-            
+
             def get_market_data_side_effect(option_id):
                 if option_id == "call-123":
                     return mock_call_market_data
                 elif option_id == "put-123":
                     return mock_put_market_data
                 return {}
-            
+
             mock_get_instruments.side_effect = get_instruments_side_effect
             mock_find_options.side_effect = find_options_side_effect
             mock_get_market_data.side_effect = get_market_data_side_effect
-            
+
             # Mock asset factory to return different options for calls/puts
             call_option = Option(
                 symbol="AAPL240119C00150000",
                 underlying=Stock(symbol="AAPL", name="Apple Inc."),
                 option_type="CALL",
                 strike=150.0,
-                expiration_date=date(2024, 1, 19)
+                expiration_date=date(2024, 1, 19),
             )
             put_option = Option(
                 symbol="AAPL240119P00150000",
                 underlying=Stock(symbol="AAPL", name="Apple Inc."),
                 option_type="PUT",
                 strike=150.0,
-                expiration_date=date(2024, 1, 19)
+                expiration_date=date(2024, 1, 19),
             )
-            
+
             def factory_side_effect(symbol):
                 if symbol == "AAPL":
                     return Stock(symbol="AAPL", name="Apple Inc.")
                 return None
-            
+
             mock_factory.side_effect = factory_side_effect
-            
+
             # Mock _create_option_asset to return appropriate options
             def create_option_asset_side_effect(instrument, underlying, option_type):
                 if option_type == "call":
@@ -453,9 +497,11 @@ class TestRobinhoodAdapter:
                 elif option_type == "put":
                     return put_option
                 return None
-            
-            adapter._create_option_asset = Mock(side_effect=create_option_asset_side_effect)
-            
+
+            adapter._create_option_asset = Mock(
+                side_effect=create_option_asset_side_effect
+            )
+
             # Mock _get_option_quote to return quotes
             async def get_option_quote_side_effect(option_asset):
                 if option_asset.option_type == "CALL":
@@ -464,7 +510,7 @@ class TestRobinhoodAdapter:
                         quote_date=datetime.now(),
                         price=5.5,
                         bid=5.25,
-                        ask=5.75
+                        ask=5.75,
                     )
                 elif option_asset.option_type == "PUT":
                     return OptionQuote(
@@ -472,14 +518,16 @@ class TestRobinhoodAdapter:
                         quote_date=datetime.now(),
                         price=3.4,
                         bid=3.15,
-                        ask=3.65
+                        ask=3.65,
                     )
                 return None
-            
-            adapter._get_option_quote = AsyncMock(side_effect=get_option_quote_side_effect)
-            
+
+            adapter._get_option_quote = AsyncMock(
+                side_effect=get_option_quote_side_effect
+            )
+
             chain = await adapter.get_options_chain("AAPL")
-        
+
         assert chain is not None
         assert isinstance(chain, OptionsChain)
         assert chain.underlying_symbol == "AAPL"
@@ -493,28 +541,37 @@ class TestRobinhoodAdapter:
     async def test_is_market_open(self, adapter):
         """Test market open check."""
         mock_market_hours = {"is_open": True}
-        
-        with patch('robin_stocks.robinhood.markets.get_market_hours', return_value=mock_market_hours):
+
+        with patch(
+            "robin_stocks.robinhood.markets.get_market_hours",
+            return_value=mock_market_hours,
+        ):
             is_open = await adapter.is_market_open()
-        
+
         assert is_open is True
 
     @pytest.mark.asyncio
     async def test_is_market_open_closed(self, adapter):
         """Test market open check when closed."""
         mock_market_hours = {"is_open": False}
-        
-        with patch('robin_stocks.robinhood.markets.get_market_hours', return_value=mock_market_hours):
+
+        with patch(
+            "robin_stocks.robinhood.markets.get_market_hours",
+            return_value=mock_market_hours,
+        ):
             is_open = await adapter.is_market_open()
-        
+
         assert is_open is False
 
     @pytest.mark.asyncio
     async def test_is_market_open_error(self, adapter):
         """Test market open check with error."""
-        with patch('robin_stocks.robinhood.markets.get_market_hours', side_effect=Exception("API Error")):
+        with patch(
+            "robin_stocks.robinhood.markets.get_market_hours",
+            side_effect=Exception("API Error"),
+        ):
             is_open = await adapter.is_market_open()
-        
+
         assert is_open is False
 
     @pytest.mark.asyncio
@@ -523,37 +580,48 @@ class TestRobinhoodAdapter:
         mock_hours = {
             "is_open": True,
             "next_open_hours": "09:30:00",
-            "next_close_hours": "16:00:00"
+            "next_close_hours": "16:00:00",
         }
-        
-        with patch('robin_stocks.robinhood.markets.get_market_hours', return_value=mock_hours):
+
+        with patch(
+            "robin_stocks.robinhood.markets.get_market_hours", return_value=mock_hours
+        ):
             hours = await adapter.get_market_hours()
-        
+
         assert hours == mock_hours
 
     @pytest.mark.asyncio
     async def test_get_stock_info(self, adapter):
         """Test getting detailed stock information."""
-        mock_fundamentals = [{
-            "sector": "Technology",
-            "industry": "Consumer Electronics",
-            "description": "Apple Inc. designs and manufactures consumer electronics",
-            "market_cap": "2500000000000",
-            "pe_ratio": "28.5",
-            "dividend_yield": "0.5"
-        }]
-        mock_instruments = [{
-            "simple_name": "Apple",
-            "tradeable": True
-        }]
+        mock_fundamentals = [
+            {
+                "sector": "Technology",
+                "industry": "Consumer Electronics",
+                "description": "Apple Inc. designs and manufactures consumer electronics",
+                "market_cap": "2500000000000",
+                "pe_ratio": "28.5",
+                "dividend_yield": "0.5",
+            }
+        ]
+        mock_instruments = [{"simple_name": "Apple", "tradeable": True}]
         mock_name = "Apple Inc."
-        
-        with patch('robin_stocks.robinhood.stocks.get_fundamentals', return_value=mock_fundamentals), \
-             patch('robin_stocks.robinhood.stocks.get_instruments_by_symbols', return_value=mock_instruments), \
-             patch('robin_stocks.robinhood.stocks.get_name_by_symbol', return_value=mock_name):
-            
+
+        with (
+            patch(
+                "robin_stocks.robinhood.stocks.get_fundamentals",
+                return_value=mock_fundamentals,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_instruments_by_symbols",
+                return_value=mock_instruments,
+            ),
+            patch(
+                "robin_stocks.robinhood.stocks.get_name_by_symbol",
+                return_value=mock_name,
+            ),
+        ):
             info = await adapter.get_stock_info("AAPL")
-        
+
         assert info["symbol"] == "AAPL"
         assert info["company_name"] == "Apple Inc."
         assert info["sector"] == "Technology"
@@ -570,7 +638,7 @@ class TestRobinhoodAdapter:
                 "high_price": "152.00",
                 "low_price": "147.50",
                 "close_price": "150.00",
-                "volume": "1000000"
+                "volume": "1000000",
             },
             {
                 "begins_at": "2023-01-01T10:30:00Z",
@@ -578,13 +646,16 @@ class TestRobinhoodAdapter:
                 "high_price": "155.00",
                 "low_price": "149.50",
                 "close_price": "153.00",
-                "volume": "1500000"
-            }
+                "volume": "1500000",
+            },
         ]
-        
-        with patch('robin_stocks.robinhood.stocks.get_stock_historicals', return_value=mock_history):
+
+        with patch(
+            "robin_stocks.robinhood.stocks.get_stock_historicals",
+            return_value=mock_history,
+        ):
             history = await adapter.get_price_history("AAPL", "day")
-        
+
         assert history["symbol"] == "AAPL"
         assert history["period"] == "day"
         assert len(history["data_points"]) == 2
@@ -603,9 +674,9 @@ class TestRobinhoodAdapter:
         adapter._last_api_response_time = 0.5
         adapter._last_error_time = datetime.now()
         adapter._last_error_message = "Test error"
-        
+
         metrics = adapter.get_performance_metrics()
-        
+
         assert metrics["adapter_name"] == "robinhood"
         assert metrics["request_count"] == 100
         assert metrics["error_count"] == 5
@@ -625,10 +696,10 @@ class TestRobinhoodAdapter:
         adapter._last_api_response_time = 0.5
         adapter._last_error_time = datetime.now()
         adapter._last_error_message = "Test error"
-        
+
         # Reset
         adapter.reset_metrics()
-        
+
         # Verify reset
         assert adapter._request_count == 0
         assert adapter._error_count == 0
@@ -645,7 +716,7 @@ class TestRobinhoodAdapter:
         unsupported_asset = MagicMock()
         unsupported_asset.symbol = "UNKNOWN"
         type(unsupported_asset).__name__ = "UnsupportedAsset"
-        
+
         # Should return None for unsupported types
         result = asyncio.run(adapter.get_quote(unsupported_asset))
         assert result is None
@@ -653,13 +724,10 @@ class TestRobinhoodAdapter:
     def test_create_option_asset_success(self, adapter):
         """Test creating option asset from instrument data."""
         underlying = Stock(symbol="AAPL", name="Apple Inc.")
-        instrument_data = {
-            "strike_price": "150.00",
-            "expiration_date": "2024-01-19"
-        }
-        
+        instrument_data = {"strike_price": "150.00", "expiration_date": "2024-01-19"}
+
         option = adapter._create_option_asset(instrument_data, underlying, "call")
-        
+
         assert option is not None
         assert isinstance(option, Option)
         assert option.underlying.symbol == "AAPL"
@@ -670,10 +738,10 @@ class TestRobinhoodAdapter:
     def test_create_option_asset_invalid_data(self, adapter):
         """Test creating option asset with invalid data."""
         underlying = Stock(symbol="AAPL", name="Apple Inc.")
-        
+
         # Missing required fields
         invalid_data = {}
-        
+
         option = adapter._create_option_asset(invalid_data, underlying, "call")
         assert option is None
 

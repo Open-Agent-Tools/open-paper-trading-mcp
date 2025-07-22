@@ -458,8 +458,10 @@ class TestComprehensiveModuleCoverage:
 
         # Test validation mixins exist
         try:
-            from app.schemas.validation import (OrderValidationMixin,
-                                                PositionValidationMixin)
+            from app.schemas.validation import (
+                OrderValidationMixin,
+                PositionValidationMixin,
+            )
 
             assert OrderValidationMixin is not None
             assert PositionValidationMixin is not None

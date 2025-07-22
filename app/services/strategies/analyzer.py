@@ -11,9 +11,15 @@ from typing import Any
 from ...models.assets import Call, Option, Put
 from ...models.quotes import OptionQuote, Quote
 from ...schemas.positions import Position
-from .models import (AssetStrategy, BasicStrategy, ComplexStrategy,
-                     CoveredStrategy, SpreadStrategy, StrategyGreeks,
-                     StrategyPnL)
+from .models import (
+    AssetStrategy,
+    BasicStrategy,
+    ComplexStrategy,
+    CoveredStrategy,
+    SpreadStrategy,
+    StrategyGreeks,
+    StrategyPnL,
+)
 from .recognition import StrategyRecognitionService
 
 

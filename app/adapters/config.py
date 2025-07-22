@@ -284,6 +284,7 @@ class AdapterFactory:
             # Import the class dynamically
             module_path, class_name = class_path.rsplit(".", 1)
 
+            adapter_class: type[Any]
             if adapter_type == "test_data":
                 # Import from current package
                 from .test_data import DevDataQuoteAdapter
@@ -291,7 +292,7 @@ class AdapterFactory:
                 adapter_class = DevDataQuoteAdapter
             elif adapter_type == "test_data_db":
                 # Import from current package
-                from .test_data_db import TestDataDBQuoteAdapter
+                from .test_data_db import DevDataQuoteAdapter as TestDataDBQuoteAdapter
 
                 adapter_class = TestDataDBQuoteAdapter
             elif adapter_type == "robinhood":

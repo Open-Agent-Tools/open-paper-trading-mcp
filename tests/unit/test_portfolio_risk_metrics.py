@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from scipy import stats
 
 from app.models.assets import Option, Stock
 from app.schemas.positions import Portfolio, Position
@@ -165,7 +164,9 @@ class TestVaRCalculation:
         assert var_result.expected_shortfall > 0
         assert var_result.method == "historical"
 
-    def test_calculate_var_without_historical_data(self, risk_calculator, mock_portfolio):
+    def test_calculate_var_without_historical_data(
+        self, risk_calculator, mock_portfolio
+    ):
         """Test VaR calculation without historical data (falls back to parametric)."""
         # Act
         var_result = risk_calculator._calculate_var(
@@ -282,7 +283,9 @@ class TestStressTests:
     """Test stress test scenarios."""
 
     @patch("app.services.portfolio_risk_metrics.asset_factory")
-    def test_run_stress_tests(self, mock_asset_factory, risk_calculator, mock_portfolio):
+    def test_run_stress_tests(
+        self, mock_asset_factory, risk_calculator, mock_portfolio
+    ):
         """Test running stress test scenarios."""
         # Arrange
         # Mock asset_factory to return Stock objects
@@ -304,7 +307,9 @@ class TestStressTests:
         assert "Volatility Spike" in scenario_names
 
     @patch("app.services.portfolio_risk_metrics.asset_factory")
-    def test_stress_test_scenario(self, mock_asset_factory, risk_calculator, mock_portfolio):
+    def test_stress_test_scenario(
+        self, mock_asset_factory, risk_calculator, mock_portfolio
+    ):
         """Test applying a specific stress test scenario."""
         # Arrange
         # Mock asset_factory to return Stock objects
@@ -377,7 +382,9 @@ class TestStressTests:
         assert "AAPL" in result.position_impacts
         assert "AAPL240119C00150000" in result.position_impacts
         assert result.position_impacts["AAPL"] < 0  # Stock should lose value
-        assert result.position_impacts["AAPL240119C00150000"] > 0  # Option should gain value
+        assert (
+            result.position_impacts["AAPL240119C00150000"] > 0
+        )  # Option should gain value
 
 
 class TestRiskAlerts:
@@ -488,10 +495,18 @@ class TestComprehensiveRiskCalculation:
     """Test comprehensive portfolio risk calculation."""
 
     @patch("app.services.portfolio_risk_metrics.PortfolioRiskCalculator._calculate_var")
-    @patch("app.services.portfolio_risk_metrics.PortfolioRiskCalculator._calculate_exposure_metrics")
-    @patch("app.services.portfolio_risk_metrics.PortfolioRiskCalculator._calculate_risk_budget")
-    @patch("app.services.portfolio_risk_metrics.PortfolioRiskCalculator._run_stress_tests")
-    @patch("app.services.portfolio_risk_metrics.PortfolioRiskCalculator._generate_risk_alerts")
+    @patch(
+        "app.services.portfolio_risk_metrics.PortfolioRiskCalculator._calculate_exposure_metrics"
+    )
+    @patch(
+        "app.services.portfolio_risk_metrics.PortfolioRiskCalculator._calculate_risk_budget"
+    )
+    @patch(
+        "app.services.portfolio_risk_metrics.PortfolioRiskCalculator._run_stress_tests"
+    )
+    @patch(
+        "app.services.portfolio_risk_metrics.PortfolioRiskCalculator._generate_risk_alerts"
+    )
     def test_calculate_portfolio_risk(
         self,
         mock_generate_alerts,
@@ -574,14 +589,14 @@ class TestComprehensiveRiskCalculation:
     ):
         """Test portfolio risk calculation without historical data."""
         # Act
-        result = risk_calculator.calculate_portfolio_risk(
-            mock_portfolio, None, [0.95]
-        )
+        result = risk_calculator.calculate_portfolio_risk(mock_portfolio, None, [0.95])
 
         # Assert
         assert isinstance(result, PortfolioRiskSummary)
         assert 0.95 in result.var_results
-        assert result.var_results[0.95].method == "parametric"  # Should use parametric method
+        assert (
+            result.var_results[0.95].method == "parametric"
+        )  # Should use parametric method
         assert isinstance(result.exposure_metrics, ExposureMetrics)
         assert isinstance(result.risk_budget, RiskBudgetAllocation)
         assert isinstance(result.stress_tests, list)

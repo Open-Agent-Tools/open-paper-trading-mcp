@@ -27,7 +27,9 @@ dependencies = [
     "google-api-python-client>=2.108.0",
     "toml>=0.10.2",
     "psutil>=5.9.6",
-    "passlib[bcrypt]>=1.7.4"
+    "passlib[bcrypt]>=1.7.4",
+    "asyncpg>=0.30.0",
+    "aiosqlite>=0.21.0",
 ]
 
 [project.optional-dependencies]
@@ -69,3 +71,9 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
 ignore = ["E501"]
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
+]

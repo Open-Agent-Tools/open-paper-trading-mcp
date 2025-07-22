@@ -12,10 +12,11 @@ Tests for:
 All tests use proper async patterns with comprehensive mocking of TradingService.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi import status
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.trading_service import TradingService
 
@@ -35,17 +36,19 @@ class TestMarketDataEndpoints:
             "change_percent": 1.64,
             "volume": 50000000,
             "market_cap": 2500000000000,
-            "timestamp": "2023-06-15T15:30:00Z"
+            "timestamp": "2023-06-15T15:30:00Z",
         }
         mock_service.get_stock_price.return_value = mock_price_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/price/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["price"] == 155.50
         assert data["change"] == 2.50
@@ -62,7 +65,9 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_stock_price.return_value = {"error": "Symbol not found"}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/price/NONEXISTENT")
 
@@ -74,7 +79,9 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_stock_price.side_effect = Exception("API timeout")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/price/AAPL")
 
@@ -90,11 +97,13 @@ class TestMarketDataEndpoints:
             "change": -500.00,
             "change_percent": -0.12,
             "volume": 1000,
-            "market_cap": 800000000000
+            "market_cap": 800000000000,
         }
         mock_service.get_stock_price.return_value = mock_price_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/price/BRK.A")
 
@@ -119,17 +128,19 @@ class TestMarketDataEndpoints:
             "beta": 1.2,
             "52_week_high": 182.94,
             "52_week_low": 124.17,
-            "description": "Apple Inc. designs, manufactures, and markets smartphones..."
+            "description": "Apple Inc. designs, manufactures, and markets smartphones...",
         }
         mock_service.get_stock_info.return_value = mock_info_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/info/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["name"] == "Apple Inc."
         assert data["sector"] == "Technology"
@@ -146,7 +157,9 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_stock_info.return_value = {"error": "Symbol not found"}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/info/NONEXISTENT")
 
@@ -162,11 +175,13 @@ class TestMarketDataEndpoints:
             "market_cap": 1000000,  # Small market cap
             "pe_ratio": None,  # No P/E ratio
             "dividend_yield": 0.0,  # No dividend
-            "beta": None  # No beta available
+            "beta": None,  # No beta available
         }
         mock_service.get_stock_info.return_value = mock_info_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/info/PENNY")
 
@@ -185,9 +200,30 @@ class TestMarketDataEndpoints:
             "symbol": "AAPL",
             "period": "week",
             "data": [
-                {"date": "2023-06-12", "open": 150.0, "high": 152.0, "low": 149.5, "close": 151.0, "volume": 45000000},
-                {"date": "2023-06-13", "open": 151.0, "high": 153.5, "low": 150.5, "close": 153.0, "volume": 52000000},
-                {"date": "2023-06-14", "open": 153.0, "high": 156.0, "low": 152.0, "close": 155.5, "volume": 60000000}
+                {
+                    "date": "2023-06-12",
+                    "open": 150.0,
+                    "high": 152.0,
+                    "low": 149.5,
+                    "close": 151.0,
+                    "volume": 45000000,
+                },
+                {
+                    "date": "2023-06-13",
+                    "open": 151.0,
+                    "high": 153.5,
+                    "low": 150.5,
+                    "close": 153.0,
+                    "volume": 52000000,
+                },
+                {
+                    "date": "2023-06-14",
+                    "open": 153.0,
+                    "high": 156.0,
+                    "low": 152.0,
+                    "close": 155.5,
+                    "volume": 60000000,
+                },
             ],
             "summary": {
                 "start_price": 150.0,
@@ -195,18 +231,20 @@ class TestMarketDataEndpoints:
                 "change": 5.5,
                 "change_percent": 3.67,
                 "high": 156.0,
-                "low": 149.5
-            }
+                "low": 149.5,
+            },
         }
         mock_service.get_price_history.return_value = mock_history_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/history/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["period"] == "week"
         assert len(data["data"]) == 3
@@ -222,11 +260,13 @@ class TestMarketDataEndpoints:
         mock_history_data = {
             "symbol": "AAPL",
             "period": "month",
-            "data": []  # Mock empty for brevity
+            "data": [],  # Mock empty for brevity
         }
         mock_service.get_price_history.return_value = mock_history_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/history/AAPL?period=month")
 
@@ -240,11 +280,17 @@ class TestMarketDataEndpoints:
     async def test_get_price_history_invalid_period(self, client):
         """Test price history retrieval with invalid period."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.get_price_history.return_value = {"error": "Invalid period: invalid_period"}
+        mock_service.get_price_history.return_value = {
+            "error": "Invalid period: invalid_period"
+        }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get("/api/v1/market-data/history/AAPL?period=invalid_period")
+                response = await ac.get(
+                    "/api/v1/market-data/history/AAPL?period=invalid_period"
+                )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -253,17 +299,21 @@ class TestMarketDataEndpoints:
         """Test price history retrieval for all supported periods."""
         periods = ["day", "week", "month", "3month", "year", "5year"]
         mock_service = MagicMock(spec=TradingService)
-        
+
         for period in periods:
             mock_service.get_price_history.return_value = {
                 "symbol": "AAPL",
                 "period": period,
-                "data": []
+                "data": [],
             }
 
-            with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
                 async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                    response = await ac.get(f"/api/v1/market-data/history/AAPL?period={period}")
+                    response = await ac.get(
+                        f"/api/v1/market-data/history/AAPL?period={period}"
+                    )
 
             assert response.status_code == status.HTTP_200_OK
 
@@ -280,28 +330,30 @@ class TestMarketDataEndpoints:
                     "url": "https://example.com/news/1",
                     "published_at": "2023-06-15T14:30:00Z",
                     "source": "MarketWatch",
-                    "summary": "Apple Inc. reported better than expected quarterly earnings..."
+                    "summary": "Apple Inc. reported better than expected quarterly earnings...",
                 },
                 {
                     "title": "Apple Stock Hits New High",
-                    "url": "https://example.com/news/2", 
+                    "url": "https://example.com/news/2",
                     "published_at": "2023-06-15T10:15:00Z",
                     "source": "Reuters",
-                    "summary": "Shares of Apple reached a new 52-week high today..."
-                }
+                    "summary": "Shares of Apple reached a new 52-week high today...",
+                },
             ],
             "count": 2,
-            "last_updated": "2023-06-15T15:30:00Z"
+            "last_updated": "2023-06-15T15:30:00Z",
         }
         mock_service.get_stock_news.return_value = mock_news_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/news/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["count"] == 2
         assert len(data["articles"]) == 2
@@ -319,11 +371,13 @@ class TestMarketDataEndpoints:
             "symbol": "OBSCURE",
             "articles": [],
             "count": 0,
-            "last_updated": "2023-06-15T15:30:00Z"
+            "last_updated": "2023-06-15T15:30:00Z",
         }
         mock_service.get_stock_news.return_value = mock_news_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/news/OBSCURE")
 
@@ -338,7 +392,9 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_stock_news.return_value = {"error": "Symbol not found"}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/news/NONEXISTENT")
 
@@ -351,28 +407,50 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_movers_data = {
             "gainers": [
-                {"symbol": "TSLA", "price": 250.0, "change": 25.0, "change_percent": 11.11},
-                {"symbol": "NVDA", "price": 400.0, "change": 35.0, "change_percent": 9.59}
+                {
+                    "symbol": "TSLA",
+                    "price": 250.0,
+                    "change": 25.0,
+                    "change_percent": 11.11,
+                },
+                {
+                    "symbol": "NVDA",
+                    "price": 400.0,
+                    "change": 35.0,
+                    "change_percent": 9.59,
+                },
             ],
             "losers": [
-                {"symbol": "META", "price": 200.0, "change": -20.0, "change_percent": -9.09},
-                {"symbol": "NFLX", "price": 350.0, "change": -30.0, "change_percent": -7.89}
+                {
+                    "symbol": "META",
+                    "price": 200.0,
+                    "change": -20.0,
+                    "change_percent": -9.09,
+                },
+                {
+                    "symbol": "NFLX",
+                    "price": 350.0,
+                    "change": -30.0,
+                    "change_percent": -7.89,
+                },
             ],
             "most_active": [
                 {"symbol": "AAPL", "price": 155.0, "volume": 100000000},
-                {"symbol": "MSFT", "price": 300.0, "volume": 80000000}
+                {"symbol": "MSFT", "price": 300.0, "volume": 80000000},
             ],
-            "last_updated": "2023-06-15T15:30:00Z"
+            "last_updated": "2023-06-15T15:30:00Z",
         }
         mock_service.get_top_movers.return_value = mock_movers_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/movers")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert "gainers" in data
         assert "losers" in data
         assert "most_active" in data
@@ -394,11 +472,13 @@ class TestMarketDataEndpoints:
             "most_active": [],
             "market_status": "closed",
             "last_updated": "2023-06-15T20:00:00Z",
-            "message": "Market is currently closed"
+            "message": "Market is currently closed",
         }
         mock_service.get_top_movers.return_value = mock_movers_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/movers")
 
@@ -413,7 +493,9 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_top_movers.return_value = {"error": "Market data unavailable"}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/movers")
 
@@ -433,21 +515,23 @@ class TestMarketDataEndpoints:
                     "type": "equity",
                     "exchange": "NASDAQ",
                     "currency": "USD",
-                    "match_score": 1.0
+                    "match_score": 1.0,
                 }
             ],
             "count": 1,
-            "search_time_ms": 25
+            "search_time_ms": 25,
         }
         mock_service.search_stocks.return_value = mock_search_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/search?query=AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["query"] == "AAPL"
         assert data["count"] == 1
         assert len(data["results"]) == 1
@@ -470,14 +554,16 @@ class TestMarketDataEndpoints:
                     "type": "equity",
                     "exchange": "NASDAQ",
                     "currency": "USD",
-                    "match_score": 0.95
+                    "match_score": 0.95,
                 }
             ],
-            "count": 1
+            "count": 1,
         }
         mock_service.search_stocks.return_value = mock_search_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/search?query=Apple")
 
@@ -495,13 +581,15 @@ class TestMarketDataEndpoints:
             "results": [
                 {"symbol": "AAPL", "name": "Apple Inc.", "match_score": 0.8},
                 {"symbol": "MSFT", "name": "Microsoft Corporation", "match_score": 0.7},
-                {"symbol": "GOOGL", "name": "Alphabet Inc.", "match_score": 0.6}
+                {"symbol": "GOOGL", "name": "Alphabet Inc.", "match_score": 0.6},
             ],
-            "count": 3
+            "count": 3,
         }
         mock_service.search_stocks.return_value = mock_search_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/search?query=tech")
 
@@ -516,14 +604,12 @@ class TestMarketDataEndpoints:
     async def test_search_stocks_no_results(self, client):
         """Test stock search with no results."""
         mock_service = MagicMock(spec=TradingService)
-        mock_search_data = {
-            "query": "nonexistent",
-            "results": [],
-            "count": 0
-        }
+        mock_search_data = {"query": "nonexistent", "results": [], "count": 0}
         mock_service.search_stocks.return_value = mock_search_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/search?query=nonexistent")
 
@@ -552,9 +638,13 @@ class TestMarketDataEndpoints:
     async def test_search_stocks_service_error(self, client):
         """Test stock search when service returns error."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.search_stocks.return_value = {"error": "Search service unavailable"}
+        mock_service.search_stocks.return_value = {
+            "error": "Search service unavailable"
+        }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/search?query=AAPL")
 
@@ -565,15 +655,17 @@ class TestMarketDataEndpoints:
     async def test_market_data_endpoints_with_special_symbols(self, client):
         """Test market data endpoints handle special symbols correctly."""
         special_symbols = ["BRK.A", "BRK.B", "SPY"]
-        
+
         for symbol in special_symbols:
             mock_service = MagicMock(spec=TradingService)
             mock_service.get_stock_price.return_value = {
                 "symbol": symbol,
-                "price": 100.0
+                "price": 100.0,
             }
 
-            with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
                 async with AsyncClient(app=client.app, base_url="http://test") as ac:
                     response = await ac.get(f"/api/v1/market-data/price/{symbol}")
 
@@ -587,12 +679,16 @@ class TestMarketDataEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_stock_price.return_value = {
             "symbol": "AAPL",  # Service should normalize to uppercase
-            "price": 155.0
+            "price": 155.0,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get("/api/v1/market-data/price/aapl")  # lowercase input
+                response = await ac.get(
+                    "/api/v1/market-data/price/aapl"
+                )  # lowercase input
 
         assert response.status_code == status.HTTP_200_OK
         mock_service.get_stock_price.assert_called_once_with("aapl")
@@ -604,10 +700,12 @@ class TestMarketDataEndpoints:
         mock_service.search_stocks.return_value = {
             "query": "苹果",  # "Apple" in Chinese
             "results": [],
-            "count": 0
+            "count": 0,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/search?query=苹果")
 
@@ -619,16 +717,20 @@ class TestMarketDataEndpoints:
     async def test_market_data_endpoints_large_datasets(self, client):
         """Test market data endpoints handle large datasets correctly."""
         mock_service = MagicMock(spec=TradingService)
-        
+
         # Mock large price history dataset
         large_history = {
             "symbol": "AAPL",
             "period": "5year",
-            "data": [{"date": f"2023-{i:02d}-01", "close": 150.0 + i} for i in range(1, 61)]  # 60 months
+            "data": [
+                {"date": f"2023-{i:02d}-01", "close": 150.0 + i} for i in range(1, 61)
+            ],  # 60 months
         }
         mock_service.get_price_history.return_value = large_history
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/history/AAPL?period=5year")
 
@@ -640,12 +742,12 @@ class TestMarketDataEndpoints:
     async def test_market_data_dependency_injection(self):
         """Test that market data service dependency injection works correctly."""
         from app.core.dependencies import get_trading_service
-        
+
         # Create a mock request with app state
         mock_request = MagicMock()
         mock_service = MagicMock(spec=TradingService)
         mock_request.app.state.trading_service = mock_service
-        
+
         result = get_trading_service(mock_request)
         assert result is mock_service
 
@@ -653,38 +755,48 @@ class TestMarketDataEndpoints:
     async def test_market_data_endpoints_response_structure(self, client):
         """Test that market data endpoints return properly structured responses."""
         mock_service = MagicMock(spec=TradingService)
-        
+
         # Test price response structure
         mock_service.get_stock_price.return_value = {
             "symbol": "AAPL",
             "price": 155.0,
             "change": 2.5,
-            "change_percent": 1.6
+            "change_percent": 1.6,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/market-data/price/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Verify required fields are present
         required_fields = ["symbol", "price"]
         for field in required_fields:
             assert field in data
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_market_data_query_parameter_validation(self, client):
         """Test query parameter validation for search endpoint."""
         # Test with very long query
         long_query = "a" * 1000
-        
-        mock_service = MagicMock(spec=TradingService)
-        mock_service.search_stocks.return_value = {"query": long_query, "results": [], "count": 0}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        mock_service = MagicMock(spec=TradingService)
+        mock_service.search_stocks.return_value = {
+            "query": long_query,
+            "results": [],
+            "count": 0,
+        }
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get(f"/api/v1/market-data/search?query={long_query}")
+                response = await ac.get(
+                    f"/api/v1/market-data/search?query={long_query}"
+                )
 
         assert response.status_code == status.HTTP_200_OK

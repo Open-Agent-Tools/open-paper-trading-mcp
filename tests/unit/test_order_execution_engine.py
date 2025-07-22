@@ -5,19 +5,16 @@ These tests verify that the order execution engine correctly monitors market dat
 and executes orders when trigger conditions are met.
 """
 
-import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.models.assets import Stock
-from app.models.quotes import Quote
 from app.schemas.orders import Order, OrderStatus, OrderType
 from app.services.order_execution_engine import (
     OrderExecutionEngine,
-    TriggerCondition,
     OrderExecutionError,
+    TriggerCondition,
 )
 
 
@@ -252,7 +249,9 @@ class TestOrderExecutionEngine:
     async def test_add_order(self, execution_engine):
         """Test adding an order to the execution engine."""
         # Mock order_converter
-        with patch("app.services.order_execution_engine.order_converter") as mock_converter:
+        with patch(
+            "app.services.order_execution_engine.order_converter"
+        ) as mock_converter:
             mock_converter.can_convert_order.return_value = True
             mock_converter.validate_order_for_conversion.return_value = None
 
@@ -285,9 +284,13 @@ class TestOrderExecutionEngine:
     async def test_add_order_validation_error(self, execution_engine):
         """Test adding an invalid order to the execution engine."""
         # Mock order_converter
-        with patch("app.services.order_execution_engine.order_converter") as mock_converter:
+        with patch(
+            "app.services.order_execution_engine.order_converter"
+        ) as mock_converter:
             mock_converter.can_convert_order.return_value = True
-            mock_converter.validate_order_for_conversion.side_effect = ValueError("Invalid order")
+            mock_converter.validate_order_for_conversion.side_effect = ValueError(
+                "Invalid order"
+            )
 
             # Create an invalid order
             order = Order(
@@ -313,7 +316,9 @@ class TestOrderExecutionEngine:
     async def test_remove_order(self, execution_engine):
         """Test removing an order from the execution engine."""
         # Add two orders for the same symbol
-        with patch("app.services.order_execution_engine.order_converter") as mock_converter:
+        with patch(
+            "app.services.order_execution_engine.order_converter"
+        ) as mock_converter:
             mock_converter.can_convert_order.return_value = True
             mock_converter.validate_order_for_conversion.return_value = None
 
@@ -354,7 +359,10 @@ class TestOrderExecutionEngine:
             # Verify only the second order remains
             assert "AAPL" in execution_engine.monitored_symbols
             assert len(execution_engine.trigger_conditions["AAPL"]) == 1
-            assert execution_engine.trigger_conditions["AAPL"][0].order_id == "test_order_2"
+            assert (
+                execution_engine.trigger_conditions["AAPL"][0].order_id
+                == "test_order_2"
+            )
 
             # Remove the second order
             await execution_engine.remove_order("test_order_2")
@@ -367,7 +375,9 @@ class TestOrderExecutionEngine:
     async def test_check_trigger_conditions(self, execution_engine):
         """Test checking trigger conditions."""
         # Add a stop loss order
-        with patch("app.services.order_execution_engine.order_converter") as mock_converter:
+        with patch(
+            "app.services.order_execution_engine.order_converter"
+        ) as mock_converter:
             mock_converter.can_convert_order.return_value = True
             mock_converter.validate_order_for_conversion.return_value = None
 
@@ -414,7 +424,9 @@ class TestOrderExecutionEngine:
         execution_engine._load_order_by_id.return_value = mock_order
 
         # Mock order_converter
-        with patch("app.services.order_execution_engine.order_converter") as mock_converter:
+        with patch(
+            "app.services.order_execution_engine.order_converter"
+        ) as mock_converter:
             mock_converter.convert_stop_loss_to_market.return_value = MagicMock()
 
             # Create a trigger condition
@@ -431,8 +443,12 @@ class TestOrderExecutionEngine:
 
             # Verify the order was processed
             execution_engine._load_order_by_id.assert_called_once_with("test_order")
-            mock_converter.convert_stop_loss_to_market.assert_called_once_with(mock_order, 140.0)
-            execution_engine._update_order_triggered_status.assert_called_once_with("test_order", 140.0)
+            mock_converter.convert_stop_loss_to_market.assert_called_once_with(
+                mock_order, 140.0
+            )
+            execution_engine._update_order_triggered_status.assert_called_once_with(
+                "test_order", 140.0
+            )
             execution_engine._execute_converted_order.assert_called_once()
             assert execution_engine.orders_triggered == 1
 
@@ -458,7 +474,9 @@ class TestOrderExecutionEngine:
         mock_db.execute.return_value = mock_result
 
         # Mock get_async_session
-        with patch("app.services.order_execution_engine.get_async_session") as mock_get_session:
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
             mock_get_session.return_value.__aenter__.return_value = mock_db
             mock_get_session.return_value.__aexit__.return_value = None
 
@@ -486,7 +504,9 @@ class TestOrderExecutionEngine:
         await execution_engine._execute_converted_order(mock_order)
 
         # Verify the order was executed
-        execution_engine.trading_service.execute_order.assert_called_once_with(mock_order)
+        execution_engine.trading_service.execute_order.assert_called_once_with(
+            mock_order
+        )
 
     @pytest.mark.asyncio
     async def test_update_order_triggered_status(self, execution_engine):
@@ -499,7 +519,9 @@ class TestOrderExecutionEngine:
         mock_db.execute.return_value = mock_result
 
         # Mock get_async_session
-        with patch("app.services.order_execution_engine.get_async_session") as mock_get_session:
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
             mock_get_session.return_value.__aenter__.return_value = mock_db
             mock_get_session.return_value.__aexit__.return_value = None
 
@@ -534,7 +556,9 @@ class TestOrderExecutionEngine:
         mock_db.execute.return_value = mock_result
 
         # Mock get_async_session
-        with patch("app.services.order_execution_engine.get_async_session") as mock_get_session:
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
             mock_get_session.return_value.__aenter__.return_value = mock_db
             mock_get_session.return_value.__aexit__.return_value = None
 

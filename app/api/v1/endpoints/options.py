@@ -109,7 +109,7 @@ async def get_options_chain(
         if expiration_date:
             expiration = datetime.strptime(expiration_date, "%Y-%m-%d").date()
 
-        chain_data = service.get_formatted_options_chain(
+        chain_data = await service.get_formatted_options_chain(
             symbol, expiration, min_strike, max_strike, include_greeks
         )
         return OptionsChainResponse(
@@ -195,7 +195,7 @@ async def calculate_option_greeks(
     Supports parameter overrides for scenario analysis.
     """
     try:
-        greeks_data = service.get_option_greeks_response(
+        greeks_data = await service.get_option_greeks_response(
             option_symbol, underlying_price
         )
         return GreeksResponse(**greeks_data)
@@ -218,7 +218,7 @@ async def analyze_portfolio_strategies(
     Includes P&L analysis, Greeks aggregation, and optimization recommendations.
     """
     try:
-        analysis_result = service.analyze_portfolio_strategies(
+        analysis_result = await service.analyze_portfolio_strategies(
             include_greeks=request.include_greeks,
             include_pnl=request.include_pnl,
             include_complex_strategies=request.include_complex_strategies,

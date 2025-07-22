@@ -26,7 +26,7 @@ async def get_stock_price_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = service.get_stock_price(symbol)
+        result = await service.get_stock_price(symbol)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
         return result

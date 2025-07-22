@@ -16,18 +16,33 @@ The module is organized into focused components:
 
 # Core models and enums
 # Advanced analyzer
-from .analyzer import (AdvancedStrategyAnalyzer, aggregate_portfolio_greeks,
-                       analyze_advanced_strategy_pnl,
-                       detect_complex_strategies,
-                       get_portfolio_optimization_recommendations)
+from .analyzer import (
+    AdvancedStrategyAnalyzer,
+    aggregate_portfolio_greeks,
+    analyze_advanced_strategy_pnl,
+    detect_complex_strategies,
+    get_portfolio_optimization_recommendations,
+)
 from .models import (  # Base strategy models; Analysis models; Enums
-    AssetStrategy, BasicStrategy, ComplexStrategy, ComplexStrategyType,
-    CoveredStrategy, OffsetStrategy, SpreadStrategy, SpreadType,
-    StrategyGreeks, StrategyPnL, StrategyType)
+    AssetStrategy,
+    BasicStrategy,
+    ComplexStrategy,
+    ComplexStrategyType,
+    CoveredStrategy,
+    OffsetStrategy,
+    SpreadStrategy,
+    SpreadType,
+    StrategyGreeks,
+    StrategyPnL,
+    StrategyType,
+)
+
 # Recognition service
-from .recognition import (StrategyRecognitionService,
-                          analyze_strategy_portfolio,
-                          group_into_basic_strategies)
+from .recognition import (
+    StrategyRecognitionService,
+    analyze_strategy_portfolio,
+    group_into_basic_strategies,
+)
 
 # Public API - exposed at package level
 __all__ = [

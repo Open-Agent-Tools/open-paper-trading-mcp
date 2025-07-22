@@ -13,16 +13,24 @@ Tests for:
 All tests use proper async patterns with comprehensive mocking of TradingService.
 """
 
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi import status
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
 
 from app.core.exceptions import NotFoundError, ValidationError
-from app.services.trading_service import TradingService
-from app.schemas.orders import Order, OrderCreate, OrderType, OrderStatus, OrderCondition, MultiLegOrderCreate
+from app.schemas.orders import (
+    MultiLegOrderCreate,
+    Order,
+    OrderCondition,
+    OrderCreate,
+    OrderStatus,
+    OrderType,
+)
 from app.schemas.trading import StockQuote
+from app.services.trading_service import TradingService
 
 
 class TestTradingEndpoints:
@@ -39,17 +47,19 @@ class TestTradingEndpoints:
             bid=154.95,
             ask=155.05,
             volume=1000000,
-            quote_date=datetime(2023, 6, 15)
+            quote_date=datetime(2023, 6, 15),
         )
         mock_service.get_quote.return_value = mock_quote
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/quote/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["price"] == 155.0
         assert data["bid"] == 154.95
@@ -64,7 +74,9 @@ class TestTradingEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_quote.side_effect = NotFoundError("Symbol not found")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/quote/NONEXISTENT")
 
@@ -76,13 +88,13 @@ class TestTradingEndpoints:
         """Test quote retrieval with special characters in symbol."""
         mock_service = AsyncMock(spec=TradingService)
         mock_quote = StockQuote(
-            symbol="BRK.A",
-            price=400000.0,
-            quote_date=datetime(2023, 6, 15)
+            symbol="BRK.A", price=400000.0, quote_date=datetime(2023, 6, 15)
         )
         mock_service.get_quote.return_value = mock_quote
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/quote/BRK.A")
 
@@ -104,7 +116,7 @@ class TestTradingEndpoints:
             price=155.0,
             condition=OrderCondition.LIMIT,
             status=OrderStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.create_order.return_value = mock_order
 
@@ -113,16 +125,18 @@ class TestTradingEndpoints:
             "order_type": "buy",
             "quantity": 100,
             "price": 155.0,
-            "condition": "limit"
+            "condition": "limit",
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["id"] == "order_123"
         assert data["symbol"] == "AAPL"
         assert data["order_type"] == "buy"
@@ -147,7 +161,7 @@ class TestTradingEndpoints:
             price=2500.0,
             condition=OrderCondition.LIMIT,
             status=OrderStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.create_order.return_value = mock_order
 
@@ -156,10 +170,12 @@ class TestTradingEndpoints:
             "order_type": "sell",
             "quantity": 50,
             "price": 2500.0,
-            "condition": "limit"
+            "condition": "limit",
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
@@ -179,7 +195,7 @@ class TestTradingEndpoints:
             price=None,
             condition=OrderCondition.MARKET,
             status=OrderStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.create_order.return_value = mock_order
 
@@ -187,10 +203,12 @@ class TestTradingEndpoints:
             "symbol": "MSFT",
             "order_type": "buy",
             "quantity": 200,
-            "condition": "market"
+            "condition": "market",
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
@@ -206,7 +224,7 @@ class TestTradingEndpoints:
             "symbol": "AAPL",
             "order_type": "buy",
             "quantity": -100,  # Invalid negative quantity
-            "price": 155.0
+            "price": 155.0,
         }
 
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
@@ -219,7 +237,7 @@ class TestTradingEndpoints:
         """Test order creation with missing required fields."""
         order_data = {
             "symbol": "AAPL",
-            "order_type": "buy"
+            "order_type": "buy",
             # Missing quantity
         }
 
@@ -238,10 +256,12 @@ class TestTradingEndpoints:
             "symbol": "AAPL",
             "order_type": "buy",
             "quantity": 100,
-            "price": 155.0
+            "price": 155.0,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
@@ -262,7 +282,7 @@ class TestTradingEndpoints:
                 price=155.0,
                 status=OrderStatus.FILLED,
                 created_at=datetime(2023, 6, 15, 10, 0),
-                filled_at=datetime(2023, 6, 15, 10, 5)
+                filled_at=datetime(2023, 6, 15, 10, 5),
             ),
             Order(
                 id="order_124",
@@ -271,18 +291,20 @@ class TestTradingEndpoints:
                 quantity=50,
                 price=2500.0,
                 status=OrderStatus.PENDING,
-                created_at=datetime(2023, 6, 15, 11, 0)
-            )
+                created_at=datetime(2023, 6, 15, 11, 0),
+            ),
         ]
         mock_service.get_orders.return_value = mock_orders
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/orders")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert len(data) == 2
         assert data[0]["id"] == "order_123"
         assert data[0]["status"] == "filled"
@@ -297,7 +319,9 @@ class TestTradingEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_orders.return_value = []
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/orders")
 
@@ -318,17 +342,19 @@ class TestTradingEndpoints:
             price=155.0,
             status=OrderStatus.FILLED,
             created_at=datetime(2023, 6, 15, 10, 0),
-            filled_at=datetime(2023, 6, 15, 10, 5)
+            filled_at=datetime(2023, 6, 15, 10, 5),
         )
         mock_service.get_order.return_value = mock_order
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/order/order_123")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["id"] == "order_123"
         assert data["symbol"] == "AAPL"
         assert data["status"] == "filled"
@@ -342,7 +368,9 @@ class TestTradingEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_order.side_effect = NotFoundError("Order not found")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/order/nonexistent")
 
@@ -353,9 +381,14 @@ class TestTradingEndpoints:
     async def test_cancel_order_success(self, client):
         """Test successful order cancellation."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.cancel_order.return_value = {"status": "cancelled", "order_id": "order_123"}
+        mock_service.cancel_order.return_value = {
+            "status": "cancelled",
+            "order_id": "order_123",
+        }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.delete("/api/v1/trading/order/order_123")
 
@@ -372,7 +405,9 @@ class TestTradingEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.cancel_order.side_effect = NotFoundError("Order not found")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.delete("/api/v1/trading/order/nonexistent")
 
@@ -382,9 +417,13 @@ class TestTradingEndpoints:
     async def test_cancel_order_already_filled(self, client):
         """Test order cancellation for already filled order."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.cancel_order.side_effect = ValidationError("Cannot cancel filled order")
+        mock_service.cancel_order.side_effect = ValidationError(
+            "Cannot cancel filled order"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.delete("/api/v1/trading/order/order_123")
 
@@ -401,17 +440,19 @@ class TestTradingEndpoints:
             bid=154.95,
             ask=155.05,
             volume=1000000,
-            quote_date=datetime(2023, 6, 15, 15, 30)
+            quote_date=datetime(2023, 6, 15, 15, 30),
         )
         mock_service.get_enhanced_quote.return_value = mock_quote
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/quote/AAPL/enhanced")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["price"] == 155.0
         assert data["bid"] == 154.95
@@ -427,7 +468,7 @@ class TestTradingEndpoints:
     async def test_get_enhanced_quote_option(self, client):
         """Test enhanced quote for option symbol with Greeks."""
         from app.models.quotes import OptionQuote
-        
+
         mock_service = AsyncMock(spec=TradingService)
         mock_quote = OptionQuote(
             symbol="AAPL_210618C00155000",
@@ -442,21 +483,25 @@ class TestTradingEndpoints:
             vega=0.15,
             rho=0.08,
             iv=0.25,
-            underlying_price=155.0
+            underlying_price=155.0,
         )
         mock_service.get_enhanced_quote.return_value = mock_quote
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get("/api/v1/trading/quote/AAPL_210618C00155000/enhanced")
+                response = await ac.get(
+                    "/api/v1/trading/quote/AAPL_210618C00155000/enhanced"
+                )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL_210618C00155000"
         assert data["price"] == 5.50
         assert data["asset_type"] == "option"
-        
+
         # Should have Greeks for options
         assert data["delta"] == 0.65
         assert data["gamma"] == 0.03
@@ -472,7 +517,9 @@ class TestTradingEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_enhanced_quote.side_effect = NotFoundError("Symbol not found")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/quote/NONEXISTENT/enhanced")
 
@@ -487,29 +534,47 @@ class TestTradingEndpoints:
             "id": "multileg_123",
             "legs": [
                 {"symbol": "AAPL", "order_type": "buy", "quantity": 100},
-                {"symbol": "AAPL_210618C00160000", "order_type": "sell_to_open", "quantity": 1}
+                {
+                    "symbol": "AAPL_210618C00160000",
+                    "order_type": "sell_to_open",
+                    "quantity": 1,
+                },
             ],
             "status": "pending",
-            "net_price": -15500.0
+            "net_price": -15500.0,
         }
         mock_service.create_multi_leg_order.return_value = mock_order
 
         order_data = {
             "legs": [
-                {"asset": "AAPL", "order_type": "buy_to_open", "quantity": 100, "price": 155.0},
-                {"asset": "AAPL_210618C00160000", "order_type": "sell_to_open", "quantity": 1, "price": 3.0}
+                {
+                    "asset": "AAPL",
+                    "order_type": "buy_to_open",
+                    "quantity": 100,
+                    "price": 155.0,
+                },
+                {
+                    "asset": "AAPL_210618C00160000",
+                    "order_type": "sell_to_open",
+                    "quantity": 1,
+                    "price": 3.0,
+                },
             ],
             "condition": "limit",
-            "limit_price": -15200.0
+            "limit_price": -15200.0,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/trading/order/multi-leg", json=order_data)
+                response = await ac.post(
+                    "/api/v1/trading/order/multi-leg", json=order_data
+                )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["id"] == "multileg_123"
         assert len(data["legs"]) == 2
         assert data["status"] == "pending"
@@ -523,18 +588,28 @@ class TestTradingEndpoints:
     async def test_create_multi_leg_order_validation_error(self, client):
         """Test multi-leg order creation with validation error."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.create_multi_leg_order.side_effect = ValidationError("Invalid leg combination")
+        mock_service.create_multi_leg_order.side_effect = ValidationError(
+            "Invalid leg combination"
+        )
 
         order_data = {
             "legs": [
                 {"asset": "AAPL", "order_type": "buy", "quantity": 100},
-                {"asset": "AAPL", "order_type": "sell", "quantity": 100}  # Duplicate assets
+                {
+                    "asset": "AAPL",
+                    "order_type": "sell",
+                    "quantity": 100,
+                },  # Duplicate assets
             ]
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/trading/order/multi-leg", json=order_data)
+                response = await ac.post(
+                    "/api/v1/trading/order/multi-leg", json=order_data
+                )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -542,26 +617,28 @@ class TestTradingEndpoints:
     async def test_create_multi_leg_order_not_found_error(self, client):
         """Test multi-leg order creation with not found error."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.create_multi_leg_order.side_effect = NotFoundError("Symbol not found")
+        mock_service.create_multi_leg_order.side_effect = NotFoundError(
+            "Symbol not found"
+        )
 
         order_data = {
-            "legs": [
-                {"asset": "NONEXISTENT", "order_type": "buy", "quantity": 100}
-            ]
+            "legs": [{"asset": "NONEXISTENT", "order_type": "buy", "quantity": 100}]
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/trading/order/multi-leg", json=order_data)
+                response = await ac.post(
+                    "/api/v1/trading/order/multi-leg", json=order_data
+                )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_empty_legs(self, client):
         """Test multi-leg order creation with empty legs."""
-        order_data = {
-            "legs": []
-        }
+        order_data = {"legs": []}
 
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.post("/api/v1/trading/order/multi-leg", json=order_data)
@@ -571,9 +648,7 @@ class TestTradingEndpoints:
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_missing_legs(self, client):
         """Test multi-leg order creation without legs field."""
-        order_data = {
-            "condition": "market"
-        }
+        order_data = {"condition": "market"}
 
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.post("/api/v1/trading/order/multi-leg", json=order_data)
@@ -592,7 +667,7 @@ class TestTradingEndpoints:
             quantity=1000000,  # 1 million shares
             price=155.0,
             status=OrderStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.create_order.return_value = mock_order
 
@@ -600,10 +675,12 @@ class TestTradingEndpoints:
             "symbol": "AAPL",
             "order_type": "buy",
             "quantity": 1000000,
-            "price": 155.0
+            "price": 155.0,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
@@ -622,7 +699,7 @@ class TestTradingEndpoints:
             quantity=100,
             price=155.567,  # Fractional price
             status=OrderStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.create_order.return_value = mock_order
 
@@ -630,10 +707,12 @@ class TestTradingEndpoints:
             "symbol": "AAPL",
             "order_type": "buy",
             "quantity": 100,
-            "price": 155.567
+            "price": 155.567,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
@@ -652,11 +731,13 @@ class TestTradingEndpoints:
             quantity=100,
             price=155.0,
             status=OrderStatus.FILLED,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.get_order.return_value = mock_order
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/order/order-with-dashes")
 
@@ -668,10 +749,14 @@ class TestTradingEndpoints:
     async def test_deprecated_quote_endpoint_warning(self, client):
         """Test that the deprecated quote endpoint still works but is marked deprecated."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_quote = StockQuote(symbol="AAPL", price=155.0, quote_date=datetime.utcnow())
+        mock_quote = StockQuote(
+            symbol="AAPL", price=155.0, quote_date=datetime.utcnow()
+        )
         mock_service.get_quote.return_value = mock_quote
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/trading/quote/AAPL")
 
@@ -683,12 +768,12 @@ class TestTradingEndpoints:
     async def test_trading_service_dependency_injection(self):
         """Test that trading service dependency injection works correctly."""
         from app.core.dependencies import get_trading_service
-        
+
         # Create a mock request with app state
         mock_request = MagicMock()
         mock_service = MagicMock(spec=TradingService)
         mock_request.app.state.trading_service = mock_service
-        
+
         result = get_trading_service(mock_request)
         assert result is mock_service
 
@@ -696,7 +781,7 @@ class TestTradingEndpoints:
     async def test_trading_endpoints_response_structure(self, client):
         """Test that trading endpoints return properly structured responses."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         # Test order response structure
         mock_order = Order(
             id="order_123",
@@ -706,7 +791,7 @@ class TestTradingEndpoints:
             price=155.0,
             condition=OrderCondition.LIMIT,
             status=OrderStatus.PENDING,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
         mock_service.create_order.return_value = mock_order
 
@@ -714,16 +799,18 @@ class TestTradingEndpoints:
             "symbol": "AAPL",
             "order_type": "buy",
             "quantity": 100,
-            "price": 155.0
+            "price": 155.0,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post("/api/v1/trading/order", json=order_data)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Verify required Order fields are present
         required_fields = ["id", "symbol", "order_type", "quantity", "status"]
         for field in required_fields:

@@ -7,7 +7,7 @@ and market impact based on order size and market conditions.
 
 import logging
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
@@ -47,14 +47,14 @@ class MarketImpactConfig:
 
     base_slippage_bps: float = 2.0  # Base slippage in basis points
     volume_impact_factor: float = 0.1  # Impact factor for large volumes
-    volatility_multiplier: dict[MarketCondition, float] = None
+    volatility_multiplier: dict[MarketCondition, float] = field(default_factory=dict)
     partial_fill_probability: float = 0.05  # 5% chance of partial fill
     min_fill_ratio: float = 0.7  # Minimum fill ratio for partial fills
     commission_per_share: float = 0.005  # $0.005 per share commission
     max_commission: float = 10.0  # Maximum commission per order
 
     def __post_init__(self):
-        if self.volatility_multiplier is None:
+        if not self.volatility_multiplier:
             self.volatility_multiplier = {
                 MarketCondition.CALM: 0.5,
                 MarketCondition.NORMAL: 1.0,
@@ -392,6 +392,8 @@ class MarketImpactSimulator:
             bid=current_price * 0.999,  # Slightly below market
             ask=current_price * 1.001,  # Slightly above market
             volume=0,  # Not used in simulation
+            bid_size=100,
+            ask_size=100,
         )
 
         # Call the main simulation method

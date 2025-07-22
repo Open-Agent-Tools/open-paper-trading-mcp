@@ -9,8 +9,13 @@ from app.models.assets import Option, Stock
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
-from app.schemas.orders import (Order, OrderCondition, OrderCreate,
-                                OrderStatus, OrderType)
+from app.schemas.orders import (
+    Order,
+    OrderCondition,
+    OrderCreate,
+    OrderStatus,
+    OrderType,
+)
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
@@ -965,7 +970,7 @@ class TestMarketData:
         symbol = "AAPL"
         mock_asset = MagicMock(spec=Stock)
         mock_asset_factory.return_value = mock_asset
-        
+
         mock_quote = MagicMock(spec=Quote)
         mock_quote.price = 150.0
         mock_quote.quote_date = datetime.now()
@@ -995,7 +1000,9 @@ class TestMarketData:
 
     @patch("app.services.trading_service.asset_factory")
     @pytest.mark.asyncio
-    async def test_get_enhanced_quote_success(self, mock_asset_factory, trading_service):
+    async def test_get_enhanced_quote_success(
+        self, mock_asset_factory, trading_service
+    ):
         """Test successful enhanced quote retrieval."""
         # Arrange
         symbol = "AAPL"
@@ -1031,7 +1038,9 @@ class TestMarketData:
 
     @patch("app.services.trading_service.asset_factory")
     @pytest.mark.asyncio
-    async def test_get_enhanced_quote_not_found(self, mock_asset_factory, trading_service):
+    async def test_get_enhanced_quote_not_found(
+        self, mock_asset_factory, trading_service
+    ):
         """Test get_enhanced_quote raises NotFoundError when no data available."""
         # Arrange
         symbol = "UNKNOWN"

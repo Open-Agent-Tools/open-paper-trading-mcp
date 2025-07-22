@@ -10,8 +10,7 @@ from typing import Any
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from ..models.database.trading import (DevOptionQuote, DevScenario,
-                                       DevStockQuote)
+from ..models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from ..storage.database import get_sync_session
 
 logger = logging.getLogger(__name__)
@@ -142,7 +141,7 @@ class TestDataValidator:
             quote_date = quote.quote_date
             if hasattr(quote_date, "date"):
                 quote_date = quote_date.date()
-            if expiration_date <= quote_date:
+            if expiration_date and quote_date and expiration_date <= quote_date:
                 self.validation_errors.append(
                     f"Option {quote.symbol} on {quote.quote_date}: expiration ({quote.expiration}) not in future"
                 )
@@ -201,7 +200,7 @@ class TestDataValidator:
             start_date = scenario.start_date
             if hasattr(start_date, "date"):
                 start_date = start_date.date()
-            if end_date <= start_date:
+            if end_date and start_date and end_date <= start_date:
                 self.validation_errors.append(
                     f"Scenario '{scenario.name}': end_date ({scenario.end_date}) not after start_date ({scenario.start_date})"
                 )

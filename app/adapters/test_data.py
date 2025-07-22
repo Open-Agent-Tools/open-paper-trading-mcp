@@ -18,8 +18,7 @@ from typing import Any
 from sqlalchemy import and_
 
 from ..models.assets import Asset, Option, asset_factory
-from ..models.database.trading import (DevOptionQuote, DevScenario,
-                                       DevStockQuote)
+from ..models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from ..models.quotes import OptionQuote, OptionsChain, Quote
 from ..services.greeks import calculate_option_greeks
 from ..storage.database import get_sync_session
@@ -61,7 +60,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
         self.name = "DevDataQuoteAdapter"
         self.enabled = True
         self.scenario = scenario
-        self.current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
+        self.current_date: date = datetime.strptime(current_date, "%Y-%m-%d").date()
         self._quote_cache: dict[str, Any] = {}  # Small cache for performance
 
     def set_date(self, date_str: str) -> None:
@@ -78,14 +77,11 @@ class DevDataQuoteAdapter(QuoteAdapter):
             if scenario:
                 self.scenario = scenario_name
                 start_date = scenario.start_date
-                if hasattr(start_date, "date"):
+                if isinstance(start_date, datetime):
                     start_date = start_date.date()
-                else:
-                    # Ensure it's a date object
-                    from datetime import date as date_type
 
-                    if not isinstance(start_date, date_type):
-                        start_date = date_type.today()
+                if not isinstance(start_date, date):
+                    start_date = date.today()
                 self.current_date = start_date
                 self._quote_cache.clear()  # Clear cache when switching
 
@@ -99,11 +95,16 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 .distinct()
                 .all()
             )
-            return sorted([d[0].strftime("%Y-%m-%d") for d in dates])
+            return sorted(
+                [d[0].strftime("%Y-%m-%d") for d in dates if d[0] is not None]
+            )
 
     async def advance_date(self, days: int = 1) -> None:
         """Advance current date by specified days."""
-        self.current_date += timedelta(days=days)
+        current_date_obj = self.current_date
+        if isinstance(current_date_obj, datetime):
+            current_date_obj = current_date_obj.date()
+        self.current_date = current_date_obj + timedelta(days=days)
         self._quote_cache.clear()
 
     def _get_stock_quote_from_db(
@@ -150,13 +151,11 @@ class DevDataQuoteAdapter(QuoteAdapter):
             if asset:
                 # Convert date properly
                 quote_date_val = db_quote.quote_date
-                if hasattr(quote_date_val, "date"):
+                if isinstance(quote_date_val, datetime):
                     quote_date_val = quote_date_val.date()
-                else:
-                    from datetime import date as date_type
 
-                    if not isinstance(quote_date_val, date_type):
-                        quote_date_val = date_type.today()
+                if not isinstance(quote_date_val, date):
+                    quote_date_val = date.today()
 
                 return Quote(
                     quote_date=datetime.combine(quote_date_val, datetime.min.time()),
@@ -180,13 +179,11 @@ class DevDataQuoteAdapter(QuoteAdapter):
             if asset and isinstance(asset, Option):
                 # Convert date properly
                 quote_date_val = db_quote.quote_date
-                if hasattr(quote_date_val, "date"):
+                if isinstance(quote_date_val, datetime):
                     quote_date_val = quote_date_val.date()
-                else:
-                    from datetime import date as date_type
 
-                    if not isinstance(quote_date_val, date_type):
-                        quote_date_val = date_type.today()
+                if not isinstance(quote_date_val, date):
+                    quote_date_val = date.today()
 
                 option_quote = OptionQuote(
                     quote_date=datetime.combine(quote_date_val, datetime.min.time()),
@@ -236,14 +233,17 @@ class DevDataQuoteAdapter(QuoteAdapter):
         Returns:
             Quote object or None if not found
         """
+        current_date_obj = self.current_date
+        if isinstance(current_date_obj, datetime):
+            current_date_obj = current_date_obj.date()
         # Check if it's an option or stock
         if isinstance(asset, Option):
             return self._cached_option_quote(
-                asset.symbol, self.current_date, self.scenario
+                asset.symbol, current_date_obj, self.scenario
             )
         else:
             return self._cached_stock_quote(
-                asset.symbol, self.current_date, self.scenario
+                asset.symbol, current_date_obj, self.scenario
             )
 
     async def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
@@ -305,8 +305,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in stock_records:
+                    quote_date_val = record.quote_date
+                    if isinstance(quote_date_val, datetime):
+                        quote_date_val = quote_date_val.date()
+
+                    if not isinstance(quote_date_val, date):
+                        quote_date_val = date.today()
+
                     quote = self._cached_stock_quote(
-                        record.symbol, record.quote_date, self.scenario
+                        record.symbol, quote_date_val, self.scenario
                     )
                     if quote:
                         results[record.symbol] = quote
@@ -327,8 +334,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in option_records:
+                    quote_date_val = record.quote_date
+                    if isinstance(quote_date_val, datetime):
+                        quote_date_val = quote_date_val.date()
+
+                    if not isinstance(quote_date_val, date):
+                        quote_date_val = date.today()
+
                     quote = self._cached_option_quote(
-                        record.symbol, record.quote_date, self.scenario
+                        record.symbol, quote_date_val, self.scenario
                     )
                     if quote:
                         results[record.symbol] = quote
@@ -368,8 +382,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in records:
-                    quote = self._cached_option_quote(
-                        symbol, record.quote_date, self.scenario
+                    quote_date_val = record.quote_date
+                    if isinstance(quote_date_val, datetime):
+                        quote_date_val = quote_date_val.date()
+
+                    if not isinstance(quote_date_val, date):
+                        quote_date_val = date.today()
+
+                    quote: OptionQuote | None = self._cached_option_quote(
+                        symbol, quote_date_val, self.scenario
                     )
                     if quote:
                         quotes.append(quote)
@@ -389,8 +410,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in records:
+                    quote_date_val = record.quote_date
+                    if isinstance(quote_date_val, datetime):
+                        quote_date_val = quote_date_val.date()
+
+                    if not isinstance(quote_date_val, date):
+                        quote_date_val = date.today()
+
                     quote = self._cached_stock_quote(
-                        symbol, record.quote_date, self.scenario
+                        symbol, quote_date_val, self.scenario
                     )
                     if quote:
                         quotes.append(quote)
@@ -445,12 +473,19 @@ class DevDataQuoteAdapter(QuoteAdapter):
             return None
 
         # Convert database records to OptionQuote objects
-        calls = []
-        puts = []
+        calls: list[OptionQuote] = []
+        puts: list[OptionQuote] = []
 
         for record in option_records:
+            quote_date_val = record.quote_date
+            if isinstance(quote_date_val, datetime):
+                quote_date_val = quote_date_val.date()
+
+            if not isinstance(quote_date_val, date):
+                quote_date_val = date.today()
+
             option_quote = self._cached_option_quote(
-                record.symbol, record.quote_date, self.scenario
+                record.symbol, quote_date_val, self.scenario
             )
             if option_quote and isinstance(option_quote.asset, Option):
                 if option_quote.asset.option_type == "call":
@@ -459,20 +494,25 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     puts.append(option_quote)
 
         # Sort by strike price
-        calls.sort(key=lambda x: x.asset.strike if isinstance(x.asset, Option) else 0)
-        puts.sort(key=lambda x: x.asset.strike if isinstance(x.asset, Option) else 0)
+        calls.sort(
+            key=lambda x: x.asset.strike
+            if isinstance(x.asset, Option) and x.asset.strike is not None
+            else 0
+        )
+        puts.sort(
+            key=lambda x: x.asset.strike
+            if isinstance(x.asset, Option) and x.asset.strike is not None
+            else 0
+        )
 
         # Determine expiration date
-        exp_date = expiration
+        exp_date: date | None = expiration
         if exp_date is None and option_records:
             exp_date_val = option_records[0].expiration
             if hasattr(exp_date_val, "date"):
                 exp_date_val = exp_date_val.date()
-            else:
-                from datetime import date as date_type
-
-                if not isinstance(exp_date_val, date_type):
-                    exp_date_val = date_type.today()
+            elif not isinstance(exp_date_val, date):
+                exp_date_val = date.today()
             exp_date = exp_date_val
 
         return OptionsChain(
@@ -508,7 +548,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 .all()
             )
 
-            return sorted([exp[0] for exp in expiration_dates])
+            return sorted([exp[0] for exp in expiration_dates if exp[0] is not None])
 
     async def is_market_open(self) -> bool:
         """

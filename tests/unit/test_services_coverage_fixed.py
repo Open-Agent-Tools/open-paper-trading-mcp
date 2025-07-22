@@ -43,8 +43,7 @@ class TestPositionSizing:
 
     def test_position_size_result_creation(self):
         """Test PositionSizeResult creation with correct fields."""
-        from app.services.position_sizing import (PositionSizeResult,
-                                                  SizingStrategy)
+        from app.services.position_sizing import PositionSizeResult, SizingStrategy
 
         result = PositionSizeResult(
             strategy=SizingStrategy.FIXED_PERCENTAGE,
@@ -70,9 +69,12 @@ class TestRiskAnalysis:
 
     def test_risk_analysis_result_creation(self):
         """Test RiskAnalysisResult creation with correct structure."""
-        from app.services.risk_analysis import (PortfolioImpact,
-                                                PositionImpact,
-                                                RiskAnalysisResult, RiskLevel)
+        from app.services.risk_analysis import (
+            PortfolioImpact,
+            PositionImpact,
+            RiskAnalysisResult,
+            RiskLevel,
+        )
 
         # Create mock objects
         mock_order = Mock()
@@ -133,10 +135,12 @@ class TestOrderNotifications:
 
     def test_notification_creation(self):
         """Test Notification creation with correct structure."""
-        from app.services.order_notifications import (Notification,
-                                                      NotificationChannel,
-                                                      NotificationPriority,
-                                                      OrderEvent)
+        from app.services.order_notifications import (
+            Notification,
+            NotificationChannel,
+            NotificationPriority,
+            OrderEvent,
+        )
 
         notification = Notification(
             id="notif-1",

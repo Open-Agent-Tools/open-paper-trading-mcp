@@ -6,7 +6,9 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.services.trading_service import trading_service
+from app.services.trading_service import TradingService
+
+trading_service = TradingService()
 
 
 class GetOptionsChainsArgs(BaseModel):
@@ -33,7 +35,7 @@ async def get_options_chains(args: GetOptionsChainsArgs) -> dict[str, Any]:
     """
     try:
         # Use TradingService to get options chain
-        chain_data = trading_service.get_formatted_options_chain(
+        chain_data = await trading_service.get_formatted_options_chain(
             args.symbol.strip().upper()
         )
         return chain_data
@@ -46,7 +48,7 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> dict[str, Any]
     Find tradable options for a symbol with optional filtering.
     """
     try:
-        result = trading_service.find_tradable_options(
+        result = await trading_service.find_tradable_options(
             args.symbol.strip().upper(), args.expiration_date, args.option_type
         )
         return result
@@ -59,7 +61,7 @@ async def get_option_market_data(args: GetOptionMarketDataArgs) -> dict[str, Any
     Get market data for a specific option contract.
     """
     try:
-        result = trading_service.get_option_market_data(args.option_id)
+        result = await trading_service.get_option_market_data(args.option_id)
         return result
     except Exception as e:
         return {"error": str(e)}

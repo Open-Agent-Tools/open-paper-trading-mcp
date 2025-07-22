@@ -13,15 +13,15 @@ Tests for:
 All tests use proper async patterns with comprehensive mocking of TradingService.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi import status
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, MagicMock, patch
-from decimal import Decimal
 
 from app.core.exceptions import NotFoundError, ValidationError
-from app.services.trading_service import TradingService
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
+from app.services.trading_service import TradingService
 
 
 class TestPortfolioEndpoints:
@@ -42,21 +42,23 @@ class TestPortfolioEndpoints:
                     current_price=155.0,
                     market_value=15500.0,
                     unrealized_pnl=500.0,
-                    realized_pnl=0.0
+                    realized_pnl=0.0,
                 )
             ],
             market_value=15500.0,
-            total_value=25500.0
+            total_value=25500.0,
         )
         mock_service.get_portfolio.return_value = mock_portfolio
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["cash_balance"] == 10000.0
         assert data["market_value"] == 15500.0
         assert data["total_value"] == 25500.0
@@ -71,20 +73,19 @@ class TestPortfolioEndpoints:
         """Test portfolio retrieval when portfolio is empty."""
         mock_service = AsyncMock(spec=TradingService)
         mock_portfolio = Portfolio(
-            cash_balance=10000.0,
-            positions=[],
-            market_value=0.0,
-            total_value=10000.0
+            cash_balance=10000.0, positions=[], market_value=0.0, total_value=10000.0
         )
         mock_service.get_portfolio.return_value = mock_portfolio
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["cash_balance"] == 10000.0
         assert data["positions"] == []
         assert data["market_value"] == 0.0
@@ -96,7 +97,9 @@ class TestPortfolioEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_portfolio.side_effect = RuntimeError("Database error")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/")
 
@@ -115,17 +118,19 @@ class TestPortfolioEndpoints:
             day_change_percent=1.0,
             total_gain_loss=500.0,
             total_gain_loss_percent=2.0,
-            position_count=3
+            position_count=3,
         )
         mock_service.get_portfolio_summary.return_value = mock_summary
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/summary")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["cash_balance"] == 10000.0
         assert data["market_value"] == 15500.0
         assert data["total_value"] == 25500.0
@@ -149,17 +154,19 @@ class TestPortfolioEndpoints:
             day_change_percent=-1.7,
             total_gain_loss=-1000.0,
             total_gain_loss_percent=-5.6,
-            position_count=2
+            position_count=2,
         )
         mock_service.get_portfolio_summary.return_value = mock_summary
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/summary")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["day_change"] == -300.0
         assert data["day_change_percent"] == -1.7
         assert data["total_gain_loss"] == -1000.0
@@ -178,7 +185,7 @@ class TestPortfolioEndpoints:
                 current_price=155.0,
                 market_value=15500.0,
                 unrealized_pnl=500.0,
-                realized_pnl=0.0
+                realized_pnl=0.0,
             ),
             Position(
                 symbol="GOOGL",
@@ -187,18 +194,20 @@ class TestPortfolioEndpoints:
                 current_price=2050.0,
                 market_value=102500.0,
                 unrealized_pnl=2500.0,
-                realized_pnl=100.0
-            )
+                realized_pnl=100.0,
+            ),
         ]
         mock_service.get_positions.return_value = mock_positions
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/positions")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert len(data) == 2
         assert data[0]["symbol"] == "AAPL"
         assert data[0]["quantity"] == 100
@@ -213,7 +222,9 @@ class TestPortfolioEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_positions.return_value = []
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/positions")
 
@@ -233,17 +244,19 @@ class TestPortfolioEndpoints:
             current_price=155.0,
             market_value=15500.0,
             unrealized_pnl=500.0,
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
         mock_service.get_position.return_value = mock_position
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/position/AAPL")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["quantity"] == 100
         assert data["average_price"] == 150.0
@@ -259,7 +272,9 @@ class TestPortfolioEndpoints:
         mock_service = AsyncMock(spec=TradingService)
         mock_service.get_position.side_effect = NotFoundError("Position not found")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/position/NONEXISTENT")
 
@@ -277,11 +292,13 @@ class TestPortfolioEndpoints:
             current_price=405000.0,
             market_value=405000.0,
             unrealized_pnl=5000.0,
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
         mock_service.get_position.return_value = mock_position
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/position/BRK.A")
 
@@ -301,17 +318,21 @@ class TestPortfolioEndpoints:
             "theta": -0.02,
             "vega": 0.15,
             "rho": 0.08,
-            "implied_volatility": 0.25
+            "implied_volatility": 0.25,
         }
         mock_service.get_position_greeks.return_value = mock_greeks
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get("/api/v1/portfolio/position/AAPL_210618C00130000/greeks")
+                response = await ac.get(
+                    "/api/v1/portfolio/position/AAPL_210618C00130000/greeks"
+                )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL_210618C00130000"
         assert data["delta"] == 0.65
         assert data["gamma"] == 0.03
@@ -326,9 +347,13 @@ class TestPortfolioEndpoints:
     async def test_get_position_greeks_stock_position(self, client):
         """Test position Greeks for stock position (should handle gracefully)."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.get_position_greeks.side_effect = ValidationError("Greeks not available for stock positions")
+        mock_service.get_position_greeks.side_effect = ValidationError(
+            "Greeks not available for stock positions"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/position/AAPL/greeks")
 
@@ -339,9 +364,13 @@ class TestPortfolioEndpoints:
     async def test_get_position_greeks_not_found(self, client):
         """Test position Greeks for non-existent position."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.get_position_greeks.side_effect = NotFoundError("Position not found")
+        mock_service.get_position_greeks.side_effect = NotFoundError(
+            "Position not found"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/position/NONEXISTENT/greeks")
 
@@ -367,19 +396,21 @@ class TestPortfolioEndpoints:
                     "gamma": 0.03,
                     "theta": -0.02,
                     "vega": 0.15,
-                    "rho": 0.08
+                    "rho": 0.08,
                 }
-            ]
+            ],
         }
         mock_service.get_portfolio_greeks.return_value = mock_portfolio_greeks
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/greeks")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["total_delta"] == 150.0
         assert data["total_gamma"] == 12.5
         assert data["total_theta"] == -8.7
@@ -401,17 +432,19 @@ class TestPortfolioEndpoints:
             "total_vega": 0.0,
             "total_rho": 0.0,
             "weighted_iv": 0.0,
-            "positions": []
+            "positions": [],
         }
         mock_service.get_portfolio_greeks.return_value = mock_portfolio_greeks
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/greeks")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["total_delta"] == 0.0
         assert data["positions"] == []
 
@@ -427,33 +460,33 @@ class TestPortfolioEndpoints:
                     "positions": ["AAPL", "AAPL_210618C00160000"],
                     "profit_target": 500.0,
                     "risk_level": "medium",
-                    "description": "Covered call on AAPL shares"
+                    "description": "Covered call on AAPL shares",
                 }
             ],
             "unmatched_positions": ["GOOGL"],
             "risk_metrics": {
                 "portfolio_beta": 1.2,
                 "max_loss": -5000.0,
-                "max_gain": 2000.0
+                "max_gain": 2000.0,
             },
-            "recommendations": [
-                "Consider closing AAPL covered call before expiration"
-            ]
+            "recommendations": ["Consider closing AAPL covered call before expiration"],
         }
         mock_service.get_portfolio_strategies.return_value = mock_strategies
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/strategies")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert "recognized_strategies" in data
         assert "unmatched_positions" in data
         assert "risk_metrics" in data
         assert "recommendations" in data
-        
+
         assert len(data["recognized_strategies"]) == 1
         assert data["recognized_strategies"][0]["strategy_type"] == "covered_call"
         assert "AAPL" in data["recognized_strategies"][0]["positions"]
@@ -471,21 +504,23 @@ class TestPortfolioEndpoints:
             "risk_metrics": {
                 "portfolio_beta": 1.0,
                 "max_loss": -10000.0,
-                "max_gain": 5000.0
+                "max_gain": 5000.0,
             },
             "recommendations": [
                 "Consider implementing covered call strategies on large positions"
-            ]
+            ],
         }
         mock_service.get_portfolio_strategies.return_value = mock_strategies
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/strategies")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["recognized_strategies"] == []
         assert len(data["unmatched_positions"]) == 3
 
@@ -493,9 +528,13 @@ class TestPortfolioEndpoints:
     async def test_get_portfolio_strategies_service_error(self, client):
         """Test portfolio strategies when service raises error."""
         mock_service = AsyncMock(spec=TradingService)
-        mock_service.get_portfolio_strategies.side_effect = RuntimeError("Analysis error")
+        mock_service.get_portfolio_strategies.side_effect = RuntimeError(
+            "Analysis error"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/strategies")
 
@@ -517,15 +556,17 @@ class TestPortfolioEndpoints:
                     current_price=405000.0,
                     market_value=405000.0,
                     unrealized_pnl=5000.0,
-                    realized_pnl=0.0
+                    realized_pnl=0.0,
                 )
             ],
             market_value=405000.0,
-            total_value=1000405000.0
+            total_value=1000405000.0,
         )
         mock_service.get_portfolio.return_value = mock_portfolio
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/")
 
@@ -548,15 +589,17 @@ class TestPortfolioEndpoints:
                     current_price=155.0,
                     market_value=0.0,
                     unrealized_pnl=0.0,
-                    realized_pnl=0.0
+                    realized_pnl=0.0,
                 )
             ],
             market_value=0.0,
-            total_value=0.0
+            total_value=0.0,
         )
         mock_service.get_portfolio.return_value = mock_portfolio
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/")
 
@@ -577,11 +620,13 @@ class TestPortfolioEndpoints:
             current_price=255.0,
             market_value=25500.0,
             unrealized_pnl=500.0,
-            realized_pnl=0.0
+            realized_pnl=0.0,
         )
         mock_service.get_position.return_value = mock_position
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 # Test with URL-encoded dot (though FastAPI should decode automatically)
                 response = await ac.get("/api/v1/portfolio/position/BRK%2EB")
@@ -599,7 +644,9 @@ class TestPortfolioEndpoints:
         )
 
         # Test that the dependency is called for each endpoint
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service) as mock_dep:
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ) as mock_dep:
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 await ac.get("/api/v1/portfolio/")
 
@@ -609,23 +656,22 @@ class TestPortfolioEndpoints:
     async def test_portfolio_endpoints_response_structure(self, client):
         """Test that portfolio endpoints return properly structured responses."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         # Test portfolio response structure
         mock_portfolio = Portfolio(
-            cash_balance=10000.0,
-            positions=[],
-            market_value=0.0,
-            total_value=10000.0
+            cash_balance=10000.0, positions=[], market_value=0.0, total_value=10000.0
         )
         mock_service.get_portfolio.return_value = mock_portfolio
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/portfolio/")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Verify required fields are present
         required_fields = ["cash_balance", "positions", "market_value", "total_value"]
         for field in required_fields:

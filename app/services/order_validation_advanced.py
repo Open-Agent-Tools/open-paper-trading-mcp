@@ -256,7 +256,7 @@ class ComplexOrderValidator:
             return issues
 
         # Check for duplicate symbols
-        symbols = [leg.asset.symbol for leg in order.legs]
+        symbols = [leg.asset.symbol for leg in order.legs if leg.asset]
         if len(symbols) != len(set(symbols)):
             issues.append(
                 ValidationIssue(
@@ -323,7 +323,11 @@ class ComplexOrderValidator:
         # Both options
         if isinstance(asset1, Option) and isinstance(asset2, Option):
             # Same underlying check
-            if asset1.underlying.symbol != asset2.underlying.symbol:
+            if (
+                asset1.underlying
+                and asset2.underlying
+                and asset1.underlying.symbol != asset2.underlying.symbol
+            ):
                 return StrategyType.CUSTOM
 
             # Same strike, same expiration
@@ -355,19 +359,31 @@ class ComplexOrderValidator:
     def _detect_three_leg_strategy(self, order: MultiLegOrder) -> StrategyType:
         """Detect three-leg strategies."""
         # Check if all legs are options on same underlying
-        assets = [leg.asset for leg in order.legs]
+        assets: list[Asset] = [leg.asset for leg in order.legs if leg.asset]
 
         if not all(isinstance(a, Option) for a in assets):
             return StrategyType.CUSTOM
 
-        underlyings = {a.underlying.symbol for a in assets}
+        underlyings = {
+            a.underlying.symbol
+            for a in assets
+            if isinstance(a, Option) and a.underlying
+        }
         if len(underlyings) != 1:
             return StrategyType.CUSTOM
 
         # Check for butterfly pattern
-        strikes = sorted([a.strike for a in assets])
+        strikes = sorted(
+            [a.strike for a in assets if isinstance(a, Option) and a.strike is not None]
+        )
         quantities = [
-            leg.quantity for leg in sorted(order.legs, key=lambda l: l.asset.strike)
+            leg.quantity
+            for leg in sorted(
+                order.legs,
+                key=lambda l: l.asset.strike
+                if isinstance(l.asset, Option) and l.asset.strike is not None
+                else 0.0,
+            )
         ]
 
         # Classic butterfly: +1, -2, +1 or -1, +2, -1
@@ -381,22 +397,39 @@ class ComplexOrderValidator:
     def _detect_four_leg_strategy(self, order: MultiLegOrder) -> StrategyType:
         """Detect four-leg strategies."""
         # Check if all legs are options on same underlying
-        assets = [leg.asset for leg in order.legs]
+        assets: list[Asset] = [leg.asset for leg in order.legs if leg.asset]
 
         if not all(isinstance(a, Option) for a in assets):
             return StrategyType.CUSTOM
 
-        underlyings = {a.underlying.symbol for a in assets}
+        underlyings = {
+            a.underlying.symbol
+            for a in assets
+            if isinstance(a, Option) and a.underlying
+        }
         if len(underlyings) != 1:
             return StrategyType.CUSTOM
 
         # Sort by strike
-        sorted_legs = sorted(order.legs, key=lambda l: l.asset.strike)
+        sorted_legs = sorted(
+            order.legs,
+            key=lambda l: l.asset.strike
+            if isinstance(l.asset, Option) and l.asset.strike is not None
+            else 0.0,
+        )
 
         # Check for iron condor pattern
         # Two puts (lower strikes) and two calls (higher strikes)
-        put_legs = [l for l in sorted_legs if l.asset.option_type == "put"]
-        call_legs = [l for l in sorted_legs if l.asset.option_type == "call"]
+        put_legs = [
+            l
+            for l in sorted_legs
+            if isinstance(l.asset, Option) and l.asset.option_type == "put"
+        ]
+        call_legs = [
+            l
+            for l in sorted_legs
+            if isinstance(l.asset, Option) and l.asset.option_type == "call"
+        ]
 
         if len(put_legs) == 2 and len(call_legs) == 2:
             # Check quantities: sell inner, buy outer
@@ -409,9 +442,16 @@ class ComplexOrderValidator:
                 return StrategyType.IRON_CONDOR
 
         # Check for iron butterfly
-        if len({a.strike for a in assets}) == 3:
-            middle_strike = sorted({a.strike for a in assets})[1]
-            middle_legs = [l for l in order.legs if l.asset.strike == middle_strike]
+        strikes = {
+            a.strike for a in assets if isinstance(a, Option) and a.strike is not None
+        }
+        if len(strikes) == 3:
+            middle_strike = sorted(strikes)[1]
+            middle_legs = [
+                l
+                for l in order.legs
+                if isinstance(l.asset, Option) and l.asset.strike == middle_strike
+            ]
 
             if len(middle_legs) == 2:
                 return StrategyType.IRON_BUTTERFLY
@@ -422,7 +462,7 @@ class ComplexOrderValidator:
         self, order: MultiLegOrder, strategy_type: StrategyType
     ) -> list[ValidationIssue]:
         """Validate order against strategy rules."""
-        issues = []
+        issues: list[ValidationIssue] = []
 
         rules = self.strategy_rules.get(strategy_type)
         if not rules:
@@ -457,7 +497,7 @@ class ComplexOrderValidator:
         if rules.same_underlying:
             underlyings = set()
             for leg in order.legs:
-                if isinstance(leg.asset, Option):
+                if isinstance(leg.asset, Option) and leg.asset.underlying:
                     underlyings.add(leg.asset.underlying.symbol)
                 elif isinstance(leg.asset, Stock):
                     underlyings.add(leg.asset.symbol)
@@ -493,7 +533,7 @@ class ComplexOrderValidator:
         self, order: MultiLegOrder, strategy_type: StrategyType, options_level: int
     ) -> list[ValidationIssue]:
         """Validate order against user's options trading level."""
-        issues = []
+        issues: list[ValidationIssue] = []
 
         required_level = self._get_required_options_level(strategy_type)
 
@@ -556,7 +596,7 @@ class ComplexOrderValidator:
         self, order: MultiLegOrder, portfolio: Portfolio
     ) -> list[ValidationIssue]:
         """Validate risk parameters of the order."""
-        warnings = []
+        warnings: list[ValidationIssue] = []
 
         # Calculate total order value
         total_value = 0.0
@@ -578,7 +618,7 @@ class ComplexOrderValidator:
 
         # Check for earnings/events
         for leg in order.legs:
-            if isinstance(leg.asset, Option):
+            if isinstance(leg.asset, Option) and leg.asset.expiration_date:
                 days_to_expiry = (leg.asset.expiration_date - date.today()).days
                 if days_to_expiry < 7:
                     warnings.append(
@@ -596,7 +636,7 @@ class ComplexOrderValidator:
         self, order: MultiLegOrder, portfolio: Portfolio
     ) -> list[ValidationIssue]:
         """Validate regulatory requirements."""
-        issues = []
+        issues: list[ValidationIssue] = []
 
         # Pattern Day Trader check
         # Simplified - would need transaction history
@@ -668,6 +708,9 @@ class ComplexOrderValidator:
         if not (isinstance(leg1.asset, Option) and isinstance(leg2.asset, Option)):
             return None, None
 
+        if leg1.asset.strike is None or leg2.asset.strike is None:
+            return None, None
+
         # Calculate spread width
         spread_width = abs(leg1.asset.strike - leg2.asset.strike)
 
@@ -679,8 +722,8 @@ class ComplexOrderValidator:
         # Determine if credit or debit spread
         if net_credit > 0:
             # Credit spread
-            max_profit = net_credit
-            max_loss = (spread_width * 100) - net_credit
+            max_profit: float | None = net_credit
+            max_loss: float | None = (spread_width * 100) - net_credit
         else:
             # Debit spread
             max_profit = (spread_width * 100) + net_credit  # net_credit is negative
@@ -696,7 +739,12 @@ class ComplexOrderValidator:
             return None, None
 
         # Sort legs by strike
-        sorted_legs = sorted(order.legs, key=lambda l: l.asset.strike)
+        sorted_legs = sorted(
+            order.legs,
+            key=lambda l: l.asset.strike
+            if isinstance(l.asset, Option) and l.asset.strike is not None
+            else 0.0,
+        )
 
         # Calculate net credit
         net_credit = 0.0
@@ -705,26 +753,60 @@ class ComplexOrderValidator:
                 net_credit += leg.price * leg.quantity * 100
 
         # Calculate spread widths
-        put_spread_width = sorted_legs[1].asset.strike - sorted_legs[0].asset.strike
-        call_spread_width = sorted_legs[3].asset.strike - sorted_legs[2].asset.strike
+        put_leg_1_strike = (
+            sorted_legs[0].asset.strike
+            if isinstance(sorted_legs[0].asset, Option)
+            else None
+        )
+        put_leg_2_strike = (
+            sorted_legs[1].asset.strike
+            if isinstance(sorted_legs[1].asset, Option)
+            else None
+        )
+        call_leg_1_strike = (
+            sorted_legs[2].asset.strike
+            if isinstance(sorted_legs[2].asset, Option)
+            else None
+        )
+        call_leg_2_strike = (
+            sorted_legs[3].asset.strike
+            if isinstance(sorted_legs[3].asset, Option)
+            else None
+        )
+
+        if (
+            put_leg_1_strike is None
+            or put_leg_2_strike is None
+            or call_leg_1_strike is None
+            or call_leg_2_strike is None
+        ):
+            return None, None
+
+        put_spread_width = put_leg_2_strike - put_leg_1_strike
+        call_spread_width = call_leg_2_strike - call_leg_1_strike
 
         max_spread_width = max(put_spread_width, call_spread_width)
 
-        max_profit = net_credit
-        max_loss = (max_spread_width * 100) - net_credit
+        max_profit: float | None = net_credit
+        max_loss: float | None = (max_spread_width * 100) - net_credit
 
         return max_profit, max_loss
 
     def _calculate_breakeven_points(self, order: MultiLegOrder) -> list[float]:
         """Calculate breakeven points for the strategy."""
         strategy_type = self._detect_strategy(order)
-        breakevens = []
+        breakevens: list[float] = []
 
         if strategy_type == StrategyType.VERTICAL_SPREAD:
             # Single breakeven point
             if len(order.legs) == 2:
                 leg1, leg2 = order.legs[0], order.legs[1]
-                if isinstance(leg1.asset, Option) and isinstance(leg2.asset, Option):
+                if (
+                    isinstance(leg1.asset, Option)
+                    and isinstance(leg2.asset, Option)
+                    and leg1.asset.strike is not None
+                    and leg2.asset.strike is not None
+                ):
                     net_credit = 0.0
                     if leg1.price and leg2.price:
                         net_credit = (
@@ -751,14 +833,16 @@ class ComplexOrderValidator:
         elif strategy_type == StrategyType.STRADDLE:
             # Two breakeven points
             if len(order.legs) == 2:
-                strike = order.legs[0].asset.strike
-                total_premium = 0.0
-                for leg in order.legs:
-                    if leg.price:
-                        total_premium += abs(leg.price)
+                leg1_asset = order.legs[0].asset
+                if isinstance(leg1_asset, Option) and leg1_asset.strike is not None:
+                    strike = leg1_asset.strike
+                    total_premium = 0.0
+                    for leg in order.legs:
+                        if leg.price:
+                            total_premium += abs(leg.price)
 
-                breakevens.append(strike - total_premium)
-                breakevens.append(strike + total_premium)
+                    breakevens.append(strike - total_premium)
+                    breakevens.append(strike + total_premium)
 
         return breakevens
 

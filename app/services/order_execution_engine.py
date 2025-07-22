@@ -217,7 +217,7 @@ class OrderExecutionEngine:
                 )
 
             condition = TriggerCondition(
-                order_id=order.id,
+                order_id=str(order.id),
                 symbol=order.symbol,
                 trigger_type=condition_type,
                 trigger_price=trigger_price,
@@ -374,7 +374,7 @@ class OrderExecutionEngine:
                 return
 
             # Convert the order
-            converted_order = None
+            converted_order: Order | None = None
             if condition.trigger_type == "stop_loss":
                 converted_order = order_converter.convert_stop_loss_to_market(
                     original_order, trigger_price
@@ -428,6 +428,9 @@ class OrderExecutionEngine:
                         stop_price=db_order.stop_price,
                         trail_percent=db_order.trail_percent,
                         trail_amount=db_order.trail_amount,
+                        condition=db_order.condition,
+                        net_price=db_order.net_price,
+                        filled_at=db_order.filled_at,
                     )
                 break
         except Exception as e:
@@ -439,7 +442,10 @@ class OrderExecutionEngine:
         """Execute a converted order through the trading service."""
         try:
             # Use the trading service to execute the order
-            await self.trading_service.execute_order(order)
+            if hasattr(self.trading_service, "execute_order"):
+                await self.trading_service.execute_order(order)
+            else:
+                logger.error("Trading service does not have an execute_order method")
 
             logger.info(f"Executed converted order: {order.id}")
 
@@ -507,6 +513,8 @@ class OrderExecutionEngine:
                             stop_price=db_order.stop_price,
                             trail_percent=db_order.trail_percent,
                             trail_amount=db_order.trail_amount,
+                            condition=db_order.condition,
+                            net_price=db_order.net_price,
                         )
 
                         await self.add_order(order)

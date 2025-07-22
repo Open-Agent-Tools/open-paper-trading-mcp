@@ -4,19 +4,36 @@ Unified MCP server that combines all MCP tools.
 
 from fastmcp import FastMCP  # type: ignore
 
-from app.mcp.market_data_tools import (get_price_history, get_stock_info,
-                                       get_stock_news, get_stock_price,
-                                       get_top_movers, search_stocks)
+from app.mcp.market_data_tools import (
+    get_price_history,
+    get_stock_info,
+    get_stock_news,
+    get_stock_price,
+    get_top_movers,
+    search_stocks,
+)
+
 # Import all tool functions from individual modules
-from app.mcp.tools import (calculate_option_greeks, cancel_order,
-                           create_buy_order, create_multi_leg_order,
-                           create_sell_order, find_tradable_options,
-                           get_all_orders, get_all_positions,
-                           get_expiration_dates, get_option_market_data,
-                           get_options_chain, get_order, get_portfolio,
-                           get_portfolio_summary, get_position,
-                           get_stock_quote, get_strategy_analysis,
-                           simulate_option_expiration)
+from app.mcp.tools import (
+    calculate_option_greeks,
+    cancel_order,
+    create_buy_order,
+    create_multi_leg_order,
+    create_sell_order,
+    find_tradable_options,
+    get_all_orders,
+    get_all_positions,
+    get_expiration_dates,
+    get_option_market_data,
+    get_options_chain,
+    get_order,
+    get_portfolio,
+    get_portfolio_summary,
+    get_position,
+    get_stock_quote,
+    get_strategy_analysis,
+    simulate_option_expiration,
+)
 
 # Removed direct Robinhood options tools imports
 

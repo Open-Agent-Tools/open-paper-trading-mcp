@@ -248,4 +248,589 @@ class TestQuoteCache:
     def test_cache_evict_oldest(self, cache):
         """Test evicting oldest entries."""
         # Add entries with different timestamps
-        base_time = time.time()\n        \n        entries = [\n            CacheEntry(value=\"old_value\", timestamp=base_time - 100, ttl=300),\n            CacheEntry(value=\"medium_value\", timestamp=base_time - 50, ttl=300),\n            CacheEntry(value=\"new_value\", timestamp=base_time, ttl=300)\n        ]\n        \n        cache._cache[\"old_key\"] = entries[0]\n        cache._cache[\"medium_key\"] = entries[1]\n        cache._cache[\"new_key\"] = entries[2]\n        \n        # Evict oldest 2 entries\n        evicted = cache._evict_oldest(2)\n        \n        assert evicted == 2\n        assert len(cache._cache) == 1\n        assert \"new_key\" in cache._cache  # Newest should remain\n        assert \"old_key\" not in cache._cache\n        assert \"medium_key\" not in cache._cache\n        assert cache._stats[\"evictions\"] == 2\n\n    def test_cache_evict_oldest_empty_cache(self, cache):\n        \"\"\"Test evicting from empty cache.\"\"\"\n        evicted = cache._evict_oldest(5)\n        assert evicted == 0\n\n    def test_cache_get_stats(self, cache):\n        \"\"\"Test getting cache statistics.\"\"\"\n        # Perform various operations\n        cache.put(\"key1\", \"value1\")\n        cache.put(\"key2\", \"value2\")\n        cache.get(\"key1\")  # Hit\n        cache.get(\"key1\")  # Hit\n        cache.get(\"nonexistent\")  # Miss\n        \n        stats = cache.get_stats()\n        \n        assert stats[\"size\"] == 2\n        assert stats[\"max_size\"] == cache.max_size\n        assert stats[\"hits\"] == 2\n        assert stats[\"misses\"] == 1\n        assert stats[\"hit_rate\"] == 2/3  # 2 hits out of 3 total requests\n        assert stats[\"default_ttl\"] == cache.default_ttl\n\n    def test_cache_get_stats_no_requests(self, cache):\n        \"\"\"Test getting stats with no requests.\"\"\"\n        stats = cache.get_stats()\n        \n        assert stats[\"hit_rate\"] == 0.0  # Avoid division by zero\n\n    def test_cache_get_entries_info(self, cache):\n        \"\"\"Test getting entries information.\"\"\"\n        # Add some entries\n        cache.put(\"key1\", \"value1\", ttl=60.0)\n        time.sleep(0.1)  # Small delay\n        cache.put(\"key2\", \"value2\", ttl=120.0)\n        \n        entries_info = cache.get_entries_info()\n        \n        assert len(entries_info) == 2\n        \n        # Entries should be sorted by age (newest first)\n        assert entries_info[0][\"key\"] == \"key2\"  # Newer\n        assert entries_info[1][\"key\"] == \"key1\"  # Older\n        \n        # Check entry info structure\n        for entry_info in entries_info:\n            assert \"key\" in entry_info\n            assert \"age_seconds\" in entry_info\n            assert \"ttl\" in entry_info\n            assert \"remaining_ttl\" in entry_info\n            assert \"is_expired\" in entry_info\n            assert \"value_type\" in entry_info\n            \n            assert entry_info[\"age_seconds\"] >= 0\n            assert entry_info[\"remaining_ttl\"] >= 0\n            assert isinstance(entry_info[\"is_expired\"], bool)\n\n    def test_cache_thread_safety(self, cache):\n        \"\"\"Test cache thread safety with concurrent operations.\"\"\"\n        num_threads = 10\n        operations_per_thread = 100\n        results = []\n        \n        def worker(thread_id):\n            thread_results = []\n            for i in range(operations_per_thread):\n                key = f\"thread_{thread_id}_key_{i}\"\n                value = f\"thread_{thread_id}_value_{i}\"\n                \n                # Put value\n                cache.put(key, value)\n                \n                # Get value\n                retrieved = cache.get(key)\n                thread_results.append(retrieved == value)\n                \n                # Sometimes delete\n                if i % 10 == 0:\n                    cache.delete(key)\n            \n            results.append(all(thread_results))\n        \n        # Start threads\n        threads = []\n        for thread_id in range(num_threads):\n            thread = threading.Thread(target=worker, args=(thread_id,))\n            threads.append(thread)\n            thread.start()\n        \n        # Wait for all threads\n        for thread in threads:\n            thread.join()\n        \n        # All threads should have succeeded\n        assert all(results)\n        \n        # Cache should be in consistent state\n        stats = cache.get_stats()\n        assert stats[\"size\"] >= 0  # Some entries may remain\n\n    def test_cache_different_value_types(self, cache):\n        \"\"\"Test caching different types of values.\"\"\"\n        # Test different value types\n        test_values = {\n            \"string\": \"test_string\",\n            \"int\": 42,\n            \"float\": 3.14,\n            \"list\": [1, 2, 3],\n            \"dict\": {\"nested\": \"value\"},\n            \"none\": None,\n            \"bool\": True\n        }\n        \n        # Put all values\n        for key, value in test_values.items():\n            cache.put(key, value)\n        \n        # Get and verify all values\n        for key, expected_value in test_values.items():\n            retrieved = cache.get(key)\n            assert retrieved == expected_value\n            assert type(retrieved) == type(expected_value)\n\n\nclass MockQuoteAdapter(QuoteAdapter):\n    \"\"\"Mock quote adapter for testing cached adapter.\"\"\"\n\n    def __init__(self):\n        self.name = \"MockAdapter\"\n        self.config = AdapterConfig(cache_ttl=300.0)\n        self.call_counts = {\n            \"get_quote\": 0,\n            \"get_quotes\": 0,\n            \"get_options_chain\": 0,\n            \"get_expiration_dates\": 0\n        }\n        self.quotes = {}\n        self.options_chains = {}\n        self.expiration_dates = {}\n\n    async def get_quote(self, asset):\n        self.call_counts[\"get_quote\"] += 1\n        return self.quotes.get(asset.symbol)\n\n    async def get_quotes(self, assets):\n        self.call_counts[\"get_quotes\"] += 1\n        results = {}\n        for asset in assets:\n            quote = self.quotes.get(asset.symbol)\n            if quote:\n                results[asset] = quote\n        return results\n\n    async def get_chain(self, underlying, expiration_date=None):\n        return []\n\n    async def get_options_chain(self, underlying, expiration_date=None):\n        self.call_counts[\"get_options_chain\"] += 1\n        key = f\"{underlying}_{expiration_date.isoformat() if expiration_date else 'all'}\"\n        return self.options_chains.get(key)\n\n    async def is_market_open(self):\n        return True\n\n    async def get_market_hours(self):\n        return {\"open\": \"09:30\", \"close\": \"16:00\"}\n\n    def get_sample_data_info(self):\n        return {\"test\": \"data\"}\n\n    def get_expiration_dates(self, underlying):\n        self.call_counts[\"get_expiration_dates\"] += 1\n        return self.expiration_dates.get(underlying, [])\n\n    def get_test_scenarios(self):\n        return {}\n\n    def set_date(self, date):\n        pass\n\n    def get_available_symbols(self):\n        return []\n\n\nclass TestCachedQuoteAdapter:\n    \"\"\"Test CachedQuoteAdapter functionality.\"\"\"\n\n    @pytest.fixture\n    def mock_adapter(self):\n        \"\"\"Create mock quote adapter.\"\"\"\n        return MockQuoteAdapter()\n\n    @pytest.fixture\n    def cache(self):\n        \"\"\"Create cache instance.\"\"\"\n        return QuoteCache(default_ttl=60.0, max_size=100)\n\n    @pytest.fixture\n    def cached_adapter(self, mock_adapter, cache):\n        \"\"\"Create cached quote adapter.\"\"\"\n        return CachedQuoteAdapter(mock_adapter, cache)\n\n    def test_cached_adapter_initialization(self, mock_adapter):\n        \"\"\"Test cached adapter initialization.\"\"\"\n        cached = CachedQuoteAdapter(mock_adapter)\n        \n        assert cached.adapter is mock_adapter\n        assert isinstance(cached.cache, QuoteCache)\n        assert cached.cache.default_ttl == 300.0  # From mock adapter config\n\n    def test_cached_adapter_initialization_custom_cache(self, mock_adapter, cache):\n        \"\"\"Test cached adapter with custom cache.\"\"\"\n        cached = CachedQuoteAdapter(mock_adapter, cache)\n        \n        assert cached.adapter is mock_adapter\n        assert cached.cache is cache\n\n    def test_cached_adapter_initialization_no_config(self):\n        \"\"\"Test cached adapter with adapter that has no config.\"\"\"\n        adapter = Mock()\n        adapter.name = \"TestAdapter\"\n        # No config attribute\n        \n        cached = CachedQuoteAdapter(adapter)\n        \n        assert cached.cache.default_ttl == 300.0  # Default fallback\n\n    def test_get_quote_cache_miss(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting quote with cache miss.\"\"\"\n        # Setup mock adapter to return quote\n        stock = Stock(symbol=\"AAPL\", name=\"Apple Inc.\")\n        quote = Quote(\n            asset=stock,\n            quote_date=datetime.now(),\n            price=150.0,\n            bid=149.95,\n            ask=150.05,\n            bid_size=100,\n            ask_size=100,\n            volume=1000000\n        )\n        mock_adapter.quotes[\"AAPL\"] = quote\n        \n        with patch('app.models.assets.asset_factory', return_value=stock):\n            result = cached_adapter.get_quote(\"AAPL\")\n        \n        assert result is quote\n        assert mock_adapter.call_counts[\"get_quote\"] == 1  # Called underlying adapter\n        \n        # Should be cached now\n        cache_key = \"quote:AAPL:MockAdapter\"\n        assert cached_adapter.cache.get(cache_key) is quote\n\n    def test_get_quote_cache_hit(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting quote with cache hit.\"\"\"\n        stock = Stock(symbol=\"AAPL\", name=\"Apple Inc.\")\n        quote = Quote(\n            asset=stock,\n            quote_date=datetime.now(),\n            price=150.0,\n            bid=149.95,\n            ask=150.05,\n            bid_size=100,\n            ask_size=100,\n            volume=1000000\n        )\n        \n        # Pre-populate cache\n        cache_key = \"quote:AAPL:MockAdapter\"\n        cached_adapter.cache.put(cache_key, quote)\n        \n        with patch('app.models.assets.asset_factory', return_value=stock):\n            result = cached_adapter.get_quote(\"AAPL\")\n        \n        assert result is quote\n        assert mock_adapter.call_counts[\"get_quote\"] == 0  # Should not call underlying adapter\n\n    def test_get_quote_invalid_symbol(self, cached_adapter):\n        \"\"\"Test getting quote for invalid symbol.\"\"\"\n        with patch('app.models.assets.asset_factory', return_value=None):\n            result = cached_adapter.get_quote(\"INVALID\")\n        \n        assert result is None\n\n    def test_get_quote_no_quote_available(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting quote when adapter returns None.\"\"\"\n        stock = Stock(symbol=\"AAPL\", name=\"Apple Inc.\")\n        # mock_adapter.quotes is empty, so will return None\n        \n        with patch('app.models.assets.asset_factory', return_value=stock):\n            result = cached_adapter.get_quote(\"AAPL\")\n        \n        assert result is None\n        assert mock_adapter.call_counts[\"get_quote\"] == 1\n\n    @pytest.mark.asyncio\n    async def test_get_quotes_mixed_cache_hits_misses(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting multiple quotes with mixed cache hits and misses.\"\"\"\n        # Setup quotes in mock adapter\n        stock1 = Stock(symbol=\"AAPL\", name=\"Apple Inc.\")\n        stock2 = Stock(symbol=\"GOOGL\", name=\"Alphabet Inc.\")\n        stock3 = Stock(symbol=\"MSFT\", name=\"Microsoft Corp.\")\n        \n        quote1 = Quote(asset=stock1, quote_date=datetime.now(), price=150.0, bid=149.95, ask=150.05, bid_size=100, ask_size=100, volume=1000000)\n        quote2 = Quote(asset=stock2, quote_date=datetime.now(), price=2500.0, bid=2499.50, ask=2500.50, bid_size=100, ask_size=100, volume=500000)\n        quote3 = Quote(asset=stock3, quote_date=datetime.now(), price=300.0, bid=299.95, ask=300.05, bid_size=100, ask_size=100, volume=800000)\n        \n        mock_adapter.quotes[\"AAPL\"] = quote1\n        mock_adapter.quotes[\"GOOGL\"] = quote2\n        mock_adapter.quotes[\"MSFT\"] = quote3\n        \n        # Pre-populate cache with one quote\n        cached_adapter.cache.put(\"quote:AAPL:MockAdapter\", quote1)\n        \n        def asset_factory_side_effect(symbol):\n            if symbol == \"AAPL\":\n                return stock1\n            elif symbol == \"GOOGL\":\n                return stock2\n            elif symbol == \"MSFT\":\n                return stock3\n            return None\n        \n        with patch('app.models.assets.asset_factory', side_effect=asset_factory_side_effect):\n            results = await cached_adapter.get_quotes([\"AAPL\", \"GOOGL\", \"MSFT\"])\n        \n        assert len(results) == 3\n        assert results[\"AAPL\"] is quote1  # Cache hit\n        assert results[\"GOOGL\"] is quote2  # Cache miss, fetched and cached\n        assert results[\"MSFT\"] is quote3   # Cache miss, fetched and cached\n        \n        # Should have called underlying adapter only for cache misses\n        assert mock_adapter.call_counts[\"get_quotes\"] == 1\n        \n        # All should be cached now\n        assert cached_adapter.cache.get(\"quote:AAPL:MockAdapter\") is quote1\n        assert cached_adapter.cache.get(\"quote:GOOGL:MockAdapter\") is quote2\n        assert cached_adapter.cache.get(\"quote:MSFT:MockAdapter\") is quote3\n\n    @pytest.mark.asyncio\n    async def test_get_options_chain_cache_miss(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting options chain with cache miss.\"\"\"\n        expiration = date(2024, 1, 19)\n        chain = OptionsChain(\n            underlying_symbol=\"AAPL\",\n            expiration_date=expiration,\n            underlying_price=150.0,\n            calls=[],\n            puts=[],\n            quote_time=datetime.now()\n        )\n        \n        # Setup mock adapter\n        chain_key = f\"AAPL_{expiration.isoformat()}\"\n        mock_adapter.options_chains[chain_key] = chain\n        \n        result = await cached_adapter.get_options_chain(\"AAPL\", expiration)\n        \n        assert result is chain\n        assert mock_adapter.call_counts[\"get_options_chain\"] == 1\n        \n        # Should be cached with shorter TTL\n        cache_key = f\"chain:AAPL:{expiration.isoformat()}:MockAdapter\"\n        cached_chain = cached_adapter.cache.get(cache_key)\n        assert cached_chain is chain\n\n    @pytest.mark.asyncio\n    async def test_get_options_chain_cache_hit(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting options chain with cache hit.\"\"\"\n        expiration = date(2024, 1, 19)\n        chain = OptionsChain(\n            underlying_symbol=\"AAPL\",\n            expiration_date=expiration,\n            underlying_price=150.0,\n            calls=[],\n            puts=[],\n            quote_time=datetime.now()\n        )\n        \n        # Pre-populate cache\n        cache_key = f\"chain:AAPL:{expiration.isoformat()}:MockAdapter\"\n        cached_adapter.cache.put(cache_key, chain)\n        \n        result = await cached_adapter.get_options_chain(\"AAPL\", expiration)\n        \n        assert result is chain\n        assert mock_adapter.call_counts[\"get_options_chain\"] == 0  # Should not call underlying\n\n    @pytest.mark.asyncio\n    async def test_get_options_chain_no_adapter_method(self, cache):\n        \"\"\"Test getting options chain when adapter doesn't have the method.\"\"\"\n        # Create adapter without get_options_chain method\n        adapter = Mock()\n        adapter.name = \"TestAdapter\"\n        # No get_options_chain method\n        \n        cached = CachedQuoteAdapter(adapter, cache)\n        \n        result = await cached.get_options_chain(\"AAPL\", date(2024, 1, 19))\n        \n        assert result is None\n\n    def test_get_expiration_dates_cache_miss(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting expiration dates with cache miss.\"\"\"\n        dates = [date(2024, 1, 19), date(2024, 2, 16)]\n        mock_adapter.expiration_dates[\"AAPL\"] = dates\n        \n        result = cached_adapter.get_expiration_dates(\"AAPL\")\n        \n        assert result == dates\n        assert mock_adapter.call_counts[\"get_expiration_dates\"] == 1\n        \n        # Should be cached with longer TTL\n        cache_key = \"expirations:AAPL:MockAdapter\"\n        cached_dates = cached_adapter.cache.get(cache_key)\n        assert cached_dates == dates\n\n    def test_get_expiration_dates_cache_hit(self, cached_adapter, mock_adapter):\n        \"\"\"Test getting expiration dates with cache hit.\"\"\"\n        dates = [date(2024, 1, 19), date(2024, 2, 16)]\n        \n        # Pre-populate cache\n        cache_key = \"expirations:AAPL:MockAdapter\"\n        cached_adapter.cache.put(cache_key, dates)\n        \n        result = cached_adapter.get_expiration_dates(\"AAPL\")\n        \n        assert result == dates\n        assert mock_adapter.call_counts[\"get_expiration_dates\"] == 0\n\n    def test_get_expiration_dates_no_adapter_method(self, cache):\n        \"\"\"Test getting expiration dates when adapter doesn't have the method.\"\"\"\n        adapter = Mock()\n        adapter.name = \"TestAdapter\"\n        # No get_expiration_dates method\n        \n        cached = CachedQuoteAdapter(adapter, cache)\n        \n        result = cached.get_expiration_dates(\"AAPL\")\n        \n        assert result == []\n\n    def test_clear_cache(self, cached_adapter):\n        \"\"\"Test clearing the cache.\"\"\"\n        # Add some data to cache\n        cached_adapter.cache.put(\"test_key\", \"test_value\")\n        assert cached_adapter.cache.get(\"test_key\") == \"test_value\"\n        \n        # Clear cache\n        cached_adapter.clear_cache()\n        \n        assert cached_adapter.cache.get(\"test_key\") is None\n\n    def test_get_cache_stats(self, cached_adapter):\n        \"\"\"Test getting cache statistics.\"\"\"\n        # Perform some operations to generate stats\n        with patch('app.models.assets.asset_factory', return_value=Stock(symbol=\"AAPL\", name=\"Apple Inc.\")):\n            cached_adapter.get_quote(\"AAPL\")  # Miss\n            cached_adapter.get_quote(\"AAPL\")  # Hit\n        \n        stats = cached_adapter.get_cache_stats()\n        \n        assert isinstance(stats, dict)\n        assert \"hits\" in stats\n        assert \"misses\" in stats\n        assert \"hit_rate\" in stats\n\n    def test_attribute_delegation(self, cached_adapter, mock_adapter):\n        \"\"\"Test that unknown attributes are delegated to underlying adapter.\"\"\"\n        # Mock adapter has name attribute\n        assert cached_adapter.name == \"MockAdapter\"\n        \n        # Mock adapter has config attribute\n        assert cached_adapter.config is mock_adapter.config\n        \n        # Should also work for methods\n        assert cached_adapter.get_sample_data_info() == {\"test\": \"data\"}\n\n    def test_attribute_delegation_missing_attribute(self, cached_adapter):\n        \"\"\"Test delegation of missing attributes raises appropriate error.\"\"\"\n        with pytest.raises(AttributeError):\n            _ = cached_adapter.nonexistent_attribute\n\n\nclass TestCacheUtilities:\n    \"\"\"Test cache utility functions.\"\"\"\n\n    def test_get_global_cache(self):\n        \"\"\"Test getting global cache instance.\"\"\"\n        cache1 = get_global_cache()\n        cache2 = get_global_cache()\n        \n        # Should return the same instance\n        assert cache1 is cache2\n        assert isinstance(cache1, QuoteCache)\n\n    def test_cached_adapter_function(self):\n        \"\"\"Test cached_adapter convenience function.\"\"\"\n        mock_adapter = MockQuoteAdapter()\n        \n        # Without custom cache\n        cached = cached_adapter(mock_adapter)\n        \n        assert isinstance(cached, CachedQuoteAdapter)\n        assert cached.adapter is mock_adapter\n        assert cached.cache is get_global_cache()\n\n    def test_cached_adapter_function_custom_cache(self):\n        \"\"\"Test cached_adapter function with custom cache.\"\"\"\n        mock_adapter = MockQuoteAdapter()\n        custom_cache = QuoteCache(default_ttl=120.0, max_size=50)\n        \n        cached = cached_adapter(mock_adapter, custom_cache)\n        \n        assert isinstance(cached, CachedQuoteAdapter)\n        assert cached.adapter is mock_adapter\n        assert cached.cache is custom_cache\n        assert cached.cache.default_ttl == 120.0\n\n    def test_cache_performance_under_load(self):\n        \"\"\"Test cache performance with high load.\"\"\"\n        cache = QuoteCache(default_ttl=60.0, max_size=1000)\n        \n        # Simulate high load\n        num_operations = 10000\n        keys = [f\"key_{i}\" for i in range(num_operations)]\n        \n        start_time = time.time()\n        \n        # Put operations\n        for key in keys:\n            cache.put(key, f\"value_for_{key}\")\n        \n        # Get operations (mix of hits and misses)\n        for i in range(num_operations):\n            key = f\"key_{i % (num_operations // 2)}\"  # 50% hit rate\n            cache.get(key)\n        \n        end_time = time.time()\n        duration = end_time - start_time\n        \n        # Should complete reasonably quickly\n        assert duration < 5.0  # Less than 5 seconds for 20k operations\n        \n        # Verify cache integrity\n        stats = cache.get_stats()\n        assert stats[\"hits\"] > 0\n        assert stats[\"misses\"] > 0\n        assert stats[\"size\"] <= cache.max_size\n\n    def test_cache_memory_usage_control(self):\n        \"\"\"Test that cache controls memory usage properly.\"\"\"\n        cache = QuoteCache(default_ttl=60.0, max_size=100)\n        \n        # Add more entries than max_size\n        for i in range(200):\n            cache.put(f\"key_{i}\", f\"value_{i}\")\n        \n        # Cache should not exceed max_size significantly\n        assert len(cache._cache) <= cache.max_size * 1.1  # Allow 10% overage for cleanup timing\n        \n        # Should have performed cleanup/evictions\n        stats = cache.get_stats()\n        assert stats[\"evictions\"] > 0 or stats[\"cleanups\"] > 0"
+        base_time = time.time()
+        
+        entries = [
+            CacheEntry(value="old_value", timestamp=base_time - 100, ttl=300),
+            CacheEntry(value="medium_value", timestamp=base_time - 50, ttl=300),
+            CacheEntry(value="new_value", timestamp=base_time, ttl=300)
+        ]
+        
+        cache._cache["old_key"] = entries[0]
+        cache._cache["medium_key"] = entries[1]
+        cache._cache["new_key"] = entries[2]
+        
+        # Evict oldest 2 entries
+        evicted = cache._evict_oldest(2)
+        
+        assert evicted == 2
+        assert len(cache._cache) == 1
+        assert "new_key" in cache._cache  # Newest should remain
+        assert "old_key" not in cache._cache
+        assert "medium_key" not in cache._cache
+        assert cache._stats["evictions"] == 2
+
+    def test_cache_evict_oldest_empty_cache(self, cache):
+        """Test evicting from empty cache."""
+        evicted = cache._evict_oldest(5)
+        assert evicted == 0
+
+    def test_cache_get_stats(self, cache):
+        """Test getting cache statistics."""
+        # Perform various operations
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+        cache.get("key1")  # Hit
+        cache.get("key1")  # Hit
+        cache.get("nonexistent")  # Miss
+        
+        stats = cache.get_stats()
+        
+        assert stats["size"] == 2
+        assert stats["max_size"] == cache.max_size
+        assert stats["hits"] == 2
+        assert stats["misses"] == 1
+        assert stats["hit_rate"] == 2/3  # 2 hits out of 3 total requests
+        assert stats["default_ttl"] == cache.default_ttl
+
+    def test_cache_get_stats_no_requests(self, cache):
+        """Test getting stats with no requests."""
+        stats = cache.get_stats()
+        
+        assert stats["hit_rate"] == 0.0  # Avoid division by zero
+
+    def test_cache_get_entries_info(self, cache):
+        """Test getting entries information."""
+        # Add some entries
+        cache.put("key1", "value1", ttl=60.0)
+        time.sleep(0.1)  # Small delay
+        cache.put("key2", "value2", ttl=120.0)
+        
+        entries_info = cache.get_entries_info()
+        
+        assert len(entries_info) == 2
+        
+        # Entries should be sorted by age (newest first)
+        assert entries_info[0]["key"] == "key2"  # Newer
+        assert entries_info[1]["key"] == "key1"  # Older
+        
+        # Check entry info structure
+        for entry_info in entries_info:
+            assert "key" in entry_info
+            assert "age_seconds" in entry_info
+            assert "ttl" in entry_info
+            assert "remaining_ttl" in entry_info
+            assert "is_expired" in entry_info
+            assert "value_type" in entry_info
+            
+            assert entry_info["age_seconds"] >= 0
+            assert entry_info["remaining_ttl"] >= 0
+            assert isinstance(entry_info["is_expired"], bool)
+
+    def test_cache_thread_safety(self, cache):
+        """Test cache thread safety with concurrent operations."""
+        num_threads = 10
+        operations_per_thread = 100
+        results = []
+        
+        def worker(thread_id):
+            thread_results = []
+            for i in range(operations_per_thread):
+                key = f"thread_{thread_id}_key_{i}"
+                value = f"thread_{thread_id}_value_{i}"
+                
+                # Put value
+                cache.put(key, value)
+                
+                # Get value
+                retrieved = cache.get(key)
+                thread_results.append(retrieved == value)
+                
+                # Sometimes delete
+                if i % 10 == 0:
+                    cache.delete(key)
+            
+            results.append(all(thread_results))
+        
+        # Start threads
+        threads = []
+        for thread_id in range(num_threads):
+            thread = threading.Thread(target=worker, args=(thread_id,))
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads
+        for thread in threads:
+            thread.join()
+        
+        # All threads should have succeeded
+        assert all(results)
+        
+        # Cache should be in consistent state
+        stats = cache.get_stats()
+        assert stats["size"] >= 0  # Some entries may remain
+
+    def test_cache_different_value_types(self, cache):
+        """Test caching different types of values."""
+        # Test different value types
+        test_values = {
+            "string": "test_string",
+            "int": 42,
+            "float": 3.14,
+            "list": [1, 2, 3],
+            "dict": {"nested": "value"},
+            "none": None,
+            "bool": True
+        }
+        
+        # Put all values
+        for key, value in test_values.items():
+            cache.put(key, value)
+        
+        # Get and verify all values
+        for key, expected_value in test_values.items():
+            retrieved = cache.get(key)
+            assert retrieved == expected_value
+            assert type(retrieved) == type(expected_value)
+
+
+class MockQuoteAdapter(QuoteAdapter):
+    """Mock quote adapter for testing cached adapter."""
+
+    def __init__(self):
+        self.name = "MockAdapter"
+        self.config = AdapterConfig(cache_ttl=300.0)
+        self.call_counts = {
+            "get_quote": 0,
+            "get_quotes": 0,
+            "get_options_chain": 0,
+            "get_expiration_dates": 0
+        }
+        self.quotes = {}
+        self.options_chains = {}
+        self.expiration_dates = {}
+
+    async def get_quote(self, asset):
+        self.call_counts["get_quote"] += 1
+        return self.quotes.get(asset.symbol)
+
+    async def get_quotes(self, assets):
+        self.call_counts["get_quotes"] += 1
+        results = {}
+        for asset in assets:
+            quote = self.quotes.get(asset.symbol)
+            if quote:
+                results[asset] = quote
+        return results
+
+    async def get_chain(self, underlying, expiration_date=None):
+        return []
+
+    async def get_options_chain(self, underlying, expiration_date=None):
+        self.call_counts["get_options_chain"] += 1
+        key = f"{underlying}_{expiration_date.isoformat() if expiration_date else 'all'}"
+        return self.options_chains.get(key)
+
+    async def is_market_open(self):
+        return True
+
+    async def get_market_hours(self):
+        return {"open": "09:30", "close": "16:00"}
+
+    def get_sample_data_info(self):
+        return {"test": "data"}
+
+    def get_expiration_dates(self, underlying):
+        self.call_counts["get_expiration_dates"] += 1
+        return self.expiration_dates.get(underlying, [])
+
+    def get_test_scenarios(self):
+        return {}
+
+    def set_date(self, date):
+        pass
+
+    def get_available_symbols(self):
+        return []
+
+
+class TestCachedQuoteAdapter:
+    """Test CachedQuoteAdapter functionality."""
+
+    @pytest.fixture
+    def mock_adapter(self):
+        """Create mock quote adapter."""
+        return MockQuoteAdapter()
+
+    @pytest.fixture
+    def cache(self):
+        """Create cache instance."""
+        return QuoteCache(default_ttl=60.0, max_size=100)
+
+    @pytest.fixture
+    def cached_adapter(self, mock_adapter, cache):
+        """Create cached quote adapter."""
+        return CachedQuoteAdapter(mock_adapter, cache)
+
+    def test_cached_adapter_initialization(self, mock_adapter):
+        """Test cached adapter initialization."""
+        cached = CachedQuoteAdapter(mock_adapter)
+        
+        assert cached.adapter is mock_adapter
+        assert isinstance(cached.cache, QuoteCache)
+        assert cached.cache.default_ttl == 300.0  # From mock adapter config
+
+    def test_cached_adapter_initialization_custom_cache(self, mock_adapter, cache):
+        """Test cached adapter with custom cache."""
+        cached = CachedQuoteAdapter(mock_adapter, cache)
+        
+        assert cached.adapter is mock_adapter
+        assert cached.cache is cache
+
+    def test_cached_adapter_initialization_no_config(self):
+        """Test cached adapter with adapter that has no config."""
+        adapter = Mock()
+        adapter.name = "TestAdapter"
+        # No config attribute
+        
+        cached = CachedQuoteAdapter(adapter)
+        
+        assert cached.cache.default_ttl == 300.0  # Default fallback
+
+    def test_get_quote_cache_miss(self, cached_adapter, mock_adapter):
+        """Test getting quote with cache miss."""
+        # Setup mock adapter to return quote
+        stock = Stock(symbol="AAPL", name="Apple Inc.")
+        quote = Quote(
+            asset=stock,
+            quote_date=datetime.now(),
+            price=150.0,
+            bid=149.95,
+            ask=150.05,
+            bid_size=100,
+            ask_size=100,
+            volume=1000000
+        )
+        mock_adapter.quotes["AAPL"] = quote
+        
+        with patch('app.models.assets.asset_factory', return_value=stock):
+            result = cached_adapter.get_quote("AAPL")
+        
+        assert result is quote
+        assert mock_adapter.call_counts["get_quote"] == 1  # Called underlying adapter
+        
+        # Should be cached now
+        cache_key = "quote:AAPL:MockAdapter"
+        assert cached_adapter.cache.get(cache_key) is quote
+
+    def test_get_quote_cache_hit(self, cached_adapter, mock_adapter):
+        """Test getting quote with cache hit."""
+        stock = Stock(symbol="AAPL", name="Apple Inc.")
+        quote = Quote(
+            asset=stock,
+            quote_date=datetime.now(),
+            price=150.0,
+            bid=149.95,
+            ask=150.05,
+            bid_size=100,
+            ask_size=100,
+            volume=1000000
+        )
+        
+        # Pre-populate cache
+        cache_key = "quote:AAPL:MockAdapter"
+        cached_adapter.cache.put(cache_key, quote)
+        
+        with patch('app.models.assets.asset_factory', return_value=stock):
+            result = cached_adapter.get_quote("AAPL")
+        
+        assert result is quote
+        assert mock_adapter.call_counts["get_quote"] == 0  # Should not call underlying adapter
+
+    def test_get_quote_invalid_symbol(self, cached_adapter):
+        """Test getting quote for invalid symbol."""
+        with patch('app.models.assets.asset_factory', return_value=None):
+            result = cached_adapter.get_quote("INVALID")
+        
+        assert result is None
+
+    def test_get_quote_no_quote_available(self, cached_adapter, mock_adapter):
+        """Test getting quote when adapter returns None."""
+        stock = Stock(symbol="AAPL", name="Apple Inc.")
+        # mock_adapter.quotes is empty, so will return None
+        
+        with patch('app.models.assets.asset_factory', return_value=stock):
+            result = cached_adapter.get_quote("AAPL")
+        
+        assert result is None
+        assert mock_adapter.call_counts["get_quote"] == 1
+
+    @pytest.mark.asyncio
+    async def test_get_quotes_mixed_cache_hits_misses(self, cached_adapter, mock_adapter):
+        """Test getting multiple quotes with mixed cache hits and misses."""
+        # Setup quotes in mock adapter
+        stock1 = Stock(symbol="AAPL", name="Apple Inc.")
+        stock2 = Stock(symbol="GOOGL", name="Alphabet Inc.")
+        stock3 = Stock(symbol="MSFT", name="Microsoft Corp.")
+        
+        quote1 = Quote(asset=stock1, quote_date=datetime.now(), price=150.0, bid=149.95, ask=150.05, bid_size=100, ask_size=100, volume=1000000)
+        quote2 = Quote(asset=stock2, quote_date=datetime.now(), price=2500.0, bid=2499.50, ask=2500.50, bid_size=100, ask_size=100, volume=500000)
+        quote3 = Quote(asset=stock3, quote_date=datetime.now(), price=300.0, bid=299.95, ask=300.05, bid_size=100, ask_size=100, volume=800000)
+        
+        mock_adapter.quotes["AAPL"] = quote1
+        mock_adapter.quotes["GOOGL"] = quote2
+        mock_adapter.quotes["MSFT"] = quote3
+        
+        # Pre-populate cache with one quote
+        cached_adapter.cache.put("quote:AAPL:MockAdapter", quote1)
+        
+        def asset_factory_side_effect(symbol):
+            if symbol == "AAPL":
+                return stock1
+            elif symbol == "GOOGL":
+                return stock2
+            elif symbol == "MSFT":
+                return stock3
+            return None
+        
+        with patch('app.models.assets.asset_factory', side_effect=asset_factory_side_effect):
+            results = await cached_adapter.get_quotes(["AAPL", "GOOGL", "MSFT"])
+        
+        assert len(results) == 3
+        assert results["AAPL"] is quote1  # Cache hit
+        assert results["GOOGL"] is quote2  # Cache miss, fetched and cached
+        assert results["MSFT"] is quote3   # Cache miss, fetched and cached
+        
+        # Should have called underlying adapter only for cache misses
+        assert mock_adapter.call_counts["get_quotes"] == 1
+        
+        # All should be cached now
+        assert cached_adapter.cache.get("quote:AAPL:MockAdapter") is quote1
+        assert cached_adapter.cache.get("quote:GOOGL:MockAdapter") is quote2
+        assert cached_adapter.cache.get("quote:MSFT:MockAdapter") is quote3
+
+    @pytest.mark.asyncio
+    async def test_get_options_chain_cache_miss(self, cached_adapter, mock_adapter):
+        """Test getting options chain with cache miss."""
+        expiration = date(2024, 1, 19)
+        chain = OptionsChain(
+            underlying_symbol="AAPL",
+            expiration_date=expiration,
+            underlying_price=150.0,
+            calls=[],
+            puts=[],
+            quote_time=datetime.now()
+        )
+        
+        # Setup mock adapter
+        chain_key = f"AAPL_{expiration.isoformat()}"
+        mock_adapter.options_chains[chain_key] = chain
+        
+        result = await cached_adapter.get_options_chain("AAPL", expiration)
+        
+        assert result is chain
+        assert mock_adapter.call_counts["get_options_chain"] == 1
+        
+        # Should be cached with shorter TTL
+        cache_key = f"chain:AAPL:{expiration.isoformat()}:MockAdapter"
+        cached_chain = cached_adapter.cache.get(cache_key)
+        assert cached_chain is chain
+
+    @pytest.mark.asyncio
+    async def test_get_options_chain_cache_hit(self, cached_adapter, mock_adapter):
+        """Test getting options chain with cache hit."""
+        expiration = date(2024, 1, 19)
+        chain = OptionsChain(
+            underlying_symbol="AAPL",
+            expiration_date=expiration,
+            underlying_price=150.0,
+            calls=[],
+            puts=[],
+            quote_time=datetime.now()
+        )
+        
+        # Pre-populate cache
+        cache_key = f"chain:AAPL:{expiration.isoformat()}:MockAdapter"
+        cached_adapter.cache.put(cache_key, chain)
+        
+        result = await cached_adapter.get_options_chain("AAPL", expiration)
+        
+        assert result is chain
+        assert mock_adapter.call_counts["get_options_chain"] == 0  # Should not call underlying
+
+    @pytest.mark.asyncio
+    async def test_get_options_chain_no_adapter_method(self, cache):
+        """Test getting options chain when adapter doesn't have the method."""
+        # Create adapter without get_options_chain method
+        adapter = Mock()
+        adapter.name = "TestAdapter"
+        # No get_options_chain method
+        
+        cached = CachedQuoteAdapter(adapter, cache)
+        
+        result = await cached.get_options_chain("AAPL", date(2024, 1, 19))
+        
+        assert result is None
+
+    def test_get_expiration_dates_cache_miss(self, cached_adapter, mock_adapter):
+        """Test getting expiration dates with cache miss."""
+        dates = [date(2024, 1, 19), date(2024, 2, 16)]
+        mock_adapter.expiration_dates["AAPL"] = dates
+        
+        result = cached_adapter.get_expiration_dates("AAPL")
+        
+        assert result == dates
+        assert mock_adapter.call_counts["get_expiration_dates"] == 1
+        
+        # Should be cached with longer TTL
+        cache_key = "expirations:AAPL:MockAdapter"
+        cached_dates = cached_adapter.cache.get(cache_key)
+        assert cached_dates == dates
+
+    def test_get_expiration_dates_cache_hit(self, cached_adapter, mock_adapter):
+        """Test getting expiration dates with cache hit."""
+        dates = [date(2024, 1, 19), date(2024, 2, 16)]
+        
+        # Pre-populate cache
+        cache_key = "expirations:AAPL:MockAdapter"
+        cached_adapter.cache.put(cache_key, dates)
+        
+        result = cached_adapter.get_expiration_dates("AAPL")
+        
+        assert result == dates
+        assert mock_adapter.call_counts["get_expiration_dates"] == 0
+
+    def test_get_expiration_dates_no_adapter_method(self, cache):
+        """Test getting expiration dates when adapter doesn't have the method."""
+        adapter = Mock()
+        adapter.name = "TestAdapter"
+        # No get_expiration_dates method
+        
+        cached = CachedQuoteAdapter(adapter, cache)
+        
+        result = cached.get_expiration_dates("AAPL")
+        
+        assert result == []
+
+    def test_clear_cache(self, cached_adapter):
+        """Test clearing the cache."""
+        # Add some data to cache
+        cached_adapter.cache.put("test_key", "test_value")
+        assert cached_adapter.cache.get("test_key") == "test_value"
+        
+        # Clear cache
+        cached_adapter.clear_cache()
+        
+        assert cached_adapter.cache.get("test_key") is None
+
+    def test_get_cache_stats(self, cached_adapter):
+        """Test getting cache statistics."""
+        # Perform some operations to generate stats
+        with patch('app.models.assets.asset_factory', return_value=Stock(symbol="AAPL", name="Apple Inc.")):
+            cached_adapter.get_quote("AAPL")  # Miss
+            cached_adapter.get_quote("AAPL")  # Hit
+        
+        stats = cached_adapter.get_cache_stats()
+        
+        assert isinstance(stats, dict)
+        assert "hits" in stats
+        assert "misses" in stats
+        assert "hit_rate" in stats
+
+    def test_attribute_delegation(self, cached_adapter, mock_adapter):
+        """Test that unknown attributes are delegated to underlying adapter."""
+        # Mock adapter has name attribute
+        assert cached_adapter.name == "MockAdapter"
+        
+        # Mock adapter has config attribute
+        assert cached_adapter.config is mock_adapter.config
+        
+        # Should also work for methods
+        assert cached_adapter.get_sample_data_info() == {"test": "data"}
+
+    def test_attribute_delegation_missing_attribute(self, cached_adapter):
+        """Test delegation of missing attributes raises appropriate error."""
+        with pytest.raises(AttributeError):
+            _ = cached_adapter.nonexistent_attribute
+
+
+class TestCacheUtilities:
+    """Test cache utility functions."""
+
+    def test_get_global_cache(self):
+        """Test getting global cache instance."""
+        cache1 = get_global_cache()
+        cache2 = get_global_cache()
+        
+        # Should return the same instance
+        assert cache1 is cache2
+        assert isinstance(cache1, QuoteCache)
+
+    def test_cached_adapter_function(self):
+        """Test cached_adapter convenience function."""
+        mock_adapter = MockQuoteAdapter()
+        
+        # Without custom cache
+        cached = cached_adapter(mock_adapter)
+        
+        assert isinstance(cached, CachedQuoteAdapter)
+        assert cached.adapter is mock_adapter
+        assert cached.cache is get_global_cache()
+
+    def test_cached_adapter_function_custom_cache(self):
+        """Test cached_adapter function with custom cache."""
+        mock_adapter = MockQuoteAdapter()
+        custom_cache = QuoteCache(default_ttl=120.0, max_size=50)
+        
+        cached = cached_adapter(mock_adapter, custom_cache)
+        
+        assert isinstance(cached, CachedQuoteAdapter)
+        assert cached.adapter is mock_adapter
+        assert cached.cache is custom_cache
+        assert cached.cache.default_ttl == 120.0
+
+    def test_cache_performance_under_load(self):
+        """Test cache performance with high load."""
+        cache = QuoteCache(default_ttl=60.0, max_size=1000)
+        
+        # Simulate high load
+        num_operations = 10000
+        keys = [f"key_{i}" for i in range(num_operations)]
+        
+        start_time = time.time()
+        
+        # Put operations
+        for key in keys:
+            cache.put(key, f"value_for_{key}")
+        
+        # Get operations (mix of hits and misses)
+        for i in range(num_operations):
+            key = f"key_{i % (num_operations // 2)}"  # 50% hit rate
+            cache.get(key)
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        # Should complete reasonably quickly
+        assert duration < 5.0  # Less than 5 seconds for 20k operations
+        
+        # Verify cache integrity
+        stats = cache.get_stats()
+        assert stats["hits"] > 0
+        assert stats["misses"] > 0
+        assert stats["size"] <= cache.max_size
+
+    def test_cache_memory_usage_control(self):
+        """Test that cache controls memory usage properly."""
+        cache = QuoteCache(default_ttl=60.0, max_size=100)
+        
+        # Add more entries than max_size
+        for i in range(200):
+            cache.put(f"key_{i}", f"value_{i}")
+        
+        # Cache should not exceed max_size significantly
+        assert len(cache._cache) <= cache.max_size * 1.1  # Allow 10% overage for cleanup timing
+        
+        # Should have performed cleanup/evictions
+        stats = cache.get_stats()
+        assert stats["evictions"] > 0 or stats["cleanups"] > 0

@@ -438,7 +438,7 @@ class OrderLifecycleManager:
             return
 
         transition = OrderStateTransition(
-            from_status=from_status,
+            from_status=from_status or OrderStatus.PENDING,
             to_status=to_status,
             event=event,
             timestamp=datetime.utcnow(),

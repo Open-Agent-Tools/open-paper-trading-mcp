@@ -15,14 +15,14 @@ from app.schemas.orders import Order, OrderStatus, OrderType
 from app.schemas.positions import Portfolio, Position
 from app.services.market_impact import MarketImpactSimulator
 from app.services.order_execution_engine import OrderExecutionEngine
-from app.services.order_lifecycle import (OrderLifecycleManager,
-                                          OrderLifecycleState)
+from app.services.order_lifecycle import OrderLifecycleManager, OrderLifecycleState
 from app.services.order_notifications import OrderNotificationManager
 from app.services.order_queue import OrderQueue, QueuePriority
-from app.services.order_state_tracker import (MemoryEfficientOrderTracker,
-                                              StateChangeEvent)
-from app.services.position_sizing import (PositionSizingCalculator,
-                                          SizingStrategy)
+from app.services.order_state_tracker import (
+    MemoryEfficientOrderTracker,
+    StateChangeEvent,
+)
+from app.services.position_sizing import PositionSizingCalculator, SizingStrategy
 from app.services.risk_analysis import RiskAnalyzer
 
 

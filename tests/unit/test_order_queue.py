@@ -7,7 +7,7 @@ respects priorities, handles errors, and tracks metrics.
 
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -16,8 +16,8 @@ from app.services.order_queue import (
     BatchConfig,
     OrderQueue,
     ProcessingStatus,
-    QueuePriority,
     QueuedOrder,
+    QueuePriority,
 )
 
 
@@ -89,7 +89,9 @@ class TestQueuedOrder:
             priority=QueuePriority.NORMAL,
             queued_at=now,
         )
-        assert order3 < order4  # Higher priority (lower number) should be higher priority
+        assert (
+            order3 < order4
+        )  # Higher priority (lower number) should be higher priority
 
         # Different priority, different time
         order5 = QueuedOrder(
@@ -330,7 +332,10 @@ class TestOrderQueue:
 
             # Verify the order was moved to completed_orders
             assert sample_order.id in order_queue.completed_orders
-            assert order_queue.completed_orders[sample_order.id].status == ProcessingStatus.COMPLETED
+            assert (
+                order_queue.completed_orders[sample_order.id].status
+                == ProcessingStatus.COMPLETED
+            )
 
         finally:
             # Stop the queue

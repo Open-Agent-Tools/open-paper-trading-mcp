@@ -1,21 +1,19 @@
 """
 Advanced tests for database trading models.
 
-Comprehensive test coverage for SQLAlchemy models, relationships, 
+Comprehensive test coverage for SQLAlchemy models, relationships,
 constraints, validations, and database patterns in the trading module.
 """
 
 import uuid
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from typing import Any
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.database.trading import (
     Account,
@@ -67,7 +65,9 @@ async def sample_position(
 
 
 @pytest_asyncio.fixture
-async def sample_order(async_db_session: AsyncSession, sample_account: Account) -> Order:
+async def sample_order(
+    async_db_session: AsyncSession, sample_account: Account
+) -> Order:
     """Create a sample order for testing."""
     order = Order(
         account_id=sample_account.id,
@@ -109,7 +109,9 @@ class TestAccount:
         assert account.cash_balance == 100000.0  # Default value
         assert account.created_at is not None
 
-    async def test_account_unique_owner_constraint(self, async_db_session: AsyncSession):
+    async def test_account_unique_owner_constraint(
+        self, async_db_session: AsyncSession
+    ):
         """Test that owner must be unique."""
         account1 = Account(owner="duplicate_user")
         account2 = Account(owner="duplicate_user")
@@ -158,7 +160,9 @@ class TestAccount:
 class TestPosition:
     """Test Position database model."""
 
-    async def test_position_creation(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_position_creation(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test basic position creation."""
         position = Position(
             account_id=sample_account.id,
@@ -177,7 +181,10 @@ class TestPosition:
         assert position.avg_price == 350.0
 
     async def test_position_account_relationship(
-        self, sample_position: Position, sample_account: Account, async_db_session: AsyncSession
+        self,
+        sample_position: Position,
+        sample_account: Account,
+        async_db_session: AsyncSession,
     ):
         """Test position-account relationship."""
         # Refresh to load relationship
@@ -187,7 +194,9 @@ class TestPosition:
         assert sample_position.account.id == sample_account.id
         assert sample_position in sample_account.positions
 
-    async def test_position_foreign_key_constraint(self, async_db_session: AsyncSession):
+    async def test_position_foreign_key_constraint(
+        self, async_db_session: AsyncSession
+    ):
         """Test foreign key constraint for account_id."""
         position = Position(
             account_id="non_existent_account",
@@ -200,7 +209,9 @@ class TestPosition:
         with pytest.raises(IntegrityError):
             await async_db_session.commit()
 
-    async def test_position_negative_quantity(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_position_negative_quantity(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test position with negative quantity (short position)."""
         position = Position(
             account_id=sample_account.id,
@@ -214,7 +225,9 @@ class TestPosition:
 
         assert position.quantity == -100
 
-    async def test_position_symbol_indexing(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_position_symbol_indexing(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test symbol field indexing."""
         positions = [
             Position(
@@ -239,7 +252,9 @@ class TestPosition:
 class TestOrder:
     """Test Order database model."""
 
-    async def test_order_creation(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_order_creation(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test basic order creation."""
         order = Order(
             account_id=sample_account.id,
@@ -261,7 +276,9 @@ class TestOrder:
         assert order.price == 900.0
         assert order.status == OrderStatus.FILLED
 
-    async def test_order_default_status(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_order_default_status(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test order default status."""
         order = Order(
             account_id=sample_account.id,
@@ -275,7 +292,9 @@ class TestOrder:
 
         assert order.status == OrderStatus.PENDING  # Default value
 
-    async def test_order_market_order_no_price(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_order_market_order_no_price(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test market order without price."""
         order = Order(
             account_id=sample_account.id,
@@ -290,7 +309,9 @@ class TestOrder:
 
         assert order.price is None
 
-    async def test_order_advanced_fields(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_order_advanced_fields(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test advanced order fields for stop/trail orders."""
         order = Order(
             account_id=sample_account.id,
@@ -318,7 +339,10 @@ class TestOrder:
         assert sample_order.filled_at is None  # Not filled
 
     async def test_order_account_relationship(
-        self, sample_order: Order, sample_account: Account, async_db_session: AsyncSession
+        self,
+        sample_order: Order,
+        sample_account: Account,
+        async_db_session: AsyncSession,
     ):
         """Test order-account relationship."""
         await async_db_session.refresh(sample_order, ["account"])
@@ -327,7 +351,9 @@ class TestOrder:
         assert sample_order.account.id == sample_account.id
         assert sample_order in sample_account.orders
 
-    async def test_order_id_format(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_order_id_format(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test order ID format."""
         order = Order(
             account_id=sample_account.id,
@@ -350,7 +376,9 @@ class TestOrder:
 class TestTransaction:
     """Test Transaction database model."""
 
-    async def test_transaction_creation(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_transaction_creation(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test basic transaction creation."""
         transaction = Transaction(
             account_id=sample_account.id,
@@ -372,7 +400,10 @@ class TestTransaction:
         assert transaction.timestamp is not None
 
     async def test_transaction_with_order(
-        self, sample_account: Account, sample_order: Order, async_db_session: AsyncSession
+        self,
+        sample_account: Account,
+        sample_order: Order,
+        async_db_session: AsyncSession,
     ):
         """Test transaction linked to an order."""
         transaction = Transaction(
@@ -544,7 +575,7 @@ class TestDevOptionQuote:
         """Test development option quote creation."""
         quote_date = date.today()
         expiry_date = quote_date + timedelta(days=30)
-        
+
         quote = DevOptionQuote(
             symbol="AAPL240315C00180000",
             underlying="AAPL",
@@ -567,11 +598,13 @@ class TestDevOptionQuote:
         assert quote.option_type == "call"
         assert quote.strike == Decimal("180.00")
 
-    async def test_dev_option_quote_complex_indexes(self, async_db_session: AsyncSession):
+    async def test_dev_option_quote_complex_indexes(
+        self, async_db_session: AsyncSession
+    ):
         """Test multiple composite indexes."""
         quote_date = date.today()
         expiry_date = quote_date + timedelta(days=21)
-        
+
         quotes = [
             DevOptionQuote(
                 symbol=f"SPY240315C0045{i:04d}00",
@@ -606,7 +639,7 @@ class TestDevScenario:
         """Test development scenario creation."""
         start_date = date.today() - timedelta(days=30)
         end_date = date.today()
-        
+
         scenario = DevScenario(
             name="high_vol_scenario",
             description="High volatility market conditions for testing",
@@ -649,7 +682,9 @@ class TestDevScenario:
 class TestMultiLegOrder:
     """Test MultiLegOrder database model."""
 
-    async def test_multi_leg_order_creation(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_multi_leg_order_creation(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test multi-leg order creation."""
         order = MultiLegOrder(
             account_id=sample_account.id,
@@ -696,7 +731,7 @@ class TestMultiLegOrder:
         )
         leg2 = OrderLeg(
             multi_leg_order_id=mlo.id,
-            symbol="SPY240315C00460000", 
+            symbol="SPY240315C00460000",
             asset_type="option",
             quantity=1,
             order_type=OrderType.BUY,
@@ -709,7 +744,7 @@ class TestMultiLegOrder:
 
         async_db_session.add_all([leg1, leg2])
         await async_db_session.commit()
-        
+
         # Refresh with legs
         await async_db_session.refresh(mlo, ["legs"])
         assert len(mlo.legs) == 2
@@ -719,7 +754,9 @@ class TestMultiLegOrder:
 class TestRecognizedStrategy:
     """Test RecognizedStrategy database model."""
 
-    async def test_recognized_strategy_creation(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_recognized_strategy_creation(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test recognized strategy creation."""
         strategy = RecognizedStrategy(
             account_id=sample_account.id,
@@ -768,7 +805,7 @@ class TestRecognizedStrategy:
         )
         async_db_session.add(performance)
         await async_db_session.commit()
-        
+
         await async_db_session.refresh(strategy, ["performance_records"])
         assert len(strategy.performance_records) == 1
         assert strategy.performance_records[0].total_pnl == 50.0
@@ -777,7 +814,9 @@ class TestRecognizedStrategy:
 class TestPortfolioGreeksSnapshot:
     """Test PortfolioGreeksSnapshot database model."""
 
-    async def test_greeks_snapshot_creation(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_greeks_snapshot_creation(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test portfolio Greeks snapshot creation."""
         snapshot_date = date.today()
         snapshot = PortfolioGreeksSnapshot(
@@ -817,10 +856,10 @@ class TestPortfolioGreeksSnapshot:
         )
         async_db_session.add(snapshot)
         await async_db_session.commit()
-        
+
         await async_db_session.refresh(snapshot, ["account"])
         await async_db_session.refresh(sample_account, ["greeks_snapshots"])
-        
+
         assert snapshot.account.id == sample_account.id
         assert snapshot in sample_account.greeks_snapshots
 
@@ -850,7 +889,9 @@ class TestOptionExpiration:
         assert expiration.expired_positions_count == 25
         assert expiration.total_cash_impact == 12500.0
 
-    async def test_option_expiration_processing_status(self, async_db_session: AsyncSession):
+    async def test_option_expiration_processing_status(
+        self, async_db_session: AsyncSession
+    ):
         """Test expiration processing status updates."""
         expiration = OptionExpiration(
             underlying_symbol="SPY",
@@ -858,14 +899,14 @@ class TestOptionExpiration:
         )
         async_db_session.add(expiration)
         await async_db_session.commit()
-        
+
         # Mark as processed
         expiration.is_processed = True
         expiration.processed_at = datetime.now()
         expiration.processing_mode = "automatic"
         await async_db_session.commit()
         await async_db_session.refresh(expiration)
-        
+
         assert expiration.is_processed is True
         assert expiration.processed_at is not None
         assert expiration.processing_mode == "automatic"
@@ -893,7 +934,9 @@ class TestModelRelationships:
 
         # Verify positions exist
         position_count = await async_db_session.execute(
-            select(func.count(Position.id)).where(Position.account_id == sample_account.id)
+            select(func.count(Position.id)).where(
+                Position.account_id == sample_account.id
+            )
         )
         assert position_count.scalar() == 3
 
@@ -934,9 +977,7 @@ class TestModelRelationships:
 
         # Verify legs exist
         leg_count = await async_db_session.execute(
-            select(func.count(OrderLeg.id)).where(
-                OrderLeg.multi_leg_order_id == mlo.id
-            )
+            select(func.count(OrderLeg.id)).where(OrderLeg.multi_leg_order_id == mlo.id)
         )
         assert leg_count.scalar() == 4
 
@@ -946,9 +987,7 @@ class TestModelRelationships:
 
         # Verify legs are deleted
         remaining_legs = await async_db_session.execute(
-            select(func.count(OrderLeg.id)).where(
-                OrderLeg.multi_leg_order_id == mlo.id
-            )
+            select(func.count(OrderLeg.id)).where(OrderLeg.multi_leg_order_id == mlo.id)
         )
         assert remaining_legs.scalar() == 0
 
@@ -996,7 +1035,9 @@ class TestModelRelationships:
 class TestModelIndexes:
     """Test database indexes for performance."""
 
-    async def test_composite_indexes_queries(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_composite_indexes_queries(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test that composite indexes are used effectively."""
         # Create test data for different index patterns
         orders = [
@@ -1034,7 +1075,9 @@ class TestModelIndexes:
         stock1_filled = result.scalars().all()
         assert len(stock1_filled) >= 0  # Should execute efficiently
 
-    async def test_time_based_indexes(self, sample_account: Account, async_db_session: AsyncSession):
+    async def test_time_based_indexes(
+        self, sample_account: Account, async_db_session: AsyncSession
+    ):
         """Test time-based index queries."""
         base_time = datetime.now() - timedelta(days=7)
         transactions = [
@@ -1054,7 +1097,7 @@ class TestModelIndexes:
         # Test timestamp range query (should use index)
         start_time = base_time + timedelta(hours=3)
         end_time = base_time + timedelta(hours=7)
-        
+
         result = await async_db_session.execute(
             select(Transaction).where(
                 Transaction.account_id == sample_account.id,
@@ -1090,8 +1133,9 @@ class TestModelIndexes:
             )
         )
         base_expiry_options = result.scalars().all()
-        expected_count = len([q for q in option_quotes 
-                            if q.expiration_date == base_date])
+        expected_count = len(
+            [q for q in option_quotes if q.expiration_date == base_date]
+        )
         assert len(base_expiry_options) == expected_count
 
         # Test expiry+type index

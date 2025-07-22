@@ -7,8 +7,6 @@ including bidirectional conversions, edge cases, and error handling.
 
 import uuid
 from datetime import datetime
-from decimal import Decimal
-from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -108,7 +106,9 @@ class TestAccountConverter:
 
         converter = AccountConverter(mock_trading_service)
 
-        with patch("app.utils.schema_converters.PositionConverter") as mock_pos_converter:
+        with patch(
+            "app.utils.schema_converters.PositionConverter"
+        ) as mock_pos_converter:
             mock_pos_instance = mock_pos_converter.return_value
             mock_pos_instance.to_schema = AsyncMock(
                 return_value=Position(
@@ -379,7 +379,9 @@ class TestPositionConverter:
             assert schema_position.current_price == sample_db_position.avg_price
             assert schema_position.unrealized_pnl == 0.0
 
-    async def test_position_to_schema_option_asset(self, sample_db_position: DBPosition):
+    async def test_position_to_schema_option_asset(
+        self, sample_db_position: DBPosition
+    ):
         """Test position conversion with option asset."""
         sample_db_position.symbol = "AAPL_2024-01-19_150.00_C"
         converter = PositionConverter()

@@ -13,15 +13,15 @@ Tests for:
 All tests use proper async patterns with comprehensive mocking of TradingService.
 """
 
+from datetime import date
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi import status
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, date
 
 from app.core.exceptions import NotFoundError, ValidationError
 from app.services.trading_service import TradingService
-from app.models.quotes import OptionsChainResponse, GreeksResponse
 
 
 class TestOptionsEndpoints:
@@ -50,7 +50,7 @@ class TestOptionsEndpoints:
                             "gamma": 0.03,
                             "theta": -0.02,
                             "vega": 0.15,
-                            "rho": 0.08
+                            "rho": 0.08,
                         }
                     ],
                     "puts": [
@@ -66,22 +66,24 @@ class TestOptionsEndpoints:
                             "gamma": 0.03,
                             "theta": -0.02,
                             "vega": 0.15,
-                            "rho": -0.05
+                            "rho": -0.05,
                         }
-                    ]
+                    ],
                 }
             },
-            "expiration_dates": ["2023-06-16", "2023-06-23", "2023-06-30"]
+            "expiration_dates": ["2023-06-16", "2023-06-23", "2023-06-30"],
         }
         mock_service.get_formatted_options_chain.return_value = mock_chain_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/chain")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["underlying_symbol"] == "AAPL"
         assert data["underlying_price"] == 155.0
         assert "chains" in data
@@ -103,11 +105,13 @@ class TestOptionsEndpoints:
             "underlying_symbol": "AAPL",
             "underlying_price": 155.0,
             "chains": {},
-            "expiration_dates": []
+            "expiration_dates": [],
         }
         mock_service.get_formatted_options_chain.return_value = mock_chain_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/options/AAPL/chain"
@@ -118,7 +122,7 @@ class TestOptionsEndpoints:
                 )
 
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Verify service was called with filters
         mock_service.get_formatted_options_chain.assert_called_once_with(
             "AAPL", date(2023, 6, 16), 150.0, 160.0, False
@@ -128,7 +132,9 @@ class TestOptionsEndpoints:
     async def test_get_options_chain_invalid_date(self, client):
         """Test options chain with invalid expiration date format."""
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
-            response = await ac.get("/api/v1/options/AAPL/chain?expiration_date=invalid-date")
+            response = await ac.get(
+                "/api/v1/options/AAPL/chain?expiration_date=invalid-date"
+            )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -136,9 +142,13 @@ class TestOptionsEndpoints:
     async def test_get_options_chain_not_found(self, client):
         """Test options chain for non-existent symbol."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.get_formatted_options_chain.side_effect = NotFoundError("Symbol not found")
+        mock_service.get_formatted_options_chain.side_effect = NotFoundError(
+            "Symbol not found"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/NONEXISTENT/chain")
 
@@ -148,9 +158,13 @@ class TestOptionsEndpoints:
     async def test_get_options_chain_service_error(self, client):
         """Test options chain when service raises unexpected error."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.get_formatted_options_chain.side_effect = RuntimeError("API timeout")
+        mock_service.get_formatted_options_chain.side_effect = RuntimeError(
+            "API timeout"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/chain")
 
@@ -163,19 +177,21 @@ class TestOptionsEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_dates = [
             date(2023, 6, 16),
-            date(2023, 6, 23), 
+            date(2023, 6, 23),
             date(2023, 6, 30),
-            date(2023, 7, 7)
+            date(2023, 7, 7),
         ]
         mock_service.get_expiration_dates.return_value = mock_dates
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/expirations")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["underlying_symbol"] == "AAPL"
         assert data["count"] == 4
         assert len(data["expiration_dates"]) == 4
@@ -191,13 +207,15 @@ class TestOptionsEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_expiration_dates.return_value = []
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/expirations")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["count"] == 0
         assert data["expiration_dates"] == []
         assert data["next_expiration"] is None
@@ -207,9 +225,13 @@ class TestOptionsEndpoints:
     async def test_get_expiration_dates_not_found(self, client):
         """Test expiration dates for non-existent symbol."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.get_expiration_dates.side_effect = NotFoundError("Symbol not found")
+        mock_service.get_expiration_dates.side_effect = NotFoundError(
+            "Symbol not found"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/NONEXISTENT/expirations")
 
@@ -227,37 +249,49 @@ class TestOptionsEndpoints:
                     "symbol": "AAPL_230616C00150000",
                     "order_type": "buy_to_open",
                     "quantity": 1,
-                    "price": 5.25
+                    "price": 5.25,
                 },
                 {
-                    "symbol": "AAPL_230616C00160000", 
+                    "symbol": "AAPL_230616C00160000",
                     "order_type": "sell_to_open",
                     "quantity": 1,
-                    "price": 2.50
-                }
+                    "price": 2.50,
+                },
             ],
             "strategy_type": "call_spread",
             "net_debit": 2.75,
-            "status": "pending"
+            "status": "pending",
         }
         mock_service.create_multi_leg_order_from_request.return_value = mock_order
 
         order_data = {
             "legs": [
-                {"symbol": "AAPL_230616C00150000", "order_type": "buy_to_open", "quantity": 1},
-                {"symbol": "AAPL_230616C00160000", "order_type": "sell_to_open", "quantity": 1}
+                {
+                    "symbol": "AAPL_230616C00150000",
+                    "order_type": "buy_to_open",
+                    "quantity": 1,
+                },
+                {
+                    "symbol": "AAPL_230616C00160000",
+                    "order_type": "sell_to_open",
+                    "quantity": 1,
+                },
             ],
             "order_type": "limit",
-            "net_price": -2.75
+            "net_price": -2.75,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/options/orders/multi-leg", json=order_data)
+                response = await ac.post(
+                    "/api/v1/options/orders/multi-leg", json=order_data
+                )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["id"] == "multileg_123"
         assert len(data["legs"]) == 2
         assert data["strategy_type"] == "call_spread"
@@ -277,13 +311,21 @@ class TestOptionsEndpoints:
 
         order_data = {
             "legs": [
-                {"symbol": "AAPL_230616C00150000", "order_type": "buy_to_open", "quantity": 1}
+                {
+                    "symbol": "AAPL_230616C00150000",
+                    "order_type": "buy_to_open",
+                    "quantity": 1,
+                }
             ]
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/options/orders/multi-leg", json=order_data)
+                response = await ac.post(
+                    "/api/v1/options/orders/multi-leg", json=order_data
+                )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -293,7 +335,9 @@ class TestOptionsEndpoints:
         order_data = {}
 
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
-            response = await ac.post("/api/v1/options/orders/multi-leg", json=order_data)
+            response = await ac.post(
+                "/api/v1/options/orders/multi-leg", json=order_data
+            )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -317,17 +361,19 @@ class TestOptionsEndpoints:
             "implied_volatility": 0.25,
             "intrinsic_value": 5.0,
             "time_value": 0.25,
-            "calculated_at": "2023-06-15T15:30:00Z"
+            "calculated_at": "2023-06-15T15:30:00Z",
         }
         mock_service.get_option_greeks_response.return_value = mock_greeks
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL_230616C00150000/greeks")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL_230616C00150000"
         assert data["delta"] == 0.65
         assert data["gamma"] == 0.03
@@ -347,14 +393,16 @@ class TestOptionsEndpoints:
         mock_greeks = {"symbol": "AAPL_230616C00150000", "delta": 0.70}
         mock_service.get_option_greeks_response.return_value = mock_greeks
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/options/AAPL_230616C00150000/greeks?underlying_price=160.0"
                 )
 
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Verify override parameter was passed
         mock_service.get_option_greeks_response.assert_called_once_with(
             "AAPL_230616C00150000", 160.0
@@ -364,9 +412,13 @@ class TestOptionsEndpoints:
     async def test_calculate_option_greeks_not_found(self, client):
         """Test Greeks calculation for non-existent option."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.get_option_greeks_response.side_effect = NotFoundError("Option not found")
+        mock_service.get_option_greeks_response.side_effect = NotFoundError(
+            "Option not found"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/NONEXISTENT/greeks")
 
@@ -376,9 +428,13 @@ class TestOptionsEndpoints:
     async def test_calculate_option_greeks_invalid_symbol(self, client):
         """Test Greeks calculation for invalid option symbol format."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.get_option_greeks_response.side_effect = ValueError("Invalid option symbol")
+        mock_service.get_option_greeks_response.side_effect = ValueError(
+            "Invalid option symbol"
+        )
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/INVALID_SYMBOL/greeks")
 
@@ -395,10 +451,26 @@ class TestOptionsEndpoints:
                     "strategy_name": "Iron Condor",
                     "strategy_type": "iron_condor",
                     "legs": [
-                        {"symbol": "AAPL_230616P00140000", "action": "sell", "quantity": 1},
-                        {"symbol": "AAPL_230616P00145000", "action": "buy", "quantity": 1},
-                        {"symbol": "AAPL_230616C00165000", "action": "buy", "quantity": 1},
-                        {"symbol": "AAPL_230616C00170000", "action": "sell", "quantity": 1}
+                        {
+                            "symbol": "AAPL_230616P00140000",
+                            "action": "sell",
+                            "quantity": 1,
+                        },
+                        {
+                            "symbol": "AAPL_230616P00145000",
+                            "action": "buy",
+                            "quantity": 1,
+                        },
+                        {
+                            "symbol": "AAPL_230616C00165000",
+                            "action": "buy",
+                            "quantity": 1,
+                        },
+                        {
+                            "symbol": "AAPL_230616C00170000",
+                            "action": "sell",
+                            "quantity": 1,
+                        },
                     ],
                     "max_profit": 200.0,
                     "max_loss": -300.0,
@@ -407,24 +479,24 @@ class TestOptionsEndpoints:
                     "risk_reward_ratio": 0.67,
                     "probability_of_profit": 0.65,
                     "days_to_expiration": 1,
-                    "recommendation": "Hold to expiration"
+                    "recommendation": "Hold to expiration",
                 }
             ],
             "portfolio_greeks": {
                 "total_delta": 0.05,
                 "total_gamma": 0.12,
                 "total_theta": -15.50,
-                "total_vega": 45.20
+                "total_vega": 45.20,
             },
             "risk_metrics": {
                 "var_1day": -1250.0,
                 "expected_move": 3.2,
-                "portfolio_beta": 0.95
+                "portfolio_beta": 0.95,
             },
             "recommendations": [
                 "Portfolio is delta neutral - good for theta collection",
-                "Consider closing positions before expiration to avoid assignment risk"
-            ]
+                "Consider closing positions before expiration to avoid assignment risk",
+            ],
         }
         mock_service.analyze_portfolio_strategies.return_value = mock_analysis
 
@@ -432,16 +504,20 @@ class TestOptionsEndpoints:
             "include_greeks": True,
             "include_pnl": True,
             "include_complex_strategies": True,
-            "include_recommendations": True
+            "include_recommendations": True,
         }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/options/strategies/analyze", json=request_data)
+                response = await ac.post(
+                    "/api/v1/options/strategies/analyze", json=request_data
+                )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert "recognized_strategies" in data
         assert "portfolio_greeks" in data
         assert "risk_metrics" in data
@@ -454,7 +530,7 @@ class TestOptionsEndpoints:
             include_greeks=True,
             include_pnl=True,
             include_complex_strategies=True,
-            include_recommendations=True
+            include_recommendations=True,
         )
 
     @pytest.mark.asyncio
@@ -464,35 +540,42 @@ class TestOptionsEndpoints:
         mock_analysis = {"recognized_strategies": [], "recommendations": []}
         mock_service.analyze_portfolio_strategies.return_value = mock_analysis
 
-        request_data = {
-            "include_greeks": False,
-            "include_pnl": False
-        }
+        request_data = {"include_greeks": False, "include_pnl": False}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/options/strategies/analyze", json=request_data)
+                response = await ac.post(
+                    "/api/v1/options/strategies/analyze", json=request_data
+                )
 
         assert response.status_code == status.HTTP_200_OK
-        
+
         mock_service.analyze_portfolio_strategies.assert_called_once_with(
             include_greeks=False,
             include_pnl=False,
             include_complex_strategies=True,  # Default value
-            include_recommendations=True  # Default value
+            include_recommendations=True,  # Default value
         )
 
     @pytest.mark.asyncio
     async def test_analyze_portfolio_strategies_service_error(self, client):
         """Test strategy analysis when service raises error."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.analyze_portfolio_strategies.side_effect = RuntimeError("Analysis failed")
+        mock_service.analyze_portfolio_strategies.side_effect = RuntimeError(
+            "Analysis failed"
+        )
 
         request_data = {"include_greeks": True}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/options/strategies/analyze", json=request_data)
+                response = await ac.post(
+                    "/api/v1/options/strategies/analyze", json=request_data
+                )
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -514,22 +597,24 @@ class TestOptionsEndpoints:
                     "ask": 5.30,
                     "volume": 1000,
                     "open_interest": 5000,
-                    "delta": 0.65
+                    "delta": 0.65,
                 }
             ],
             "total_count": 1,
             "expiration_dates": ["2023-06-16"],
-            "strike_range": {"min": 150.0, "max": 150.0}
+            "strike_range": {"min": 150.0, "max": 150.0},
         }
         mock_service.find_tradable_options.return_value = mock_options
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/search")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["underlying_symbol"] == "AAPL"
         assert data["total_count"] == 1
         assert len(data["options"]) == 1
@@ -541,17 +626,24 @@ class TestOptionsEndpoints:
     async def test_find_tradable_options_with_filters(self, client):
         """Test tradable options search with filters."""
         mock_service = MagicMock(spec=TradingService)
-        mock_service.find_tradable_options.return_value = {"options": [], "total_count": 0}
+        mock_service.find_tradable_options.return_value = {
+            "options": [],
+            "total_count": 0,
+        }
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/options/AAPL/search?expiration_date=2023-06-16&option_type=call"
                 )
 
         assert response.status_code == status.HTTP_200_OK
-        
-        mock_service.find_tradable_options.assert_called_once_with("AAPL", "2023-06-16", "call")
+
+        mock_service.find_tradable_options.assert_called_once_with(
+            "AAPL", "2023-06-16", "call"
+        )
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_service_error(self, client):
@@ -559,7 +651,9 @@ class TestOptionsEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.find_tradable_options.side_effect = Exception("Search failed")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/search")
 
@@ -593,24 +687,30 @@ class TestOptionsEndpoints:
             "intrinsic_value": 5.0,
             "time_value": 0.25,
             "moneyness": "ITM",
-            "days_to_expiration": 1
+            "days_to_expiration": 1,
         }
         mock_service.get_option_market_data.return_value = mock_market_data
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get("/api/v1/options/market-data/AAPL_230616C00150000")
+                response = await ac.get(
+                    "/api/v1/options/market-data/AAPL_230616C00150000"
+                )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL_230616C00150000"
         assert data["underlying_symbol"] == "AAPL"
         assert data["strike"] == 150.0
         assert data["delta"] == 0.65
         assert data["moneyness"] == "ITM"
 
-        mock_service.get_option_market_data.assert_called_once_with("AAPL_230616C00150000")
+        mock_service.get_option_market_data.assert_called_once_with(
+            "AAPL_230616C00150000"
+        )
 
     @pytest.mark.asyncio
     async def test_get_option_market_data_not_found(self, client):
@@ -618,7 +718,9 @@ class TestOptionsEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_option_market_data.return_value = {"error": "Option not found"}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/market-data/NONEXISTENT")
 
@@ -630,9 +732,13 @@ class TestOptionsEndpoints:
         mock_service = MagicMock(spec=TradingService)
         mock_service.get_option_market_data.side_effect = Exception("Data unavailable")
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.get("/api/v1/options/market-data/AAPL_230616C00150000")
+                response = await ac.get(
+                    "/api/v1/options/market-data/AAPL_230616C00150000"
+                )
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -642,18 +748,20 @@ class TestOptionsEndpoints:
         """Test options endpoints handle complex option symbols correctly."""
         complex_symbols = [
             "AAPL_230616C00150000",  # Standard format
-            "SPY_230616P00400000",   # ETF option
-            "QQQ_230616C00350000",   # Tech ETF
+            "SPY_230616P00400000",  # ETF option
+            "QQQ_230616C00350000",  # Tech ETF
         ]
-        
+
         for symbol in complex_symbols:
             mock_service = MagicMock(spec=TradingService)
             mock_service.get_option_greeks_response.return_value = {
                 "symbol": symbol,
-                "delta": 0.5
+                "delta": 0.5,
             }
 
-            with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
                 async with AsyncClient(app=client.app, base_url="http://test") as ac:
                     response = await ac.get(f"/api/v1/options/{symbol}/greeks")
 
@@ -665,27 +773,39 @@ class TestOptionsEndpoints:
     async def test_options_chain_pagination_large_dataset(self, client):
         """Test options chain handles large datasets correctly."""
         mock_service = MagicMock(spec=TradingService)
-        
+
         # Mock large options chain with multiple expirations
         large_chain = {
             "underlying_symbol": "SPY",
             "underlying_price": 400.0,
-            "chains": {}
+            "chains": {},
         }
-        
+
         # Generate multiple expiration dates with options
         for i in range(10):  # 10 expiration dates
             exp_date = f"2023-{6 + i // 4:02d}-{16 + (i % 4) * 7:02d}"
             large_chain["chains"][exp_date] = {
-                "calls": [{"strike": 390.0 + j, "symbol": f"SPY_{exp_date.replace('-', '')}C00{390 + j:06.0f}"} 
-                         for j in range(20)],  # 20 strikes
-                "puts": [{"strike": 390.0 + j, "symbol": f"SPY_{exp_date.replace('-', '')}P00{390 + j:06.0f}"} 
-                        for j in range(20)]
+                "calls": [
+                    {
+                        "strike": 390.0 + j,
+                        "symbol": f"SPY_{exp_date.replace('-', '')}C00{390 + j:06.0f}",
+                    }
+                    for j in range(20)
+                ],  # 20 strikes
+                "puts": [
+                    {
+                        "strike": 390.0 + j,
+                        "symbol": f"SPY_{exp_date.replace('-', '')}P00{390 + j:06.0f}",
+                    }
+                    for j in range(20)
+                ],
             }
-        
+
         mock_service.get_formatted_options_chain.return_value = large_chain
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/SPY/chain")
 
@@ -708,7 +828,10 @@ class TestOptionsEndpoints:
             response = await ac.get("/api/v1/options/AAPL/search?option_type=invalid")
 
         # Should work - service validates option types
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        ]
 
     @pytest.mark.asyncio
     async def test_options_endpoints_response_models(self, client):
@@ -719,17 +842,19 @@ class TestOptionsEndpoints:
             "underlying_symbol": "AAPL",
             "underlying_price": 155.0,
             "chains": {},
-            "expiration_dates": []
+            "expiration_dates": [],
         }
         mock_service.get_formatted_options_chain.return_value = mock_chain
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get("/api/v1/options/AAPL/chain")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Verify required OptionsChainResponse fields
         required_fields = ["underlying_symbol", "chains", "data_source", "cached"]
         for field in required_fields:
@@ -746,7 +871,9 @@ class TestOptionsEndpoints:
         }
 
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
-            response = await ac.post("/api/v1/options/orders/multi-leg", json=invalid_order_data)
+            response = await ac.post(
+                "/api/v1/options/orders/multi-leg", json=invalid_order_data
+            )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -759,15 +886,19 @@ class TestOptionsEndpoints:
         # Send minimal request
         request_data = {}
 
-        with patch('app.core.dependencies.get_trading_service', return_value=mock_service):
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
-                response = await ac.post("/api/v1/options/strategies/analyze", json=request_data)
+                response = await ac.post(
+                    "/api/v1/options/strategies/analyze", json=request_data
+                )
 
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Verify defaults were used
         call_kwargs = mock_service.analyze_portfolio_strategies.call_args[1]
-        assert call_kwargs["include_greeks"] == True  # Default
-        assert call_kwargs["include_pnl"] == True  # Default
-        assert call_kwargs["include_complex_strategies"] == True  # Default
-        assert call_kwargs["include_recommendations"] == True  # Default
+        assert call_kwargs["include_greeks"]  # Default
+        assert call_kwargs["include_pnl"]  # Default
+        assert call_kwargs["include_complex_strategies"]  # Default
+        assert call_kwargs["include_recommendations"]  # Default

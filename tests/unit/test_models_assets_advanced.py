@@ -6,7 +6,6 @@ asset factory patterns, validation, equality, serialization, and option pricing 
 """
 
 from datetime import date, datetime, timedelta
-from typing import Any
 
 import pytest
 
@@ -124,7 +123,7 @@ class TestAsset:
         asset = Asset(symbol="AAPL")
 
         assert asset != 123
-        assert asset != None
+        assert asset is not None
         assert asset != ["AAPL"]
         assert asset != {"symbol": "AAPL"}
 
@@ -146,7 +145,7 @@ class TestAsset:
     def test_asset_frozen(self):
         """Test that Asset is immutable (frozen)."""
         asset = Asset(symbol="AAPL")
-        
+
         with pytest.raises(AttributeError):
             asset.symbol = "GOOGL"  # Should not be able to modify
 
@@ -154,14 +153,14 @@ class TestAsset:
         """Test Asset with option-specific fields set."""
         underlying_asset = Asset(symbol="AAPL")
         exp_date = date.today() + timedelta(days=30)
-        
+
         asset = Asset(
             symbol="AAPL240315C00180000",
             asset_type="call",
             underlying=underlying_asset,
             option_type="call",
             strike=180.0,
-            expiration_date=exp_date
+            expiration_date=exp_date,
         )
 
         assert asset.underlying == underlying_asset
@@ -210,7 +209,7 @@ class TestStock:
         """Test stocks with special characters in symbols."""
         stock1 = Stock("BRK.A")
         stock2 = Stock("BRK.B")
-        
+
         assert stock1.symbol == "BRK.A"
         assert stock2.symbol == "BRK.B"
         assert stock1 != stock2
@@ -222,7 +221,7 @@ class TestOption:
     def test_option_from_symbol(self):
         """Test option creation from symbol."""
         option = Option(symbol="AAPL240119C00195000")
-        
+
         assert option.symbol == "AAPL240119C00195000"
         assert option.option_type == "call"
         assert option.strike == 195.0
@@ -233,7 +232,7 @@ class TestOption:
     def test_option_from_symbol_put(self):
         """Test put option creation from symbol."""
         option = Option(symbol="GOOGL240315P02800000")
-        
+
         assert option.symbol == "GOOGL240315P02800000"
         assert option.option_type == "put"
         assert option.strike == 2800.0
@@ -243,10 +242,7 @@ class TestOption:
         """Test option creation from components."""
         exp_date = date(2024, 3, 15)
         option = Option(
-            underlying="SPY",
-            option_type="call",
-            strike=450.0,
-            expiration_date=exp_date
+            underlying="SPY", option_type="call", strike=450.0, expiration_date=exp_date
         )
 
         assert option.option_type == "call"
@@ -261,12 +257,12 @@ class TestOption:
         """Test option creation with Asset as underlying."""
         underlying_stock = Stock("QQQ")
         exp_date = date(2024, 6, 21)
-        
+
         option = Option(
             underlying=underlying_stock,
             option_type="put",
             strike=380.0,
-            expiration_date=exp_date
+            expiration_date=exp_date,
         )
 
         assert option.underlying is underlying_stock
@@ -281,14 +277,29 @@ class TestOption:
 
         # Invalid option type
         with pytest.raises(ValueError, match="option_type must be 'call' or 'put'"):
-            Option(underlying="AAPL", option_type="invalid", strike=100.0, expiration_date=date.today())
+            Option(
+                underlying="AAPL",
+                option_type="invalid",
+                strike=100.0,
+                expiration_date=date.today(),
+            )
 
         # Invalid strike
         with pytest.raises(ValueError, match="strike must be positive"):
-            Option(underlying="AAPL", option_type="call", strike=-10.0, expiration_date=date.today())
+            Option(
+                underlying="AAPL",
+                option_type="call",
+                strike=-10.0,
+                expiration_date=date.today(),
+            )
 
         with pytest.raises(ValueError, match="strike must be positive"):
-            Option(underlying="AAPL", option_type="call", strike=0.0, expiration_date=date.today())
+            Option(
+                underlying="AAPL",
+                option_type="call",
+                strike=0.0,
+                expiration_date=date.today(),
+            )
 
         # Missing expiration
         with pytest.raises(ValueError, match="expiration_date is required"):
@@ -316,34 +327,66 @@ class TestOption:
     def test_option_date_parsing(self):
         """Test different date format parsing."""
         # String date formats
-        option1 = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date="2024-03-15")
+        option1 = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date="2024-03-15",
+        )
         assert option1.expiration_date == date(2024, 3, 15)
 
-        option2 = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date="240315")
+        option2 = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date="240315",
+        )
         assert option2.expiration_date == date(2024, 3, 15)
 
         # Date object
         exp_date = date(2024, 6, 21)
-        option3 = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=exp_date)
+        option3 = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=exp_date,
+        )
         assert option3.expiration_date == exp_date
 
         # DateTime object
         exp_datetime = datetime(2024, 9, 20, 16, 0, 0)
-        option4 = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=exp_datetime)
+        option4 = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=exp_datetime,
+        )
         assert option4.expiration_date == exp_datetime.date()
 
     def test_option_date_parsing_invalid(self):
         """Test invalid date parsing."""
         with pytest.raises(ValueError, match="Could not parse date"):
-            Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date="invalid-date")
+            Option(
+                underlying="AAPL",
+                option_type="call",
+                strike=150.0,
+                expiration_date="invalid-date",
+            )
 
         with pytest.raises(ValueError, match="Invalid date type"):
-            Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=123)
+            Option(
+                underlying="AAPL", option_type="call", strike=150.0, expiration_date=123
+            )
 
     def test_option_intrinsic_value_call(self):
         """Test intrinsic value calculation for calls."""
-        call_option = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=date.today())
-        
+        call_option = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=date.today(),
+        )
+
         # ITM call
         assert call_option.get_intrinsic_value(160.0) == 10.0
         # ATM call
@@ -353,8 +396,13 @@ class TestOption:
 
     def test_option_intrinsic_value_put(self):
         """Test intrinsic value calculation for puts."""
-        put_option = Option(underlying="AAPL", option_type="put", strike=150.0, expiration_date=date.today())
-        
+        put_option = Option(
+            underlying="AAPL",
+            option_type="put",
+            strike=150.0,
+            expiration_date=date.today(),
+        )
+
         # ITM put
         assert put_option.get_intrinsic_value(140.0) == 10.0
         # ATM put
@@ -364,20 +412,30 @@ class TestOption:
 
     def test_option_extrinsic_value(self):
         """Test extrinsic value calculation."""
-        option = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=date.today())
-        
+        option = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=date.today(),
+        )
+
         underlying_price = 155.0
         option_price = 8.0
-        intrinsic_value = option.get_intrinsic_value(underlying_price)  # 5.0
+        option.get_intrinsic_value(underlying_price)  # 5.0
         extrinsic_value = option.get_extrinsic_value(underlying_price, option_price)
-        
+
         assert extrinsic_value == 3.0  # 8.0 - 5.0
 
     def test_option_days_to_expiration(self):
         """Test days to expiration calculation."""
         exp_date = date.today() + timedelta(days=30)
-        option = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=exp_date)
-        
+        option = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=exp_date,
+        )
+
         # Current date
         days = option.get_days_to_expiration()
         assert days == 30
@@ -394,28 +452,38 @@ class TestOption:
 
     def test_option_moneyness_call(self):
         """Test moneyness methods for calls."""
-        call_option = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=date.today())
-        
+        call_option = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=date.today(),
+        )
+
         # ITM call
         assert call_option.is_itm(160.0) is True
         assert call_option.is_otm(160.0) is False
-        
+
         # OTM call
         assert call_option.is_itm(140.0) is False
         assert call_option.is_otm(140.0) is True
-        
+
         # ATM call
         assert call_option.is_itm(150.0) is False
         assert call_option.is_otm(150.0) is True
 
     def test_option_moneyness_put(self):
         """Test moneyness methods for puts."""
-        put_option = Option(underlying="AAPL", option_type="put", strike=150.0, expiration_date=date.today())
-        
+        put_option = Option(
+            underlying="AAPL",
+            option_type="put",
+            strike=150.0,
+            expiration_date=date.today(),
+        )
+
         # ITM put
         assert put_option.is_itm(140.0) is True
         assert put_option.is_otm(140.0) is False
-        
+
         # OTM put
         assert put_option.is_itm(160.0) is False
         assert put_option.is_otm(160.0) is True
@@ -427,9 +495,9 @@ class TestOption:
             underlying="AAPL",
             option_type="call",
             strike=195.5,  # Test decimal strike
-            expiration_date=exp_date
+            expiration_date=exp_date,
         )
-        
+
         # Should build proper option symbol
         expected_symbol = "AAPL240119C00195500"  # 195.5 * 1000 = 195500
         assert option.symbol == expected_symbol
@@ -437,7 +505,12 @@ class TestOption:
     def test_option_with_underlying_asset_failure(self):
         """Test option creation with invalid underlying."""
         with pytest.raises(ValueError, match="underlying asset could not be created"):
-            Option(underlying=None, option_type="call", strike=100.0, expiration_date=date.today())
+            Option(
+                underlying=None,
+                option_type="call",
+                strike=100.0,
+                expiration_date=date.today(),
+            )
 
 
 class TestCall:
@@ -446,7 +519,7 @@ class TestCall:
     def test_call_creation_from_symbol(self):
         """Test call creation from symbol."""
         call = Call(symbol="AAPL240119C00195000")
-        
+
         assert call.symbol == "AAPL240119C00195000"
         assert call.option_type == "call"
         assert call.strike == 195.0
@@ -456,9 +529,7 @@ class TestCall:
     def test_call_creation_from_components(self):
         """Test call creation from components."""
         call = Call(
-            underlying="GOOGL",
-            strike=2800.0,
-            expiration_date=date(2024, 3, 15)
+            underlying="GOOGL", strike=2800.0, expiration_date=date(2024, 3, 15)
         )
 
         assert call.option_type == "call"
@@ -474,7 +545,7 @@ class TestCall:
     def test_call_inheritance(self):
         """Test call inheritance hierarchy."""
         call = Call(underlying="NVDA", strike=900.0, expiration_date=date.today())
-        
+
         assert isinstance(call, Call)
         assert isinstance(call, Option)
         assert isinstance(call, Asset)
@@ -482,11 +553,11 @@ class TestCall:
     def test_call_pricing_methods(self):
         """Test call-specific pricing methods."""
         call = Call(underlying="SPY", strike=450.0, expiration_date=date.today())
-        
+
         # ITM call
         assert call.get_intrinsic_value(460.0) == 10.0
         assert call.is_itm(460.0) is True
-        
+
         # OTM call
         assert call.get_intrinsic_value(440.0) == 0.0
         assert call.is_otm(440.0) is True
@@ -498,7 +569,7 @@ class TestPut:
     def test_put_creation_from_symbol(self):
         """Test put creation from symbol."""
         put = Put(symbol="AAPL240119P00195000")
-        
+
         assert put.symbol == "AAPL240119P00195000"
         assert put.option_type == "put"
         assert put.strike == 195.0
@@ -507,11 +578,7 @@ class TestPut:
 
     def test_put_creation_from_components(self):
         """Test put creation from components."""
-        put = Put(
-            underlying="QQQ",
-            strike=380.0,
-            expiration_date=date(2024, 6, 21)
-        )
+        put = Put(underlying="QQQ", strike=380.0, expiration_date=date(2024, 6, 21))
 
         assert put.option_type == "put"
         assert put.strike == 380.0
@@ -525,7 +592,7 @@ class TestPut:
     def test_put_inheritance(self):
         """Test put inheritance hierarchy."""
         put = Put(underlying="VTI", strike=220.0, expiration_date=date.today())
-        
+
         assert isinstance(put, Put)
         assert isinstance(put, Option)
         assert isinstance(put, Asset)
@@ -533,11 +600,11 @@ class TestPut:
     def test_put_pricing_methods(self):
         """Test put-specific pricing methods."""
         put = Put(underlying="SPY", strike=450.0, expiration_date=date.today())
-        
+
         # ITM put
         assert put.get_intrinsic_value(440.0) == 10.0
         assert put.is_itm(440.0) is True
-        
+
         # OTM put
         assert put.get_intrinsic_value(460.0) == 0.0
         assert put.is_otm(460.0) is True
@@ -550,48 +617,48 @@ class TestAssetEdgeCases:
         """Test option symbol parsing with different strike precisions."""
         # Test various strike prices and their symbol representation
         test_cases = [
-            (100.0, "00100000"),    # Whole number
-            (100.5, "00100500"),    # Half dollar
-            (100.25, "00100250"),   # Quarter
-            (1.0, "00001000"),      # Small strike
+            (100.0, "00100000"),  # Whole number
+            (100.5, "00100500"),  # Half dollar
+            (100.25, "00100250"),  # Quarter
+            (1.0, "00001000"),  # Small strike
             (9999.99, "99999900"),  # Large strike (capped at 8 digits)
         ]
-        
+
         for strike, expected_strike_part in test_cases:
             option = Option(
                 underlying="TEST",
                 option_type="call",
                 strike=strike,
-                expiration_date=date(2024, 1, 19)
+                expiration_date=date(2024, 1, 19),
             )
             assert expected_strike_part in option.symbol
 
     def test_option_symbol_parsing_underlyings(self):
         """Test option symbol parsing with various underlying symbols."""
         test_underlyings = [
-            "A",           # Single character
-            "BRK.B",       # With dot
-            "LONGNAME",    # Long name
-            "TEST123",     # With numbers
+            "A",  # Single character
+            "BRK.B",  # With dot
+            "LONGNAME",  # Long name
+            "TEST123",  # With numbers
         ]
-        
+
         for underlying in test_underlyings:
             option = Option(symbol=f"{underlying}240119C00100000")
             assert option.underlying.symbol == underlying
-            
+
     def test_asset_equality_edge_cases(self):
         """Test asset equality edge cases."""
         asset = Asset(symbol="TEST")
-        
+
         # Test with empty string
         assert asset != ""
-        
+
         # Test with None
-        assert asset != None
-        
+        assert asset is not None
+
         # Test with whitespace-only string
         assert asset != "   "
-        
+
         # Test case sensitivity in string comparison
         assert asset == "test"
         assert asset == "TeSt"
@@ -600,29 +667,46 @@ class TestAssetEdgeCases:
         """Test option expiration edge cases."""
         # Past expiration date
         past_date = date.today() - timedelta(days=30)
-        option = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=past_date)
-        
+        option = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=past_date,
+        )
+
         days = option.get_days_to_expiration()
         assert days == -30  # Negative days for expired options
 
         # Same day expiration
         today = date.today()
-        option_today = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=today)
+        option_today = Option(
+            underlying="AAPL", option_type="call", strike=150.0, expiration_date=today
+        )
         assert option_today.get_days_to_expiration() == 0
 
     def test_option_intrinsic_value_edge_cases(self):
         """Test intrinsic value calculation edge cases."""
-        call = Option(underlying="TEST", option_type="call", strike=100.0, expiration_date=date.today())
-        put = Option(underlying="TEST", option_type="put", strike=100.0, expiration_date=date.today())
-        
+        call = Option(
+            underlying="TEST",
+            option_type="call",
+            strike=100.0,
+            expiration_date=date.today(),
+        )
+        put = Option(
+            underlying="TEST",
+            option_type="put",
+            strike=100.0,
+            expiration_date=date.today(),
+        )
+
         # Exactly at strike
         assert call.get_intrinsic_value(100.0) == 0.0
         assert put.get_intrinsic_value(100.0) == 0.0
-        
+
         # Very small differences
         assert call.get_intrinsic_value(100.01) == 0.01
         assert put.get_intrinsic_value(99.99) == 0.01
-        
+
         # Large differences
         assert call.get_intrinsic_value(200.0) == 100.0
         assert put.get_intrinsic_value(0.0) == 100.0
@@ -634,9 +718,9 @@ class TestAssetEdgeCases:
             underlying=None,
             option_type=None,
             strike=None,
-            expiration_date=None
+            expiration_date=None,
         )
-        
+
         assert asset.underlying is None
         assert asset.option_type is None
         assert asset.strike is None
@@ -645,14 +729,14 @@ class TestAssetEdgeCases:
     def test_option_invalid_symbol_formats(self):
         """Test various invalid option symbol formats."""
         invalid_symbols = [
-            "AAPL",                    # Too short
-            "AAPL240119X00100000",     # Invalid option type
-            "AAPL240119C",             # Missing strike
-            "AAPL240199C00100000",     # Invalid date
-            "240119C00100000",         # Missing underlying
-            "",                        # Empty string
+            "AAPL",  # Too short
+            "AAPL240119X00100000",  # Invalid option type
+            "AAPL240119C",  # Missing strike
+            "AAPL240199C00100000",  # Invalid date
+            "240119C00100000",  # Missing underlying
+            "",  # Empty string
         ]
-        
+
         for invalid_symbol in invalid_symbols:
             if len(invalid_symbol) <= 8:  # Short symbols go to stock
                 continue
@@ -662,24 +746,29 @@ class TestAssetEdgeCases:
     def test_complex_asset_inheritance_chain(self):
         """Test complex inheritance and isinstance checks."""
         stock = Stock("AAPL")
-        generic_option = Option(underlying="AAPL", option_type="call", strike=150.0, expiration_date=date.today())
+        generic_option = Option(
+            underlying="AAPL",
+            option_type="call",
+            strike=150.0,
+            expiration_date=date.today(),
+        )
         call = Call(underlying="AAPL", strike=150.0, expiration_date=date.today())
         put = Put(underlying="AAPL", strike=150.0, expiration_date=date.today())
-        
+
         # Test inheritance hierarchy
         assert isinstance(stock, Asset)
         assert not isinstance(stock, Option)
-        
+
         assert isinstance(generic_option, Asset)
         assert isinstance(generic_option, Option)
         assert not isinstance(generic_option, Call)
         assert not isinstance(generic_option, Put)
-        
+
         assert isinstance(call, Asset)
         assert isinstance(call, Option)
         assert isinstance(call, Call)
         assert not isinstance(call, Put)
-        
+
         assert isinstance(put, Asset)
         assert isinstance(put, Option)
         assert not isinstance(put, Call)
@@ -691,17 +780,17 @@ class TestAssetEdgeCases:
         result = asset_factory("")
         assert isinstance(result, Stock)
         assert result.symbol == ""  # Edge case, but should still create
-        
+
         # String with only whitespace
         result = asset_factory("   ")
         assert isinstance(result, Stock)
         assert result.symbol == ""  # After stripping
-        
+
         # Very long symbol
         long_symbol = "A" * 50
         result = asset_factory(long_symbol)
         assert isinstance(result, Option)  # Length > 8
-        
+
     def test_option_date_formats_comprehensive(self):
         """Test comprehensive date format support."""
         date_formats = [
@@ -709,12 +798,12 @@ class TestAssetEdgeCases:
             ("240315", date(2024, 3, 15)),
             ("20240315", date(2024, 3, 15)),
         ]
-        
+
         for date_str, expected_date in date_formats:
             option = Option(
                 underlying="AAPL",
                 option_type="call",
                 strike=150.0,
-                expiration_date=date_str
+                expiration_date=date_str,
             )
             assert option.expiration_date == expected_date

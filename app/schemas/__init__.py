@@ -16,9 +16,18 @@ Organization:
 
 # Export all schemas for easy access
 from .accounts import Account
-from .orders import (MultiLegOrder, MultiLegOrderCreate, Order, OrderCondition,
-                     OrderCreate, OrderLeg, OrderLegCreate, OrderSide,
-                     OrderStatus, OrderType)
+from .orders import (
+    MultiLegOrder,
+    MultiLegOrderCreate,
+    Order,
+    OrderCondition,
+    OrderCreate,
+    OrderLeg,
+    OrderLegCreate,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+)
 from .positions import Portfolio, PortfolioSummary, Position
 from .trading import StockQuote
 

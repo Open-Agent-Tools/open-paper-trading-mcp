@@ -116,9 +116,9 @@ class TestHealthEndpoints:
         ]
 
         for expected in expected_metrics:
-            assert (
-                expected in metrics
-            ), f"Expected metric pattern '{expected}' not found"
+            assert expected in metrics, (
+                f"Expected metric pattern '{expected}' not found"
+            )
 
     @pytest.mark.asyncio
     async def test_dependencies_health_check(self, test_client: AsyncClient):

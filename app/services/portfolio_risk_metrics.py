@@ -197,7 +197,7 @@ class PortfolioRiskCalculator:
         # Expected Shortfall (average of losses beyond VaR)
         tail_losses = [r for r in sorted_returns if r <= var_return]
         expected_shortfall = (
-            abs(np.mean(tail_losses) * portfolio.total_value)
+            float(abs(np.mean(tail_losses) * portfolio.total_value))
             if tail_losses
             else var_amount
         )
@@ -240,7 +240,7 @@ class PortfolioRiskCalculator:
             time_horizon=time_horizon,
             var_amount=var_amount,
             var_percent=var_percent,
-            expected_shortfall=expected_shortfall,
+            expected_shortfall=float(expected_shortfall),
             method="parametric",
         )
 
@@ -262,7 +262,7 @@ class PortfolioRiskCalculator:
 
             for position in portfolio.positions:
                 symbol = position.symbol
-                if symbol in historical_data:
+                if symbol in historical_data and position.current_price is not None:
                     prices = historical_data[symbol]
                     if i < len(prices):
                         # Calculate return
@@ -294,6 +294,8 @@ class PortfolioRiskCalculator:
         sector_exposures: dict[str, float] = {}
 
         for position in portfolio.positions:
+            if position.current_price is None:
+                continue
             position_value = abs(position.quantity) * position.current_price
             gross_exposure += position_value
 
@@ -338,6 +340,8 @@ class PortfolioRiskCalculator:
         position_weights = []
 
         for position in portfolio.positions:
+            if position.current_price is None:
+                continue
             weight = (
                 abs(position.quantity) * position.current_price
             ) / portfolio.total_value
@@ -383,6 +387,8 @@ class PortfolioRiskCalculator:
         )  # Simplified 2% portfolio VaR
 
         for position in portfolio.positions:
+            if position.current_price is None:
+                continue
             symbol = position.symbol
             position_value = abs(position.quantity) * position.current_price
             position_weight = position_value / portfolio.total_value
@@ -454,6 +460,8 @@ class PortfolioRiskCalculator:
         sector_impacts: dict[str, float] = {}
 
         for position in portfolio.positions:
+            if position.current_price is None:
+                continue
             symbol = position.symbol
             asset = asset_factory(symbol)
             sector = self.sector_mappings.get(symbol, "Unknown")
@@ -563,6 +571,8 @@ class PortfolioRiskCalculator:
         historical_prices: list[float] | None = None,
     ) -> VaRResult:
         """Calculate VaR for a single position."""
+        if position.current_price is None:
+            raise ValueError("Position must have a current price for VaR calculation")
         position_value = abs(position.quantity) * position.current_price
 
         if historical_prices and len(historical_prices) > 1:
@@ -610,7 +620,7 @@ class PortfolioRiskCalculator:
             time_horizon=time_horizon,
             var_amount=var_amount,
             var_percent=var_percent,
-            expected_shortfall=expected_shortfall,
+            expected_shortfall=float(expected_shortfall),
             method=method,
         )
 

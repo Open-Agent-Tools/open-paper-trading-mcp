@@ -8,11 +8,11 @@ Tests for:
 All tests use proper async patterns with pytest-asyncio and comprehensive mocking.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi import status
-from fastapi.security import OAuth2PasswordRequestForm
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.core.exceptions import NotFoundError
 from app.services.auth_service import AuthService
@@ -30,18 +30,20 @@ class TestAuthEndpoints:
         mock_service.access_token_expire_minutes = 30
         mock_service.create_access_token.return_value = "fake-jwt-token"
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post(
                     "/api/v1/auth/token",
-                    data={"username": "testuser", "password": "testpass"}
+                    data={"username": "testuser", "password": "testpass"},
                 )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["access_token"] == "fake-jwt-token"
         assert data["token_type"] == "bearer"
-        
+
         # Verify service calls
         mock_service.authenticate_user.assert_called_once_with("testuser", "testpass")
         mock_service.create_access_token.assert_called_once()
@@ -52,11 +54,13 @@ class TestAuthEndpoints:
         mock_service = MagicMock(spec=AuthService)
         mock_service.authenticate_user.return_value = None
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post(
                     "/api/v1/auth/token",
-                    data={"username": "baduser", "password": "badpass"}
+                    data={"username": "baduser", "password": "badpass"},
                 )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -83,8 +87,7 @@ class TestAuthEndpoints:
         """Test login with empty username."""
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.post(
-                "/api/v1/auth/token",
-                data={"username": "", "password": "testpass"}
+                "/api/v1/auth/token", data={"username": "", "password": "testpass"}
             )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -94,8 +97,7 @@ class TestAuthEndpoints:
         """Test login with empty password."""
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.post(
-                "/api/v1/auth/token",
-                data={"username": "testuser", "password": ""}
+                "/api/v1/auth/token", data={"username": "testuser", "password": ""}
             )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -106,11 +108,13 @@ class TestAuthEndpoints:
         mock_service = MagicMock(spec=AuthService)
         mock_service.authenticate_user.side_effect = RuntimeError("Database error")
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post(
                     "/api/v1/auth/token",
-                    data={"username": "testuser", "password": "testpass"}
+                    data={"username": "testuser", "password": "testpass"},
                 )
 
         # Should propagate the exception as 500 error
@@ -122,7 +126,7 @@ class TestAuthEndpoints:
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.post(
                 "/api/v1/auth/token",
-                json={"username": "testuser", "password": "testpass"}
+                json={"username": "testuser", "password": "testpass"},
             )
 
         # Should fail because OAuth2PasswordRequestForm expects form data
@@ -136,14 +140,16 @@ class TestAuthEndpoints:
         mock_service.get_current_user.return_value = {
             "username": "testuser",
             "email": "test@example.com",
-            "full_name": "Test User"
+            "full_name": "Test User",
         }
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/auth/me",
-                    headers={"Authorization": "Bearer fake-jwt-token"}
+                    headers={"Authorization": "Bearer fake-jwt-token"},
                 )
 
         assert response.status_code == status.HTTP_200_OK
@@ -158,15 +164,15 @@ class TestAuthEndpoints:
     async def test_read_users_me_minimal_user_data(self, client):
         """Test user profile with minimal user data (no email/full_name)."""
         mock_service = MagicMock(spec=AuthService)
-        mock_service.get_current_user.return_value = {
-            "username": "testuser"
-        }
+        mock_service.get_current_user.return_value = {"username": "testuser"}
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/auth/me",
-                    headers={"Authorization": "Bearer fake-jwt-token"}
+                    headers={"Authorization": "Bearer fake-jwt-token"},
                 )
 
         assert response.status_code == status.HTTP_200_OK
@@ -181,11 +187,12 @@ class TestAuthEndpoints:
         mock_service = MagicMock(spec=AuthService)
         mock_service.get_current_user.side_effect = NotFoundError("Invalid token")
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
-                    "/api/v1/auth/me",
-                    headers={"Authorization": "Bearer invalid-token"}
+                    "/api/v1/auth/me", headers={"Authorization": "Bearer invalid-token"}
                 )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -209,8 +216,7 @@ class TestAuthEndpoints:
         """Test user profile with malformed authorization header."""
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": "Invalid format"}
+                "/api/v1/auth/me", headers={"Authorization": "Invalid format"}
             )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -220,8 +226,7 @@ class TestAuthEndpoints:
         """Test user profile with empty bearer token."""
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": "Bearer "}
+                "/api/v1/auth/me", headers={"Authorization": "Bearer "}
             )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -232,11 +237,13 @@ class TestAuthEndpoints:
         mock_service = MagicMock(spec=AuthService)
         mock_service.get_current_user.side_effect = RuntimeError("Database error")
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/auth/me",
-                    headers={"Authorization": "Bearer fake-jwt-token"}
+                    headers={"Authorization": "Bearer fake-jwt-token"},
                 )
 
         # Should propagate the exception as 500 error
@@ -248,7 +255,7 @@ class TestAuthEndpoints:
         """Test the get_auth_service dependency function."""
         from app.api.v1.endpoints.auth import get_auth_service
         from app.services.auth_service import auth_service
-        
+
         result = get_auth_service()
         assert result is auth_service
         assert isinstance(result, AuthService)
@@ -262,15 +269,19 @@ class TestAuthEndpoints:
         mock_service.access_token_expire_minutes = 30
         mock_service.create_access_token.return_value = "fake-jwt-token"
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post(
                     "/api/v1/auth/token",
-                    data={"username": "user@domain.com", "password": "pass!@#$%"}
+                    data={"username": "user@domain.com", "password": "pass!@#$%"},
                 )
 
         assert response.status_code == status.HTTP_200_OK
-        mock_service.authenticate_user.assert_called_once_with("user@domain.com", "pass!@#$%")
+        mock_service.authenticate_user.assert_called_once_with(
+            "user@domain.com", "pass!@#$%"
+        )
 
     @pytest.mark.asyncio
     async def test_login_unicode_credentials(self, client):
@@ -280,11 +291,12 @@ class TestAuthEndpoints:
         mock_service.access_token_expire_minutes = 30
         mock_service.create_access_token.return_value = "fake-jwt-token"
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post(
-                    "/api/v1/auth/token",
-                    data={"username": "用户", "password": "密码"}
+                    "/api/v1/auth/token", data={"username": "用户", "password": "密码"}
                 )
 
         assert response.status_code == status.HTTP_200_OK
@@ -296,9 +308,12 @@ class TestAuthEndpoints:
         # This would be checked in OpenAPI schema, but we can verify the endpoint exists
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
             response = await ac.options("/api/v1/auth/token")
-        
+
         # Should allow POST method
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_405_METHOD_NOT_ALLOWED]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        ]
 
     @pytest.mark.asyncio
     async def test_token_response_model_validation(self, client):
@@ -308,16 +323,18 @@ class TestAuthEndpoints:
         mock_service.access_token_expire_minutes = 30
         mock_service.create_access_token.return_value = "fake-jwt-token"
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.post(
                     "/api/v1/auth/token",
-                    data={"username": "testuser", "password": "testpass"}
+                    data={"username": "testuser", "password": "testpass"},
                 )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Verify Token model structure
         assert "access_token" in data
         assert "token_type" in data
@@ -333,19 +350,21 @@ class TestAuthEndpoints:
             "username": "testuser",
             "email": "test@example.com",
             "full_name": "Test User",
-            "extra_field": "should_be_filtered"  # Extra field that should be filtered out
+            "extra_field": "should_be_filtered",  # Extra field that should be filtered out
         }
 
-        with patch('app.api.v1.endpoints.auth.get_auth_service', return_value=mock_service):
+        with patch(
+            "app.api.v1.endpoints.auth.get_auth_service", return_value=mock_service
+        ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 response = await ac.get(
                     "/api/v1/auth/me",
-                    headers={"Authorization": "Bearer fake-jwt-token"}
+                    headers={"Authorization": "Bearer fake-jwt-token"},
                 )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Verify User model structure
         assert "username" in data
         assert "email" in data

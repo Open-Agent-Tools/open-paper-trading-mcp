@@ -21,8 +21,7 @@ class TestCoreImportsAndInstantiation:
 
     def test_core_exceptions_import(self):
         """Test core exceptions import."""
-        from app.core.exceptions import (ConflictError, NotFoundError,
-                                         ValidationError)
+        from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 
         # Test exception instantiation
         not_found = NotFoundError("Test not found")
@@ -378,9 +377,11 @@ class TestUtilityModules:
 
     def test_schema_converters_import(self):
         """Test schema converter imports."""
-        from app.utils.schema_converters import (AccountConverter,
-                                                 OrderConverter,
-                                                 PositionConverter)
+        from app.utils.schema_converters import (
+            AccountConverter,
+            OrderConverter,
+            PositionConverter,
+        )
 
         account_converter = AccountConverter()
         order_converter = OrderConverter()
@@ -397,12 +398,14 @@ class TestUtilityModules:
 
     def test_convenience_functions(self):
         """Test standalone convenience functions."""
-        from app.utils.schema_converters import (db_account_to_schema,
-                                                 db_order_to_schema,
-                                                 db_position_to_schema,
-                                                 schema_account_to_db,
-                                                 schema_order_to_db,
-                                                 schema_position_to_db)
+        from app.utils.schema_converters import (
+            db_account_to_schema,
+            db_order_to_schema,
+            db_position_to_schema,
+            schema_account_to_db,
+            schema_order_to_db,
+            schema_position_to_db,
+        )
 
         functions = [
             db_account_to_schema,
@@ -477,8 +480,7 @@ class TestErrorHandlingAndValidation:
 
     def test_exception_hierarchy(self):
         """Test custom exception hierarchy."""
-        from app.core.exceptions import (ConflictError, NotFoundError,
-                                         ValidationError)
+        from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 
         # Test exception inheritance
         assert issubclass(NotFoundError, Exception)
