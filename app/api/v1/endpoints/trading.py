@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.dependencies import get_trading_service
+from app.core.exceptions import NotFoundError, ValidationError
 from app.schemas.orders import MultiLegOrderCreate, Order, OrderCreate
 from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
@@ -51,7 +52,7 @@ async def get_enhanced_quote(
 ):
     """Get enhanced quote with Greeks for options."""
     try:
-        quote = service.get_enhanced_quote(symbol)
+        quote = await service.get_enhanced_quote(symbol)
 
         # Convert to dict for JSON response
         result = {
@@ -90,6 +91,6 @@ async def create_multi_leg_order_basic(
 ):
     """Create multi-leg order (basic endpoint)."""
     try:
-        return service.create_multi_leg_order(order)
+        return await service.create_multi_leg_order(order)
     except (NotFoundError, ValidationError) as e:
         raise HTTPException(status_code=400, detail=str(e))

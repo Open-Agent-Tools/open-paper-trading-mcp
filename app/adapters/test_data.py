@@ -13,7 +13,6 @@ Data format: [symbol],[current_date],[bid],[ask]
 """
 
 from datetime import date, datetime, timedelta
-from functools import lru_cache
 from typing import Any
 
 from sqlalchemy import and_
@@ -140,7 +139,6 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 .first()
             )
 
-    @lru_cache(maxsize=1000)
     def _cached_stock_quote(
         self, symbol: str, quote_date: date, scenario: str
     ) -> Quote | None:
@@ -171,7 +169,6 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
         return None
 
-    @lru_cache(maxsize=1000)
     def _cached_option_quote(
         self, symbol: str, quote_date: date, scenario: str
     ) -> OptionQuote | None:

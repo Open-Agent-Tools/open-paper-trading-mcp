@@ -189,11 +189,14 @@ class WebhookNotificationSender(NotificationSender):
                 "data": notification.data,
             }
 
-            async with aiohttp.ClientSession() as session, session.post(
-                self.webhook_url,
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    self.webhook_url,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as response,
+            ):
                 if response.status < 400:
                     return True
                 else:

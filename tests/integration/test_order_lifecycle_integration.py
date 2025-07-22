@@ -178,9 +178,7 @@ class TestBasicOrderLifecycle:
         )
 
         # Track through queue system
-        await system["order_queue"].enqueue_order(
-            order, QueuePriority.NORMAL
-        )
+        await system["order_queue"].enqueue_order(order, QueuePriority.NORMAL)
 
         # Register a simple processor
         async def mock_processor(order_to_process):

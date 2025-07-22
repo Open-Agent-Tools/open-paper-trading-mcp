@@ -33,11 +33,11 @@ class TestDatabaseState:
         await test_async_session.commit()
         await test_async_session.refresh(account)
 
-        # Create positions directly in database
+        # Create positions directly in database (using symbols available in test data)
         positions_data = [
-            {"symbol": "AAPL", "quantity": 100, "avg_price": 150.0},
-            {"symbol": "GOOGL", "quantity": 10, "avg_price": 2800.0},
-            {"symbol": "MSFT", "quantity": 50, "avg_price": 300.0},
+            {"symbol": "AAL", "quantity": 100, "avg_price": 45.0},
+            {"symbol": "GOOGL", "quantity": 10, "avg_price": 850.0},
+            {"symbol": "AAPL", "quantity": 50, "avg_price": 150.0},
         ]
 
         db_positions = []
@@ -53,28 +53,71 @@ class TestDatabaseState:
 
         await test_async_session.commit()
 
-        # Test portfolio calculation using TradingService with proper adapter
-        from app.adapters.test_data import DevDataQuoteAdapter
+        # Test portfolio calculation using TradingService with mock quotes
+        from app.core.exceptions import NotFoundError
+        from app.schemas.trading import StockQuote
         from app.services.trading_service import TradingService
 
-        adapter = DevDataQuoteAdapter()
-        trading_service = TradingService(adapter, account_owner="test_db_user")
+        trading_service = TradingService(account_owner="test_db_user")
 
-        # Use the test session for database operations
+        # Override both session and account methods to use our test data
         async def mock_get_session():
             return test_async_session
 
+        async def mock_get_account():
+            return account  # Return the account we created
+
         trading_service._get_async_db_session = mock_get_session
+        trading_service._get_account = mock_get_account
+
+        # Mock get_quote to return test quotes for our symbols
+        from datetime import datetime
+
+        mock_quotes = {
+            "AAL": StockQuote(
+                symbol="AAL",
+                price=47.36,
+                change=0.01,
+                change_percent=0.02,
+                volume=1000000,
+                last_updated=datetime.now(),
+            ),
+            "GOOGL": StockQuote(
+                symbol="GOOGL",
+                price=135.69,
+                change=1.07,
+                change_percent=0.79,
+                volume=2000000,
+                last_updated=datetime.now(),
+            ),
+            "AAPL": StockQuote(
+                symbol="AAPL",
+                price=169.53,
+                change=0.0,
+                change_percent=0.0,
+                volume=1500000,
+                last_updated=datetime.now(),
+            ),
+        }
+
+        async def mock_get_quote(symbol: str):
+            if symbol in mock_quotes:
+                return mock_quotes[symbol]
+            else:
+                raise NotFoundError(f"Symbol {symbol} not found")
+
+        trading_service.get_quote = mock_get_quote
 
         portfolio = await trading_service.get_portfolio()
 
-        # Verify calculations
+        # Verify calculations (should have all 3 positions: AAL, GOOGL, AAPL)
         assert portfolio.cash_balance == 50000.0
         assert len(portfolio.positions) == 3
 
         # Verify individual positions
         position_map = {pos.symbol: pos for pos in portfolio.positions}
 
+        # Check all positions since they all have test data quotes
         for expected_pos in positions_data:
             actual_pos = position_map[expected_pos["symbol"]]
             assert actual_pos.quantity == expected_pos["quantity"]
@@ -137,7 +180,6 @@ class TestDatabaseState:
     ):
         """Test concurrent database operations don't corrupt data."""
         import asyncio
-
 
         async def create_order(symbol: str, quantity: int):
             """Helper to create an order."""

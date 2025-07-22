@@ -372,8 +372,7 @@ class ComplexOrderValidator:
 
         # Classic butterfly: +1, -2, +1 or -1, +2, -1
         if len(set(strikes)) == 3 and (
-            quantities[0] * quantities[2] > 0
-            and quantities[1] == -2 * quantities[0]
+            quantities[0] * quantities[2] > 0 and quantities[1] == -2 * quantities[0]
         ):
             return StrategyType.BUTTERFLY
 

@@ -482,9 +482,7 @@ class PerformanceMonitor:
             if operation:
                 self.metrics[operation].clear()
                 # Clear related counters
-                keys_to_clear = [
-                    k for k in self.counters if k.startswith(operation)
-                ]
+                keys_to_clear = [k for k in self.counters if k.startswith(operation)]
                 for key in keys_to_clear:
                     del self.counters[key]
             else:

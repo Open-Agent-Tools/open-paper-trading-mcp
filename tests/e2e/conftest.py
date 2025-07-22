@@ -111,7 +111,8 @@ async def test_async_session() -> AsyncSession:
 @pytest_asyncio.fixture(scope="function")
 async def test_client():
     """Create a test client with shared database session."""
-    # Import shared fixtures
+    # Import shared fixtures and dependencies
+    from app.core.dependencies import get_trading_service
     from tests.conftest import get_async_session as shared_get_async_session
 
     # Override database dependency to use shared session management
@@ -124,6 +125,12 @@ async def test_client():
     trading_service = TradingService(_get_quote_adapter())
     app.state.trading_service = trading_service
     set_mcp_trading_service(trading_service)
+
+    # Override the trading service dependency to use our test instance
+    def get_test_trading_service():
+        return trading_service
+
+    app.dependency_overrides[get_trading_service] = get_test_trading_service
 
     try:
         # Create async client with ASGI transport
