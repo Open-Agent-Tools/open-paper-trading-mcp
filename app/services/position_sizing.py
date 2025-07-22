@@ -7,7 +7,7 @@ Kelly Criterion, fixed fractional, volatility-based, and risk parity approaches.
 
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
@@ -40,7 +40,7 @@ class PositionSizeResult:
     risk_amount: float
     stop_loss_price: float | None = None
     confidence_level: float = 0.95
-    notes: list[str] = None
+    notes: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         if self.notes is None:
@@ -344,7 +344,7 @@ class PositionSizingCalculator:
             recommended_shares=shares,
             position_value=actual_value,
             percent_of_portfolio=actual_percent,
-            risk_amount=actual_value * daily_vol * 2,  # 2 std dev risk
+            risk_amount=float(actual_value * daily_vol * 2),  # 2 std dev risk
             notes=[
                 f"Annual volatility: {annual_vol:.1%}",
                 f"Volatility scalar: {volatility_scalar:.2f}",
@@ -376,6 +376,10 @@ class PositionSizingCalculator:
         total_risk = 0.0
 
         for position in portfolio.positions:
+            # Skip positions with no current price
+            if position.current_price is None:
+                continue
+                
             # Simplified - assume equal volatility for existing positions
             pos_risk = (
                 abs(position.quantity) * position.current_price * 0.02
@@ -412,7 +416,7 @@ class PositionSizingCalculator:
             recommended_shares=shares,
             position_value=actual_value,
             percent_of_portfolio=actual_percent,
-            risk_amount=actual_risk,
+            risk_amount=float(actual_risk),
             notes=[
                 f"Asset volatility: {asset_vol:.1%}",
                 f"Risk budget: {self.parameters.risk_budget:.1%}",
@@ -486,7 +490,7 @@ class PositionSizingCalculator:
             atr_values.append(daily_range)
 
         if atr_values:
-            atr = np.mean(atr_values[-self.parameters.lookback_period :])
+            atr = float(np.mean(atr_values[-self.parameters.lookback_period :]))
         else:
             atr = current_price * 0.02  # Default 2% ATR
 
@@ -511,8 +515,8 @@ class PositionSizingCalculator:
             recommended_shares=shares,
             position_value=actual_value,
             percent_of_portfolio=actual_percent,
-            risk_amount=actual_risk,
-            stop_loss_price=stop_loss,
+            risk_amount=float(actual_risk),
+            stop_loss_price=float(stop_loss),
             notes=[
                 f"ATR: ${atr:.2f}",
                 f"Risk in ATRs: {risk_in_atrs}",
@@ -565,6 +569,8 @@ class PositionSizingCalculator:
                 cash_balance=remaining_capital,
                 positions=portfolio.positions,
                 total_value=portfolio.total_value,
+                daily_pnl=portfolio.daily_pnl,
+                total_pnl=portfolio.total_pnl,
             )
 
             result = self.calculate_position_size(

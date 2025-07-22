@@ -99,6 +99,7 @@ class PerformanceMonitor:
 
         # Real-time counters
         self.counters: dict[str, int] = defaultdict(int)
+        self.gauges: dict[str, float] = defaultdict(float)
         self.timing_buckets: dict[str, list[float]] = defaultdict(list)
 
         # Active measurements
@@ -212,7 +213,7 @@ class PerformanceMonitor:
     def record_gauge(self, name: str, value: float) -> None:
         """Record a gauge value."""
         with self._lock:
-            self.counters[name] = value
+            self.gauges[name] = value
 
     def get_current_stats(self, operation: str) -> dict[str, Any]:
         """Get current statistics for an operation."""
@@ -267,8 +268,9 @@ class PerformanceMonitor:
         for operation in operations:
             stats[operation] = self.get_current_stats(operation)
 
-        # Add system-wide counters
+        # Add system-wide counters and gauges
         stats["_counters"] = dict(self.counters)
+        stats["_gauges"] = dict(self.gauges)
 
         return stats
 

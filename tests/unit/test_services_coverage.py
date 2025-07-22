@@ -8,37 +8,23 @@ to ensure basic coverage without complex test setup.
 from datetime import date
 
 # Order Notifications
-from app.services.order_notifications import (
-    NotificationPriority,
-    NotificationRule,
-    OrderNotificationManager,
-)
-
+from app.services.order_notifications import (NotificationPriority,
+                                              NotificationRule,
+                                              OrderNotificationManager)
 # Performance Benchmarks
 from app.services.performance_benchmarks import BenchmarkResult
-
 # Portfolio Risk Metrics
-from app.services.portfolio_risk_metrics import (
-    ExposureMetrics,
-    PortfolioRiskCalculator,
-    RiskBudgetAllocation,
-    VaRResult,
-)
-
+from app.services.portfolio_risk_metrics import (ExposureMetrics,
+                                                 PortfolioRiskCalculator,
+                                                 RiskBudgetAllocation,
+                                                 VaRResult)
 # Position Sizing
-from app.services.position_sizing import (
-    PositionSizeResult,
-    PositionSizingCalculator,
-    SizingStrategy,
-)
-
+from app.services.position_sizing import (PositionSizeResult,
+                                          PositionSizingCalculator,
+                                          SizingStrategy)
 # Risk Analysis
-from app.services.risk_analysis import (
-    PortfolioImpact,
-    PositionImpact,
-    RiskAnalyzer,
-    RiskLevel,
-)
+from app.services.risk_analysis import (PortfolioImpact, PositionImpact,
+                                        RiskAnalyzer, RiskLevel)
 
 # Order Queue
 

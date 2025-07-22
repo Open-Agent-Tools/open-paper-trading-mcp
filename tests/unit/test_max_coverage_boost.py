@@ -13,30 +13,27 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.test_data import DevDataQuoteAdapter
-
 # High-impact coverage imports
 from app.core.config import settings
 from app.models.assets import Stock, asset_factory
 from app.models.database.trading import Account, Order, Position, Transaction
 from app.models.quotes import OptionQuote, Quote
 from app.schemas.accounts import Account as SchemaAccount
-from app.schemas.orders import OrderCondition, OrderCreate, OrderStatus, OrderType
+from app.schemas.orders import (OrderCondition, OrderCreate, OrderStatus,
+                                OrderType)
 from app.schemas.positions import Portfolio
 from app.schemas.positions import Position as SchemaPosition
 from app.services.auth_service import AuthService
 from app.services.trading_service import TradingService
 from app.storage.database import AsyncSessionLocal, get_async_session
-from app.utils.schema_converters import (
-    AccountConverter,
-    OrderConverter,
-    PositionConverter,
-    db_account_to_schema,
-    db_order_to_schema,
-    db_position_to_schema,
-    schema_account_to_db,
-    schema_order_to_db,
-    schema_position_to_db,
-)
+from app.utils.schema_converters import (AccountConverter, OrderConverter,
+                                         PositionConverter,
+                                         db_account_to_schema,
+                                         db_order_to_schema,
+                                         db_position_to_schema,
+                                         schema_account_to_db,
+                                         schema_order_to_db,
+                                         schema_position_to_db)
 
 
 class TestTradingServiceHighCoverage:

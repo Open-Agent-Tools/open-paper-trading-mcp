@@ -17,11 +17,9 @@ import pytest
 from app.schemas.orders import Order, OrderStatus, OrderType
 from app.services.order_execution_engine import OrderExecutionEngine
 from app.services.order_queue import BatchConfig, OrderQueue, QueuePriority
-from app.services.order_state_tracker import (
-    MemoryEfficientOrderTracker,
-    OrderStateTrackingConfig,
-    StateChangeEvent,
-)
+from app.services.order_state_tracker import (MemoryEfficientOrderTracker,
+                                              OrderStateTrackingConfig,
+                                              StateChangeEvent)
 from app.services.performance_benchmarks import PerformanceMonitor
 
 
@@ -199,15 +197,15 @@ class TestHighVolumeOrderProcessing:
 
         # Verify performance requirements
         assert len(processed_orders) == order_count, "Not all orders were processed"
-        assert throughput >= PerformanceTestConfig.MIN_THROUGHPUT_OPS_SEC, (
-            f"Throughput {throughput:.1f} below minimum {PerformanceTestConfig.MIN_THROUGHPUT_OPS_SEC}"
-        )
+        assert (
+            throughput >= PerformanceTestConfig.MIN_THROUGHPUT_OPS_SEC
+        ), f"Throughput {throughput:.1f} below minimum {PerformanceTestConfig.MIN_THROUGHPUT_OPS_SEC}"
 
         if stats:
             avg_latency = stats.get("avg_latency_ms", 0)
-            assert avg_latency <= PerformanceTestConfig.MAX_LATENCY_MS, (
-                f"Average latency {avg_latency:.2f}ms exceeds maximum {PerformanceTestConfig.MAX_LATENCY_MS}ms"
-            )
+            assert (
+                avg_latency <= PerformanceTestConfig.MAX_LATENCY_MS
+            ), f"Average latency {avg_latency:.2f}ms exceeds maximum {PerformanceTestConfig.MAX_LATENCY_MS}ms"
 
     @pytest.mark.asyncio
     async def test_concurrent_order_execution(
@@ -295,9 +293,9 @@ class TestHighVolumeOrderProcessing:
             )
 
             # Verify some orders were triggered
-            assert mock_trading_service.execute_order.call_count > 0, (
-                "No orders were executed"
-            )
+            assert (
+                mock_trading_service.execute_order.call_count > 0
+            ), "No orders were executed"
 
         finally:
             await execution_engine.stop()
@@ -376,9 +374,9 @@ class TestHighVolumeOrderProcessing:
         print(f"   Avg snapshots per order: {metrics['avg_snapshots_per_order']:.1f}")
 
         # Verify memory efficiency
-        assert memory_increase_mb <= PerformanceTestConfig.MAX_MEMORY_MB, (
-            f"Memory usage {memory_increase_mb:.1f}MB exceeds limit {PerformanceTestConfig.MAX_MEMORY_MB}MB"
-        )
+        assert (
+            memory_increase_mb <= PerformanceTestConfig.MAX_MEMORY_MB
+        ), f"Memory usage {memory_increase_mb:.1f}MB exceeds limit {PerformanceTestConfig.MAX_MEMORY_MB}MB"
 
         # Verify tracker bounds are respected
         assert (
@@ -482,9 +480,9 @@ class TestStressTestScenarios:
             print(f"   Avg latency: {stats.get('avg_latency_ms', 0):.2f}ms")
             print(f"   P95 latency: {stats.get('p95_latency_ms', 0):.2f}ms")
 
-        assert queue_status["total_processed"] == total_processed, (
-            "Not all orders processed"
-        )
+        assert (
+            queue_status["total_processed"] == total_processed
+        ), "Not all orders processed"
 
     @pytest.mark.asyncio
     @pytest.mark.slow
@@ -551,9 +549,9 @@ class TestStressTestScenarios:
         print(f"   Active orders: {metrics['active_orders']}")
 
         # Verify stability
-        assert error_count <= total_orders * 0.01, (
-            f"Error rate {error_count / total_orders * 100:.2f}% too high"
-        )
+        assert (
+            error_count <= total_orders * 0.01
+        ), f"Error rate {error_count / total_orders * 100:.2f}% too high"
         assert metrics["active_orders"] > 0, "No orders tracked"
 
 

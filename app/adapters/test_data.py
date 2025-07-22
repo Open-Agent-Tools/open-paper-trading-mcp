@@ -18,7 +18,8 @@ from typing import Any
 from sqlalchemy import and_
 
 from ..models.assets import Asset, Option, asset_factory
-from ..models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
+from ..models.database.trading import (DevOptionQuote, DevScenario,
+                                       DevStockQuote)
 from ..models.quotes import OptionQuote, OptionsChain, Quote
 from ..services.greeks import calculate_option_greeks
 from ..storage.database import get_sync_session

@@ -12,16 +12,12 @@ from pydantic import ValidationError
 from app.schemas.accounts import Account
 from app.schemas.orders import Order, OrderCondition, OrderStatus, OrderType
 from app.schemas.positions import Position
-from app.schemas.validation import (
-    AccountValidationMixin,
-    OrderValidationMixin,
-    PositionValidationMixin,
-    SchemaValidationMixin,
-    ValidationHelpers,
-    validate_percentage,
-    validate_pnl,
-    validate_symbol,
-)
+from app.schemas.validation import (AccountValidationMixin,
+                                    OrderValidationMixin,
+                                    PositionValidationMixin,
+                                    SchemaValidationMixin, ValidationHelpers,
+                                    validate_percentage, validate_pnl,
+                                    validate_symbol)
 
 
 class TestSchemaValidationMixin:

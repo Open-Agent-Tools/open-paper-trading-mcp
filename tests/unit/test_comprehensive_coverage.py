@@ -22,8 +22,9 @@ class TestModelsImports:
 
     def test_database_models_import(self):
         """Test import of database models."""
-        from app.models.database.trading import Account, Order, Transaction
+        from app.models.database.trading import Account, Order
         from app.models.database.trading import Position as DBPosition
+        from app.models.database.trading import Transaction
 
         assert Account is not None
         assert Order is not None
@@ -53,14 +54,8 @@ class TestSchemasImports:
 
     def test_orders_schema_import(self):
         """Test import of order schemas."""
-        from app.schemas.orders import (
-            Order,
-            OrderCondition,
-            OrderCreate,
-            OrderStatus,
-            OrderType,
-            OrderUpdate,
-        )
+        from app.schemas.orders import (Order, OrderCondition, OrderCreate,
+                                        OrderStatus, OrderType, OrderUpdate)
 
         assert Order is not None
         assert OrderCreate is not None
@@ -71,7 +66,8 @@ class TestSchemasImports:
 
     def test_positions_schema_import(self):
         """Test import of position schemas."""
-        from app.schemas.positions import Position, PositionCreate, PositionUpdate
+        from app.schemas.positions import (Position, PositionCreate,
+                                           PositionUpdate)
 
         assert Position is not None
         assert PositionCreate is not None
@@ -87,11 +83,9 @@ class TestSchemasImports:
 
     def test_validation_schema_import(self):
         """Test import of validation schemas."""
-        from app.schemas.validation import (
-            OrderValidationRequest,
-            OrderValidationResponse,
-            PositionValidationRequest,
-        )
+        from app.schemas.validation import (OrderValidationRequest,
+                                            OrderValidationResponse,
+                                            PositionValidationRequest)
 
         assert OrderValidationRequest is not None
         assert OrderValidationResponse is not None
@@ -149,7 +143,8 @@ class TestCoreModulesImports:
 
     def test_exceptions_import(self):
         """Test import of exceptions module."""
-        from app.core.exceptions import NotFoundError, TradingError, ValidationError
+        from app.core.exceptions import (NotFoundError, TradingError,
+                                         ValidationError)
 
         assert NotFoundError is not None
         assert ValidationError is not None
@@ -179,12 +174,9 @@ class TestServicesImports:
 
     def test_greeks_service_import(self):
         """Test import of greeks service."""
-        from app.services.greeks import (
-            GreeksCalculator,
-            calculate_delta,
-            calculate_gamma,
-            calculate_option_greeks,
-        )
+        from app.services.greeks import (GreeksCalculator, calculate_delta,
+                                         calculate_gamma,
+                                         calculate_option_greeks)
 
         assert calculate_option_greeks is not None
         assert GreeksCalculator is not None
@@ -193,11 +185,8 @@ class TestServicesImports:
 
     def test_validation_service_import(self):
         """Test import of validation service."""
-        from app.services.validation import (
-            AccountValidator,
-            OrderValidator,
-            PositionValidator,
-        )
+        from app.services.validation import (AccountValidator, OrderValidator,
+                                             PositionValidator)
 
         assert OrderValidator is not None
         assert PositionValidator is not None
@@ -205,11 +194,9 @@ class TestServicesImports:
 
     def test_estimators_service_import(self):
         """Test import of estimators service."""
-        from app.services.estimators import (
-            BinomialEstimator,
-            BlackScholesEstimator,
-            EstimatorBase,
-        )
+        from app.services.estimators import (BinomialEstimator,
+                                             BlackScholesEstimator,
+                                             EstimatorBase)
 
         assert EstimatorBase is not None
         assert BlackScholesEstimator is not None
@@ -246,11 +233,9 @@ class TestUtilsImports:
 
     def test_schema_converters_import(self):
         """Test import of schema converters."""
-        from app.utils.schema_converters import (
-            TradingSchemaConverter,
-            convert_db_account_to_schema,
-            convert_db_order_to_schema,
-        )
+        from app.utils.schema_converters import (TradingSchemaConverter,
+                                                 convert_db_account_to_schema,
+                                                 convert_db_order_to_schema)
 
         assert TradingSchemaConverter is not None
         assert convert_db_account_to_schema is not None
@@ -262,12 +247,8 @@ class TestStorageImports:
 
     def test_database_import(self):
         """Test import of database module."""
-        from app.storage.database import (
-            AsyncSessionLocal,
-            get_async_session,
-            get_sync_session,
-            sync_engine,
-        )
+        from app.storage.database import (AsyncSessionLocal, get_async_session,
+                                          get_sync_session, sync_engine)
 
         assert get_async_session is not None
         assert get_sync_session is not None
@@ -400,7 +381,8 @@ class TestExceptionHandling:
 
     def test_custom_exceptions(self):
         """Test custom exception classes."""
-        from app.core.exceptions import NotFoundError, TradingError, ValidationError
+        from app.core.exceptions import (NotFoundError, TradingError,
+                                         ValidationError)
 
         # Test NotFoundError
         try:
@@ -449,11 +431,8 @@ class TestMockBasedFunctionality:
 
     def test_validator_classes(self):
         """Test validator class instantiation."""
-        from app.services.validation import (
-            AccountValidator,
-            OrderValidator,
-            PositionValidator,
-        )
+        from app.services.validation import (AccountValidator, OrderValidator,
+                                             PositionValidator)
 
         order_validator = OrderValidator()
         assert order_validator is not None
@@ -466,7 +445,8 @@ class TestMockBasedFunctionality:
 
     def test_estimator_classes(self):
         """Test estimator class instantiation."""
-        from app.services.estimators import BinomialEstimator, BlackScholesEstimator
+        from app.services.estimators import (BinomialEstimator,
+                                             BlackScholesEstimator)
 
         bs_estimator = BlackScholesEstimator()
         assert bs_estimator is not None

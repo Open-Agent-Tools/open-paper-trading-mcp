@@ -1,24 +1,12 @@
 import uuid
 
-from sqlalchemy import (
-    JSON,
-    BigInteger,
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-    Enum,
-    Float,
-    ForeignKey,
-    Index,
-    Integer,
-    Numeric,
-    String,
-    Text,
-)
+from sqlalchemy import (JSON, BigInteger, Boolean, Column, Date, DateTime,
+                        Enum, Float, ForeignKey, Index, Integer, Numeric,
+                        String, Text)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.types import JSON, Boolean, Date, DateTime, Float, Integer, String, Text
+from sqlalchemy.types import (JSON, Boolean, Date, DateTime, Float, Integer,
+                              String, Text)
 
 from app.models.database.base import Base
 from app.schemas.orders import OrderStatus, OrderType

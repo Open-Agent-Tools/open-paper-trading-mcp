@@ -9,13 +9,8 @@ from typing import Any
 
 from ...models.assets import Option, asset_factory
 from ...schemas.positions import Position
-from .models import (
-    AssetStrategy,
-    BasicStrategy,
-    CoveredStrategy,
-    SpreadStrategy,
-    SpreadType,
-)
+from .models import (AssetStrategy, BasicStrategy, CoveredStrategy,
+                     SpreadStrategy, SpreadType)
 
 
 class StrategyRecognitionService:

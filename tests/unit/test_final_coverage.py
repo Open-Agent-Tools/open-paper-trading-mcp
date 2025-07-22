@@ -90,7 +90,8 @@ class TestServicesCoverage:
     @patch("app.services.greeks.calculate_option_greeks")
     def test_greeks_service_functionality(self, mock_calc):
         """Test greeks service functionality."""
-        from app.services.greeks import GreeksCalculator, calculate_option_greeks
+        from app.services.greeks import (GreeksCalculator,
+                                         calculate_option_greeks)
 
         # Mock return value
         mock_calc.return_value = {"delta": 0.5, "gamma": 0.02}
@@ -234,7 +235,8 @@ class TestCoreCoverage:
 
     def test_exceptions_functionality(self):
         """Test exception classes."""
-        from app.core.exceptions import NotFoundError, TradingError, ValidationError
+        from app.core.exceptions import (NotFoundError, TradingError,
+                                         ValidationError)
 
         # Test exception inheritance
         assert issubclass(NotFoundError, Exception)
@@ -276,11 +278,8 @@ class TestStorageCoverage:
 
     def test_database_imports(self):
         """Test database module imports."""
-        from app.storage.database import (
-            AsyncSessionLocal,
-            async_engine,
-            get_async_session,
-        )
+        from app.storage.database import (AsyncSessionLocal, async_engine,
+                                          get_async_session)
 
         assert get_async_session is not None
         assert AsyncSessionLocal is not None

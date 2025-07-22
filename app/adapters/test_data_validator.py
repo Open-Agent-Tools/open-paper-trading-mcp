@@ -10,7 +10,8 @@ from typing import Any
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from ..models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
+from ..models.database.trading import (DevOptionQuote, DevScenario,
+                                       DevStockQuote)
 from ..storage.database import get_sync_session
 
 logger = logging.getLogger(__name__)

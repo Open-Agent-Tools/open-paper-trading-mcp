@@ -11,28 +11,18 @@ from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Order as DBOrder
 from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
-from app.schemas.orders import (
-    Order,
-    OrderCondition,
-    OrderCreate,
-    OrderStatus,
-    OrderType,
-)
+from app.schemas.orders import (Order, OrderCondition, OrderCreate,
+                                OrderStatus, OrderType)
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.schemas.trading import StockQuote
-
 # Import schema converters
-from app.utils.schema_converters import (
-    AccountConverter,
-    OrderConverter,
-    PositionConverter,
-)
+from app.utils.schema_converters import (AccountConverter, OrderConverter,
+                                         PositionConverter)
 
 # Database imports removed - using async patterns only
 from ..adapters.base import QuoteAdapter
 from ..adapters.test_data import DevDataQuoteAdapter
 from .greeks import calculate_option_greeks
-
 # Import new services
 from .order_execution import OrderExecutionEngine
 from .strategies import StrategyRecognitionService
@@ -541,7 +531,7 @@ class TradingService:
             raise NotFoundError(f"No options chain found for {underlying}")
         return chain
 
-    def calculate_greeks(
+    async def calculate_greeks(
         self, option_symbol: str, underlying_price: float | None = None
     ) -> dict[str, float | None]:
         """Calculate option Greeks."""
@@ -550,9 +540,9 @@ class TradingService:
             raise ValueError(f"{option_symbol} is not an option")
 
         # Get quotes
-        option_quote = self.get_enhanced_quote(option_symbol)
+        option_quote = await self.get_enhanced_quote(option_symbol)
         if underlying_price is None:
-            underlying_quote = self.get_enhanced_quote(option.underlying.symbol)
+            underlying_quote = await self.get_enhanced_quote(option.underlying.symbol)
             underlying_price = underlying_quote.price
 
         if not option_quote.price or not underlying_price:
@@ -825,7 +815,7 @@ class TradingService:
     # STOCK MARKET DATA METHODS
     # ============================================================================
 
-    def get_stock_price(self, symbol: str) -> dict[str, Any]:
+    async def get_stock_price(self, symbol: str) -> dict[str, Any]:
         """
         Get current stock price and basic metrics.
 
@@ -837,7 +827,7 @@ class TradingService:
             if not asset:
                 return {"error": f"Invalid symbol: {symbol}"}
 
-            quote = self.get_enhanced_quote(symbol)
+            quote = await self.get_enhanced_quote(symbol)
             if not quote:
                 return {"error": f"No price data found for symbol: {symbol}"}
 

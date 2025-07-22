@@ -9,13 +9,8 @@ from app.models.assets import Option, Stock
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
-from app.schemas.orders import (
-    Order,
-    OrderCondition,
-    OrderCreate,
-    OrderStatus,
-    OrderType,
-)
+from app.schemas.orders import (Order, OrderCondition, OrderCreate,
+                                OrderStatus, OrderType)
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
@@ -962,30 +957,45 @@ class TestOptionsStrategy:
 class TestMarketData:
     """Tests for market data functionality."""
 
-    def test_get_quote_success(self, trading_service):
+    @patch("app.services.trading_service.asset_factory")
+    @pytest.mark.asyncio
+    async def test_get_quote_success(self, mock_asset_factory, trading_service):
         """Test successful quote retrieval."""
         # Arrange
         symbol = "AAPL"
+        mock_asset = MagicMock(spec=Stock)
+        mock_asset_factory.return_value = mock_asset
+        
+        mock_quote = MagicMock(spec=Quote)
+        mock_quote.price = 150.0
+        mock_quote.quote_date = datetime.now()
+        mock_quote.volume = 1000
+        trading_service.quote_adapter.get_quote = AsyncMock(return_value=mock_quote)
 
         # Act
-        result = trading_service.get_quote(symbol)
+        result = await trading_service.get_quote(symbol)
 
         # Assert
         assert result is not None
         assert isinstance(result, StockQuote)
-        assert result.symbol == symbol
+        assert result.symbol == symbol.upper()
+        assert result.price == 150.0
 
-    def test_get_quote_not_found(self, trading_service):
+    @patch("app.services.trading_service.asset_factory")
+    @pytest.mark.asyncio
+    async def test_get_quote_not_found(self, mock_asset_factory, trading_service):
         """Test get_quote raises NotFoundError for unknown symbol."""
         # Arrange
         symbol = "UNKNOWN"
+        mock_asset_factory.return_value = None  # Simulate unknown symbol
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.get_quote(symbol)
+            await trading_service.get_quote(symbol)
 
     @patch("app.services.trading_service.asset_factory")
-    def test_get_enhanced_quote_success(self, mock_asset_factory, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_enhanced_quote_success(self, mock_asset_factory, trading_service):
         """Test successful enhanced quote retrieval."""
         # Arrange
         symbol = "AAPL"
@@ -993,17 +1003,18 @@ class TestMarketData:
         mock_asset_factory.return_value = mock_asset
 
         mock_quote = MagicMock(spec=Quote)
-        trading_service.quote_adapter.get_quote = MagicMock(return_value=mock_quote)
+        trading_service.quote_adapter.get_quote = AsyncMock(return_value=mock_quote)
 
         # Act
-        result = trading_service.get_enhanced_quote(symbol)
+        result = await trading_service.get_enhanced_quote(symbol)
 
         # Assert
         assert result is not None
         assert result == mock_quote
 
     @patch("app.services.trading_service.asset_factory")
-    def test_get_enhanced_quote_no_quote_available(
+    @pytest.mark.asyncio
+    async def test_get_enhanced_quote_no_quote_available(
         self, mock_asset_factory, trading_service
     ):
         """Test enhanced quote raises error when no quote available."""
@@ -1012,25 +1023,26 @@ class TestMarketData:
         mock_asset = MagicMock(spec=Stock)
         mock_asset_factory.return_value = mock_asset
 
-        trading_service.quote_adapter.get_quote = MagicMock(return_value=None)
+        trading_service.quote_adapter.get_quote = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError, match="No quote available for AAPL"):
-            trading_service.get_enhanced_quote(symbol)
+            await trading_service.get_enhanced_quote(symbol)
 
     @patch("app.services.trading_service.asset_factory")
-    def test_get_enhanced_quote_not_found(self, mock_asset_factory, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_enhanced_quote_not_found(self, mock_asset_factory, trading_service):
         """Test get_enhanced_quote raises NotFoundError when no data available."""
         # Arrange
         symbol = "UNKNOWN"
         mock_asset = MagicMock(spec=Stock)
         mock_asset_factory.return_value = mock_asset
 
-        trading_service.quote_adapter.get_quote = MagicMock(return_value=None)
+        trading_service.quote_adapter.get_quote = AsyncMock(return_value=None)
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.get_enhanced_quote(symbol)
+            await trading_service.get_enhanced_quote(symbol)
 
     @patch("app.services.trading_service.asset_factory")
     def test_get_stock_price_success(self, mock_asset_factory, trading_service):
@@ -1043,7 +1055,8 @@ class TestMarketData:
         mock_quote = MagicMock(
             price=150.0, bid=149.8, ask=150.2, quote_date=datetime.now()
         )
-        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
+        # Mock get_enhanced_quote to return the mock quote directly (not async)
+        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
 
         # Act
         result = trading_service.get_stock_price(symbol)
@@ -1101,7 +1114,8 @@ class TestMarketData:
         mock_asset_factory.return_value = mock_asset
 
         mock_quote = MagicMock(quote_date=datetime.now())
-        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
+        # Mock get_enhanced_quote to return the mock quote directly (not async)
+        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
 
         # Act
         result = trading_service.get_stock_info(symbol)

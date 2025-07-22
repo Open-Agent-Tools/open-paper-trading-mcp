@@ -427,7 +427,8 @@ class TestMethodInvocations:
 
         # Portfolio Risk Calculator
         try:
-            from app.services.portfolio_risk_metrics import PortfolioRiskCalculator
+            from app.services.portfolio_risk_metrics import \
+                PortfolioRiskCalculator
 
             calc = PortfolioRiskCalculator()
 

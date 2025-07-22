@@ -95,7 +95,8 @@ class TestDataClassCreation:
 
     def test_position_size_result_creation(self):
         """Test position size result creation."""
-        from app.services.position_sizing import PositionSizeResult, SizingStrategy
+        from app.services.position_sizing import (PositionSizeResult,
+                                                  SizingStrategy)
 
         result = PositionSizeResult(
             strategy=SizingStrategy.FIXED_PERCENTAGE,
@@ -112,11 +113,8 @@ class TestDataClassCreation:
         from unittest.mock import Mock
 
         from app.schemas.orders import Order
-        from app.services.risk_analysis import (
-            PortfolioImpact,
-            RiskAnalysisResult,
-            RiskLevel,
-        )
+        from app.services.risk_analysis import (PortfolioImpact,
+                                                RiskAnalysisResult, RiskLevel)
 
         # Create a mock order
         mock_order = Mock(spec=Order)
@@ -142,12 +140,10 @@ class TestDataClassCreation:
 
     def test_notification_creation(self):
         """Test notification creation."""
-        from app.services.order_notifications import (
-            Notification,
-            NotificationChannel,
-            NotificationPriority,
-            OrderEvent,
-        )
+        from app.services.order_notifications import (Notification,
+                                                      NotificationChannel,
+                                                      NotificationPriority,
+                                                      OrderEvent)
 
         notification = Notification(
             id="notif-1",

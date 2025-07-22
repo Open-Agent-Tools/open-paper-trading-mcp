@@ -60,9 +60,9 @@ class TestAsyncDatabaseArchitecture:
         for method_name in async_methods:
             if hasattr(service, method_name):
                 method = getattr(service, method_name)
-                assert inspect.iscoroutinefunction(method), (
-                    f"{method_name} should be async"
-                )
+                assert inspect.iscoroutinefunction(
+                    method
+                ), f"{method_name} should be async"
 
     @pytest.mark.asyncio
     async def test_database_first_architecture(self):
@@ -89,7 +89,8 @@ class TestDatabaseModelsComprehensive:
 
     def test_all_database_models_import(self):
         """Test all database models can be imported."""
-        from app.models.database.trading import Account, Order, Position, Transaction
+        from app.models.database.trading import (Account, Order, Position,
+                                                 Transaction)
 
         # Test models exist and have proper attributes
         assert hasattr(Account, "__tablename__")
@@ -400,7 +401,8 @@ class TestCoreComponentsArchitecture:
 
     def test_exception_hierarchy(self):
         """Test exception hierarchy."""
-        from app.core.exceptions import NotFoundError, TradingError, ValidationError
+        from app.core.exceptions import (NotFoundError, TradingError,
+                                         ValidationError)
 
         # Test exceptions inherit from Exception
         assert issubclass(NotFoundError, Exception)
@@ -424,11 +426,8 @@ class TestStorageArchitecture:
 
     def test_database_configuration(self):
         """Test database configuration."""
-        from app.storage.database import (
-            AsyncSessionLocal,
-            async_engine,
-            get_async_session,
-        )
+        from app.storage.database import (AsyncSessionLocal, async_engine,
+                                          get_async_session)
 
         assert get_async_session is not None
         assert AsyncSessionLocal is not None
@@ -470,10 +469,8 @@ class TestUtilityComponents:
 
     def test_converter_functions(self):
         """Test converter functions exist."""
-        from app.utils.schema_converters import (
-            convert_db_account_to_schema,
-            convert_db_order_to_schema,
-        )
+        from app.utils.schema_converters import (convert_db_account_to_schema,
+                                                 convert_db_order_to_schema)
 
         assert callable(convert_db_account_to_schema)
         assert callable(convert_db_order_to_schema)
@@ -564,9 +561,9 @@ class TestArchitecturalCompliance:
         ]
 
         for attr in state_attributes:
-            assert not hasattr(service, attr), (
-                f"Service should not cache {attr} in memory"
-            )
+            assert not hasattr(
+                service, attr
+            ), f"Service should not cache {attr} in memory"
 
     def test_separation_of_concerns(self):
         """Test separation of concerns across layers."""
