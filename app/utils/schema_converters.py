@@ -6,7 +6,8 @@ field mapping differences and maintain clean separation of concerns.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generic, Optional, TypeVar
+from datetime import datetime
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar, cast
 
 from app.models.assets import asset_factory
 from app.models.database.trading import Account as DBAccount
@@ -113,8 +114,8 @@ class OrderConverter(SchemaConverter[DBOrder, Order]):
             quantity=db_order.quantity,
             price=db_order.price,
             status=db_order.status,
-            created_at=db_order.created_at,
-            filled_at=db_order.filled_at,
+            created_at=cast(datetime | None, db_order.created_at),
+            filled_at=cast(datetime | None, db_order.filled_at),
             # Schema-only fields with defaults:
             condition=OrderCondition.MARKET,  # Default condition
             legs=[],  # Will be populated for multi-leg orders

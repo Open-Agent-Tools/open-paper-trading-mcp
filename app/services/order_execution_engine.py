@@ -13,6 +13,7 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from typing import cast
 
 from sqlalchemy import and_, select
 
@@ -424,13 +425,13 @@ class OrderExecutionEngine:
                         quantity=db_order.quantity,
                         price=db_order.price,
                         status=db_order.status,
-                        created_at=db_order.created_at,
+                        created_at=cast(datetime | None, db_order.created_at),
                         stop_price=db_order.stop_price,
                         trail_percent=db_order.trail_percent,
                         trail_amount=db_order.trail_amount,
                         condition=db_order.condition,
                         net_price=db_order.net_price,
-                        filled_at=db_order.filled_at,
+                        filled_at=cast(datetime | None, db_order.filled_at),
                     )
                 break
         except Exception as e:
@@ -467,8 +468,8 @@ class OrderExecutionEngine:
                     db_order.status = (
                         OrderStatus.FILLED
                     )  # Or could add TRIGGERED status
-                    db_order.triggered_at = datetime.utcnow()
-                    db_order.filled_at = datetime.utcnow()
+                    setattr(db_order, 'triggered_at', datetime.utcnow())
+                    setattr(db_order, 'filled_at', datetime.utcnow())
 
                     await db.commit()
                     logger.info(f"Updated order {order_id} status to triggered")
@@ -509,7 +510,7 @@ class OrderExecutionEngine:
                             quantity=db_order.quantity,
                             price=db_order.price,
                             status=db_order.status,
-                            created_at=db_order.created_at,
+                            created_at=cast(datetime | None, db_order.created_at),
                             stop_price=db_order.stop_price,
                             trail_percent=db_order.trail_percent,
                             trail_amount=db_order.trail_amount,

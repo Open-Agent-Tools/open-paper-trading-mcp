@@ -660,6 +660,7 @@ class TestHealthEndpoints:
     @pytest.mark.asyncio
     async def test_health_check_response_times_measured(self):
         """Test that response times are properly measured in health checks."""
+        import asyncio
         from app.api.v1.endpoints.health import check_database_health
 
         mock_db = AsyncMock(spec=AsyncSession)
@@ -683,3 +684,404 @@ class TestHealthEndpoints:
         assert (
             result["response_time_ms"] <= actual_time + 50
         )  # Upper bound with tolerance
+
+    # Enhanced monitoring and edge case tests
+    @pytest.mark.asyncio
+    async def test_health_check_under_high_load(self, client):
+        """Test health endpoints under simulated high load."""
+        import asyncio
+
+        async def make_health_request():
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                return await ac.get("/api/v1/health")
+
+        # Make 10 concurrent health check requests
+        tasks = [make_health_request() for _ in range(10)]
+        responses = await asyncio.gather(*tasks)
+
+        # All should succeed and respond quickly
+        for response in responses:
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["status"] == "ok"
+
+    @pytest.mark.asyncio
+    async def test_detailed_health_check_with_circuit_breaker_simulation(self, client):
+        """Test detailed health check with simulated circuit breaker behavior."""
+        from app.api.v1.endpoints.health import HealthStatus
+
+        # Simulate circuit breaker - some services failing
+        mock_db_health = {
+            "status": HealthStatus.HEALTHY,
+            "response_time_ms": 5.0,
+            "message": "Database is operational",
+        }
+
+        mock_quote_health = {
+            "status": HealthStatus.UNHEALTHY,
+            "adapter_type": "robinhood",
+            "response_time_ms": 5000.0,  # Very slow
+            "message": "Quote adapter circuit breaker open - too many failures",
+        }
+
+        mock_service_health = {
+            "status": HealthStatus.DEGRADED,
+            "response_time_ms": 1000.0,
+            "message": "Trading service running in degraded mode",
+        }
+
+        with (
+            patch(
+                "app.api.v1.endpoints.health.check_database_health",
+                return_value=mock_db_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_quote_adapter_health",
+                return_value=mock_quote_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_trading_service_health",
+                return_value=mock_service_health,
+            ),
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/detailed")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == HealthStatus.UNHEALTHY  # Due to quote adapter failure
+        assert "circuit breaker" in data["components"]["quote_adapter"]["message"]
+
+    @pytest.mark.asyncio
+    async def test_health_metrics_prometheus_format_validation(self, client):
+        """Test that health metrics follow Prometheus format correctly."""
+        from app.api.v1.endpoints.health import HealthStatus
+
+        mock_db_health = {
+            "status": HealthStatus.HEALTHY,
+            "response_time_ms": 5.0,
+            "message": "Database is operational",
+        }
+
+        mock_quote_health = {
+            "status": HealthStatus.HEALTHY,
+            "adapter_type": "robinhood",
+            "response_time_ms": 10.0,
+            "message": "Quote adapter is operational",
+        }
+
+        mock_service_health = {
+            "status": HealthStatus.HEALTHY,
+            "response_time_ms": 15.0,
+            "message": "Trading service is operational",
+        }
+
+        with (
+            patch(
+                "app.api.v1.endpoints.health.check_database_health",
+                return_value=mock_db_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_quote_adapter_health",
+                return_value=mock_quote_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_trading_service_health",
+                return_value=mock_service_health,
+            ),
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/metrics")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        metrics_lines = data["metrics"].split("\n")
+
+        # Validate Prometheus format
+        for line in metrics_lines:
+            if line.strip():  # Skip empty lines
+                # Should contain metric name, labels (optional), and value
+                assert "{" in line or " " in line  # Either has labels or space before value
+                # Should end with a number
+                parts = line.split()
+                assert len(parts) >= 2
+                try:
+                    float(parts[-1])  # Last part should be a number
+                except ValueError:
+                    pytest.fail(f"Invalid metric line format: {line}")
+
+    @pytest.mark.asyncio
+    async def test_dependency_health_check_comprehensive(self, client):
+        """Test comprehensive dependency health check scenarios."""
+        # Test with all dependencies configured
+        with (
+            patch.object(settings, "REDIS_URL", "redis://localhost:6379", create=True),
+            patch.object(settings, "QUOTE_ADAPTER_TYPE", "robinhood", create=True),
+            patch.object(settings, "DATABASE_URL", "postgresql://test", create=True),
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/dependencies")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+
+        dependency_names = [dep["name"] for dep in data["dependencies"]]
+        dependency_types = [dep["type"] for dep in data["dependencies"]]
+
+        assert "PostgreSQL" in dependency_names
+        assert "Quote Provider (robinhood)" in dependency_names
+        assert "Redis" in dependency_names
+
+        assert "database" in dependency_types
+        assert "external_api" in dependency_types
+        assert "cache" in dependency_types
+
+        # Check required vs optional dependencies
+        required_deps = [dep for dep in data["dependencies"] if dep["required"]]
+        optional_deps = [dep for dep in data["dependencies"] if not dep["required"]]
+
+        assert len(required_deps) >= 2  # At least DB and quote provider
+        assert len(optional_deps) >= 1  # At least Redis
+
+    @pytest.mark.asyncio
+    async def test_health_check_memory_usage_simulation(self, client):
+        """Test health checks under simulated memory pressure."""
+        from app.api.v1.endpoints.health import HealthStatus
+
+        # Simulate high memory usage affecting service performance
+        mock_db_health = {
+            "status": HealthStatus.DEGRADED,
+            "response_time_ms": 500.0,
+            "message": "Database under memory pressure",
+            "memory_usage_percent": 85.0,
+        }
+
+        mock_quote_health = {
+            "status": HealthStatus.DEGRADED,
+            "adapter_type": "test_data",
+            "response_time_ms": 300.0,
+            "message": "Quote adapter performance degraded - memory pressure",
+            "memory_usage_percent": 90.0,
+        }
+
+        mock_service_health = {
+            "status": HealthStatus.HEALTHY,
+            "response_time_ms": 50.0,
+            "message": "Trading service operational",
+            "memory_usage_percent": 60.0,
+        }
+
+        with (
+            patch(
+                "app.api.v1.endpoints.health.check_database_health",
+                return_value=mock_db_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_quote_adapter_health",
+                return_value=mock_quote_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_trading_service_health",
+                return_value=mock_service_health,
+            ),
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/detailed")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == HealthStatus.DEGRADED
+        assert "memory pressure" in str(data["components"])
+
+    @pytest.mark.asyncio
+    async def test_readiness_probe_startup_sequence(self, client):
+        """Test readiness probe during application startup sequence."""
+        mock_db = AsyncMock(spec=AsyncSession)
+
+        # Simulate startup sequence: first call fails, second succeeds
+        call_count = 0
+
+        def startup_sequence_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise Exception("Service starting up...")
+            else:
+                mock_result = MagicMock()
+                mock_result.scalar.return_value = 1
+                return mock_result
+
+        mock_db.execute.side_effect = startup_sequence_side_effect
+
+        with patch("app.api.v1.endpoints.health.get_async_db", return_value=mock_db):
+            # First call - not ready
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response1 = await ac.get("/api/v1/health/ready")
+
+            assert response1.status_code == status.HTTP_200_OK
+            data1 = response1.json()
+            assert data1["status"] == "not_ready"
+
+            # Second call - ready
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response2 = await ac.get("/api/v1/health/ready")
+
+            assert response2.status_code == status.HTTP_200_OK
+            data2 = response2.json()
+            assert data2["status"] == "ready"
+
+    @pytest.mark.asyncio
+    async def test_health_check_with_custom_adapter_types(self, client):
+        """Test health checks with different quote adapter types."""
+        from app.api.v1.endpoints.health import HealthStatus
+
+        adapter_types = ["test_data", "robinhood", "custom_adapter"]
+
+        for adapter_type in adapter_types:
+            mock_quote_health = {
+                "status": HealthStatus.HEALTHY,
+                "adapter_type": adapter_type,
+                "response_time_ms": 10.0,
+                "message": f"{adapter_type} adapter is operational",
+            }
+
+            with patch(
+                "app.api.v1.endpoints.health.check_quote_adapter_health",
+                return_value=mock_quote_health,
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    response = await ac.get("/api/v1/health/dependencies")
+
+            assert response.status_code == status.HTTP_200_OK
+            # The response should handle any adapter type gracefully
+
+    @pytest.mark.asyncio
+    async def test_health_check_response_caching_behavior(self, client):
+        """Test that health check responses are not cached inappropriately."""
+        # Make multiple requests and ensure timestamps are different
+        responses = []
+        for _ in range(3):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health")
+            responses.append(response.json())
+            await asyncio.sleep(0.001)  # Small delay
+
+        # All responses should have different timestamps
+        timestamps = [resp["timestamp"] for resp in responses]
+        assert len(set(timestamps)) == 3  # All unique
+
+    @pytest.mark.asyncio
+    async def test_health_check_with_database_connection_pool_exhaustion(self, client):
+        """Test health check behavior when database connection pool is exhausted."""
+        mock_db = AsyncMock(spec=AsyncSession)
+        mock_db.execute.side_effect = Exception("Connection pool exhausted")
+
+        with patch("app.api.v1.endpoints.health.get_async_db", return_value=mock_db):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/ready")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "not_ready"
+        assert "Database unavailable" in data["reason"]
+
+    @pytest.mark.asyncio
+    async def test_health_check_graceful_shutdown_simulation(self, client):
+        """Test health checks during graceful shutdown."""
+        from app.api.v1.endpoints.health import HealthStatus
+
+        # Simulate services shutting down gracefully
+        mock_db_health = {
+            "status": HealthStatus.DEGRADED,
+            "response_time_ms": 100.0,
+            "message": "Database connection closing - graceful shutdown",
+        }
+
+        mock_quote_health = {
+            "status": HealthStatus.UNHEALTHY,
+            "adapter_type": "robinhood",
+            "response_time_ms": 50.0,
+            "message": "Quote adapter stopped - graceful shutdown",
+        }
+
+        mock_service_health = {
+            "status": HealthStatus.DEGRADED,
+            "response_time_ms": 75.0,
+            "message": "Trading service stopping - processing final orders",
+        }
+
+        with (
+            patch(
+                "app.api.v1.endpoints.health.check_database_health",
+                return_value=mock_db_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_quote_adapter_health",
+                return_value=mock_quote_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_trading_service_health",
+                return_value=mock_service_health,
+            ),
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/detailed")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == HealthStatus.UNHEALTHY
+        assert "shutdown" in str(data["components"]).lower()
+
+    @pytest.mark.asyncio
+    async def test_health_metrics_with_special_characters_in_labels(self, client):
+        """Test health metrics handle special characters in adapter names correctly."""
+        from app.api.v1.endpoints.health import HealthStatus
+
+        mock_quote_health = {
+            "status": HealthStatus.HEALTHY,
+            "adapter_type": "test-data_v2.0",  # Special characters in adapter name
+            "response_time_ms": 10.0,
+            "message": "Quote adapter is operational",
+        }
+
+        mock_db_health = {
+            "status": HealthStatus.HEALTHY,
+            "response_time_ms": 5.0,
+            "message": "Database is operational",
+        }
+
+        mock_service_health = {
+            "status": HealthStatus.HEALTHY,
+            "response_time_ms": 15.0,
+            "message": "Trading service is operational",
+        }
+
+        with (
+            patch(
+                "app.api.v1.endpoints.health.check_database_health",
+                return_value=mock_db_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_quote_adapter_health",
+                return_value=mock_quote_health,
+            ),
+            patch(
+                "app.api.v1.endpoints.health.check_trading_service_health",
+                return_value=mock_service_health,
+            ),
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/health/metrics")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        
+        # Should handle special characters in adapter name
+        assert "test-data_v2.0" in data["metrics"]
+        
+        # Metrics should still be properly formatted
+        metrics_lines = data["metrics"].split("\n")
+        adapter_metric = next(
+            (line for line in metrics_lines if "health_quote_adapter_up" in line), ""
+        )
+        assert "test-data_v2.0" in adapter_metric

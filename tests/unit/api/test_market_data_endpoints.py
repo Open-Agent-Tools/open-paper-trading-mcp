@@ -800,3 +800,449 @@ class TestMarketDataEndpoints:
                 )
 
         assert response.status_code == status.HTTP_200_OK
+
+    # Enhanced error handling and edge case tests
+    @pytest.mark.asyncio
+    async def test_market_data_service_timeout_handling(self, client):
+        """Test market data endpoints handle service timeouts gracefully."""
+        import asyncio
+
+        mock_service = MagicMock(spec=TradingService)
+
+        async def timeout_side_effect(*args, **kwargs):
+            await asyncio.sleep(0.1)
+            raise TimeoutError("Service timeout")
+
+        mock_service.get_stock_price.side_effect = timeout_side_effect
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/price/AAPL")
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    @pytest.mark.asyncio
+    async def test_market_data_malformed_symbol_handling(self, client):
+        """Test handling of malformed or invalid stock symbols."""
+        mock_service = MagicMock(spec=TradingService)
+
+        malformed_symbols = [
+            "",  # Empty symbol
+            " ",  # Whitespace only
+            "AAPL@#$%",  # Special characters
+            "A" * 50,  # Very long symbol
+            "123INVALID",  # Starting with numbers
+            "aapl-test",  # Lowercase with dash
+            "AAPL\x00NULL",  # With null byte
+            "AAPL\n\t",  # With control characters
+        ]
+
+        for symbol in malformed_symbols:
+            mock_service.get_stock_price.return_value = {
+                "error": f"Invalid symbol: {symbol}"
+            }
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    # URL encode special characters
+                    import urllib.parse
+                    encoded_symbol = urllib.parse.quote(symbol)
+                    response = await ac.get(f"/api/v1/market-data/price/{encoded_symbol}")
+
+            # Should handle gracefully with appropriate error
+            assert response.status_code in [
+                status.HTTP_404_NOT_FOUND,
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_400_BAD_REQUEST,
+            ]
+
+    @pytest.mark.asyncio
+    async def test_market_data_concurrent_requests(self, client):
+        """Test market data endpoints under concurrent load."""
+        import asyncio
+
+        mock_service = MagicMock(spec=TradingService)
+        mock_service.get_stock_price.return_value = {
+            "symbol": "AAPL",
+            "price": 155.0,
+            "timestamp": "2023-06-15T15:30:00Z",
+        }
+
+        async def make_price_request(symbol):
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    return await ac.get(f"/api/v1/market-data/price/{symbol}")
+
+        # Make 20 concurrent requests for different symbols
+        symbols = [f"SYMBOL{i}" for i in range(20)]
+        tasks = [make_price_request(symbol) for symbol in symbols]
+        responses = await asyncio.gather(*tasks)
+
+        # All should succeed
+        for response in responses:
+            assert response.status_code == status.HTTP_200_OK
+
+    @pytest.mark.asyncio
+    async def test_market_data_partial_service_failure(self, client):
+        """Test behavior when some market data services fail but others succeed."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Price service works, but info service fails
+        mock_service.get_stock_price.return_value = {
+            "symbol": "AAPL",
+            "price": 155.0,
+        }
+        mock_service.get_stock_info.side_effect = Exception("Info service down")
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                # Price should work
+                price_response = await ac.get("/api/v1/market-data/price/AAPL")
+                assert price_response.status_code == status.HTTP_200_OK
+
+                # Info should fail
+                info_response = await ac.get("/api/v1/market-data/info/AAPL")
+                assert info_response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    @pytest.mark.asyncio
+    async def test_market_data_response_size_limits(self, client):
+        """Test handling of extremely large market data responses."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Create very large price history dataset
+        large_history = {
+            "symbol": "AAPL",
+            "period": "5year",
+            "data": [
+                {
+                    "date": f"2023-{i:02d}-{j:02d}",
+                    "open": 150.0 + i + j,
+                    "high": 155.0 + i + j,
+                    "low": 145.0 + i + j,
+                    "close": 150.0 + i + j,
+                    "volume": 1000000 + i * j,
+                    "extended_data": "x" * 1000,  # Large field
+                }
+                for i in range(1, 13)  # 12 months
+                for j in range(1, 32)  # Up to 31 days
+            ],
+        }
+        mock_service.get_price_history.return_value = large_history
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/history/AAPL?period=5year")
+
+        # Should handle large responses without issues
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data["data"]) > 300  # Lots of data points
+
+    @pytest.mark.asyncio
+    async def test_market_data_rate_limiting_simulation(self, client):
+        """Test market data endpoints under simulated rate limiting."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Simulate rate limiting after 3 requests
+        call_count = 0
+
+        def rate_limit_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count > 3:
+                raise Exception("Rate limit exceeded - too many requests")
+            return {
+                "symbol": "AAPL",
+                "price": 155.0,
+            }
+
+        mock_service.get_stock_price.side_effect = rate_limit_side_effect
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                # First 3 requests should succeed
+                for i in range(3):
+                    response = await ac.get("/api/v1/market-data/price/AAPL")
+                    assert response.status_code == status.HTTP_200_OK
+
+                # 4th request should fail due to rate limiting
+                response = await ac.get("/api/v1/market-data/price/AAPL")
+                assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    @pytest.mark.asyncio
+    async def test_market_data_stale_data_handling(self, client):
+        """Test handling of stale or outdated market data."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Return stale data with old timestamp
+        stale_data = {
+            "symbol": "AAPL",
+            "price": 155.0,
+            "timestamp": "2020-01-01T00:00:00Z",  # Very old timestamp
+            "data_age_minutes": 2000,  # Very stale
+            "warning": "Data is stale",
+        }
+        mock_service.get_stock_price.return_value = stale_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/price/AAPL")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "warning" in data
+        assert "stale" in data["warning"]
+
+    @pytest.mark.asyncio
+    async def test_market_data_network_interruption_simulation(self, client):
+        """Test handling of network interruptions during data fetching."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Simulate various network errors
+        network_errors = [
+            ConnectionError("Network unreachable"),
+            ConnectionAbortedError("Connection aborted"),
+            ConnectionResetError("Connection reset by peer"),
+            Exception("SSL certificate verification failed"),
+        ]
+
+        for error in network_errors:
+            mock_service.get_stock_price.side_effect = error
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    response = await ac.get("/api/v1/market-data/price/AAPL")
+
+            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    @pytest.mark.asyncio
+    async def test_market_data_search_with_sql_injection_patterns(self, client):
+        """Test search endpoint security against SQL injection patterns."""
+        mock_service = MagicMock(spec=TradingService)
+
+        sql_injection_patterns = [
+            "'; DROP TABLE stocks; --",
+            "' OR '1'='1",
+            "UNION SELECT * FROM users",
+            "'; UPDATE prices SET price=0; --",
+            "<script>alert('xss')</script>",
+        ]
+
+        for pattern in sql_injection_patterns:
+            mock_service.search_stocks.return_value = {
+                "query": pattern,
+                "results": [],
+                "count": 0,
+                "message": "No results found",
+            }
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    # URL encode the pattern
+                    import urllib.parse
+                    encoded_pattern = urllib.parse.quote(pattern)
+                    response = await ac.get(
+                        f"/api/v1/market-data/search?query={encoded_pattern}"
+                    )
+
+            # Should handle safely
+            assert response.status_code in [
+                status.HTTP_200_OK,
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            ]
+            if response.status_code == status.HTTP_200_OK:
+                data = response.json()
+                assert data["count"] == 0  # Should not return malicious results
+
+    @pytest.mark.asyncio
+    async def test_market_data_international_symbols(self, client):
+        """Test handling of international stock symbols and exchanges."""
+        mock_service = MagicMock(spec=TradingService)
+
+        international_symbols = [
+            "ASML.AS",  # Amsterdam
+            "SAP.DE",  # Frankfurt
+            "NESN.SW",  # Swiss
+            "7203.T",  # Tokyo (Toyota)
+            "2330.TW",  # Taiwan (TSMC)
+            "0700.HK",  # Hong Kong (Tencent)
+            "RDSA.L",  # London
+        ]
+
+        for symbol in international_symbols:
+            mock_service.get_stock_price.return_value = {
+                "symbol": symbol,
+                "price": 100.0,
+                "currency": "EUR" if ".DE" in symbol else "USD",
+                "exchange": symbol.split(".")[-1] if "." in symbol else "NASDAQ",
+            }
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    response = await ac.get(f"/api/v1/market-data/price/{symbol}")
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["symbol"] == symbol
+
+    @pytest.mark.asyncio
+    async def test_market_data_response_compression(self, client):
+        """Test handling of compressed responses for large datasets."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Create large news dataset to test compression
+        large_news_data = {
+            "symbol": "AAPL",
+            "articles": [
+                {
+                    "title": f"Apple News Article {i}",
+                    "content": "This is a very long article content " * 100,  # Large content
+                    "url": f"https://example.com/news/{i}",
+                    "published_at": f"2023-06-{(i % 30) + 1:02d}T14:30:00Z",
+                    "source": f"Source {i % 5}",
+                }
+                for i in range(100)  # 100 articles
+            ],
+            "count": 100,
+            "total_size_mb": 5.2,  # Large dataset
+        }
+        mock_service.get_stock_news.return_value = large_news_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/news/AAPL")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["count"] == 100
+        assert len(data["articles"]) == 100
+
+    @pytest.mark.asyncio
+    async def test_market_data_real_time_vs_delayed_data(self, client):
+        """Test differentiation between real-time and delayed market data."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Test with delayed data
+        delayed_data = {
+            "symbol": "AAPL",
+            "price": 155.0,
+            "timestamp": "2023-06-15T15:30:00Z",
+            "data_type": "delayed",
+            "delay_minutes": 15,
+            "disclaimer": "Data delayed by 15 minutes",
+        }
+        mock_service.get_stock_price.return_value = delayed_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/price/AAPL")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["data_type"] == "delayed"
+        assert "disclaimer" in data
+
+    @pytest.mark.asyncio
+    async def test_market_data_weekend_and_holiday_handling(self, client):
+        """Test market data behavior during weekends and holidays."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Simulate weekend/holiday response
+        weekend_data = {
+            "symbol": "AAPL",
+            "price": 155.0,
+            "timestamp": "2023-06-16T20:00:00Z",  # Friday close
+            "market_status": "closed",
+            "next_open": "2023-06-19T13:30:00Z",  # Monday open
+            "message": "Market is closed for the weekend",
+        }
+        mock_service.get_stock_price.return_value = weekend_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/price/AAPL")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["market_status"] == "closed"
+        assert "weekend" in data["message"]
+
+    @pytest.mark.asyncio
+    async def test_market_data_cryptocurrency_symbols(self, client):
+        """Test handling of cryptocurrency symbols."""
+        mock_service = MagicMock(spec=TradingService)
+
+        crypto_symbols = ["BTC-USD", "ETH-USD", "ADA-USD", "DOT-USD"]
+
+        for symbol in crypto_symbols:
+            mock_service.get_stock_price.return_value = {
+                "symbol": symbol,
+                "price": 50000.0 if "BTC" in symbol else 3000.0,
+                "currency": "USD",
+                "asset_type": "cryptocurrency",
+                "24h_change": 1.5,
+                "24h_volume": 1000000,
+            }
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    response = await ac.get(f"/api/v1/market-data/price/{symbol}")
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["asset_type"] == "cryptocurrency"
+
+    @pytest.mark.asyncio
+    async def test_market_data_circuit_breaker_simulation(self, client):
+        """Test market data during simulated circuit breaker events."""
+        mock_service = MagicMock(spec=TradingService)
+
+        circuit_breaker_data = {
+            "symbol": "SPY",
+            "price": 380.0,
+            "timestamp": "2023-06-15T15:30:00Z",
+            "market_status": "halted",
+            "halt_reason": "Circuit breaker triggered - 7% decline",
+            "estimated_resume": "2023-06-15T15:45:00Z",
+            "last_price_before_halt": 410.0,
+        }
+        mock_service.get_stock_price.return_value = circuit_breaker_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/market-data/price/SPY")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["market_status"] == "halted"
+        assert "circuit breaker" in data["halt_reason"]

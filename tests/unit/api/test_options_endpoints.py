@@ -902,3 +902,554 @@ class TestOptionsEndpoints:
         assert call_kwargs["include_pnl"]  # Default
         assert call_kwargs["include_complex_strategies"]  # Default
         assert call_kwargs["include_recommendations"]  # Default
+
+    # Enhanced complex strategy testing
+    @pytest.mark.asyncio
+    async def test_complex_multi_leg_strategies(self, client):
+        """Test complex multi-leg options strategies."""
+        complex_strategies = [
+            # Iron Condor
+            {
+                "name": "Iron Condor",
+                "legs": [
+                    {"symbol": "AAPL_230616P00140000", "order_type": "sell_to_open", "quantity": 1},
+                    {"symbol": "AAPL_230616P00145000", "order_type": "buy_to_open", "quantity": 1},
+                    {"symbol": "AAPL_230616C00165000", "order_type": "buy_to_open", "quantity": 1},
+                    {"symbol": "AAPL_230616C00170000", "order_type": "sell_to_open", "quantity": 1},
+                ],
+                "expected_strategy": "iron_condor",
+            },
+            # Butterfly Spread
+            {
+                "name": "Call Butterfly",
+                "legs": [
+                    {"symbol": "AAPL_230616C00150000", "order_type": "buy_to_open", "quantity": 1},
+                    {"symbol": "AAPL_230616C00155000", "order_type": "sell_to_open", "quantity": 2},
+                    {"symbol": "AAPL_230616C00160000", "order_type": "buy_to_open", "quantity": 1},
+                ],
+                "expected_strategy": "butterfly_spread",
+            },
+            # Straddle
+            {
+                "name": "Long Straddle",
+                "legs": [
+                    {"symbol": "AAPL_230616C00155000", "order_type": "buy_to_open", "quantity": 1},
+                    {"symbol": "AAPL_230616P00155000", "order_type": "buy_to_open", "quantity": 1},
+                ],
+                "expected_strategy": "straddle",
+            },
+            # Strangle
+            {
+                "name": "Long Strangle", 
+                "legs": [
+                    {"symbol": "AAPL_230616C00160000", "order_type": "buy_to_open", "quantity": 1},
+                    {"symbol": "AAPL_230616P00150000", "order_type": "buy_to_open", "quantity": 1},
+                ],
+                "expected_strategy": "strangle",
+            },
+        ]
+
+        for strategy in complex_strategies:
+            mock_service = MagicMock(spec=TradingService)
+            mock_order = {
+                "id": f"order_{strategy['name'].lower().replace(' ', '_')}",
+                "legs": strategy["legs"],
+                "strategy_type": strategy["expected_strategy"],
+                "status": "pending",
+                "max_profit": 500.0,
+                "max_loss": -1500.0,
+                "breakeven_points": [152.0, 158.0],
+            }
+            mock_service.create_multi_leg_order_from_request.return_value = mock_order
+
+            order_data = {
+                "legs": strategy["legs"],
+                "order_type": "limit",
+                "net_price": -2.50,
+            }
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    response = await ac.post(
+                        "/api/v1/options/orders/multi-leg", json=order_data
+                    )
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["strategy_type"] == strategy["expected_strategy"]
+            assert len(data["legs"]) == len(strategy["legs"])
+
+    @pytest.mark.asyncio
+    async def test_options_greeks_scenario_analysis(self, client):
+        """Test options Greeks under different market scenarios."""
+        scenarios = [
+            # High volatility scenario
+            {
+                "name": "High Volatility",
+                "underlying_price": 155.0,
+                "volatility": 0.40,
+                "expected_vega_impact": "high",
+            },
+            # Low volatility scenario
+            {
+                "name": "Low Volatility", 
+                "underlying_price": 155.0,
+                "volatility": 0.10,
+                "expected_vega_impact": "low",
+            },
+            # Deep ITM scenario
+            {
+                "name": "Deep ITM",
+                "underlying_price": 180.0,
+                "volatility": 0.25,
+                "expected_delta": "high",
+            },
+            # Deep OTM scenario
+            {
+                "name": "Deep OTM",
+                "underlying_price": 130.0,
+                "volatility": 0.25,
+                "expected_delta": "low",
+            },
+        ]
+
+        for scenario in scenarios:
+            mock_service = MagicMock(spec=TradingService)
+            mock_greeks = {
+                "symbol": "AAPL_230616C00150000",
+                "underlying_price": scenario["underlying_price"],
+                "delta": 0.85 if scenario.get("expected_delta") == "high" else 0.15,
+                "gamma": 0.01,
+                "theta": -0.05,
+                "vega": 0.30 if scenario.get("expected_vega_impact") == "high" else 0.05,
+                "rho": 0.08,
+                "implied_volatility": scenario["volatility"],
+                "scenario": scenario["name"],
+            }
+            mock_service.get_option_greeks_response.return_value = mock_greeks
+
+            with patch(
+                "app.core.dependencies.get_trading_service", return_value=mock_service
+            ):
+                async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                    response = await ac.get(
+                        f"/api/v1/options/AAPL_230616C00150000/greeks"
+                        f"?underlying_price={scenario['underlying_price']}"
+                        f"&volatility={scenario['volatility']}"
+                    )
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["underlying_price"] == scenario["underlying_price"]
+            assert data["implied_volatility"] == scenario["volatility"]
+
+    @pytest.mark.asyncio
+    async def test_options_expiration_edge_cases(self, client):
+        """Test options behavior near expiration dates."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Test with options expiring today
+        today_greeks = {
+            "symbol": "AAPL_230616C00150000",
+            "days_to_expiration": 0,
+            "theta": -0.50,  # High theta decay
+            "gamma": 0.10,  # High gamma risk
+            "time_value": 0.01,  # Very low time value
+            "expiration_risk": "high",
+            "assignment_probability": 0.85,
+        }
+        mock_service.get_option_greeks_response.return_value = today_greeks
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/options/AAPL_230616C00150000/greeks")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["days_to_expiration"] == 0
+        assert data["expiration_risk"] == "high"
+        assert data["theta"] == -0.50
+
+    @pytest.mark.asyncio
+    async def test_options_chain_real_time_data_handling(self, client):
+        """Test options chain with real-time vs delayed data."""
+        mock_service = MagicMock(spec=TradingService)
+
+        real_time_chain = {
+            "underlying_symbol": "AAPL",
+            "underlying_price": 155.50,
+            "data_source": "real_time",
+            "last_updated": "2023-06-15T15:30:00Z",
+            "market_status": "open",
+            "chains": {
+                "2023-06-16": {
+                    "calls": [
+                        {
+                            "symbol": "AAPL_230616C00150000",
+                            "strike": 150.0,
+                            "bid": 5.25,
+                            "ask": 5.35,
+                            "last": 5.30,
+                            "volume": 1250,
+                            "bid_size": 10,
+                            "ask_size": 15,
+                            "last_trade_time": "2023-06-15T15:29:45Z",
+                        }
+                    ],
+                    "puts": [],
+                }
+            },
+            "disclaimer": None,
+        }
+        mock_service.get_formatted_options_chain.return_value = real_time_chain
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get("/api/v1/options/AAPL/chain")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["data_source"] == "real_time"
+        assert data["market_status"] == "open"
+        assert "disclaimer" not in data or data["disclaimer"] is None
+
+    @pytest.mark.asyncio
+    async def test_portfolio_risk_analysis_with_options(self, client):
+        """Test comprehensive portfolio risk analysis including options positions."""
+        mock_service = MagicMock(spec=TradingService)
+
+        comprehensive_analysis = {
+            "recognized_strategies": [
+                {
+                    "strategy_name": "Covered Call",
+                    "strategy_type": "covered_call",
+                    "underlying_position": {"symbol": "AAPL", "quantity": 100},
+                    "option_position": {"symbol": "AAPL_230616C00160000", "quantity": -1},
+                    "max_profit": 500.0,
+                    "max_loss": -15000.0,
+                    "breakeven_point": 155.0,
+                    "current_pnl": 125.0,
+                    "assignment_risk": 0.25,
+                    "early_assignment_probability": 0.05,
+                    "recommendation": "Monitor for early assignment",
+                },
+                {
+                    "strategy_name": "Cash Secured Put",
+                    "strategy_type": "cash_secured_put",
+                    "cash_requirement": 15000.0,
+                    "option_position": {"symbol": "AAPL_230616P00150000", "quantity": -1},
+                    "max_profit": 250.0,
+                    "assignment_probability": 0.15,
+                    "current_pnl": 75.0,
+                    "recommendation": "Let expire worthless",
+                },
+            ],
+            "portfolio_greeks": {
+                "total_delta": 45.0,  # Positive delta exposure
+                "total_gamma": 12.0,
+                "total_theta": -25.0,  # Negative theta (time decay)
+                "total_vega": 35.0,   # Positive vega exposure
+                "total_rho": 8.0,
+                "net_delta_percent": 0.12,  # 12% delta exposure
+            },
+            "risk_metrics": {
+                "portfolio_var_1day": -2500.0,
+                "portfolio_var_1week": -5500.0,
+                "max_drawdown_potential": -8000.0,
+                "volatility_exposure": "moderate",
+                "time_decay_daily": -25.0,
+                "assignment_risk_total": 0.40,
+                "margin_requirement": 25000.0,
+                "buying_power_effect": -15000.0,
+            },
+            "stress_test_scenarios": [
+                {
+                    "scenario": "10% underlying drop",
+                    "portfolio_impact": -3500.0,
+                    "delta_adjusted_impact": -4500.0,
+                    "gamma_impact": -500.0,
+                },
+                {
+                    "scenario": "Volatility spike to 40%",
+                    "portfolio_impact": 1400.0,
+                    "vega_impact": 1400.0,
+                },
+                {
+                    "scenario": "Interest rate increase 1%",
+                    "portfolio_impact": 80.0,
+                    "rho_impact": 80.0,
+                },
+            ],
+            "recommendations": [
+                "Portfolio is moderately delta positive - consider hedging for market decline",
+                "High gamma exposure may cause rapid delta changes",
+                "Positive theta collection strategy - time decay is beneficial",
+                "Monitor assignment risk on short options positions",
+                "Consider volatility hedging given vega exposure",
+            ],
+            "alerts": [
+                {
+                    "type": "assignment_risk",
+                    "message": "AAPL call option approaching assignment risk threshold",
+                    "severity": "medium",
+                },
+                {
+                    "type": "expiration_notice", 
+                    "message": "Options expiring in 1 day - review positions",
+                    "severity": "high",
+                },
+            ],
+        }
+        mock_service.analyze_portfolio_strategies.return_value = comprehensive_analysis
+
+        request_data = {
+            "include_greeks": True,
+            "include_pnl": True,
+            "include_complex_strategies": True,
+            "include_recommendations": True,
+        }
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.post(
+                    "/api/v1/options/strategies/analyze", json=request_data
+                )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+
+        # Verify comprehensive analysis structure
+        assert "recognized_strategies" in data
+        assert "portfolio_greeks" in data
+        assert "risk_metrics" in data
+        assert "stress_test_scenarios" in data
+        assert "recommendations" in data
+        assert "alerts" in data
+
+        # Verify strategy details
+        strategies = data["recognized_strategies"]
+        assert len(strategies) == 2
+        assert strategies[0]["strategy_type"] == "covered_call"
+        assert strategies[1]["strategy_type"] == "cash_secured_put"
+
+        # Verify risk metrics
+        risk_metrics = data["risk_metrics"]
+        assert "portfolio_var_1day" in risk_metrics
+        assert "assignment_risk_total" in risk_metrics
+        assert "margin_requirement" in risk_metrics
+
+        # Verify stress testing
+        stress_tests = data["stress_test_scenarios"]
+        assert len(stress_tests) == 3
+        scenario_names = [s["scenario"] for s in stress_tests]
+        assert "10% underlying drop" in scenario_names
+        assert "Volatility spike to 40%" in scenario_names
+
+    @pytest.mark.asyncio
+    async def test_options_market_data_high_frequency_updates(self, client):
+        """Test options market data handling with high-frequency updates."""
+        mock_service = MagicMock(spec=TradingService)
+
+        # Simulate real-time market data with frequent updates
+        high_freq_data = {
+            "symbol": "AAPL_230616C00155000",
+            "underlying_symbol": "AAPL",
+            "underlying_price": 155.75,
+            "bid": 1.20,
+            "ask": 1.25,
+            "last": 1.22,
+            "volume": 5000,
+            "open_interest": 12000,
+            "bid_size": 50,
+            "ask_size": 75,
+            "last_trade_time": "2023-06-15T15:30:00.123456Z",
+            "quote_timestamp": "2023-06-15T15:30:00.234567Z",
+            "data_freshness_ms": 15,  # Very fresh data
+            "market_maker_spread": 0.05,
+            "theoretical_price": 1.23,
+            "price_model": "black_scholes",
+            "update_frequency": "real_time",
+        }
+        mock_service.get_option_market_data.return_value = high_freq_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get(
+                    "/api/v1/options/market-data/AAPL_230616C00155000"
+                )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["data_freshness_ms"] == 15
+        assert data["update_frequency"] == "real_time"
+        assert "quote_timestamp" in data
+
+    @pytest.mark.asyncio
+    async def test_options_unusual_activity_detection(self, client):
+        """Test detection of unusual options activity."""
+        mock_service = MagicMock(spec=TradingService)
+
+        unusual_activity_data = {
+            "underlying_symbol": "AAPL",
+            "underlying_price": 155.0,
+            "options": [
+                {
+                    "symbol": "AAPL_230616C00160000",
+                    "strike": 160.0,
+                    "volume": 15000,  # Unusually high volume
+                    "avg_volume": 500,  # Normal volume
+                    "volume_ratio": 30.0,  # 30x normal volume
+                    "open_interest": 2000,
+                    "volume_oi_ratio": 7.5,  # High volume vs OI
+                    "unusual_activity_flags": [
+                        "high_volume",
+                        "volume_spike",
+                        "possible_institutional_flow"
+                    ],
+                    "activity_score": 8.5,  # High activity score
+                    "price_movement": 0.15,  # 15 cents move
+                    "implied_volatility_change": 0.05,  # 5% IV increase
+                },
+                {
+                    "symbol": "AAPL_230616P00150000", 
+                    "strike": 150.0,
+                    "volume": 8000,
+                    "avg_volume": 300,
+                    "volume_ratio": 26.7,
+                    "unusual_activity_flags": [
+                        "high_volume",
+                        "put_volume_spike",
+                        "hedging_activity"
+                    ],
+                    "activity_score": 7.2,
+                },
+            ],
+            "summary": {
+                "total_unusual_contracts": 2,
+                "total_volume": 23000,
+                "call_put_ratio": 1.88,  # More call activity
+                "sentiment": "bullish",
+                "institutional_flow_detected": True,
+            },
+        }
+        mock_service.find_tradable_options.return_value = unusual_activity_data
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.get(
+                    "/api/v1/options/AAPL/search?include_unusual_activity=true"
+                )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+
+        # Verify unusual activity detection
+        assert "summary" in data
+        assert data["summary"]["institutional_flow_detected"]
+        assert data["summary"]["sentiment"] == "bullish"
+
+        # Check individual options flags
+        options = data["options"]
+        high_volume_option = next(
+            opt for opt in options if "high_volume" in opt["unusual_activity_flags"]
+        )
+        assert high_volume_option["activity_score"] > 7.0
+
+    @pytest.mark.asyncio
+    async def test_options_earnings_volatility_analysis(self, client):
+        """Test options analysis around earnings announcements."""
+        mock_service = MagicMock(spec=TradingService)
+
+        earnings_analysis = {
+            "underlying_symbol": "AAPL",
+            "earnings_date": "2023-06-16",
+            "earnings_time": "after_market_close", 
+            "days_until_earnings": 1,
+            "implied_move": 0.08,  # 8% implied move
+            "historical_moves": [0.05, 0.12, 0.03, 0.09],  # Historical earnings moves
+            "average_historical_move": 0.072,
+            "iv_rank": 85,  # High IV rank
+            "iv_percentile": 92,  # Very high IV percentile
+            "earnings_strategies": [
+                {
+                    "strategy_name": "Short Straddle",
+                    "strategy_type": "short_straddle", 
+                    "legs": [
+                        {"symbol": "AAPL_230616C00155000", "action": "sell"},
+                        {"symbol": "AAPL_230616P00155000", "action": "sell"},
+                    ],
+                    "profit_probability": 0.65,
+                    "max_profit": 750.0,
+                    "breakeven_range": [147.5, 162.5],
+                    "risk_reward": "favorable",
+                    "capital_requirement": 15000.0,
+                },
+                {
+                    "strategy_name": "Iron Butterfly", 
+                    "strategy_type": "iron_butterfly",
+                    "profit_probability": 0.58,
+                    "max_profit": 400.0,
+                    "max_loss": -600.0,
+                    "risk_reward": "moderate",
+                },
+            ],
+            "volatility_analysis": {
+                "pre_earnings_iv": 0.42,
+                "post_earnings_iv_estimate": 0.28,
+                "volatility_crush_estimate": 0.14,  # 14% vol crush expected
+                "theta_acceleration": -0.15,
+            },
+            "recommendations": [
+                "High implied volatility suggests premium selling opportunities",
+                "Consider volatility crush strategies for post-earnings",
+                "Monitor position sizing due to high risk around earnings",
+                "Close positions before earnings if directional exposure is unwanted",
+            ],
+        }
+
+        mock_service.analyze_portfolio_strategies.return_value = earnings_analysis
+
+        request_data = {
+            "include_earnings_analysis": True,
+            "include_volatility_metrics": True,
+        }
+
+        with patch(
+            "app.core.dependencies.get_trading_service", return_value=mock_service
+        ):
+            async with AsyncClient(app=client.app, base_url="http://test") as ac:
+                response = await ac.post(
+                    "/api/v1/options/strategies/analyze", json=request_data
+                )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+
+        # Verify earnings analysis components
+        assert data["earnings_date"] == "2023-06-16"
+        assert data["implied_move"] == 0.08
+        assert data["iv_rank"] == 85
+
+        # Verify earnings-specific strategies
+        strategies = data["earnings_strategies"]
+        assert len(strategies) == 2
+        straddle_strategy = next(
+            s for s in strategies if s["strategy_type"] == "short_straddle"
+        )
+        assert straddle_strategy["profit_probability"] == 0.65
+
+        # Verify volatility analysis
+        vol_analysis = data["volatility_analysis"]
+        assert vol_analysis["volatility_crush_estimate"] == 0.14

@@ -13,7 +13,7 @@ Data format: [symbol],[current_date],[bid],[ask]
 """
 
 from datetime import date, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import and_
 
@@ -76,13 +76,13 @@ class DevDataQuoteAdapter(QuoteAdapter):
             )
             if scenario:
                 self.scenario = scenario_name
-                start_date = scenario.start_date
+                start_date = cast(date, scenario.start_date)
                 if isinstance(start_date, datetime):
-                    start_date = start_date.date()
+                    start_date = cast(date, start_date.date())
 
                 if not isinstance(start_date, date):
-                    start_date = date.today()
-                self.current_date = start_date
+                    start_date = cast(date, date.today())
+                self.current_date = cast(date, start_date)
                 self._quote_cache.clear()  # Clear cache when switching
 
     def get_available_dates(self) -> list[str]:
@@ -150,15 +150,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
             asset = asset_factory(symbol)
             if asset:
                 # Convert date properly
-                quote_date_val = db_quote.quote_date
+                quote_date_val = cast(date, db_quote.quote_date)
                 if isinstance(quote_date_val, datetime):
-                    quote_date_val = quote_date_val.date()
+                    quote_date_val = cast(date, quote_date_val.date())
 
                 if not isinstance(quote_date_val, date):
-                    quote_date_val = date.today()
+                    quote_date_val = cast(date, date.today())
 
                 return Quote(
-                    quote_date=datetime.combine(quote_date_val, datetime.min.time()),
+                    quote_date=datetime.combine(cast(date, quote_date_val), datetime.min.time()),
                     asset=asset,
                     bid=float(db_quote.bid) if db_quote.bid else 0.0,
                     ask=float(db_quote.ask) if db_quote.ask else 0.0,
@@ -178,15 +178,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
             asset = asset_factory(symbol)
             if asset and isinstance(asset, Option):
                 # Convert date properly
-                quote_date_val = db_quote.quote_date
+                quote_date_val = cast(date, db_quote.quote_date)
                 if isinstance(quote_date_val, datetime):
-                    quote_date_val = quote_date_val.date()
+                    quote_date_val = cast(date, quote_date_val.date())
 
                 if not isinstance(quote_date_val, date):
-                    quote_date_val = date.today()
+                    quote_date_val = cast(date, date.today())
 
                 option_quote = OptionQuote(
-                    quote_date=datetime.combine(quote_date_val, datetime.min.time()),
+                    quote_date=datetime.combine(cast(date, quote_date_val), datetime.min.time()),
                     asset=asset,
                     bid=float(db_quote.bid) if db_quote.bid else None,
                     ask=float(db_quote.ask) if db_quote.ask else None,
@@ -305,15 +305,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in stock_records:
-                    quote_date_val = record.quote_date
+                    quote_date_val = cast(date, record.quote_date)
                     if isinstance(quote_date_val, datetime):
-                        quote_date_val = quote_date_val.date()
+                        quote_date_val = cast(date, quote_date_val.date())
 
                     if not isinstance(quote_date_val, date):
-                        quote_date_val = date.today()
+                        quote_date_val = cast(date, date.today())
 
                     quote = self._cached_stock_quote(
-                        record.symbol, quote_date_val, self.scenario
+                        record.symbol, cast(date, quote_date_val), self.scenario
                     )
                     if quote:
                         results[record.symbol] = quote
@@ -334,15 +334,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in option_records:
-                    quote_date_val = record.quote_date
+                    quote_date_val = cast(date, record.quote_date)
                     if isinstance(quote_date_val, datetime):
-                        quote_date_val = quote_date_val.date()
+                        quote_date_val = cast(date, quote_date_val.date())
 
                     if not isinstance(quote_date_val, date):
-                        quote_date_val = date.today()
+                        quote_date_val = cast(date, date.today())
 
                     quote = self._cached_option_quote(
-                        record.symbol, quote_date_val, self.scenario
+                        record.symbol, cast(date, quote_date_val), self.scenario
                     )
                     if quote:
                         results[record.symbol] = quote
@@ -382,15 +382,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in records:
-                    quote_date_val = record.quote_date
+                    quote_date_val = cast(date, record.quote_date)
                     if isinstance(quote_date_val, datetime):
-                        quote_date_val = quote_date_val.date()
+                        quote_date_val = cast(date, quote_date_val.date())
 
                     if not isinstance(quote_date_val, date):
-                        quote_date_val = date.today()
+                        quote_date_val = cast(date, date.today())
 
-                    quote: OptionQuote | None = self._cached_option_quote(
-                        symbol, quote_date_val, self.scenario
+                    quote = self._cached_option_quote(
+                        symbol, cast(date, quote_date_val), self.scenario
                     )
                     if quote:
                         quotes.append(quote)
@@ -410,18 +410,18 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 )
 
                 for record in records:
-                    quote_date_val = record.quote_date
+                    quote_date_val = cast(date, record.quote_date)
                     if isinstance(quote_date_val, datetime):
-                        quote_date_val = quote_date_val.date()
+                        quote_date_val = cast(date, quote_date_val.date())
 
                     if not isinstance(quote_date_val, date):
-                        quote_date_val = date.today()
+                        quote_date_val = cast(date, date.today())
 
-                    quote = self._cached_stock_quote(
-                        symbol, quote_date_val, self.scenario
+                    stock_quote = self._cached_stock_quote(
+                        symbol, cast(date, quote_date_val), self.scenario
                     )
-                    if quote:
-                        quotes.append(quote)
+                    if stock_quote:
+                        quotes.append(stock_quote)
 
         return quotes
 
@@ -477,15 +477,15 @@ class DevDataQuoteAdapter(QuoteAdapter):
         puts: list[OptionQuote] = []
 
         for record in option_records:
-            quote_date_val = record.quote_date
+            quote_date_val = cast(date, record.quote_date)
             if isinstance(quote_date_val, datetime):
-                quote_date_val = quote_date_val.date()
+                quote_date_val = cast(date, quote_date_val.date())
 
             if not isinstance(quote_date_val, date):
-                quote_date_val = date.today()
+                quote_date_val = cast(date, date.today())
 
             option_quote = self._cached_option_quote(
-                record.symbol, quote_date_val, self.scenario
+                record.symbol, cast(date, quote_date_val), self.scenario
             )
             if option_quote and isinstance(option_quote.asset, Option):
                 if option_quote.asset.option_type == "call":
@@ -508,12 +508,12 @@ class DevDataQuoteAdapter(QuoteAdapter):
         # Determine expiration date
         exp_date: date | None = expiration
         if exp_date is None and option_records:
-            exp_date_val = option_records[0].expiration
+            exp_date_val = cast(date, option_records[0].expiration)
             if hasattr(exp_date_val, "date"):
                 exp_date_val = exp_date_val.date()
             elif not isinstance(exp_date_val, date):
-                exp_date_val = date.today()
-            exp_date = exp_date_val
+                exp_date_val = cast(date, date.today())
+            exp_date = cast(date, exp_date_val)
 
         return OptionsChain(
             underlying_symbol=underlying_asset.symbol,

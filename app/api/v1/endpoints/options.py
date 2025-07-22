@@ -136,7 +136,7 @@ async def get_expiration_dates(
     Returns sorted list of expiration dates with metadata.
     """
     try:
-        dates = await service.get_expiration_dates(symbol)
+        dates = service.get_expiration_dates(symbol)
 
         return {
             "underlying_symbol": symbol,

@@ -15,7 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from ..schemas.orders import OrderStatus
 
@@ -170,7 +170,7 @@ class MemoryEfficientOrderTracker:
             # Update metrics
             if self.config.enable_metrics:
                 self.metrics["total_events"] = (
-                    int(self.metrics.get("total_events", 0)) + 1
+                    cast(int, self.metrics.get("total_events", 0)) + 1
                 )
                 events_by_type = self.metrics["events_by_type"]
                 if isinstance(events_by_type, defaultdict):
