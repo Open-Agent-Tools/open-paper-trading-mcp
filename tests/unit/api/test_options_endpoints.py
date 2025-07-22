@@ -912,10 +912,26 @@ class TestOptionsEndpoints:
             {
                 "name": "Iron Condor",
                 "legs": [
-                    {"symbol": "AAPL_230616P00140000", "order_type": "sell_to_open", "quantity": 1},
-                    {"symbol": "AAPL_230616P00145000", "order_type": "buy_to_open", "quantity": 1},
-                    {"symbol": "AAPL_230616C00165000", "order_type": "buy_to_open", "quantity": 1},
-                    {"symbol": "AAPL_230616C00170000", "order_type": "sell_to_open", "quantity": 1},
+                    {
+                        "symbol": "AAPL_230616P00140000",
+                        "order_type": "sell_to_open",
+                        "quantity": 1,
+                    },
+                    {
+                        "symbol": "AAPL_230616P00145000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
+                    {
+                        "symbol": "AAPL_230616C00165000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
+                    {
+                        "symbol": "AAPL_230616C00170000",
+                        "order_type": "sell_to_open",
+                        "quantity": 1,
+                    },
                 ],
                 "expected_strategy": "iron_condor",
             },
@@ -923,9 +939,21 @@ class TestOptionsEndpoints:
             {
                 "name": "Call Butterfly",
                 "legs": [
-                    {"symbol": "AAPL_230616C00150000", "order_type": "buy_to_open", "quantity": 1},
-                    {"symbol": "AAPL_230616C00155000", "order_type": "sell_to_open", "quantity": 2},
-                    {"symbol": "AAPL_230616C00160000", "order_type": "buy_to_open", "quantity": 1},
+                    {
+                        "symbol": "AAPL_230616C00150000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
+                    {
+                        "symbol": "AAPL_230616C00155000",
+                        "order_type": "sell_to_open",
+                        "quantity": 2,
+                    },
+                    {
+                        "symbol": "AAPL_230616C00160000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
                 ],
                 "expected_strategy": "butterfly_spread",
             },
@@ -933,17 +961,33 @@ class TestOptionsEndpoints:
             {
                 "name": "Long Straddle",
                 "legs": [
-                    {"symbol": "AAPL_230616C00155000", "order_type": "buy_to_open", "quantity": 1},
-                    {"symbol": "AAPL_230616P00155000", "order_type": "buy_to_open", "quantity": 1},
+                    {
+                        "symbol": "AAPL_230616C00155000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
+                    {
+                        "symbol": "AAPL_230616P00155000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
                 ],
                 "expected_strategy": "straddle",
             },
             # Strangle
             {
-                "name": "Long Strangle", 
+                "name": "Long Strangle",
                 "legs": [
-                    {"symbol": "AAPL_230616C00160000", "order_type": "buy_to_open", "quantity": 1},
-                    {"symbol": "AAPL_230616P00150000", "order_type": "buy_to_open", "quantity": 1},
+                    {
+                        "symbol": "AAPL_230616C00160000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
+                    {
+                        "symbol": "AAPL_230616P00150000",
+                        "order_type": "buy_to_open",
+                        "quantity": 1,
+                    },
                 ],
                 "expected_strategy": "strangle",
             },
@@ -994,7 +1038,7 @@ class TestOptionsEndpoints:
             },
             # Low volatility scenario
             {
-                "name": "Low Volatility", 
+                "name": "Low Volatility",
                 "underlying_price": 155.0,
                 "volatility": 0.10,
                 "expected_vega_impact": "low",
@@ -1023,7 +1067,9 @@ class TestOptionsEndpoints:
                 "delta": 0.85 if scenario.get("expected_delta") == "high" else 0.15,
                 "gamma": 0.01,
                 "theta": -0.05,
-                "vega": 0.30 if scenario.get("expected_vega_impact") == "high" else 0.05,
+                "vega": 0.30
+                if scenario.get("expected_vega_impact") == "high"
+                else 0.05,
                 "rho": 0.08,
                 "implied_volatility": scenario["volatility"],
                 "scenario": scenario["name"],
@@ -1130,7 +1176,10 @@ class TestOptionsEndpoints:
                     "strategy_name": "Covered Call",
                     "strategy_type": "covered_call",
                     "underlying_position": {"symbol": "AAPL", "quantity": 100},
-                    "option_position": {"symbol": "AAPL_230616C00160000", "quantity": -1},
+                    "option_position": {
+                        "symbol": "AAPL_230616C00160000",
+                        "quantity": -1,
+                    },
                     "max_profit": 500.0,
                     "max_loss": -15000.0,
                     "breakeven_point": 155.0,
@@ -1143,7 +1192,10 @@ class TestOptionsEndpoints:
                     "strategy_name": "Cash Secured Put",
                     "strategy_type": "cash_secured_put",
                     "cash_requirement": 15000.0,
-                    "option_position": {"symbol": "AAPL_230616P00150000", "quantity": -1},
+                    "option_position": {
+                        "symbol": "AAPL_230616P00150000",
+                        "quantity": -1,
+                    },
                     "max_profit": 250.0,
                     "assignment_probability": 0.15,
                     "current_pnl": 75.0,
@@ -1154,7 +1206,7 @@ class TestOptionsEndpoints:
                 "total_delta": 45.0,  # Positive delta exposure
                 "total_gamma": 12.0,
                 "total_theta": -25.0,  # Negative theta (time decay)
-                "total_vega": 35.0,   # Positive vega exposure
+                "total_vega": 35.0,  # Positive vega exposure
                 "total_rho": 8.0,
                 "net_delta_percent": 0.12,  # 12% delta exposure
             },
@@ -1200,7 +1252,7 @@ class TestOptionsEndpoints:
                     "severity": "medium",
                 },
                 {
-                    "type": "expiration_notice", 
+                    "type": "expiration_notice",
                     "message": "Options expiring in 1 day - review positions",
                     "severity": "high",
                 },
@@ -1314,14 +1366,14 @@ class TestOptionsEndpoints:
                     "unusual_activity_flags": [
                         "high_volume",
                         "volume_spike",
-                        "possible_institutional_flow"
+                        "possible_institutional_flow",
                     ],
                     "activity_score": 8.5,  # High activity score
                     "price_movement": 0.15,  # 15 cents move
                     "implied_volatility_change": 0.05,  # 5% IV increase
                 },
                 {
-                    "symbol": "AAPL_230616P00150000", 
+                    "symbol": "AAPL_230616P00150000",
                     "strike": 150.0,
                     "volume": 8000,
                     "avg_volume": 300,
@@ -1329,7 +1381,7 @@ class TestOptionsEndpoints:
                     "unusual_activity_flags": [
                         "high_volume",
                         "put_volume_spike",
-                        "hedging_activity"
+                        "hedging_activity",
                     ],
                     "activity_score": 7.2,
                 },
@@ -1375,7 +1427,7 @@ class TestOptionsEndpoints:
         earnings_analysis = {
             "underlying_symbol": "AAPL",
             "earnings_date": "2023-06-16",
-            "earnings_time": "after_market_close", 
+            "earnings_time": "after_market_close",
             "days_until_earnings": 1,
             "implied_move": 0.08,  # 8% implied move
             "historical_moves": [0.05, 0.12, 0.03, 0.09],  # Historical earnings moves
@@ -1385,7 +1437,7 @@ class TestOptionsEndpoints:
             "earnings_strategies": [
                 {
                     "strategy_name": "Short Straddle",
-                    "strategy_type": "short_straddle", 
+                    "strategy_type": "short_straddle",
                     "legs": [
                         {"symbol": "AAPL_230616C00155000", "action": "sell"},
                         {"symbol": "AAPL_230616P00155000", "action": "sell"},
@@ -1397,7 +1449,7 @@ class TestOptionsEndpoints:
                     "capital_requirement": 15000.0,
                 },
                 {
-                    "strategy_name": "Iron Butterfly", 
+                    "strategy_name": "Iron Butterfly",
                     "strategy_type": "iron_butterfly",
                     "profit_probability": 0.58,
                     "max_profit": 400.0,

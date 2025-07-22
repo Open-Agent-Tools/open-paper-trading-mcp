@@ -682,7 +682,7 @@ class TestPortfolioEndpoints:
     async def test_portfolio_with_mixed_asset_types(self, client):
         """Test portfolio containing stocks, options, and other asset types."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         mixed_portfolio = Portfolio(
             cash_balance=50000.0,
             positions=[
@@ -716,7 +716,7 @@ class TestPortfolioEndpoints:
                     realized_pnl=0.0,
                 ),
                 Position(
-                    symbol="SPY_230616P00400000", 
+                    symbol="SPY_230616P00400000",
                     quantity=-2,  # Short position
                     average_price=2.75,
                     current_price=1.80,
@@ -769,7 +769,7 @@ class TestPortfolioEndpoints:
     async def test_portfolio_performance_metrics(self, client):
         """Test portfolio summary with detailed performance metrics."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         comprehensive_summary = PortfolioSummary(
             cash_balance=25000.0,
             market_value=75000.0,
@@ -802,7 +802,7 @@ class TestPortfolioEndpoints:
     async def test_position_risk_analysis(self, client):
         """Test individual position with risk analysis data."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         # Create position with extended risk metrics
         risk_position = Position(
             symbol="TSLA",
@@ -833,7 +833,7 @@ class TestPortfolioEndpoints:
     async def test_portfolio_greeks_comprehensive_analysis(self, client):
         """Test comprehensive portfolio Greeks analysis with multiple strategies."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         comprehensive_greeks = {
             "total_delta": 125.5,
             "total_gamma": 18.7,
@@ -932,7 +932,7 @@ class TestPortfolioEndpoints:
     async def test_portfolio_strategies_complex_analysis(self, client):
         """Test complex portfolio strategies with advanced analysis."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         complex_strategies = {
             "recognized_strategies": [
                 {
@@ -941,10 +941,26 @@ class TestPortfolioEndpoints:
                     "strategy_name": "SPY Iron Condor",
                     "underlying": "SPY",
                     "positions": [
-                        {"symbol": "SPY_230616P00390000", "quantity": -1, "leg": "short_put"},
-                        {"symbol": "SPY_230616P00385000", "quantity": 1, "leg": "long_put"},
-                        {"symbol": "SPY_230616C00415000", "quantity": 1, "leg": "long_call"},
-                        {"symbol": "SPY_230616C00420000", "quantity": -1, "leg": "short_call"},
+                        {
+                            "symbol": "SPY_230616P00390000",
+                            "quantity": -1,
+                            "leg": "short_put",
+                        },
+                        {
+                            "symbol": "SPY_230616P00385000",
+                            "quantity": 1,
+                            "leg": "long_put",
+                        },
+                        {
+                            "symbol": "SPY_230616C00415000",
+                            "quantity": 1,
+                            "leg": "long_call",
+                        },
+                        {
+                            "symbol": "SPY_230616C00420000",
+                            "quantity": -1,
+                            "leg": "short_call",
+                        },
                     ],
                     "entry_date": "2023-05-15",
                     "expiration_date": "2023-06-16",
@@ -962,13 +978,17 @@ class TestPortfolioEndpoints:
                     "early_close_recommendation": "hold",
                 },
                 {
-                    "strategy_id": "strat_002", 
+                    "strategy_id": "strat_002",
                     "strategy_type": "covered_call",
                     "strategy_name": "AAPL Covered Call",
                     "underlying": "AAPL",
                     "positions": [
                         {"symbol": "AAPL", "quantity": 100, "leg": "long_stock"},
-                        {"symbol": "AAPL_230616C00160000", "quantity": -1, "leg": "short_call"},
+                        {
+                            "symbol": "AAPL_230616C00160000",
+                            "quantity": -1,
+                            "leg": "short_call",
+                        },
                     ],
                     "entry_date": "2023-04-20",
                     "expiration_date": "2023-06-16",
@@ -987,11 +1007,19 @@ class TestPortfolioEndpoints:
                 {
                     "strategy_id": "strat_003",
                     "strategy_type": "long_straddle",
-                    "strategy_name": "NVDA Earnings Straddle", 
+                    "strategy_name": "NVDA Earnings Straddle",
                     "underlying": "NVDA",
                     "positions": [
-                        {"symbol": "NVDA_230616C00400000", "quantity": 2, "leg": "long_call"},
-                        {"symbol": "NVDA_230616P00400000", "quantity": 2, "leg": "long_put"},
+                        {
+                            "symbol": "NVDA_230616C00400000",
+                            "quantity": 2,
+                            "leg": "long_call",
+                        },
+                        {
+                            "symbol": "NVDA_230616P00400000",
+                            "quantity": 2,
+                            "leg": "long_put",
+                        },
                     ],
                     "entry_date": "2023-05-20",
                     "expiration_date": "2023-06-16",
@@ -1048,9 +1076,18 @@ class TestPortfolioEndpoints:
                         "scenario": "Market crash -20%",
                         "estimated_loss": -18500.0,
                         "strategy_performance": [
-                            {"strategy_id": "strat_001", "impact": 150.0},  # Benefits from low vol
-                            {"strategy_id": "strat_002", "impact": -15000.0},  # Stock loss
-                            {"strategy_id": "strat_003", "impact": 800.0},  # Volatility expansion
+                            {
+                                "strategy_id": "strat_001",
+                                "impact": 150.0,
+                            },  # Benefits from low vol
+                            {
+                                "strategy_id": "strat_002",
+                                "impact": -15000.0,
+                            },  # Stock loss
+                            {
+                                "strategy_id": "strat_003",
+                                "impact": 800.0,
+                            },  # Volatility expansion
                         ],
                     },
                     {
@@ -1087,7 +1124,7 @@ class TestPortfolioEndpoints:
                 },
                 {
                     "type": "expiration_notice",
-                    "strategy_id": "strat_003", 
+                    "strategy_id": "strat_003",
                     "message": "NVDA straddle expires in 27 days - manage time decay risk",
                     "severity": "high",
                     "action_required": "Consider exit strategy",
@@ -1117,12 +1154,20 @@ class TestPortfolioEndpoints:
         assert len(data["unmatched_positions"]) == 2
 
         # Verify strategy details
-        iron_condor = next(s for s in data["recognized_strategies"] if s["strategy_type"] == "iron_condor")
+        iron_condor = next(
+            s
+            for s in data["recognized_strategies"]
+            if s["strategy_type"] == "iron_condor"
+        )
         assert iron_condor["profit_probability"] == 0.68
         assert iron_condor["max_profit"] == 200.0
         assert len(iron_condor["positions"]) == 4
 
-        covered_call = next(s for s in data["recognized_strategies"] if s["strategy_type"] == "covered_call")
+        covered_call = next(
+            s
+            for s in data["recognized_strategies"]
+            if s["strategy_type"] == "covered_call"
+        )
         assert covered_call["annualized_return"] == 0.18
         assert covered_call["assignment_probability"] == 0.25
 
@@ -1176,7 +1221,7 @@ class TestPortfolioEndpoints:
     async def test_position_fractional_shares(self, client):
         """Test positions with fractional shares."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         fractional_position = Position(
             symbol="AAPL",
             quantity=10.5,  # Fractional shares
@@ -1205,7 +1250,7 @@ class TestPortfolioEndpoints:
     async def test_portfolio_currency_handling(self, client):
         """Test portfolio with multiple currencies."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         multi_currency_portfolio = Portfolio(
             cash_balance=50000.0,  # USD
             positions=[
@@ -1244,7 +1289,7 @@ class TestPortfolioEndpoints:
 
         assert len(data["positions"]) == 2
         assert data["total_value"] == 81000.0
-        
+
         # Verify international symbols are handled
         symbols = [pos["symbol"] for pos in data["positions"]]
         assert "ASML.AS" in symbols
@@ -1253,7 +1298,7 @@ class TestPortfolioEndpoints:
     async def test_portfolio_data_consistency(self, client):
         """Test portfolio data consistency across different endpoints."""
         mock_service = AsyncMock(spec=TradingService)
-        
+
         # Setup consistent data across endpoints
         positions = [
             Position(
@@ -1266,14 +1311,14 @@ class TestPortfolioEndpoints:
                 realized_pnl=100.0,
             )
         ]
-        
+
         portfolio = Portfolio(
             cash_balance=25000.0,
             positions=positions,
             market_value=15500.0,
             total_value=40500.0,
         )
-        
+
         summary = PortfolioSummary(
             cash_balance=25000.0,
             market_value=15500.0,
@@ -1284,7 +1329,7 @@ class TestPortfolioEndpoints:
             total_gain_loss_percent=1.5,
             position_count=1,
         )
-        
+
         mock_service.get_portfolio.return_value = portfolio
         mock_service.get_portfolio_summary.return_value = summary
         mock_service.get_positions.return_value = positions
@@ -1301,9 +1346,15 @@ class TestPortfolioEndpoints:
                 position_response = await ac.get("/api/v1/portfolio/position/AAPL")
 
         # Verify all responses are successful
-        assert all(r.status_code == status.HTTP_200_OK for r in [
-            portfolio_response, summary_response, positions_response, position_response
-        ])
+        assert all(
+            r.status_code == status.HTTP_200_OK
+            for r in [
+                portfolio_response,
+                summary_response,
+                positions_response,
+                position_response,
+            ]
+        )
 
         # Verify data consistency
         portfolio_data = portfolio_response.json()
@@ -1313,19 +1364,28 @@ class TestPortfolioEndpoints:
 
         # Cash balance should be consistent
         assert portfolio_data["cash_balance"] == summary_data["cash_balance"] == 25000.0
-        
+
         # Market value should be consistent
         assert portfolio_data["market_value"] == summary_data["market_value"] == 15500.0
-        
+
         # Total value should be consistent
         assert portfolio_data["total_value"] == summary_data["total_value"] == 40500.0
-        
+
         # Position count should match
-        assert len(portfolio_data["positions"]) == len(positions_data) == summary_data["position_count"] == 1
-        
+        assert (
+            len(portfolio_data["positions"])
+            == len(positions_data)
+            == summary_data["position_count"]
+            == 1
+        )
+
         # Individual position data should match
         portfolio_position = portfolio_data["positions"][0]
         positions_position = positions_data[0]
-        
+
         for field in ["symbol", "quantity", "market_value", "unrealized_pnl"]:
-            assert portfolio_position[field] == positions_position[field] == position_data[field]
+            assert (
+                portfolio_position[field]
+                == positions_position[field]
+                == position_data[field]
+            )

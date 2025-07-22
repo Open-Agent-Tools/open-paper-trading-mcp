@@ -251,7 +251,9 @@ async def find_tradable_options_endpoint(
     that works with both test data and live market data.
     """
     try:
-        result = await service.find_tradable_options(symbol, expiration_date, option_type)
+        result = await service.find_tradable_options(
+            symbol, expiration_date, option_type
+        )
         return result
     except Exception as e:
         raise HTTPException(

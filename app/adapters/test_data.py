@@ -158,7 +158,9 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     quote_date_val = cast(date, date.today())
 
                 return Quote(
-                    quote_date=datetime.combine(cast(date, quote_date_val), datetime.min.time()),
+                    quote_date=datetime.combine(
+                        cast(date, quote_date_val), datetime.min.time()
+                    ),
                     asset=asset,
                     bid=float(db_quote.bid) if db_quote.bid else 0.0,
                     ask=float(db_quote.ask) if db_quote.ask else 0.0,
@@ -186,7 +188,9 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     quote_date_val = cast(date, date.today())
 
                 option_quote = OptionQuote(
-                    quote_date=datetime.combine(cast(date, quote_date_val), datetime.min.time()),
+                    quote_date=datetime.combine(
+                        cast(date, quote_date_val), datetime.min.time()
+                    ),
                     asset=asset,
                     bid=float(db_quote.bid) if db_quote.bid else None,
                     ask=float(db_quote.ask) if db_quote.ask else None,

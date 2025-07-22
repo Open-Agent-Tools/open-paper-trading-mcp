@@ -661,6 +661,7 @@ class TestHealthEndpoints:
     async def test_health_check_response_times_measured(self):
         """Test that response times are properly measured in health checks."""
         import asyncio
+
         from app.api.v1.endpoints.health import check_database_health
 
         mock_db = AsyncMock(spec=AsyncSession)
@@ -801,7 +802,9 @@ class TestHealthEndpoints:
         for line in metrics_lines:
             if line.strip():  # Skip empty lines
                 # Should contain metric name, labels (optional), and value
-                assert "{" in line or " " in line  # Either has labels or space before value
+                assert (
+                    "{" in line or " " in line
+                )  # Either has labels or space before value
                 # Should end with a number
                 parts = line.split()
                 assert len(parts) >= 2
@@ -1075,10 +1078,10 @@ class TestHealthEndpoints:
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        
+
         # Should handle special characters in adapter name
         assert "test-data_v2.0" in data["metrics"]
-        
+
         # Metrics should still be properly formatted
         metrics_lines = data["metrics"].split("\n")
         adapter_metric = next(

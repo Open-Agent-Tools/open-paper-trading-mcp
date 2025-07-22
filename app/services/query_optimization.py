@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.orm import Session
-from sqlalchemy.engine import CursorResult
 
 from ..models.database.trading import Order
 from ..schemas.orders import OrderStatus, OrderType
@@ -384,7 +383,7 @@ class OptimizedOrderQueries:
             },
         )
 
-        return int(getattr(result, 'rowcount', 0)) if hasattr(result, 'rowcount') else 0
+        return int(getattr(result, "rowcount", 0)) if hasattr(result, "rowcount") else 0
 
     async def cleanup_old_completed_orders(
         self, days_old: int = 90, batch_size: int = 1000

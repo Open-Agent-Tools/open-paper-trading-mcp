@@ -555,11 +555,11 @@ class TestAuthEndpoints:
         import asyncio
 
         mock_service = MagicMock(spec=AuthService)
-        
+
         async def timeout_side_effect(*args, **kwargs):
             await asyncio.sleep(0.1)
             raise TimeoutError("Authentication service timeout")
-        
+
         mock_service.authenticate_user.side_effect = timeout_side_effect
 
         with patch(
@@ -585,7 +585,7 @@ class TestAuthEndpoints:
         # Test different case variations
         auth_headers = [
             "Bearer fake-jwt-token",
-            "bearer fake-jwt-token", 
+            "bearer fake-jwt-token",
             "BEARER fake-jwt-token",
             "BeArEr fake-jwt-token",
         ]

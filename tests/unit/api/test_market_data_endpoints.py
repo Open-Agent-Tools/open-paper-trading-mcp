@@ -850,8 +850,11 @@ class TestMarketDataEndpoints:
                 async with AsyncClient(app=client.app, base_url="http://test") as ac:
                     # URL encode special characters
                     import urllib.parse
+
                     encoded_symbol = urllib.parse.quote(symbol)
-                    response = await ac.get(f"/api/v1/market-data/price/{encoded_symbol}")
+                    response = await ac.get(
+                        f"/api/v1/market-data/price/{encoded_symbol}"
+                    )
 
             # Should handle gracefully with appropriate error
             assert response.status_code in [
@@ -910,7 +913,9 @@ class TestMarketDataEndpoints:
 
                 # Info should fail
                 info_response = await ac.get("/api/v1/market-data/info/AAPL")
-                assert info_response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+                assert (
+                    info_response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
     @pytest.mark.asyncio
     async def test_market_data_response_size_limits(self, client):
@@ -1058,6 +1063,7 @@ class TestMarketDataEndpoints:
                 async with AsyncClient(app=client.app, base_url="http://test") as ac:
                     # URL encode the pattern
                     import urllib.parse
+
                     encoded_pattern = urllib.parse.quote(pattern)
                     response = await ac.get(
                         f"/api/v1/market-data/search?query={encoded_pattern}"
@@ -1116,7 +1122,8 @@ class TestMarketDataEndpoints:
             "articles": [
                 {
                     "title": f"Apple News Article {i}",
-                    "content": "This is a very long article content " * 100,  # Large content
+                    "content": "This is a very long article content "
+                    * 100,  # Large content
                     "url": f"https://example.com/news/{i}",
                     "published_at": f"2023-06-{(i % 30) + 1:02d}T14:30:00Z",
                     "source": f"Source {i % 5}",
