@@ -5,12 +5,14 @@ Tests all health check endpoints to ensure system monitoring capabilities
 are working correctly.
 """
 
+import pytest
 from httpx import AsyncClient
 
 
 class TestHealthEndpoints:
     """Test health check endpoints."""
 
+    @pytest.mark.asyncio
     async def test_basic_health_check(self, test_client: AsyncClient):
         """Test basic health check endpoint."""
         response = await test_client.get("/api/v1/health")
@@ -22,6 +24,7 @@ class TestHealthEndpoints:
         assert data["service"] == "open-paper-trading-mcp"
         assert "version" in data
 
+    @pytest.mark.asyncio
     async def test_liveness_check(self, test_client: AsyncClient):
         """Test Kubernetes liveness probe endpoint."""
         response = await test_client.get("/api/v1/health/live")
@@ -31,6 +34,7 @@ class TestHealthEndpoints:
         assert data["status"] == "alive"
         assert "timestamp" in data
 
+    @pytest.mark.asyncio
     async def test_readiness_check(self, test_client: AsyncClient):
         """Test Kubernetes readiness probe endpoint."""
         response = await test_client.get("/api/v1/health/ready")
@@ -40,6 +44,7 @@ class TestHealthEndpoints:
         assert data["status"] == "ready"
         assert "timestamp" in data
 
+    @pytest.mark.asyncio
     async def test_detailed_health_check(self, test_client: AsyncClient):
         """Test detailed health check of all components."""
         response = await test_client.get("/api/v1/health/detailed")
@@ -86,6 +91,7 @@ class TestHealthEndpoints:
         assert "version" in sys_info
         assert "environment" in sys_info
 
+    @pytest.mark.asyncio
     async def test_health_metrics_endpoint(self, test_client: AsyncClient):
         """Test Prometheus-style metrics endpoint."""
         response = await test_client.get("/api/v1/health/metrics")
@@ -110,10 +116,11 @@ class TestHealthEndpoints:
         ]
 
         for expected in expected_metrics:
-            assert expected in metrics, (
-                f"Expected metric pattern '{expected}' not found"
-            )
+            assert (
+                expected in metrics
+            ), f"Expected metric pattern '{expected}' not found"
 
+    @pytest.mark.asyncio
     async def test_dependencies_health_check(self, test_client: AsyncClient):
         """Test dependencies listing endpoint."""
         response = await test_client.get("/api/v1/health/dependencies")
@@ -140,6 +147,7 @@ class TestHealthEndpoints:
         assert "PostgreSQL" in dep_names
         assert any("Quote Provider" in name for name in dep_names)
 
+    @pytest.mark.asyncio
     async def test_health_check_performance(self, test_client: AsyncClient):
         """Test that health checks respond quickly."""
         import time
@@ -155,6 +163,7 @@ class TestHealthEndpoints:
             # Health checks should be fast
             assert elapsed_time < 0.5, f"{endpoint} took {elapsed_time:.2f}s"
 
+    @pytest.mark.asyncio
     async def test_health_check_consistency(self, test_client: AsyncClient):
         """Test that multiple health checks return consistent results."""
         # Get detailed health status
@@ -173,6 +182,7 @@ class TestHealthEndpoints:
         assert live_response.status_code == 200
         assert live_response.json()["status"] == "alive"
 
+    @pytest.mark.asyncio
     async def test_health_check_with_degraded_service(self, test_client: AsyncClient):
         """Test health check behavior when services might be degraded."""
         # This test verifies the endpoint handles degraded states gracefully

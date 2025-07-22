@@ -26,7 +26,7 @@ from .config import (
     create_test_adapter,
     get_adapter_factory,
 )
-from .test_data import TestDataError, TestDataQuoteAdapter, get_test_adapter
+from .test_data import DevDataQuoteAdapter, TestDataError, get_test_adapter
 
 __all__ = [
     "AdapterConfig",
@@ -42,7 +42,7 @@ __all__ = [
     "QuoteCache",
     "TestDataError",
     # Test data
-    "TestDataQuoteAdapter",
+    "DevDataQuoteAdapter",
     "adapter_registry",
     "cached_adapter",
     "configure_default_registry",

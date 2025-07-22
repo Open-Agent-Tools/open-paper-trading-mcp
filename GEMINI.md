@@ -8,6 +8,49 @@ This document provides project-specific context and conventions to guide Gemini'
 -   **Architecture**: A monolithic Python application that runs both the FastAPI and FastMCP servers in the same process. This allows them to share the core business logic from the `TradingService`. The application is orchestrated with Docker Compose, which manages the app container and a dedicated PostgreSQL database container.
 -   **Current Status**: Foundation complete with 100% async architecture, comprehensive testing, live market data integration, and production monitoring.
 
+### Architecture Diagram
+```
+                  +-------------------+      +-------------------+
+                  |    REST Client    |      |     AI Agent      |
+                  +--------+----------+      +---------+---------+
+                           |                           |
+                           +-----------+---------------+
+                                       |
+                                       V
+                             +-------------------+
+                             |  FastAPI / FastMCP|
+                             |  (Main Process)   |
+                             +---------+---------+
+                                       |
+                                       V
+                             +-----------------+
+                             |  TradingService |
+                             +--------+--------+
+                                      |
+         +----------------------------+----------------------------+
+         |                            |                            |
+ (Dispatch Task)                      | (Direct Read/Write)        | (Cache Check)
+         V                            V                            V
++------------------+        +-----------------+        +-----------------+
+| Redis (Broker)   |        | PostgreSQL DB   |        |  Redis (Cache)  |
++--------+---------+        | (Trading State) |        +--------+--------+
+         |                  +--------+--------+                 |
+         | (Task Queue)              ^                         | (Cache R/W)
+         V                           |                         |
++----------------+                   | (DB R/W)                |
+| Celery Worker  |-------------------+                         |
+| (Async Tasks)  |                                             |
++----------------+                                             |
+         |                                                     |
+         +-----------------------------------------------------+
+                                      |
+                                      V
+                              +-----------------+
+                              |  Robinhood API  |
+                              |  (Market Data)  |
+                              +-----------------+
+```
+
 
 
 

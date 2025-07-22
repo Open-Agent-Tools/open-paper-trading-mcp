@@ -241,12 +241,16 @@ class RobinhoodAdapter(QuoteAdapter):
                 bid=bid,
                 ask=ask,
                 underlying_price=underlying_price,
-                volume=int(market_data.get("volume", 0))
-                if market_data.get("volume")
-                else None,
-                open_interest=int(market_data.get("open_interest", 0))
-                if market_data.get("open_interest")
-                else None,
+                volume=(
+                    int(market_data.get("volume", 0))
+                    if market_data.get("volume")
+                    else None
+                ),
+                open_interest=(
+                    int(market_data.get("open_interest", 0))
+                    if market_data.get("open_interest")
+                    else None
+                ),
             )
 
         except Exception as e:
@@ -644,9 +648,9 @@ class RobinhoodAdapter(QuoteAdapter):
             "total_request_time": self._total_request_time,
             "avg_response_time": avg_response_time,
             "last_api_response_time": self._last_api_response_time,
-            "last_error_time": self._last_error_time.isoformat()
-            if self._last_error_time
-            else None,
+            "last_error_time": (
+                self._last_error_time.isoformat() if self._last_error_time else None
+            ),
             "last_error_message": self._last_error_message,
             "cache_hits": self._cache_hits,
             "cache_misses": self._cache_misses,

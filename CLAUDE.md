@@ -44,6 +44,30 @@ python scripts/dev.py check      # Run all checks (format, lint, typecheck, test
 uv run pytest tests/unit/test_specific.py::TestClass::test_method -v
 ```
 
+### Testing Setup
+
+**Important**: Tests run against Docker PostgreSQL database for consistency.
+
+```bash
+# Setup test database (run once)
+python scripts/setup_test_db.py
+
+# Run tests (Docker must be running)
+pytest tests/
+
+# Run specific test categories
+pytest tests/unit/         # Unit tests only
+pytest tests/integration/  # Integration tests only  
+pytest tests/performance/  # Performance tests only
+
+# Run tests with markers
+pytest -m "not slow"       # Skip slow tests
+pytest -m "database"       # Database tests only
+
+# Clean up test database
+python scripts/setup_test_db.py cleanup
+```
+
 ### Service Access Points
 
 - **FastAPI REST API**: http://localhost:2080/api/v1/
@@ -63,29 +87,45 @@ The application runs both servers in a single Python process (`app/main.py`):
 ### Architecture Diagram
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│   REST Client   │     │    AI Agent     │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│  FastAPI :2080  │     │ FastMCP :2081   │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         └───────────┬───────────┘
-                     ▼
-           ┌─────────────────┐
-           │ TradingService  │
-           │   (Shared)      │
-           └────────┬────────┘
-                    │
-        ┌───────────┴───────────┐
-        ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│   PostgreSQL    │     │   Robinhood     │
-│   Database      │     │      API        │
-│ (Trading State) │     │ (Market Data)   │
-└─────────────────┘     └─────────────────┘
+                  +-------------------+      +-------------------+
+                  |    REST Client    |      |     AI Agent      |
+                  +--------+----------+      +---------+---------+
+                           |                           |
+                           +-----------+---------------+
+                                       |
+                                       V
+                             +-------------------+
+                             |  FastAPI / FastMCP|
+                             |  (Main Process)   |
+                             +---------+---------+
+                                       |
+                                       V
+                             +-----------------+
+                             |  TradingService |
+                             +--------+--------+
+                                      |
+         +----------------------------+----------------------------+
+         |                            |                            |
+ (Dispatch Task)                      | (Direct Read/Write)        | (Cache Check)
+         V                            V                            V
++------------------+        +-----------------+        +-----------------+
+| Redis (Broker)   |        | PostgreSQL DB   |        |  Redis (Cache)  |
++--------+---------+        | (Trading State) |        +--------+--------+
+         |                  +--------+--------+                 |
+         | (Task Queue)              ^                         | (Cache R/W)
+         V                           |                         |
++----------------+                   | (DB R/W)                |
+| Celery Worker  |-------------------+                         |
+| (Async Tasks)  |                                             |
++----------------+                                             |
+         |                                                     |
+         +-----------------------------------------------------+
+                                      |
+                                      V
+                              +-----------------+
+                              |  Robinhood API  |
+                              |  (Market Data)  |
+                              +-----------------+
 ```
 
 ### Core Components

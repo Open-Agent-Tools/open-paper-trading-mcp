@@ -11,8 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ...schemas.positions import Position
 from ..models.assets import Asset, Option
-from ..models.trading import Position
 from ..schemas.orders import (
     MultiLegOrder,
     Order,

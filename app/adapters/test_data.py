@@ -1,7 +1,7 @@
 """
 Test data adapter using historical options and stock data.
 
-Adapted from reference implementation TestDataQuoteAdapter with modern Python patterns.
+Adapted from reference implementation DevDataQuoteAdapter with modern Python patterns.
 
 Data includes quotes for AAL and GOOG from 2017:
 - AAL: 2017-01-27 to 2017-01-28 (Jan expiration + earnings)
@@ -19,7 +19,7 @@ from typing import Any
 from sqlalchemy import and_
 
 from ..models.assets import Asset, Option, asset_factory
-from ..models.database.trading import TestOptionQuote, TestScenario, TestStockQuote
+from ..models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from ..models.quotes import OptionQuote, OptionsChain, Quote
 from ..services.greeks import calculate_option_greeks
 from ..storage.database import get_sync_session
@@ -32,7 +32,7 @@ class TestDataError(Exception):
     pass
 
 
-class TestDataQuoteAdapter(QuoteAdapter):
+class DevDataQuoteAdapter(QuoteAdapter):
     """
     Quote adapter that provides historical test data for development and testing.
 
@@ -58,7 +58,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
             config = AdapterConfig()
 
         self.config = config
-        self.name = "TestDataQuoteAdapter"
+        self.name = "DevDataQuoteAdapter"
         self.enabled = True
         self.scenario = scenario
         self.current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
@@ -71,24 +71,31 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
     async def switch_scenario(self, scenario_name: str) -> None:
         """Switch to different test scenario."""
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             scenario = (
-                db.query(TestScenario)
-                .filter(TestScenario.name == scenario_name)
-                .first()
+                db.query(DevScenario).filter(DevScenario.name == scenario_name).first()
             )
             if scenario:
                 self.scenario = scenario_name
-                self.current_date = scenario.start_date
+                start_date = scenario.start_date
+                if hasattr(start_date, "date"):
+                    start_date = start_date.date()
+                else:
+                    # Ensure it's a date object
+                    from datetime import date as date_type
+
+                    if not isinstance(start_date, date_type):
+                        start_date = date_type.today()
+                self.current_date = start_date
                 self._quote_cache.clear()  # Clear cache when switching
 
     def get_available_dates(self) -> list[str]:
         """Get list of available test dates."""
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             # Get unique dates from stock quotes for current scenario
             dates = (
-                db.query(TestStockQuote.quote_date)
-                .filter(TestStockQuote.scenario == self.scenario)
+                db.query(DevStockQuote.quote_date)
+                .filter(DevStockQuote.scenario == self.scenario)
                 .distinct()
                 .all()
             )
@@ -101,16 +108,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
     def _get_stock_quote_from_db(
         self, symbol: str, quote_date: date, scenario: str
-    ) -> TestStockQuote | None:
+    ) -> DevStockQuote | None:
         """Get stock quote from database."""
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             return (
-                db.query(TestStockQuote)
+                db.query(DevStockQuote)
                 .filter(
                     and_(
-                        TestStockQuote.symbol == symbol,
-                        TestStockQuote.quote_date == quote_date,
-                        TestStockQuote.scenario == scenario,
+                        DevStockQuote.symbol == symbol,
+                        DevStockQuote.quote_date == quote_date,
+                        DevStockQuote.scenario == scenario,
                     )
                 )
                 .first()
@@ -118,16 +125,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
     def _get_option_quote_from_db(
         self, symbol: str, quote_date: date, scenario: str
-    ) -> TestOptionQuote | None:
+    ) -> DevOptionQuote | None:
         """Get option quote from database."""
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             return (
-                db.query(TestOptionQuote)
+                db.query(DevOptionQuote)
                 .filter(
                     and_(
-                        TestOptionQuote.symbol == symbol,
-                        TestOptionQuote.quote_date == quote_date,
-                        TestOptionQuote.scenario == scenario,
+                        DevOptionQuote.symbol == symbol,
+                        DevOptionQuote.quote_date == quote_date,
+                        DevOptionQuote.scenario == scenario,
                     )
                 )
                 .first()
@@ -142,13 +149,21 @@ class TestDataQuoteAdapter(QuoteAdapter):
         if db_quote:
             asset = asset_factory(symbol)
             if asset:
+                # Convert date properly
+                quote_date_val = db_quote.quote_date
+                if hasattr(quote_date_val, "date"):
+                    quote_date_val = quote_date_val.date()
+                else:
+                    from datetime import date as date_type
+
+                    if not isinstance(quote_date_val, date_type):
+                        quote_date_val = date_type.today()
+
                 return Quote(
-                    quote_date=datetime.combine(
-                        db_quote.quote_date, datetime.min.time()
-                    ),
+                    quote_date=datetime.combine(quote_date_val, datetime.min.time()),
                     asset=asset,
-                    bid=float(db_quote.bid) if db_quote.bid else None,
-                    ask=float(db_quote.ask) if db_quote.ask else None,
+                    bid=float(db_quote.bid) if db_quote.bid else 0.0,
+                    ask=float(db_quote.ask) if db_quote.ask else 0.0,
                     price=float(db_quote.price) if db_quote.price else None,
                     bid_size=100,
                     ask_size=100,
@@ -165,10 +180,18 @@ class TestDataQuoteAdapter(QuoteAdapter):
         if db_quote:
             asset = asset_factory(symbol)
             if asset and isinstance(asset, Option):
+                # Convert date properly
+                quote_date_val = db_quote.quote_date
+                if hasattr(quote_date_val, "date"):
+                    quote_date_val = quote_date_val.date()
+                else:
+                    from datetime import date as date_type
+
+                    if not isinstance(quote_date_val, date_type):
+                        quote_date_val = date_type.today()
+
                 option_quote = OptionQuote(
-                    quote_date=datetime.combine(
-                        db_quote.quote_date, datetime.min.time()
-                    ),
+                    quote_date=datetime.combine(quote_date_val, datetime.min.time()),
                     asset=asset,
                     bid=float(db_quote.bid) if db_quote.bid else None,
                     ask=float(db_quote.ask) if db_quote.ask else None,
@@ -235,7 +258,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         Returns:
             Dictionary mapping assets to their quotes
         """
-        results = {}
+        results: dict[Asset, Quote] = {}
 
         for asset in assets:
             quote = await self.get_quote(asset)
@@ -254,7 +277,7 @@ class TestDataQuoteAdapter(QuoteAdapter):
         Returns:
             Dictionary mapping symbols to their quotes
         """
-        results = {}
+        results: dict[str, Quote | None] = {}
 
         # Group symbols by type (stock vs option)
         stock_symbols = []
@@ -270,14 +293,14 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         # Batch query stocks
         if stock_symbols:
-            with next(get_sync_session()) as db:
+            with get_sync_session() as db:
                 stock_records = (
-                    db.query(TestStockQuote)
+                    db.query(DevStockQuote)
                     .filter(
                         and_(
-                            TestStockQuote.symbol.in_(stock_symbols),
-                            TestStockQuote.quote_date == self.current_date,
-                            TestStockQuote.scenario == self.scenario,
+                            DevStockQuote.symbol.in_(stock_symbols),
+                            DevStockQuote.quote_date == self.current_date,
+                            DevStockQuote.scenario == self.scenario,
                         )
                     )
                     .all()
@@ -292,14 +315,14 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
         # Batch query options
         if option_symbols:
-            with next(get_sync_session()) as db:
+            with get_sync_session() as db:
                 option_records = (
-                    db.query(TestOptionQuote)
+                    db.query(DevOptionQuote)
                     .filter(
                         and_(
-                            TestOptionQuote.symbol.in_(option_symbols),
-                            TestOptionQuote.quote_date == self.current_date,
-                            TestOptionQuote.scenario == self.scenario,
+                            DevOptionQuote.symbol.in_(option_symbols),
+                            DevOptionQuote.quote_date == self.current_date,
+                            DevOptionQuote.scenario == self.scenario,
                         )
                     )
                     .all()
@@ -323,9 +346,9 @@ class TestDataQuoteAdapter(QuoteAdapter):
         self, symbol: str, start_date: date, end_date: date
     ) -> list[Quote]:
         """Get quotes for a date range (backtesting support)."""
-        quotes = []
+        quotes: list[Quote] = []
 
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             # Check if it's a stock or option
             asset = asset_factory(symbol)
             if not asset:
@@ -333,16 +356,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
             if isinstance(asset, Option):
                 records = (
-                    db.query(TestOptionQuote)
+                    db.query(DevOptionQuote)
                     .filter(
                         and_(
-                            TestOptionQuote.symbol == symbol,
-                            TestOptionQuote.quote_date >= start_date,
-                            TestOptionQuote.quote_date <= end_date,
-                            TestOptionQuote.scenario == self.scenario,
+                            DevOptionQuote.symbol == symbol,
+                            DevOptionQuote.quote_date >= start_date,
+                            DevOptionQuote.quote_date <= end_date,
+                            DevOptionQuote.scenario == self.scenario,
                         )
                     )
-                    .order_by(TestOptionQuote.quote_date)
+                    .order_by(DevOptionQuote.quote_date)
                     .all()
                 )
 
@@ -354,16 +377,16 @@ class TestDataQuoteAdapter(QuoteAdapter):
                         quotes.append(quote)
             else:
                 records = (
-                    db.query(TestStockQuote)
+                    db.query(DevStockQuote)
                     .filter(
                         and_(
-                            TestStockQuote.symbol == symbol,
-                            TestStockQuote.quote_date >= start_date,
-                            TestStockQuote.quote_date <= end_date,
-                            TestStockQuote.scenario == self.scenario,
+                            DevStockQuote.symbol == symbol,
+                            DevStockQuote.quote_date >= start_date,
+                            DevStockQuote.quote_date <= end_date,
+                            DevStockQuote.scenario == self.scenario,
                         )
                     )
-                    .order_by(TestStockQuote.quote_date)
+                    .order_by(DevStockQuote.quote_date)
                     .all()
                 )
 
@@ -406,17 +429,17 @@ class TestDataQuoteAdapter(QuoteAdapter):
         underlying_price = underlying_quote.price if underlying_quote else None
 
         # Query options from database
-        with next(get_sync_session()) as db:
-            query = db.query(TestOptionQuote).filter(
+        with get_sync_session() as db:
+            query = db.query(DevOptionQuote).filter(
                 and_(
-                    TestOptionQuote.underlying == underlying,
-                    TestOptionQuote.quote_date == self.current_date,
-                    TestOptionQuote.scenario == self.scenario,
+                    DevOptionQuote.underlying == underlying,
+                    DevOptionQuote.quote_date == self.current_date,
+                    DevOptionQuote.scenario == self.scenario,
                 )
             )
 
             if expiration:
-                query = query.filter(TestOptionQuote.expiration == expiration)
+                query = query.filter(DevOptionQuote.expiration == expiration)
 
             option_records = query.all()
 
@@ -444,7 +467,15 @@ class TestDataQuoteAdapter(QuoteAdapter):
         # Determine expiration date
         exp_date = expiration
         if exp_date is None and option_records:
-            exp_date = option_records[0].expiration
+            exp_date_val = option_records[0].expiration
+            if hasattr(exp_date_val, "date"):
+                exp_date_val = exp_date_val.date()
+            else:
+                from datetime import date as date_type
+
+                if not isinstance(exp_date_val, date_type):
+                    exp_date_val = date_type.today()
+            exp_date = exp_date_val
 
         return OptionsChain(
             underlying_symbol=underlying_asset.symbol,
@@ -465,14 +496,14 @@ class TestDataQuoteAdapter(QuoteAdapter):
         Returns:
             List of expiration dates
         """
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             expiration_dates = (
-                db.query(TestOptionQuote.expiration)
+                db.query(DevOptionQuote.expiration)
                 .filter(
                     and_(
-                        TestOptionQuote.underlying == underlying,
-                        TestOptionQuote.quote_date == self.current_date,
-                        TestOptionQuote.scenario == self.scenario,
+                        DevOptionQuote.underlying == underlying,
+                        DevOptionQuote.quote_date == self.current_date,
+                        DevOptionQuote.scenario == self.scenario,
                     )
                 )
                 .distinct()
@@ -517,15 +548,15 @@ class TestDataQuoteAdapter(QuoteAdapter):
             if asset_obj is None:
                 return False
 
-            with next(get_sync_session()) as db:
+            with get_sync_session() as db:
                 # Check stock quotes
                 stock_exists = (
-                    db.query(TestStockQuote)
+                    db.query(DevStockQuote)
                     .filter(
                         and_(
-                            TestStockQuote.symbol == symbol,
-                            TestStockQuote.quote_date == self.current_date,
-                            TestStockQuote.scenario == self.scenario,
+                            DevStockQuote.symbol == symbol,
+                            DevStockQuote.quote_date == self.current_date,
+                            DevStockQuote.scenario == self.scenario,
                         )
                     )
                     .first()
@@ -537,12 +568,12 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
                 # Check option quotes
                 option_exists = (
-                    db.query(TestOptionQuote)
+                    db.query(DevOptionQuote)
                     .filter(
                         and_(
-                            TestOptionQuote.symbol == symbol,
-                            TestOptionQuote.quote_date == self.current_date,
-                            TestOptionQuote.scenario == self.scenario,
+                            DevOptionQuote.symbol == symbol,
+                            DevOptionQuote.quote_date == self.current_date,
+                            DevOptionQuote.scenario == self.scenario,
                         )
                     )
                     .first()
@@ -576,14 +607,14 @@ class TestDataQuoteAdapter(QuoteAdapter):
             Dictionary with health status and metrics
         """
         try:
-            with next(get_sync_session()) as db:
+            with get_sync_session() as db:
                 # Count unique symbols for current date and scenario
                 stock_count = (
-                    db.query(TestStockQuote.symbol)
+                    db.query(DevStockQuote.symbol)
                     .filter(
                         and_(
-                            TestStockQuote.quote_date == self.current_date,
-                            TestStockQuote.scenario == self.scenario,
+                            DevStockQuote.quote_date == self.current_date,
+                            DevStockQuote.scenario == self.scenario,
                         )
                     )
                     .distinct()
@@ -591,11 +622,11 @@ class TestDataQuoteAdapter(QuoteAdapter):
                 )
 
                 option_count = (
-                    db.query(TestOptionQuote.symbol)
+                    db.query(DevOptionQuote.symbol)
                     .filter(
                         and_(
-                            TestOptionQuote.quote_date == self.current_date,
-                            TestOptionQuote.scenario == self.scenario,
+                            DevOptionQuote.quote_date == self.current_date,
+                            DevOptionQuote.scenario == self.scenario,
                         )
                     )
                     .distinct()
@@ -603,8 +634,8 @@ class TestDataQuoteAdapter(QuoteAdapter):
                 )
 
                 # Check if database has data
-                total_stock_quotes = db.query(TestStockQuote).count()
-                total_option_quotes = db.query(TestOptionQuote).count()
+                total_stock_quotes = db.query(DevStockQuote).count()
+                total_option_quotes = db.query(DevOptionQuote).count()
 
             return {
                 "name": self.name,
@@ -630,14 +661,14 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
     def get_available_symbols(self) -> list[str]:
         """Get all available symbols in test data."""
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             # Get stock symbols
             stock_symbols = (
-                db.query(TestStockQuote.symbol)
+                db.query(DevStockQuote.symbol)
                 .filter(
                     and_(
-                        TestStockQuote.quote_date == self.current_date,
-                        TestStockQuote.scenario == self.scenario,
+                        DevStockQuote.quote_date == self.current_date,
+                        DevStockQuote.scenario == self.scenario,
                     )
                 )
                 .distinct()
@@ -646,11 +677,11 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
             # Get option symbols
             option_symbols = (
-                db.query(TestOptionQuote.symbol)
+                db.query(DevOptionQuote.symbol)
                 .filter(
                     and_(
-                        TestOptionQuote.quote_date == self.current_date,
-                        TestOptionQuote.scenario == self.scenario,
+                        DevOptionQuote.quote_date == self.current_date,
+                        DevOptionQuote.scenario == self.scenario,
                     )
                 )
                 .distinct()
@@ -665,13 +696,13 @@ class TestDataQuoteAdapter(QuoteAdapter):
 
     def get_underlying_symbols(self) -> list[str]:
         """Get underlying asset symbols (stocks)."""
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             underlyings = (
-                db.query(TestStockQuote.symbol)
+                db.query(DevStockQuote.symbol)
                 .filter(
                     and_(
-                        TestStockQuote.quote_date == self.current_date,
-                        TestStockQuote.scenario == self.scenario,
+                        DevStockQuote.quote_date == self.current_date,
+                        DevStockQuote.scenario == self.scenario,
                     )
                 )
                 .distinct()
@@ -755,6 +786,6 @@ class TestDataQuoteAdapter(QuoteAdapter):
 # Convenience function for getting test adapter
 def get_test_adapter(
     date: str = "2017-03-24", scenario: str = "default"
-) -> TestDataQuoteAdapter:
+) -> DevDataQuoteAdapter:
     """Get a configured test data adapter."""
-    return TestDataQuoteAdapter(date, scenario)
+    return DevDataQuoteAdapter(date, scenario)

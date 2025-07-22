@@ -11,6 +11,13 @@ A comprehensive paper trading simulator with dual interfaces: REST API (FastAPI)
 - **Educational Platform**: Risk-free environment for learning market mechanics and trading concepts
 - **Production-Ready**: Type-safe, async architecture with comprehensive testing and monitoring
 
+## ✅ Prerequisites
+
+Before you begin, ensure you have the following installed:
+- **Docker and Docker Compose**: For running the application in a containerized environment.
+- **Python**: Version 3.11 or higher.
+- **uv**: The project's package manager.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -30,30 +37,45 @@ docker-compose up --build
 ## 🏗️ Architecture Overview
 
 ```
-  ┌─────────────────┐     ┌─────────────────┐
-  │   REST Client   │     │    AI Agent     │
-  └────────┬────────┘     └────────┬────────┘
-           │                       │
-           ▼                       ▼
-  ┌─────────────────┐     ┌─────────────────┐
-  │  FastAPI :2080  │     │ FastMCP :2081   │
-  └────────┬────────┘     └────────┬────────┘
-           │                       │
-           └───────────┬───────────┘
-                       ▼
-             ┌─────────────────┐
-             │ TradingService  │
-             │   (Shared)      │
-             └────────┬────────┘
-                      │
-          ┌───────────┴───────────┐
-          ▼                       ▼
-  ┌─────────────────┐     ┌─────────────────┐
-  │   PostgreSQL    │     │   Robinhood     │
-  │   Database      │     │      API        │
-  │ (Trading State) │     │ (Market Data)   │
-  └─────────────────┘     └─────────────────┘
-
+                  +-------------------+      +-------------------+
+                  |    REST Client    |      |     AI Agent      |
+                  +--------+----------+      +---------+---------+
+                           |                           |
+                           +-----------+---------------+
+                                       |
+                                       V
+                             +-------------------+
+                             |  FastAPI / FastMCP|
+                             |  (Main Process)   |
+                             +---------+---------+
+                                       |
+                                       V
+                             +-----------------+
+                             |  TradingService |
+                             +--------+--------+
+                                      |
+         +----------------------------+----------------------------+
+         |                            |                            |
+ (Dispatch Task)                      | (Direct Read/Write)        | (Cache Check)
+         V                            V                            V
++------------------+        +-----------------+        +-----------------+
+| Redis (Broker)   |        | PostgreSQL DB   |        |  Redis (Cache)  |
++--------+---------+        | (Trading State) |        +--------+--------+
+         |                  +--------+--------+                 |
+         | (Task Queue)              ^                         | (Cache R/W)
+         V                           |                         |
++----------------+                   | (DB R/W)                |
+| Celery Worker  |-------------------+                         |
+| (Async Tasks)  |                                             |
++----------------+                                             |
+         |                                                     |
+         +-----------------------------------------------------+
+                                      |
+                                      V
+                              +-----------------+
+                              |  Robinhood API  |
+                              |  (Market Data)  |
+                              +-----------------+
 ```
 
 **Key Design Decisions:**
@@ -62,7 +84,16 @@ docker-compose up --build
 - **Async Throughout**: Uses asyncio for high performance
 - **Type Safety**: Full Pydantic validation on all inputs/outputs
 
-## 🛠️ Development
+## 🛠️ Technology Stack
+
+- **Backend**: Python, FastAPI, FastMCP
+- **Database**: PostgreSQL, Redis
+- **ORM**: SQLAlchemy
+- **Task Queue**: Celery
+- **Package Management**: uv
+- **Containerization**: Docker, Docker Compose
+
+## ⚙️ Development
 
 ### Local Setup (without Docker)
 
@@ -82,6 +113,15 @@ cp .env.example .env
 # Run the application
 uv run python app/main.py
 ```
+
+### Configuration
+
+The application is configured using environment variables. Copy the `.env.example` file to `.env` and update the following variables:
+
+-   `DATABASE_URL`: The connection string for your PostgreSQL database.
+-   `ROBINHOOD_USERNAME`: Your Robinhood username (for live market data).
+-   `ROBINHOOD_PASSWORD`: Your Robinhood password.
+-   `QUOTE_ADAPTER_TYPE`: The quote adapter to use (`test` or `robinhood`).
 
 ### Development Commands
 
@@ -104,13 +144,21 @@ python scripts/dev.py check
 
 ## 📋 Feature Roadmap
 
-See [TODO.md](TODO.md) for the detailed, up-to-date development roadmap. The high-level phases are:
+See [TODO.md](TODO.md) for the detailed, up-to-date development roadmap. 
 
+### 🎯 Current Status: Phase 0 Near Completion
+- **Phase 0: Foundation & QA** - ✅ **Major Progress** (In completion process)
+  - ✅ Test environment functional (5/9 E2E tests passing)  
+  - ✅ Dependencies resolved, AsyncClient fixed
+  - ✅ Global service refactoring completed
+  - 🔄 Async/await migration in progress (76 MyPy errors remaining)
+
+### 🚀 Next Development Phases:
 -   **Phase 1: Advanced Order Management**: Stop-loss, stop-limit, and other advanced order types.
 -   **Phase 2: Caching & Performance Infrastructure**: Redis caching and async task processing for scalability.
 -   **Phase 3: User Authentication & Multi-Tenancy**: A production-grade, secure user management system.
--   **Phase 4: Backtesting & Strategy Framework**: Historical backtesting and strategy development tools.
--   **Phase 5: Advanced Features & User Experience**: Frontend dashboard, advanced MCP tools, and educational features.
+-   **Phase 4: Advanced Features & User Experience**: Frontend dashboard, advanced MCP tools, and educational features.
+-   **Phase 5: Backtesting & Strategy Framework**: Historical backtesting and strategy development tools.
 
 ## 🤖 MCP Tools Reference
 
@@ -128,64 +176,47 @@ See [TODO.md](TODO.md) for the detailed, up-to-date development roadmap. The hig
 | `get_all_positions` | List all positions | - |
 | `get_position` | Get specific position | symbol |
 
-### Example Usage
-
-```python
-# Place a market order
-response = create_buy_order(
-    symbol="AAPL",
-    quantity=100,
-    price=195.20
-)
-
-# Check portfolio performance
-summary = get_portfolio_summary()
-print(f"Total Value: ${summary['total_value']:,.2f}")
-print(f"Daily P&L: ${summary['daily_pnl']:,.2f}")
-```
-
-### Future MCP Tools (Roadmap)
-
-| Phase | Tool | Description |
-|-------|------|-------------|
-| **Phase 2** | `get_options_chain` | Retrieve options quotes with Greeks for a symbol |
-| | `create_multi_leg_order` | Execute complex strategies (spreads, straddles) |
-| | `calculate_option_greeks` | Compute delta, gamma, theta, vega, rho |
-| | `get_expiration_dates` | List available option expiration dates |
-| **Phase 3** | `backtest_strategy` | Run historical simulation of trading strategy |
-| | `get_historical_data` | Retrieve price history for backtesting |
-| | `analyze_performance` | Calculate Sharpe ratio, drawdown metrics |
-| | `simulate_order_impact` | Preview order effects without execution |
-| **Phase 4** | `get_technical_indicators` | Calculate SMA, EMA, RSI, MACD |
-| | `search_symbols` | Find stocks by company name or sector |
-| | `get_news_sentiment` | Analyze news impact on stock prices |
-| | `set_price_alerts` | Create notifications for price movements |
-
-## 📊 REST API Examples
-
-### Create an Order
-```bash
-curl -X POST http://localhost:2080/api/v1/trading/order \
-  -H "Content-Type: application/json" \
-  -d '{
-    "symbol": "AAPL",
-    "order_type": "BUY",
-    "quantity": 100,
-    "price": 195.20
-  }'
-```
-
-### Get Portfolio Summary
-```bash
-curl http://localhost:2080/api/v1/portfolio/summary
-```
-
-### View All Positions
-```bash
-curl http://localhost:2080/api/v1/portfolio/positions
-```
-
 ## 🧪 Testing
+
+### Test Architecture
+
+**🚨 Important**: All tests run against Docker PostgreSQL database for consistency with production.
+
+- **Database**: Uses Docker PostgreSQL with separate test database (`trading_db_test`)
+- **Isolation**: Each test gets clean database state
+- **Performance**: Comprehensive test suite covering unit, integration, performance, and edge cases
+- **Coverage**: Advanced order management, market conditions, high-volume processing
+
+### Running Tests
+
+```bash
+# 1. Start Docker containers (required for tests)
+docker-compose up -d
+
+# 2. Set up test database (run once)
+python3 scripts/setup_test_db.py
+
+# 3. Run tests
+pytest tests/                    # All tests
+pytest tests/unit/               # Unit tests only
+pytest tests/integration/        # Integration tests only
+pytest tests/performance/        # Performance tests only
+
+# 4. Run tests with markers
+pytest -m "not slow"             # Skip slow tests
+pytest -m "database"             # Database tests only
+pytest -v                        # Verbose output
+
+# 5. Clean up (optional)
+python3 scripts/setup_test_db.py cleanup
+```
+
+### Test Categories
+
+- **Unit Tests**: Fast, isolated component testing
+- **Integration Tests**: Full workflow testing with database
+- **Performance Tests**: High-volume order processing (1000-5000 orders)
+- **Edge Case Tests**: Market hours, holidays, circuit breakers, data failures
 
 ### Run ADK Evaluations
 
@@ -200,37 +231,16 @@ adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json \
 
 See [ADK Testing Guide](tests/evals/ADK-testing-evals.md) for details.
 
-## 📊 Development Status
-
-### ✅ Completed
-- **Phase 0**: Infrastructure setup with Docker, PostgreSQL, and ADK test runner
-- **Phase 1**: Complete architectural refactoring and type safety
-  - 100% MyPy compliance achieved
-  - Full PostgreSQL database integration
-  - Clean service layer architecture
-  - Comprehensive type annotations throughout
-
-### 🚧 Current Focus
-- **Phase 2**: Live Market Data Integration via Robinhood API
-  - See [TODO.md](TODO.md) for detailed roadmap
-
 ## 📚 Documentation
 
 - **API Documentation**: http://localhost:2080/docs (when running)
-- **MCP Protocol**: [Anthropic MCP Docs](https://modelcontextprotocol.io/)
 - **Development Plan**: See [TODO.md](TODO.md)
 - **Claude Integration**: See [CLAUDE.md](CLAUDE.md)
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Run tests and linting (`python scripts/dev.py check`)
-4. Commit your changes
-5. Push to the branch
-6. Open a Pull Request
+We welcome contributions from the community! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) file for details on our code of conduct, development process, and pull request submission guidelines.
 
 ## 📄 License
 
 MIT License - see LICENSE file for details.
-

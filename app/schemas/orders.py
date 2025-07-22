@@ -25,16 +25,21 @@ class OrderType(str, Enum):
     STO = "sell_to_open"
     BTC = "buy_to_close"
     STC = "sell_to_close"
+    STOP_LOSS = "stop_loss"
+    STOP_LIMIT = "stop_limit"
+    TRAILING_STOP = "trailing_stop"
 
 
 class OrderStatus(str, Enum):
     """Order status values."""
 
     PENDING = "pending"
+    TRIGGERED = "triggered"
     FILLED = "filled"
     CANCELLED = "cancelled"
     REJECTED = "rejected"
     PARTIALLY_FILLED = "partially_filled"
+    EXPIRED = "expired"
 
 
 class OrderCondition(str, Enum):
@@ -68,7 +73,8 @@ class OrderLeg(BaseModel):
     )
 
     @field_validator("asset", mode="before")
-    def normalize_asset(self, v: str | Asset) -> Asset:
+    @classmethod
+    def normalize_asset(cls, v: str | Asset) -> Asset:
         result = asset_factory(v) if isinstance(v, str) else v
         if result is None:
             raise ValueError(f"Invalid asset: {v}")
@@ -117,6 +123,15 @@ class Order(BaseModel, OrderValidationMixin):
     created_at: datetime | None = None
     filled_at: datetime | None = None
 
+    # Advanced order trigger fields
+    stop_price: float | None = Field(None, description="Stop price for stop orders")
+    trail_percent: float | None = Field(
+        None, description="Trail percentage for trailing stops"
+    )
+    trail_amount: float | None = Field(
+        None, description="Trail amount for trailing stops"
+    )
+
     # Additional attributes for compatibility
     legs: list[OrderLeg] = Field(
         default_factory=list, description="Order legs (empty for single-leg orders)"
@@ -130,6 +145,37 @@ class Order(BaseModel, OrderValidationMixin):
             order_type=self.order_type,
             price=self.price,
         )
+
+    @field_validator("stop_price")
+    @classmethod
+    def validate_stop_price_requirement(
+        cls, v: float | None, info: ValidationInfo
+    ) -> float | None:
+        """Validate stop price is provided for stop orders."""
+        order_type = info.data.get("order_type")
+        if order_type in [OrderType.STOP_LOSS, OrderType.STOP_LIMIT] and v is None:
+            raise ValueError(f"Stop price is required for {order_type} orders")
+        return v
+
+    @field_validator("trail_percent")
+    @classmethod
+    def validate_trail_requirements(
+        cls, v: float | None, info: ValidationInfo
+    ) -> float | None:
+        """Validate trail requirements for trailing stop orders."""
+        order_type = info.data.get("order_type")
+        trail_amount = info.data.get("trail_amount")
+
+        if order_type == OrderType.TRAILING_STOP:
+            if v is None and trail_amount is None:
+                raise ValueError(
+                    "Trailing stop orders require either trail_percent or trail_amount"
+                )
+            if v is not None and trail_amount is not None:
+                raise ValueError(
+                    "Trailing stop orders cannot have both trail_percent and trail_amount"
+                )
+        return v
 
 
 class MultiLegOrder(BaseModel):
@@ -148,7 +194,8 @@ class MultiLegOrder(BaseModel):
     filled_at: datetime | None = None
 
     @field_validator("legs")
-    def validate_no_duplicate_assets(self, v: list[OrderLeg]) -> list[OrderLeg]:
+    @classmethod
+    def validate_no_duplicate_assets(cls, v: list[OrderLeg]) -> list[OrderLeg]:
         symbols = [
             leg.asset.symbol if hasattr(leg.asset, "symbol") else str(leg.asset)
             for leg in v

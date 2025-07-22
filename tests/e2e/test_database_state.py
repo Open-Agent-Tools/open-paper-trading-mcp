@@ -5,6 +5,7 @@ Tests that data persists correctly between service restarts and that
 portfolio calculations work purely from database state.
 """
 
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +26,7 @@ from tests.e2e.conftest import E2ETestHelpers
 class TestDatabaseState:
     """Test database state consistency and persistence."""
 
+    @pytest.mark.asyncio
     async def test_portfolio_calculation_from_db_only(
         self, test_async_session: AsyncSession, e2e_helpers: E2ETestHelpers
     ):
@@ -57,8 +59,19 @@ class TestDatabaseState:
 
         await test_async_session.commit()
 
-        # Test portfolio calculation using TradingService
-        trading_service = TradingService(account_owner=account.owner)
+        # Test portfolio calculation using TradingService with proper adapter
+        from app.adapters.test_data import DevDataQuoteAdapter
+        from app.services.trading_service import TradingService
+
+        adapter = DevDataQuoteAdapter()
+        trading_service = TradingService(adapter, account_owner="test_db_user")
+
+        # Use the test session for database operations
+        async def mock_get_session():
+            return test_async_session
+
+        trading_service._get_async_db_session = mock_get_session
+
         portfolio = await trading_service.get_portfolio()
 
         # Verify calculations
@@ -86,6 +99,7 @@ class TestDatabaseState:
         expected_total = 50000.0 + positions_value
         assert abs(portfolio.total_value - expected_total) < 0.01
 
+    @pytest.mark.asyncio
     async def test_data_persistence_across_service_restarts(
         self, test_async_session: AsyncSession
     ):
@@ -120,6 +134,7 @@ class TestDatabaseState:
         assert retrieved_order.price == 150.0
         assert retrieved_order.status == OrderStatus.PENDING
 
+    @pytest.mark.asyncio
     async def test_concurrent_database_access(
         self,
         test_client: AsyncClient,
@@ -141,10 +156,8 @@ class TestDatabaseState:
                 "condition": "limit",
             }
 
-            response = await test_client.post(
-                f"/api/v1/accounts/{account_id}/orders", json=order_data
-            )
-            assert response.status_code == 201
+            response = await test_client.post("/api/v1/trading/order", json=order_data)
+            assert response.status_code == 200
             return response.json()
 
         # Create multiple orders concurrently
@@ -166,17 +179,18 @@ class TestDatabaseState:
 
         # Verify all orders exist in database
         for order_id in order_ids:
-            response = await test_client.get(f"/api/v1/orders/{order_id}")
+            response = await test_client.get(f"/api/v1/trading/order/{order_id}")
             assert response.status_code == 200
             order = response.json()
             assert order["status"] == "pending"
 
         # Get all orders and verify count
-        orders_response = await test_client.get(f"/api/v1/accounts/{account_id}/orders")
+        orders_response = await test_client.get("/api/v1/trading/orders")
         assert orders_response.status_code == 200
         all_orders = orders_response.json()
         assert len(all_orders) >= 5  # At least our 5 orders
 
+    @pytest.mark.asyncio
     async def test_database_integrity_after_failures(
         self,
         test_client: AsyncClient,
@@ -197,9 +211,9 @@ class TestDatabaseState:
         }
 
         valid_order_response = await test_client.post(
-            f"/api/v1/accounts/{account_id}/orders", json=valid_order_data
+            "/api/v1/trading/order", json=valid_order_data
         )
-        assert valid_order_response.status_code == 201
+        assert valid_order_response.status_code == 200
         valid_order = valid_order_response.json()
 
         # Try to create invalid orders (should fail but not corrupt database)
@@ -222,17 +236,22 @@ class TestDatabaseState:
 
         for invalid_order_data in invalid_orders:
             response = await test_client.post(
-                f"/api/v1/accounts/{account_id}/orders", json=invalid_order_data
+                "/api/v1/trading/order", json=invalid_order_data
             )
             # Should fail but not crash
             assert response.status_code in [400, 422, 404]
 
         # Verify original valid order still exists and account state is intact
-        order_check = await test_client.get(f"/api/v1/orders/{valid_order['id']}")
+        order_check = await test_client.get(
+            f"/api/v1/trading/order/{valid_order['id']}"
+        )
         assert order_check.status_code == 200
 
         # Verify account balance unchanged
-        current_balance = await e2e_helpers.get_account_balance(test_client, account_id)
+        # Get current portfolio balance
+        portfolio_response = await test_client.get("/api/v1/portfolio/")
+        assert portfolio_response.status_code == 200
+        current_balance = portfolio_response.json()["cash_balance"]
         assert abs(current_balance - initial_balance) < 0.01
 
         # Verify we can still create new valid orders
@@ -245,10 +264,11 @@ class TestDatabaseState:
         }
 
         another_response = await test_client.post(
-            f"/api/v1/accounts/{account_id}/orders", json=another_order_data
+            "/api/v1/trading/order", json=another_order_data
         )
-        assert another_response.status_code == 201
+        assert another_response.status_code == 200
 
+    @pytest.mark.asyncio
     async def test_portfolio_consistency_across_operations(
         self,
         test_client: AsyncClient,
@@ -285,13 +305,14 @@ class TestDatabaseState:
                 "condition": "limit",
             }
 
-            # Create and fill order
-            await e2e_helpers.create_and_fill_order(test_client, account_id, order_data)
+            # Create order (note: filling orders not supported in current API)
+            order_response = await test_client.post(
+                "/api/v1/trading/order", json=order_data
+            )
+            assert order_response.status_code == 200
 
             # Verify portfolio consistency after each operation
-            portfolio_response = await test_client.get(
-                f"/api/v1/accounts/{account_id}/portfolio"
-            )
+            portfolio_response = await test_client.get("/api/v1/portfolio/")
             assert portfolio_response.status_code == 200
             portfolio = portfolio_response.json()
 
@@ -313,9 +334,7 @@ class TestDatabaseState:
                 assert abs(position["unrealized_pnl"] - expected_pnl) < 0.01
 
         # Final verification: AAPL position should have correct average price and quantity
-        final_portfolio = await test_client.get(
-            f"/api/v1/accounts/{account_id}/portfolio"
-        )
+        final_portfolio = await test_client.get("/api/v1/portfolio/")
         assert final_portfolio.status_code == 200
         final_positions = final_portfolio.json()["positions"]
 
@@ -329,6 +348,7 @@ class TestDatabaseState:
         expected_quantity = 100 + 50 - 25  # 125 shares
         assert aapl_position["quantity"] == expected_quantity
 
+    @pytest.mark.asyncio
     async def test_database_rollback_on_error(self, test_async_session: AsyncSession):
         """Test that database transactions rollback properly on errors."""
         # This test verifies database transaction integrity

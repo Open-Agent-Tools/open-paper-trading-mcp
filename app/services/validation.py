@@ -7,8 +7,8 @@ Adapted from reference implementation with enhanced validation capabilities.
 from datetime import date
 
 from ..models.assets import Asset, Option
-from ..models.trading import Position
 from ..schemas.orders import MultiLegOrder, OrderLeg, OrderType
+from ..schemas.positions import Position
 
 
 class ValidationError(Exception):
@@ -103,9 +103,11 @@ class AccountValidator:
 
         # Check for duplicate assets
         symbols = [
-            self._get_symbol(leg.asset)
-            if isinstance(leg.asset, Asset)
-            else str(leg.asset)
+            (
+                self._get_symbol(leg.asset)
+                if isinstance(leg.asset, Asset)
+                else str(leg.asset)
+            )
             for leg in order.legs
         ]
         if len(symbols) != len(set(symbols)):

@@ -87,7 +87,7 @@ class PaperMarketAdapter(MarketAdapter):
         self.midpoint_estimator = MidpointEstimator()
         self.market_estimator = MarketEstimator()
 
-    def submit_order(self, order: Order) -> Order:
+    async def submit_order(self, order: Order) -> Order:
         """Submit an order to the market."""
         # Generate order ID if not present
         if not order.id:
@@ -102,7 +102,7 @@ class PaperMarketAdapter(MarketAdapter):
 
         # Try to fill immediately if market order
         if order.condition == OrderCondition.MARKET:
-            self._try_fill_order(order)
+            await self._try_fill_order(order)
 
         return order
 
@@ -123,13 +123,13 @@ class PaperMarketAdapter(MarketAdapter):
             return self.pending_orders.copy()
         return self.pending_orders.copy()
 
-    def simulate_order(self, order: Order) -> dict[str, Any]:
+    async def simulate_order(self, order: Order) -> dict[str, Any]:
         """Simulate order execution without actually executing."""
         # Get current quote
         asset = asset_factory(order.symbol)
         if not asset:
             return {"success": False, "reason": "Invalid symbol", "impact": None}
-        quote = self.quote_adapter.get_quote(asset)
+        quote = await self.quote_adapter.get_quote(asset)
         if not quote:
             return {"success": False, "reason": "No quote available", "impact": None}
 
@@ -163,13 +163,13 @@ class PaperMarketAdapter(MarketAdapter):
             "quote": quote,
         }
 
-    def process_pending_orders(self) -> list[Order]:
+    async def process_pending_orders(self) -> list[Order]:
         """Process all pending orders and return filled orders."""
         filled = []
         remaining = []
 
         for order in self.pending_orders:
-            if self._try_fill_order(order):
+            if await self._try_fill_order(order):
                 filled.append(order)
             else:
                 remaining.append(order)
@@ -177,13 +177,13 @@ class PaperMarketAdapter(MarketAdapter):
         self.pending_orders = remaining
         return filled
 
-    def _try_fill_order(self, order: Order) -> bool:
+    async def _try_fill_order(self, order: Order) -> bool:
         """Try to fill an order based on current market conditions."""
         # Get current quote
         asset = asset_factory(order.symbol)
         if not asset:
             return False
-        quote = self.quote_adapter.get_quote(asset)
+        quote = await self.quote_adapter.get_quote(asset)
         if not quote:
             return False
 

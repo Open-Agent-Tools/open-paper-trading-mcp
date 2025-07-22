@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.models.database.trading import TestScenario
+from app.models.database.trading import DevScenario
 from app.storage.database import get_async_session, init_db
 
 # Predefined test scenarios
@@ -87,7 +87,7 @@ async def create_test_scenarios() -> int:
         for _scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
             # Check if scenario already exists
             existing = await db.execute(
-                select(TestScenario).where(TestScenario.name == scenario_data["name"])
+                select(DevScenario).where(DevScenario.name == scenario_data["name"])
             )
             existing_scenario = existing.fetchone()
 
@@ -103,7 +103,7 @@ async def create_test_scenarios() -> int:
                 print(f"Updated scenario: {scenario_data['name']}")
             else:
                 # Create new scenario
-                scenario = TestScenario(
+                scenario = DevScenario(
                     name=scenario_data["name"],
                     description=scenario_data["description"],
                     start_date=scenario_data["start_date"],
@@ -137,7 +137,7 @@ async def list_scenarios():
 
     async for db in get_async_session():
         scenarios = await db.execute(
-            select(TestScenario).order_by(TestScenario.start_date)
+            select(DevScenario).order_by(DevScenario.start_date)
         )
 
         for scenario_row in scenarios:

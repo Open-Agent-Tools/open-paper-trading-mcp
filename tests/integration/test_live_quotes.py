@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.adapters.robinhood import RobinhoodAdapter
-from app.adapters.test_data import TestDataQuoteAdapter
+from app.adapters.test_data import DevDataQuoteAdapter
 from app.models.assets import Option, Stock
 from app.models.quotes import OptionQuote, Quote
 from app.services.trading_service import TradingService
@@ -76,7 +76,7 @@ class TestLiveQuotes:
     ):
         """Test switching from test adapter to Robinhood adapter."""
         # Start with test adapter
-        assert isinstance(trading_service.quote_adapter, TestDataQuoteAdapter)
+        assert isinstance(trading_service.quote_adapter, DevDataQuoteAdapter)
 
         # Get quote from test adapter
         test_quote = await trading_service.get_quote("AAPL")
@@ -145,8 +145,8 @@ class TestLiveQuotes:
             # Switch back to test adapter
             await trading_service.switch_quote_adapter("test")
 
-            # Verify adapter was switched to actual TestDataQuoteAdapter
-            assert isinstance(trading_service.quote_adapter, TestDataQuoteAdapter)
+            # Verify adapter was switched to actual DevDataQuoteAdapter
+            assert isinstance(trading_service.quote_adapter, DevDataQuoteAdapter)
 
             # Get quote from test adapter
             test_quote = await trading_service.get_quote("AAPL")
@@ -179,7 +179,7 @@ class TestLiveQuotes:
 
             # Switch to fallback adapter
             await trading_service.switch_quote_adapter("test")
-            assert isinstance(trading_service.quote_adapter, TestDataQuoteAdapter)
+            assert isinstance(trading_service.quote_adapter, DevDataQuoteAdapter)
 
             # Should succeed with test adapter
             quote = await trading_service.get_quote("AAPL")

@@ -52,6 +52,9 @@ class OrderValidationMixin:
             "sell_to_open",
             "buy_to_close",
             "sell_to_close",
+            "stop_loss",
+            "stop_limit",
+            "trailing_stop",
         ]
         if v not in valid_types:
             raise ValueError(f"Invalid order type: {v}. Must be one of: {valid_types}")
@@ -75,6 +78,31 @@ class OrderValidationMixin:
         """Validate that quantity is not zero."""
         if v == 0:
             raise ValueError("Quantity cannot be zero")
+        return v
+
+    @field_validator("stop_price")
+    @classmethod
+    def validate_stop_price(cls, v: float | None) -> float | None:
+        """Validate stop price is positive when provided."""
+        if v is not None and v <= 0:
+            raise ValueError("Stop price must be positive")
+        return v
+
+    @field_validator("trail_percent")
+    @classmethod
+    def validate_trail_percent(cls, v: float | None) -> float | None:
+        """Validate trail percentage is reasonable when provided."""
+        if v is not None:
+            if v <= 0 or v > 100:
+                raise ValueError("Trail percentage must be between 0 and 100")
+        return v
+
+    @field_validator("trail_amount")
+    @classmethod
+    def validate_trail_amount(cls, v: float | None) -> float | None:
+        """Validate trail amount is positive when provided."""
+        if v is not None and v <= 0:
+            raise ValueError("Trail amount must be positive")
         return v
 
 
@@ -278,14 +306,17 @@ def validate_position_consistency(position) -> bool:
     """
     # Check unrealized P&L calculation
     if (
-        hasattr(position, "current_price")
-        and hasattr(position, "avg_price")
-        and hasattr(position, "quantity")
-        and hasattr(position, "unrealized_pnl")
-    ) and position.current_price and position.avg_price and position.quantity:
-        expected_pnl = (
-            position.current_price - position.avg_price
-        ) * position.quantity
+        (
+            hasattr(position, "current_price")
+            and hasattr(position, "avg_price")
+            and hasattr(position, "quantity")
+            and hasattr(position, "unrealized_pnl")
+        )
+        and position.current_price
+        and position.avg_price
+        and position.quantity
+    ):
+        expected_pnl = (position.current_price - position.avg_price) * position.quantity
 
         # Allow small floating point differences
         if (

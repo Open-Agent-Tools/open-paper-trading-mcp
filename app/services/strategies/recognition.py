@@ -8,7 +8,7 @@ and provides analysis of strategy composition.
 from typing import Any
 
 from ...models.assets import Option, asset_factory
-from ...models.trading import Position
+from ...schemas.positions import Position
 from .models import (
     AssetStrategy,
     BasicStrategy,

@@ -10,7 +10,7 @@ from typing import Any
 
 from ...models.assets import Call, Option, Put
 from ...models.quotes import OptionQuote, Quote
-from ...models.trading import Position
+from ...schemas.positions import Position
 from .models import (
     AssetStrategy,
     BasicStrategy,

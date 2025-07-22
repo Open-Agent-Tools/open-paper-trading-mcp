@@ -7,8 +7,8 @@ Special thanks to /u/EdKaim for the outline of this process.
 
 from typing import Any, cast
 
+from ...schemas.positions import Position
 from ..models.assets import Option, asset_factory
-from ..models.trading import Position
 from .strategies.models import (
     AssetStrategy,
     BasicStrategy,
@@ -235,9 +235,7 @@ def create_asset_strategies(
     for position in filtered_positions:
         asset = asset_factory(position.symbol)
         if isinstance(asset, Option) and position.quantity != 0:
-            strategies.append(
-                AssetStrategy(asset=asset, quantity=position.quantity)
-            )
+            strategies.append(AssetStrategy(asset=asset, quantity=position.quantity))
 
     return strategies
 

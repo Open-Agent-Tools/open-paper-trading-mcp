@@ -20,8 +20,8 @@ from app.models.database.trading import (
 from app.models.database.trading import (
     Position as DBPosition,
 )
-from app.models.trading import StockQuote
 from app.schemas.orders import OrderCreate, OrderType
+from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
 
 

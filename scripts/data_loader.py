@@ -14,13 +14,13 @@ from typing import Any
 from sqlalchemy import delete
 
 from app.models.assets import Option, asset_factory
-from app.models.database.trading import TestOptionQuote, TestScenario, TestStockQuote
+from app.models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from app.storage.database import get_async_session, init_db
 
 logger = logging.getLogger(__name__)
 
 
-class DataLoader:
+class DataMigrator:
     """Handles loading and parsing of test data from various sources."""
 
     def __init__(self, data_dir: Path | None = None):
@@ -88,16 +88,16 @@ class DataLoader:
 
     def parse_stock_record(
         self, record: dict[str, Any], scenario: str
-    ) -> TestStockQuote | None:
+    ) -> DevStockQuote | None:
         """
-        Parse CSV record into TestStockQuote object.
+        Parse CSV record into DevStockQuote object.
 
         Args:
             record: CSV record dictionary
             scenario: Scenario name
 
         Returns:
-            TestStockQuote object or None if parsing fails
+            DevStockQuote object or None if parsing fails
         """
         try:
             # Parse date from different possible formats
@@ -132,7 +132,7 @@ class DataLoader:
 
             volume = self._parse_int(record.get("volume", "1000"))
 
-            stock_quote = TestStockQuote(
+            stock_quote = DevStockQuote(
                 symbol=symbol,
                 quote_date=quote_date,
                 scenario=scenario,
@@ -153,16 +153,16 @@ class DataLoader:
 
     def parse_option_record(
         self, record: dict[str, Any], scenario: str
-    ) -> TestOptionQuote | None:
+    ) -> DevOptionQuote | None:
         """
-        Parse CSV record into TestOptionQuote object.
+        Parse CSV record into DevOptionQuote object.
 
         Args:
             record: CSV record dictionary
             scenario: Scenario name
 
         Returns:
-            TestOptionQuote object or None if parsing fails
+            DevOptionQuote object or None if parsing fails
         """
         try:
             # Parse date
@@ -198,7 +198,7 @@ class DataLoader:
 
             volume = self._parse_int(record.get("volume", "100"))
 
-            option_quote = TestOptionQuote(
+            option_quote = DevOptionQuote(
                 symbol=symbol,
                 underlying=asset.underlying.symbol,
                 quote_date=quote_date,
@@ -277,10 +277,10 @@ class DataLoader:
         # Clear existing data for scenario
         async for db in get_async_session():
             await db.execute(
-                delete(TestStockQuote).where(TestStockQuote.scenario == scenario)
+                delete(DevStockQuote).where(DevStockQuote.scenario == scenario)
             )
             await db.execute(
-                delete(TestOptionQuote).where(TestOptionQuote.scenario == scenario)
+                delete(DevOptionQuote).where(DevOptionQuote.scenario == scenario)
             )
             await db.commit()
             break
@@ -372,13 +372,13 @@ class DataLoader:
             for _scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
                 # Check if scenario already exists
                 existing = await db.execute(
-                    db.query(TestScenario).where(
-                        TestScenario.name == scenario_data["name"]
+                    db.query(DevScenario).where(
+                        DevScenario.name == scenario_data["name"]
                     )
                 )
 
                 if not existing.fetchone():
-                    scenario = TestScenario(
+                    scenario = DevScenario(
                         name=scenario_data["name"],
                         description=scenario_data["description"],
                         start_date=scenario_data["start_date"],
@@ -447,7 +447,7 @@ async def load_test_data_from_csv(
     Returns:
         Loading results
     """
-    loader = DataLoader(data_dir)
+    loader = DataMigrator(data_dir)
     return await loader.load_csv_data_to_database(scenario)
 
 
@@ -458,5 +458,5 @@ async def load_scenarios() -> int:
     Returns:
         Number of scenarios created
     """
-    loader = DataLoader()
+    loader = DataMigrator()
     return await loader.load_predefined_scenarios()

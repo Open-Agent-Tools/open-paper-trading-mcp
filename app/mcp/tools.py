@@ -10,7 +10,23 @@ from app.schemas.orders import (
     OrderCreate,
     OrderType,
 )
-from app.services.trading_service import trading_service
+from app.services.trading_service import TradingService
+
+# MCP tools will receive TradingService instance as dependency
+_trading_service: TradingService | None = None
+
+
+def set_mcp_trading_service(service: TradingService) -> None:
+    """Set the trading service for MCP tools."""
+    global _trading_service
+    _trading_service = service
+
+
+def get_mcp_trading_service() -> TradingService:
+    """Get the trading service for MCP tools."""
+    if _trading_service is None:
+        raise RuntimeError("TradingService not initialized for MCP tools")
+    return _trading_service
 
 
 class GetQuoteArgs(BaseModel):
@@ -38,10 +54,10 @@ class GetPositionArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol to get position for")
 
 
-def get_stock_quote(args: GetQuoteArgs) -> str:
+async def get_stock_quote(args: GetQuoteArgs) -> str:
     """[DEPRECATED] Get current stock quote for a symbol."""
     try:
-        quote = trading_service.get_quote(args.symbol)
+        quote = await get_mcp_trading_service().get_quote(args.symbol)
         return json.dumps(
             {
                 "symbol": quote.symbol,
@@ -67,7 +83,7 @@ async def create_buy_order(args: CreateOrderArgs) -> str:
             price=args.price,
             condition=OrderCondition.MARKET,
         )
-        order = await trading_service.create_order(order_data)
+        order = await get_mcp_trading_service().create_order(order_data)
         return json.dumps(
             {
                 "id": order.id,
@@ -96,7 +112,7 @@ async def create_sell_order(args: CreateOrderArgs) -> str:
             price=args.price,
             condition=OrderCondition.MARKET,
         )
-        order = await trading_service.create_order(order_data)
+        order = await get_mcp_trading_service().create_order(order_data)
         return json.dumps(
             {
                 "id": order.id,
@@ -118,7 +134,7 @@ async def create_sell_order(args: CreateOrderArgs) -> str:
 async def get_all_orders() -> str:
     """Get all trading orders."""
     try:
-        orders = await trading_service.get_orders()
+        orders = await get_mcp_trading_service().get_orders()
         orders_data = []
         for order in orders:
             orders_data.append(
@@ -145,7 +161,7 @@ async def get_all_orders() -> str:
 async def get_order(args: GetOrderArgs) -> str:
     """Get a specific order by ID."""
     try:
-        order = await trading_service.get_order(args.order_id)
+        order = await get_mcp_trading_service().get_order(args.order_id)
         return json.dumps(
             {
                 "id": order.id,
@@ -165,10 +181,10 @@ async def get_order(args: GetOrderArgs) -> str:
         return f"Error getting order: {e!s}"
 
 
-def cancel_order(args: CancelOrderArgs) -> str:
+async def cancel_order(args: CancelOrderArgs) -> str:
     """Cancel a specific order."""
     try:
-        result = trading_service.cancel_order(args.order_id)
+        result = await get_mcp_trading_service().cancel_order(args.order_id)
         return json.dumps(result, indent=2)
     except Exception as e:
         return f"Error cancelling order: {e!s}"
@@ -177,7 +193,7 @@ def cancel_order(args: CancelOrderArgs) -> str:
 async def get_portfolio() -> str:
     """Get complete portfolio information."""
     try:
-        portfolio = await trading_service.get_portfolio()
+        portfolio = await get_mcp_trading_service().get_portfolio()
         positions_data = []
         for pos in portfolio.positions:
             positions_data.append(
@@ -208,7 +224,7 @@ async def get_portfolio() -> str:
 async def get_portfolio_summary() -> str:
     """Get portfolio summary with key metrics."""
     try:
-        summary = await trading_service.get_portfolio_summary()
+        summary = await get_mcp_trading_service().get_portfolio_summary()
         return json.dumps(
             {
                 "total_value": summary.total_value,
@@ -228,7 +244,7 @@ async def get_portfolio_summary() -> str:
 async def get_all_positions() -> str:
     """Get all portfolio positions."""
     try:
-        positions = await trading_service.get_positions()
+        positions = await get_mcp_trading_service().get_positions()
         positions_data = []
         for pos in positions:
             positions_data.append(
@@ -249,7 +265,7 @@ async def get_all_positions() -> str:
 async def get_position(args: GetPositionArgs) -> str:
     """Get a specific position by symbol."""
     try:
-        position = await trading_service.get_position(args.symbol)
+        position = await get_mcp_trading_service().get_position(args.symbol)
         return json.dumps(
             {
                 "symbol": position.symbol,
@@ -314,7 +330,7 @@ class SimulateExpirationArgs(BaseModel):
     dry_run: bool = Field(True, description="Dry run mode (don't modify account)")
 
 
-def get_options_chain(args: GetOptionsChainArgs) -> str:
+async def get_options_chain(args: GetOptionsChainArgs) -> str:
     """Get options chain for an underlying symbol with filtering capabilities."""
     try:
         # Parse expiration date if provided
@@ -323,7 +339,7 @@ def get_options_chain(args: GetOptionsChainArgs) -> str:
             expiration = datetime.strptime(args.expiration_date, "%Y-%m-%d").date()
 
         # Get options chain
-        chain_data = trading_service.get_formatted_options_chain(
+        chain_data = await get_mcp_trading_service().get_formatted_options_chain(
             args.symbol,
             expiration_date=expiration,
             min_strike=args.min_strike,
@@ -336,10 +352,10 @@ def get_options_chain(args: GetOptionsChainArgs) -> str:
         return f"Error getting options chain: {e!s}"
 
 
-def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
+async def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
     """Get available expiration dates for an underlying symbol."""
     try:
-        dates = trading_service.get_expiration_dates(args.symbol)
+        dates = await get_mcp_trading_service().get_expiration_dates(args.symbol)
         dates_data = [d.isoformat() for d in dates]
 
         return json.dumps(
@@ -355,10 +371,10 @@ def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
         return f"Error getting expiration dates: {e!s}"
 
 
-def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
+async def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
     """Create a multi-leg options order (spreads, straddles, etc.)."""
     try:
-        order = trading_service.create_multi_leg_order_from_request(
+        order = await get_mcp_trading_service().create_multi_leg_order_from_request(
             args.legs, args.order_type
         )
 
@@ -391,10 +407,10 @@ def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
         return f"Error creating multi-leg order: {e!s}"
 
 
-def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
+async def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
     """Calculate Greeks for an option symbol."""
     try:
-        greeks = trading_service.calculate_greeks(
+        greeks = await get_mcp_trading_service().calculate_greeks(
             args.option_symbol, underlying_price=args.underlying_price
         )
 
@@ -419,10 +435,10 @@ def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
         return f"Error calculating Greeks: {e!s}"
 
 
-def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
+async def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
     """Get comprehensive strategy analysis for current portfolio."""
     try:
-        analysis_result = trading_service.analyze_portfolio_strategies(
+        analysis_result = await get_mcp_trading_service().analyze_portfolio_strategies(
             include_greeks=args.include_greeks,
             include_pnl=args.include_pnl,
             include_complex_strategies=True,  # Not available in args, default to True
@@ -434,10 +450,10 @@ def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
         return f"Error in strategy analysis: {e!s}"
 
 
-def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
+async def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
     """Simulate option expiration processing for current portfolio."""
     try:
-        result = trading_service.simulate_expiration(
+        result = await get_mcp_trading_service().simulate_expiration(
             processing_date=args.processing_date,
             dry_run=args.dry_run,
         )
@@ -459,7 +475,7 @@ class GetOptionMarketDataArgs(BaseModel):
     option_id: str = Field(..., description="Option symbol or ID")
 
 
-def find_tradable_options(args: FindTradableOptionsArgs) -> str:
+async def find_tradable_options(args: FindTradableOptionsArgs) -> str:
     """
     Find tradable options for a symbol with optional filtering.
 
@@ -467,7 +483,7 @@ def find_tradable_options(args: FindTradableOptionsArgs) -> str:
     that works with both test data and live market data.
     """
     try:
-        result = trading_service.find_tradable_options(
+        result = await get_mcp_trading_service().find_tradable_options(
             args.symbol, args.expiration_date, args.option_type
         )
         return json.dumps(result, indent=2)
@@ -475,7 +491,7 @@ def find_tradable_options(args: FindTradableOptionsArgs) -> str:
         return f"Error finding tradable options: {e!s}"
 
 
-def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
+async def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
     """
     Get market data for a specific option contract.
 
@@ -483,7 +499,7 @@ def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
     pricing, and volume information.
     """
     try:
-        result = trading_service.get_option_market_data(args.option_id)
+        result = await get_mcp_trading_service().get_option_market_data(args.option_id)
         return json.dumps(result, indent=2)
     except Exception as e:
         return f"Error getting option market data: {e!s}"

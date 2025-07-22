@@ -234,9 +234,11 @@ class QuoteCache:
 
             # Sort by age (newest first)
             entries.sort(
-                key=lambda x: float(x["age_seconds"])
-                if isinstance(x["age_seconds"], int | float | str)
-                else 0.0
+                key=lambda x: (
+                    float(x["age_seconds"])
+                    if isinstance(x["age_seconds"], int | float | str)
+                    else 0.0
+                )
             )
             return entries
 

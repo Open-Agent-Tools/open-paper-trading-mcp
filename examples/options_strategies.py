@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
-from app.models.trading import (
+from app.schemas.orders import (
     MultiLegOrder,
     OrderCondition,
     OrderLeg,

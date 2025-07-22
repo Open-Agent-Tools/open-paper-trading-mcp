@@ -233,6 +233,62 @@ class PositionConverter(SchemaConverter[DBPosition, Position]):
             iv=None,
         )
 
+    def to_schema_sync(
+        self, db_position: DBPosition, current_price: float | None = None
+    ) -> Position:
+        """
+        Synchronous version of to_schema for testing.
+
+        Args:
+            db_position: Database position model
+            current_price: Optional current market price
+
+        Returns:
+            Position API schema with calculated fields
+        """
+        current_price = current_price or db_position.avg_price
+
+        # Calculate unrealized P&L
+        unrealized_pnl = (current_price - db_position.avg_price) * db_position.quantity
+
+        # Create asset object
+        asset = asset_factory(db_position.symbol)
+
+        # Determine if it's an option and extract option fields safely
+        option_type = None
+        strike = None
+        expiration_date = None
+        underlying_symbol = None
+
+        if asset and hasattr(asset, "option_type"):
+            option_type = getattr(asset, "option_type", None)
+            strike = getattr(asset, "strike", None)
+            expiration_date = getattr(asset, "expiration", None)
+            if hasattr(asset, "underlying") and asset.underlying:
+                underlying_symbol = getattr(asset.underlying, "symbol", None)
+
+        return Position(
+            symbol=db_position.symbol,
+            quantity=db_position.quantity,
+            avg_price=db_position.avg_price,
+            current_price=current_price,
+            unrealized_pnl=unrealized_pnl,
+            realized_pnl=0.0,  # Would need to calculate from trades
+            asset=asset,
+            # Options fields (if applicable)
+            option_type=option_type,
+            strike=strike,
+            expiration_date=expiration_date,
+            underlying_symbol=underlying_symbol,
+            # Greeks would be calculated separately by trading service
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+            iv=None,
+        )
+
     def to_database(self, position: Position, **kwargs) -> DBPosition:
         """
         Convert Position schema to DBPosition.

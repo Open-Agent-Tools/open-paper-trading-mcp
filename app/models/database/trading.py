@@ -1,7 +1,6 @@
 import uuid
 
 from sqlalchemy import (
-    ARRAY,
     JSON,
     BigInteger,
     Boolean,
@@ -19,6 +18,16 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+from sqlalchemy.types import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+)
 
 from app.models.database.base import Base
 from app.schemas.orders import OrderStatus, OrderType
@@ -86,6 +95,12 @@ class Order(Base):
     )
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     filled_at: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
+
+    # Advanced order trigger fields
+    stop_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    trail_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    trail_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    triggered_at: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     account: Mapped["Account"] = relationship("Account", back_populates="orders")
@@ -166,7 +181,7 @@ class OptionQuoteHistory(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
 
-class TestStockQuote(Base):
+class DevStockQuote(Base):
     """Test stock quote data for development and testing."""
 
     __tablename__ = "test_stock_quotes"
@@ -190,7 +205,7 @@ class TestStockQuote(Base):
     )
 
 
-class TestOptionQuote(Base):
+class DevOptionQuote(Base):
     """Test option quote data for development and testing."""
 
     __tablename__ = "test_option_quotes"
@@ -222,7 +237,7 @@ class TestOptionQuote(Base):
     )
 
 
-class TestScenario(Base):
+class DevScenario(Base):
     """Test scenarios for managing different test datasets."""
 
     __tablename__ = "test_scenarios"
@@ -234,7 +249,7 @@ class TestScenario(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     start_date: Mapped[Date] = mapped_column(Date, nullable=False)
     end_date: Mapped[Date] = mapped_column(Date, nullable=False)
-    symbols: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False)
+    symbols: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     market_condition: Mapped[str | None] = mapped_column(
         String(20), nullable=True
     )  # 'volatile', 'calm', 'trending'
@@ -488,6 +503,49 @@ Index(
     "idx_transactions_account_timestamp", Transaction.account_id, Transaction.timestamp
 )
 
+# Advanced order management indexes for performance optimization
+# Query patterns for order execution engine
+Index("idx_orders_status_type", Order.status, Order.order_type)
+Index("idx_orders_status_created", Order.status, Order.created_at)
+Index("idx_orders_symbol_status", Order.symbol, Order.status)
+Index("idx_orders_symbol_type", Order.symbol, Order.order_type)
+
+# Trigger-based order indexes for monitoring
+Index("idx_orders_stop_price", Order.stop_price)
+Index("idx_orders_triggered_at", Order.triggered_at)
+Index(
+    "idx_orders_trigger_fields",
+    Order.stop_price,
+    Order.trail_percent,
+    Order.trail_amount,
+)
+
+# Order queue processing indexes
+Index(
+    "idx_orders_status_created_type", Order.status, Order.created_at, Order.order_type
+)
+Index("idx_orders_account_status_symbol", Order.account_id, Order.status, Order.symbol)
+
+# Time-based order queries for lifecycle management
+Index("idx_orders_created_status", Order.created_at, Order.status)
+Index("idx_orders_filled_at", Order.filled_at)
+Index("idx_orders_created_filled", Order.created_at, Order.filled_at)
+
+# Symbol-based order analysis
+Index("idx_orders_symbol_created", Order.symbol, Order.created_at)
+Index("idx_orders_symbol_filled", Order.symbol, Order.filled_at)
+
+# Performance monitoring indexes
+Index(
+    "idx_orders_account_created_status",
+    Order.account_id,
+    Order.created_at,
+    Order.status,
+)
+Index(
+    "idx_orders_type_status_created", Order.order_type, Order.status, Order.created_at
+)
+
 # Options-specific indexes
 Index(
     "idx_option_quotes_symbol_time",
@@ -584,13 +642,13 @@ Index(
 # Test data indexes
 Index(
     "idx_test_stock_symbol_date_scenario",
-    TestStockQuote.symbol,
-    TestStockQuote.quote_date,
-    TestStockQuote.scenario,
+    DevStockQuote.symbol,
+    DevStockQuote.quote_date,
+    DevStockQuote.scenario,
 )
 Index(
     "idx_test_option_underlying_expiry_scenario",
-    TestOptionQuote.underlying,
-    TestOptionQuote.expiration,
-    TestOptionQuote.scenario,
+    DevOptionQuote.underlying,
+    DevOptionQuote.expiration,
+    DevOptionQuote.scenario,
 )

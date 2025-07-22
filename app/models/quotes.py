@@ -94,7 +94,8 @@ class Quote(BaseModel):
     rho: float | None = Field(default=None, description="Rho greek")
 
     @field_validator("asset", mode="before")
-    def normalize_asset(self, v: str | Asset) -> Asset:
+    @classmethod
+    def normalize_asset(cls, v: str | Asset) -> Asset:
         if isinstance(v, str):
             asset = asset_factory(v)
             if asset is None:
@@ -103,7 +104,8 @@ class Quote(BaseModel):
         return v
 
     @field_validator("quote_date", mode="before")
-    def normalize_date(self, v: str | date | datetime) -> datetime:
+    @classmethod
+    def normalize_date(cls, v: str | date | datetime) -> datetime:
         if isinstance(v, str):
             return datetime.fromisoformat(v.replace("Z", "+00:00"))
         elif isinstance(v, date) and not isinstance(v, datetime):
@@ -175,7 +177,8 @@ class OptionQuote(Quote):
     open_interest: int | None = Field(None, description="Open interest")
 
     @field_validator("asset")
-    def validate_option_asset(self, v: Asset) -> Asset:
+    @classmethod
+    def validate_option_asset(cls, v: Asset) -> Asset:
         if not isinstance(v, Option):
             raise ValueError("OptionQuote requires an Option asset")
         return v

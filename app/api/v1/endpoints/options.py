@@ -13,19 +13,15 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.core.dependencies import get_trading_service
 from app.core.exceptions import NotFoundError, ValidationError
 from app.models.quotes import GreeksResponse, OptionsChainResponse
 from app.schemas.orders import (
     Order,
 )
-from app.services.trading_service import TradingService, trading_service
+from app.services.trading_service import TradingService
 
 router = APIRouter()
-
-
-def get_trading_service() -> TradingService:
-    """Dependency to get trading service instance."""
-    return trading_service
 
 
 # TODO: Restore when find_tradable_options is re-implemented

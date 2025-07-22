@@ -268,18 +268,22 @@ class SessionManager:
             "auth_successes": self._auth_successes,
             "auth_failure_count": self._auth_failure_count,
             "circuit_breaker_open": self._circuit_breaker_open,
-            "circuit_breaker_reset_time": self._circuit_breaker_reset_time.isoformat()
-            if self._circuit_breaker_reset_time
-            else None,
-            "last_auth_attempt": self._last_auth_attempt.isoformat()
-            if self._last_auth_attempt
-            else None,
+            "circuit_breaker_reset_time": (
+                self._circuit_breaker_reset_time.isoformat()
+                if self._circuit_breaker_reset_time
+                else None
+            ),
+            "last_auth_attempt": (
+                self._last_auth_attempt.isoformat() if self._last_auth_attempt else None
+            ),
             "session_valid": self.is_session_valid(),
             "token_valid": self.is_token_valid(),
             "login_time": self.login_time.isoformat() if self.login_time else None,
-            "last_successful_call": self.last_successful_call.isoformat()
-            if self.last_successful_call
-            else None,
+            "last_successful_call": (
+                self.last_successful_call.isoformat()
+                if self.last_successful_call
+                else None
+            ),
         }
 
     async def logout(self) -> None:

@@ -10,7 +10,7 @@ from typing import Any
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from ..models.database.trading import TestOptionQuote, TestScenario, TestStockQuote
+from ..models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from ..storage.database import get_sync_session
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class TestDataValidator:
             True if validation passes, False otherwise
         """
         stock_quotes = (
-            db.query(TestStockQuote).filter(TestStockQuote.scenario == scenario).all()
+            db.query(DevStockQuote).filter(DevStockQuote.scenario == scenario).all()
         )
 
         if not stock_quotes:
@@ -109,7 +109,7 @@ class TestDataValidator:
             True if validation passes, False otherwise
         """
         option_quotes = (
-            db.query(TestOptionQuote).filter(TestOptionQuote.scenario == scenario).all()
+            db.query(DevOptionQuote).filter(DevOptionQuote.scenario == scenario).all()
         )
 
         if not option_quotes:
@@ -135,7 +135,13 @@ class TestDataValidator:
                     f"Option {quote.symbol} on {quote.quote_date}: invalid option type ({quote.option_type})"
                 )
 
-            if quote.expiration <= quote.quote_date:
+            expiration_date = quote.expiration
+            if hasattr(expiration_date, "date"):
+                expiration_date = expiration_date.date()
+            quote_date = quote.quote_date
+            if hasattr(quote_date, "date"):
+                quote_date = quote_date.date()
+            if expiration_date <= quote_date:
                 self.validation_errors.append(
                     f"Option {quote.symbol} on {quote.quote_date}: expiration ({quote.expiration}) not in future"
                 )
@@ -180,7 +186,7 @@ class TestDataValidator:
         Returns:
             True if validation passes, False otherwise
         """
-        scenarios = db.query(TestScenario).all()
+        scenarios = db.query(DevScenario).all()
 
         if not scenarios:
             self.validation_errors.append("No test scenarios found")
@@ -188,7 +194,13 @@ class TestDataValidator:
 
         for scenario in scenarios:
             # Check date range
-            if scenario.end_date <= scenario.start_date:
+            end_date = scenario.end_date
+            if hasattr(end_date, "date"):
+                end_date = end_date.date()
+            start_date = scenario.start_date
+            if hasattr(start_date, "date"):
+                start_date = start_date.date()
+            if end_date <= start_date:
                 self.validation_errors.append(
                     f"Scenario '{scenario.name}': end_date ({scenario.end_date}) not after start_date ({scenario.start_date})"
                 )
@@ -202,13 +214,13 @@ class TestDataValidator:
             # Check that symbols have data
             for symbol in scenario.symbols:
                 stock_count = (
-                    db.query(TestStockQuote)
+                    db.query(DevStockQuote)
                     .filter(
                         and_(
-                            TestStockQuote.symbol == symbol,
-                            TestStockQuote.scenario == scenario.name,
-                            TestStockQuote.quote_date >= scenario.start_date,
-                            TestStockQuote.quote_date <= scenario.end_date,
+                            DevStockQuote.symbol == symbol,
+                            DevStockQuote.scenario == scenario.name,
+                            DevStockQuote.quote_date >= scenario.start_date,
+                            DevStockQuote.quote_date <= scenario.end_date,
                         )
                     )
                     .count()
@@ -234,7 +246,7 @@ class TestDataValidator:
         """
         # Get scenario info
         scenario_obj = (
-            db.query(TestScenario).filter(TestScenario.name == scenario).first()
+            db.query(DevScenario).filter(DevScenario.name == scenario).first()
         )
 
         if not scenario_obj:
@@ -243,8 +255,8 @@ class TestDataValidator:
 
         # Get available dates for scenario
         available_dates = (
-            db.query(TestStockQuote.quote_date)
-            .filter(TestStockQuote.scenario == scenario)
+            db.query(DevStockQuote.quote_date)
+            .filter(DevStockQuote.scenario == scenario)
             .distinct()
             .all()
         )
@@ -280,8 +292,8 @@ class TestDataValidator:
         # Get stock symbols
         stock_symbols = {
             s[0]
-            for s in db.query(TestStockQuote.symbol)
-            .filter(TestStockQuote.scenario == scenario)
+            for s in db.query(DevStockQuote.symbol)
+            .filter(DevStockQuote.scenario == scenario)
             .distinct()
             .all()
         }
@@ -289,8 +301,8 @@ class TestDataValidator:
         # Get option underlying symbols
         option_underlyings = {
             u[0]
-            for u in db.query(TestOptionQuote.underlying)
-            .filter(TestOptionQuote.scenario == scenario)
+            for u in db.query(DevOptionQuote.underlying)
+            .filter(DevOptionQuote.scenario == scenario)
             .distinct()
             .all()
         }
@@ -316,7 +328,7 @@ class TestDataValidator:
         """
         self.clear_results()
 
-        with next(get_sync_session()) as db:
+        with get_sync_session() as db:
             # Run all validations
             stock_valid = self.validate_stock_quote_integrity(db, scenario)
             option_valid = self.validate_option_quote_integrity(db, scenario)
@@ -326,18 +338,18 @@ class TestDataValidator:
 
             # Get counts for summary
             stock_count = (
-                db.query(TestStockQuote)
-                .filter(TestStockQuote.scenario == scenario)
+                db.query(DevStockQuote)
+                .filter(DevStockQuote.scenario == scenario)
                 .count()
             )
 
             option_count = (
-                db.query(TestOptionQuote)
-                .filter(TestOptionQuote.scenario == scenario)
+                db.query(DevOptionQuote)
+                .filter(DevOptionQuote.scenario == scenario)
                 .count()
             )
 
-            scenario_count = db.query(TestScenario).count()
+            scenario_count = db.query(DevScenario).count()
 
         overall_valid = all(
             [

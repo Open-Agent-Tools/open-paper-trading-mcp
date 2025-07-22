@@ -8,36 +8,25 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
-# Check for a testing environment
-TESTING = os.getenv("TESTING", "False").lower() == "true"
+# Always use PostgreSQL - whether production, development, or testing
+database_url = settings.DATABASE_URL
 
-if TESTING:
-    # For testing, use SQLite for both sync and async
-    SYNC_DATABASE_URL = "sqlite:///:memory:"
-    ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# For testing, use test database if TEST_DATABASE_URL is set
+if os.getenv("TESTING", "False").lower() == "true":
+    test_db_url = os.getenv("TEST_DATABASE_URL")
+    if test_db_url:
+        database_url = test_db_url
 
-    sync_engine = create_engine(
-        SYNC_DATABASE_URL, connect_args={"check_same_thread": False}, echo=False
-    )
-    async_engine = create_async_engine(
-        ASYNC_DATABASE_URL, connect_args={"check_same_thread": False}, echo=False
-    )
+# Sync engine (for legacy compatibility)
+SYNC_DATABASE_URL = database_url
+sync_engine = create_engine(SYNC_DATABASE_URL)
+
+# Async engine
+if "+asyncpg" not in database_url:
+    ASYNC_DATABASE_URL = database_url.replace("postgresql://", "postgresql+asyncpg://")
 else:
-    # Production: Use PostgreSQL for both sync and async
-    database_url = settings.DATABASE_URL
-
-    # Sync engine (for legacy compatibility)
-    SYNC_DATABASE_URL = database_url
-    sync_engine = create_engine(SYNC_DATABASE_URL)
-
-    # Async engine
-    if "+asyncpg" not in database_url:
-        ASYNC_DATABASE_URL = database_url.replace(
-            "postgresql://", "postgresql+asyncpg://"
-        )
-    else:
-        ASYNC_DATABASE_URL = database_url
-    async_engine = create_async_engine(ASYNC_DATABASE_URL)
+    ASYNC_DATABASE_URL = database_url
+async_engine = create_async_engine(ASYNC_DATABASE_URL)
 
 # Create session factories
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)

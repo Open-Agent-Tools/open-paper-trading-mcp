@@ -59,7 +59,7 @@ class OptionsExpirationEngine:
     def __init__(self) -> None:
         self.current_date: date | None = None
 
-    def process_account_expirations(
+    async def process_account_expirations(
         self,
         account_data: dict[str, Any],
         quote_adapter: QuoteAdapter,
@@ -102,7 +102,7 @@ class OptionsExpirationEngine:
         # Process each underlying separately
         for underlying_symbol, underlying_positions in expired_by_underlying.items():
             try:
-                underlying_result = self._process_underlying_expirations(
+                underlying_result = await self._process_underlying_expirations(
                     account, underlying_symbol, underlying_positions, quote_adapter
                 )
 
@@ -184,7 +184,7 @@ class OptionsExpirationEngine:
 
         return groups
 
-    def _process_underlying_expirations(
+    async def _process_underlying_expirations(
         self,
         account: dict[str, Any],
         underlying_symbol: str,
@@ -200,7 +200,7 @@ class OptionsExpirationEngine:
             if underlying_asset is None:
                 result.errors.append(f"Could not create asset for {underlying_symbol}")
                 return result
-            underlying_quote = quote_adapter.get_quote(underlying_asset)
+            underlying_quote = await quote_adapter.get_quote(underlying_asset)
             if underlying_quote is None:
                 result.errors.append(f"Could not get quote for {underlying_symbol}")
                 return result

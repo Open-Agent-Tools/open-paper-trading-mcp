@@ -84,7 +84,7 @@ class MarketAdapter(ABC):
         self.pending_orders: list[Order] = []
 
     @abstractmethod
-    def submit_order(self, order: Order) -> Order:
+    async def submit_order(self, order: Order) -> Order:
         """Submit an order to the market."""
         pass
 
@@ -99,12 +99,12 @@ class MarketAdapter(ABC):
         pass
 
     @abstractmethod
-    def simulate_order(self, order: Order) -> dict[str, Any]:
+    async def simulate_order(self, order: Order) -> dict[str, Any]:
         """Simulate order execution without actually executing."""
         pass
 
     @abstractmethod
-    def process_pending_orders(self) -> list[Order]:
+    async def process_pending_orders(self) -> list[Order]:
         """Process all pending orders and return filled orders."""
         pass
 

@@ -13,7 +13,6 @@ from pathlib import Path
 # Add the app directory to the path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.adapters.test_data_db import TestDataDBQuoteAdapter
 from app.models.assets import Stock, asset_factory
 from app.services.trading_service import TradingService
 

@@ -15,12 +15,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from sqlalchemy import and_, delete, select
 
-from app.models.database.trading import TestOptionQuote, TestScenario, TestStockQuote
+from app.models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from app.storage.database import get_async_session, init_db
 from scripts.migrate_test_data import (
     EXPANDED_SYMBOLS,
     TEST_DATE_RANGES,
-    TestDataMigrator,
+    DataMigrator,
 )
 
 
@@ -35,9 +35,9 @@ class TestDataMigration:
 
         # Clean up any existing test data before tests
         async for db in get_async_session():
-            await db.execute(delete(TestStockQuote))
-            await db.execute(delete(TestOptionQuote))
-            await db.execute(delete(TestScenario))
+            await db.execute(delete(DevStockQuote))
+            await db.execute(delete(DevOptionQuote))
+            await db.execute(delete(DevScenario))
             await db.commit()
             break
 
@@ -45,16 +45,16 @@ class TestDataMigration:
 
         # Clean up after tests
         async for db in get_async_session():
-            await db.execute(delete(TestStockQuote))
-            await db.execute(delete(TestOptionQuote))
-            await db.execute(delete(TestScenario))
+            await db.execute(delete(DevStockQuote))
+            await db.execute(delete(DevOptionQuote))
+            await db.execute(delete(DevScenario))
             await db.commit()
             break
 
     @pytest.mark.asyncio
     async def test_csv_to_database_migration(self):
         """Test migration from CSV to database."""
-        migrator = TestDataMigrator()
+        migrator = DataMigrator()
 
         # Run migration
         stats = await migrator.migrate_data("default")
@@ -72,25 +72,25 @@ class TestDataMigration:
         async for db in get_async_session():
             # Check stock quotes
             stock_count = await db.execute(
-                select(TestStockQuote).where(TestStockQuote.scenario == "default")
+                select(DevStockQuote).where(DevStockQuote.scenario == "default")
             )
             stock_records = stock_count.fetchall()
             assert len(stock_records) == stats["stocks_migrated"]
 
             # Check option quotes
             option_count = await db.execute(
-                select(TestOptionQuote).where(TestOptionQuote.scenario == "default")
+                select(DevOptionQuote).where(DevOptionQuote.scenario == "default")
             )
             option_records = option_count.fetchall()
             assert len(option_records) == stats["options_migrated"]
 
             # Verify sample data
             aal_quote = await db.execute(
-                select(TestStockQuote).where(
+                select(DevStockQuote).where(
                     and_(
-                        TestStockQuote.symbol == "AAL",
-                        TestStockQuote.quote_date == date(2017, 1, 27),
-                        TestStockQuote.scenario == "default",
+                        DevStockQuote.symbol == "AAL",
+                        DevStockQuote.quote_date == date(2017, 1, 27),
+                        DevStockQuote.scenario == "default",
                     )
                 )
             )
@@ -105,7 +105,7 @@ class TestDataMigration:
     @pytest.mark.asyncio
     async def test_expanded_dataset_generation(self):
         """Test generation of expanded test dataset."""
-        migrator = TestDataMigrator()
+        migrator = DataMigrator()
 
         # Generate expanded dataset
         stats = await migrator.generate_expanded_dataset()
@@ -124,30 +124,28 @@ class TestDataMigration:
             for symbol in EXPANDED_SYMBOLS:
                 # Check stock quotes exist
                 stock_exists = await db.execute(
-                    select(TestStockQuote)
-                    .where(TestStockQuote.symbol == symbol)
-                    .limit(1)
+                    select(DevStockQuote).where(DevStockQuote.symbol == symbol).limit(1)
                 )
-                assert stock_exists.fetchone() is not None, (
-                    f"Stock quotes missing for {symbol}"
-                )
+                assert (
+                    stock_exists.fetchone() is not None
+                ), f"Stock quotes missing for {symbol}"
 
                 # Check option quotes exist
                 option_exists = await db.execute(
-                    select(TestOptionQuote)
-                    .where(TestOptionQuote.underlying == symbol)
+                    select(DevOptionQuote)
+                    .where(DevOptionQuote.underlying == symbol)
                     .limit(1)
                 )
-                assert option_exists.fetchone() is not None, (
-                    f"Option quotes missing for {symbol}"
-                )
+                assert (
+                    option_exists.fetchone() is not None
+                ), f"Option quotes missing for {symbol}"
 
             break
 
     @pytest.mark.asyncio
     async def test_scenario_creation(self):
         """Test creation of predefined test scenarios."""
-        migrator = TestDataMigrator()
+        migrator = DataMigrator()
 
         # Create scenarios
         count = await migrator.create_test_scenarios()
@@ -156,15 +154,13 @@ class TestDataMigration:
         # Verify scenarios in database
         async for db in get_async_session():
             # Check all scenarios exist
-            scenarios = await db.execute(select(TestScenario))
+            scenarios = await db.execute(select(DevScenario))
             scenario_records = scenarios.fetchall()
             assert len(scenario_records) == count
 
             # Verify specific scenario
             calm_scenario = await db.execute(
-                select(TestScenario).where(
-                    TestScenario.name == "Calm Market Conditions"
-                )
+                select(DevScenario).where(DevScenario.name == "Calm Market Conditions")
             )
             calm_record = calm_scenario.fetchone()
             assert calm_record is not None
@@ -177,7 +173,7 @@ class TestDataMigration:
     @pytest.mark.asyncio
     async def test_data_integrity_after_migration(self):
         """Test data integrity and consistency after migration."""
-        migrator = TestDataMigrator()
+        migrator = DataMigrator()
 
         # Run full migration
         await migrator.create_test_scenarios()
@@ -186,24 +182,24 @@ class TestDataMigration:
 
         async for db in get_async_session():
             # Test bid/ask/price consistency
-            stock_quotes = await db.execute(select(TestStockQuote).limit(100))
+            stock_quotes = await db.execute(select(DevStockQuote).limit(100))
             for quote_row in stock_quotes:
                 quote = quote_row[0]
                 if quote.bid and quote.ask and quote.price:
                     # Price should be between bid and ask
-                    assert quote.bid <= quote.price <= quote.ask, (
-                        f"Price inconsistency for {quote.symbol}: bid={quote.bid}, price={quote.price}, ask={quote.ask}"
-                    )
+                    assert (
+                        quote.bid <= quote.price <= quote.ask
+                    ), f"Price inconsistency for {quote.symbol}: bid={quote.bid}, price={quote.price}, ask={quote.ask}"
 
                     # Spread should be reasonable
                     spread = float(quote.ask - quote.bid)
                     spread_pct = spread / float(quote.price)
-                    assert spread_pct < 0.05, (
-                        f"Spread too wide for {quote.symbol}: {spread_pct:.2%}"
-                    )
+                    assert (
+                        spread_pct < 0.05
+                    ), f"Spread too wide for {quote.symbol}: {spread_pct:.2%}"
 
             # Test option data integrity
-            option_quotes = await db.execute(select(TestOptionQuote).limit(100))
+            option_quotes = await db.execute(select(DevOptionQuote).limit(100))
             for quote_row in option_quotes:
                 quote = quote_row[0]
                 # Verify option fields
@@ -217,7 +213,7 @@ class TestDataMigration:
     @pytest.mark.asyncio
     async def test_date_range_coverage(self):
         """Test that all date ranges are properly covered."""
-        migrator = TestDataMigrator()
+        migrator = DataMigrator()
 
         # Generate data
         await migrator.generate_expanded_dataset()
@@ -230,24 +226,24 @@ class TestDataMigration:
 
                 # Query quotes in date range
                 quotes_in_range = await db.execute(
-                    select(TestStockQuote).where(
+                    select(DevStockQuote).where(
                         and_(
-                            TestStockQuote.quote_date >= start_date,
-                            TestStockQuote.quote_date <= end_date,
+                            DevStockQuote.quote_date >= start_date,
+                            DevStockQuote.quote_date <= end_date,
                         )
                     )
                 )
                 records = quotes_in_range.fetchall()
-                assert len(records) > 0, (
-                    f"No quotes found for date range {start_str} to {end_str}"
-                )
+                assert (
+                    len(records) > 0
+                ), f"No quotes found for date range {start_str} to {end_str}"
 
             break
 
     @pytest.mark.asyncio
     async def test_migration_idempotency(self):
         """Test that migration can be run multiple times safely."""
-        migrator = TestDataMigrator()
+        migrator = DataMigrator()
 
         # First migration
         stats1 = await migrator.migrate_data("default")
@@ -263,7 +259,7 @@ class TestDataMigration:
         async for db in get_async_session():
             # Count total records
             stock_count = await db.execute(
-                select(TestStockQuote).where(TestStockQuote.scenario == "default")
+                select(DevStockQuote).where(DevStockQuote.scenario == "default")
             )
             assert len(stock_count.fetchall()) == stats2["stocks_migrated"]
 

@@ -22,7 +22,6 @@ with suppress(ImportError):
     from app.mcp.server import mcp as mcp_instance
 
 
-
 async def initialize_database() -> None:
     """Initialize database tables asynchronously."""
     print("Initializing database...")
@@ -42,6 +41,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging()
     print("Starting up FastAPI server...")
     await initialize_database()
+
+    # Initialize TradingService and store in application state
+    from app.mcp.tools import set_mcp_trading_service
+    from app.services.trading_service import TradingService, _get_quote_adapter
+
+    trading_service = TradingService(_get_quote_adapter())
+    app.state.trading_service = trading_service
+    set_mcp_trading_service(trading_service)  # For MCP tools
+    print("TradingService initialized and stored in application state")
 
     # Authenticate with Robinhood
     robinhood_client = get_robinhood_client()
@@ -101,9 +109,74 @@ if settings.BACKEND_CORS_ORIGINS:
 async def custom_exception_handler(
     request: Request, exc: CustomException
 ) -> JSONResponse:
+    """Handle custom exceptions with structured error responses."""
+    from datetime import datetime
+
+    error_content = {
+        "error": {
+            "type": exc.__class__.__name__,
+            "message": str(exc.detail),
+            "status_code": exc.status_code,
+            "timestamp": datetime.utcnow().isoformat(),
+            "path": str(request.url.path),
+        }
+    }
+
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail},
+        content=error_content,
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    """Handle ValueError exceptions as validation errors."""
+    from datetime import datetime
+
+    from app.core.exceptions import ValidationError
+
+    # Convert ValueError to ValidationError for consistent handling
+    validation_error = ValidationError(str(exc))
+
+    error_content = {
+        "error": {
+            "type": "ValidationError",
+            "message": str(exc),
+            "status_code": 422,
+            "timestamp": datetime.utcnow().isoformat(),
+            "path": str(request.url.path),
+        }
+    }
+
+    return JSONResponse(
+        status_code=422,
+        content=error_content,
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle unexpected exceptions with generic error response."""
+    import logging
+    from datetime import datetime
+
+    # Log the unexpected error
+    logger = logging.getLogger(__name__)
+    logger.error(f"Unexpected error: {exc}", exc_info=True)
+
+    error_content = {
+        "error": {
+            "type": "InternalServerError",
+            "message": "An internal server error occurred",
+            "status_code": 500,
+            "timestamp": datetime.utcnow().isoformat(),
+            "path": str(request.url.path),
+        }
+    }
+
+    return JSONResponse(
+        status_code=500,
+        content=error_content,
     )
 
 

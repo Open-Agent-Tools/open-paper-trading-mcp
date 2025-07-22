@@ -5,30 +5,22 @@ import os
 import uuid
 from datetime import datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.adapters.base import AccountAdapter
 from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
-from app.storage.database import AsyncSessionLocal
+from app.storage.database import get_sync_session
 
 
 class DatabaseAccountAdapter(AccountAdapter):
     """Database-backed account adapter."""
 
-    def __init__(self, db_session: AsyncSession | None = None):
-        self._db = db_session
-
-    @property
-    def db(self) -> AsyncSession:
-        """Get database session."""
-        if self._db is None:
-            self._db = AsyncSessionLocal()
-        return self._db
+    def __init__(self):
+        pass
 
     def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
-        db_account = self.db.query(DBAccount).filter(DBAccount.id == account_id).first()
+        with get_sync_session() as db:
+            db_account = db.query(DBAccount).filter(DBAccount.id == account_id).first()
         if not db_account:
             return None
 
@@ -42,7 +34,8 @@ class DatabaseAccountAdapter(AccountAdapter):
 
     def put_account(self, account: Account) -> None:
         """Store or update an account."""
-        db_account = self.db.query(DBAccount).filter(DBAccount.id == account.id).first()
+        with get_sync_session() as db:
+            db_account = db.query(DBAccount).filter(DBAccount.id == account.id).first()
 
         if db_account:
             # Update existing
@@ -59,26 +52,29 @@ class DatabaseAccountAdapter(AccountAdapter):
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
             )
-            self.db.add(db_account)
+            db.add(db_account)
 
-        self.db.commit()
+            db.commit()
 
     def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
-        return [acc.id for acc in self.db.query(DBAccount.id).all()]
+        with get_sync_session() as db:
+            return [acc.id for acc in db.query(DBAccount.id).all()]
 
     def account_exists(self, account_id: str) -> bool:
         """Check if an account exists."""
-        return self.db.query(DBAccount).filter(DBAccount.id == account_id).count() > 0
+        with get_sync_session() as db:
+            return db.query(DBAccount).filter(DBAccount.id == account_id).count() > 0
 
     def delete_account(self, account_id: str) -> bool:
         """Delete an account."""
-        db_account = self.db.query(DBAccount).filter(DBAccount.id == account_id).first()
-        if db_account:
-            self.db.delete(db_account)
-            self.db.commit()
-            return True
-        return False
+        with get_sync_session() as db:
+            db_account = db.query(DBAccount).filter(DBAccount.id == account_id).first()
+            if db_account:
+                db.delete(db_account)
+                db.commit()
+                return True
+            return False
 
 
 class LocalFileSystemAccountAdapter(AccountAdapter):

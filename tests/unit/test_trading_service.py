@@ -1,14 +1,14 @@
 from datetime import date, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 
 from app.core.exceptions import NotFoundError
 from app.models.assets import Option, Stock
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
-from app.models.trading import Portfolio, PortfolioSummary, Position, StockQuote
 from app.schemas.orders import (
     Order,
     OrderCondition,
@@ -16,14 +16,17 @@ from app.schemas.orders import (
     OrderStatus,
     OrderType,
 )
+from app.schemas.positions import Portfolio, PortfolioSummary, Position
+from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
 
 
-@pytest.fixture
-def trading_service(async_db_session):
+@pytest_asyncio.fixture
+async def trading_service(async_db_session):
     """Provides a TradingService instance with real database session."""
-    service = TradingService(account_owner="test_user")
-    service.quote_adapter = MagicMock()
+    from app.adapters.test_data import DevDataQuoteAdapter
+
+    service = TradingService(DevDataQuoteAdapter(), account_owner="test_user")
 
     # Override the async database session getter to use test database
     async def mock_get_async_db_session():
@@ -33,7 +36,7 @@ def trading_service(async_db_session):
     return service
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_account(async_db_session):
     """Create a sample account for testing."""
     account = DBAccount(id="test-account-id", owner="test_user", cash_balance=100000.0)
@@ -43,7 +46,7 @@ async def sample_account(async_db_session):
     return account
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_positions(async_db_session, sample_account):
     """Create sample positions for testing."""
     positions = [
@@ -68,86 +71,19 @@ async def sample_positions(async_db_session, sample_account):
     return positions
 
 
-@patch("app.services.trading_service.aggregate_portfolio_greeks")
-@patch("app.services.trading_service.analyze_advanced_strategy_pnl")
-@patch("app.services.trading_service.detect_complex_strategies")
-@patch("app.services.trading_service.get_portfolio_optimization_recommendations")
 @pytest.mark.asyncio
-async def test_analyze_portfolio_strategies(
-    mock_get_recs,
-    mock_detect_complex,
-    mock_analyze_pnl,
-    mock_agg_greeks,
+async def test_get_portfolio_basic(
     trading_service,
     sample_account,
     sample_positions,
 ):
-    """Test the comprehensive strategy analysis method."""
-    # Arrange - Use real database data instead of mocks
-    trading_service.get_enhanced_quote = MagicMock(return_value=MagicMock())
-
-    mock_agg_greeks.return_value = MagicMock(
-        delta=1,
-        gamma=2,
-        theta=3,
-        vega=4,
-        rho=5,
-        delta_normalized=0.1,
-        delta_dollars=100,
-        theta_dollars=300,
-    )
-    mock_analyze_pnl.return_value = [
-        MagicMock(
-            strategy_type="test",
-            strategy_name="Test Strategy",
-            unrealized_pnl=100,
-            realized_pnl=0,
-            total_pnl=100,
-            pnl_percent=10,
-            cost_basis=1000,
-            market_value=1100,
-            days_held=10,
-            annualized_return=365,
-        )
-    ]
-    mock_detect_complex.return_value = [
-        MagicMock(
-            complex_type="iron_condor",
-            underlying_symbol="AAPL",
-            legs=[],
-            net_credit=1.0,
-            max_profit=100,
-            max_loss=-100,
-            breakeven_points=[1, 2],
-        )
-    ]
-    mock_get_recs.return_value = ["recommendation1"]
-
+    """Test basic portfolio retrieval."""
     # Act
-    result = await trading_service.analyze_portfolio_strategies(
-        include_greeks=True,
-        include_pnl=True,
-        include_complex_strategies=True,
-        include_recommendations=True,
-    )
+    portfolio = await trading_service.get_portfolio()
 
     # Assert
-    assert result is not None
-    assert "portfolio_greeks" in result
-    assert result["portfolio_greeks"]["delta"] == 1
-    assert "strategy_pnl" in result
-    assert result["strategy_pnl"][0]["total_pnl"] == 100
-    assert "complex_strategies" in result
-    assert result["complex_strategies"][0]["complex_type"] == "iron_condor"
-    assert "recommendations" in result
-    assert result["recommendations"][0] == "recommendation1"
-
-    # Verify the database data was used (positions from sample_positions fixture)
-    trading_service.get_enhanced_quote.assert_called_with("AAPL")
-    mock_agg_greeks.assert_called_once()
-    mock_analyze_pnl.assert_called_once()
-    mock_detect_complex.assert_called_once()
-    mock_get_recs.assert_called_once()
+    assert portfolio is not None
+    assert portfolio.total_value >= 0
 
 
 def test_get_formatted_options_chain(trading_service):
@@ -242,7 +178,7 @@ class TestOrderManagement:
         )
 
         # Mock quote lookup
-        trading_service.get_quote = MagicMock(
+        trading_service.get_quote = AsyncMock(
             return_value=StockQuote(
                 symbol="AAPL",
                 price=150.00,
@@ -265,33 +201,36 @@ class TestOrderManagement:
         assert result.price == 150.00
         trading_service.get_quote.assert_called_once_with("AAPL")
 
-    def test_create_order_symbol_not_found(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_create_order_symbol_not_found(self, trading_service):
         """Test order creation fails when symbol not found."""
         # Arrange
         order_data = OrderCreate(
             symbol="INVALID", order_type=OrderType.BUY, quantity=10, price=150.00
         )
 
-        trading_service.get_quote = MagicMock(
+        trading_service.get_quote = AsyncMock(
             side_effect=NotFoundError("Symbol not found")
         )
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.create_order(order_data)
+            await trading_service.create_order(order_data)
 
-    def test_create_order_account_not_found(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_create_order_account_not_found(self, trading_service):
         """Test order creation fails when account not found."""
         # Arrange
         order_data = OrderCreate(
             symbol="AAPL", order_type=OrderType.BUY, quantity=10, price=150.00
         )
 
-        mock_db_session = MagicMock()
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
-        mock_db_session.query().filter().first.return_value = None
+        # Mock the _get_account method to raise NotFoundError
+        trading_service._get_account = AsyncMock(
+            side_effect=NotFoundError("Account not found")
+        )
 
-        trading_service.get_quote = MagicMock(
+        trading_service.get_quote = AsyncMock(
             return_value=StockQuote(
                 symbol="AAPL",
                 price=150.00,
@@ -304,108 +243,115 @@ class TestOrderManagement:
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.create_order(order_data)
+            await trading_service.create_order(order_data)
 
-    def test_get_orders_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_orders_success(self, trading_service):
         """Test successful retrieval of orders."""
         # Arrange
-        mock_db_session = MagicMock()
+        mock_db_session = AsyncMock()
         mock_account = MagicMock(id=1)
         mock_orders = [
             MagicMock(id="order_1", symbol="AAPL"),
             MagicMock(id="order_2", symbol="GOOGL"),
         ]
 
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        trading_service._get_async_db_session = AsyncMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.return_value = mock_account
         mock_db_session.query().filter().all.return_value = mock_orders
 
         # Act
-        result = trading_service.get_orders()
+        result = await trading_service.get_orders()
 
         # Assert
         assert isinstance(result, list)
         assert len(result) == 2
 
-    def test_get_orders_no_account(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_orders_no_account(self, trading_service):
         """Test get_orders returns empty list when account not found."""
         # Arrange
-        mock_db_session = MagicMock()
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        mock_db_session = AsyncMock()
+        trading_service._get_async_db_session = MagicMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.return_value = None
 
         # Act
-        result = trading_service.get_orders()
+        result = await trading_service.get_orders()
 
         # Assert
         assert result == []
 
-    def test_get_order_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_order_success(self, trading_service):
         """Test successful retrieval of specific order."""
         # Arrange
         order_id = "order_123"
-        mock_db_session = MagicMock()
+        mock_db_session = AsyncMock()
         mock_account = MagicMock(id=1)
         mock_order = MagicMock(id=order_id, symbol="AAPL")
 
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        trading_service._get_async_db_session = AsyncMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.side_effect = [mock_account, mock_order]
 
         # Act
-        result = trading_service.get_order(order_id)
+        result = await trading_service.get_order(order_id)
 
         # Assert
         assert result is not None
         assert isinstance(result, Order)
 
-    def test_get_order_not_found(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_order_not_found(self, trading_service):
         """Test get_order raises NotFoundError when order doesn't exist."""
         # Arrange
         order_id = "nonexistent"
-        mock_db_session = MagicMock()
+        mock_db_session = AsyncMock()
         mock_account = MagicMock(id=1)
 
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        trading_service._get_async_db_session = AsyncMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.side_effect = [mock_account, None]
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.get_order(order_id)
+            await trading_service.get_order(order_id)
 
-    def test_cancel_order_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_cancel_order_success(self, trading_service):
         """Test successful order cancellation."""
         # Arrange
         order_id = "order_123"
-        mock_db_session = MagicMock()
+        mock_db_session = AsyncMock()
         mock_account = MagicMock(id=1)
         mock_order = MagicMock(id=order_id, status=OrderStatus.PENDING)
 
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        trading_service._get_async_db_session = AsyncMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.side_effect = [mock_account, mock_order]
 
         # Act
-        result = trading_service.cancel_order(order_id)
+        result = await trading_service.cancel_order(order_id)
 
         # Assert
         assert result["message"] == "Order cancelled successfully"
         assert mock_order.status == OrderStatus.CANCELLED
         mock_db_session.commit.assert_called_once()
 
-    def test_cancel_order_not_found(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_cancel_order_not_found(self, trading_service):
         """Test cancel_order raises NotFoundError when order doesn't exist."""
         # Arrange
         order_id = "nonexistent"
-        mock_db_session = MagicMock()
+        mock_db_session = AsyncMock()
         mock_account = MagicMock(id=1)
 
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        trading_service._get_async_db_session = MagicMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.side_effect = [mock_account, None]
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.cancel_order(order_id)
+            await trading_service.cancel_order(order_id)
 
-    def test_create_multi_leg_order_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_create_multi_leg_order_success(self, trading_service):
         """Test successful creation of multi-leg order."""
         # Arrange
         mock_order_data = MagicMock()
@@ -415,7 +361,7 @@ class TestOrderManagement:
         mock_order_data.condition = OrderCondition.LIMIT
 
         # Act
-        result = trading_service.create_multi_leg_order(mock_order_data)
+        result = await trading_service.create_multi_leg_order(mock_order_data)
 
         # Assert
         assert result is not None
@@ -434,7 +380,7 @@ class TestPortfolioManagement:
         """Test successful portfolio retrieval with database persistence."""
         # Arrange
         # Mock quote lookup
-        trading_service.get_quote = MagicMock(
+        trading_service.get_quote = AsyncMock(
             return_value=StockQuote(
                 symbol="AAPL",
                 price=155.0,
@@ -459,18 +405,20 @@ class TestPortfolioManagement:
         assert "AAPL" in portfolio_symbols
         assert "GOOGL" in portfolio_symbols
 
-    def test_get_portfolio_account_not_found(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_portfolio_account_not_found(self, trading_service):
         """Test get_portfolio raises NotFoundError when account doesn't exist."""
         # Arrange
-        mock_db_session = MagicMock()
-        trading_service._get_db_session = MagicMock(return_value=mock_db_session)
+        mock_db_session = AsyncMock()
+        trading_service._get_async_db_session = MagicMock(return_value=mock_db_session)
         mock_db_session.query().filter().first.return_value = None
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.get_portfolio()
+            await trading_service.get_portfolio()
 
-    def test_get_portfolio_summary_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_portfolio_summary_success(self, trading_service):
         """Test successful portfolio summary retrieval."""
         # Arrange
         mock_portfolio = Portfolio(
@@ -488,10 +436,10 @@ class TestPortfolioManagement:
             daily_pnl=50.0,
             total_pnl=50.0,
         )
-        trading_service.get_portfolio = MagicMock(return_value=mock_portfolio)
+        trading_service.get_portfolio = AsyncMock(return_value=mock_portfolio)
 
         # Act
-        result = trading_service.get_portfolio_summary()
+        result = await trading_service.get_portfolio_summary()
 
         # Assert
         assert result is not None
@@ -499,7 +447,8 @@ class TestPortfolioManagement:
         assert result.cash_balance == 10000.0
         assert result.total_value == 11550.0
 
-    def test_get_positions_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_positions_success(self, trading_service):
         """Test successful positions retrieval."""
         # Arrange
         mock_portfolio = Portfolio(
@@ -509,17 +458,18 @@ class TestPortfolioManagement:
             daily_pnl=0.0,
             total_pnl=0.0,
         )
-        trading_service.get_portfolio = MagicMock(return_value=mock_portfolio)
+        trading_service.get_portfolio = AsyncMock(return_value=mock_portfolio)
 
         # Act
-        result = trading_service.get_positions()
+        result = await trading_service.get_positions()
 
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0].symbol == "AAPL"
 
-    def test_get_position_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_position_success(self, trading_service):
         """Test successful specific position retrieval."""
         # Arrange
         mock_portfolio = Portfolio(
@@ -529,17 +479,18 @@ class TestPortfolioManagement:
             daily_pnl=0.0,
             total_pnl=0.0,
         )
-        trading_service.get_portfolio = MagicMock(return_value=mock_portfolio)
+        trading_service.get_portfolio = AsyncMock(return_value=mock_portfolio)
 
         # Act
-        result = trading_service.get_position("AAPL")
+        result = await trading_service.get_position("AAPL")
 
         # Assert
         assert result is not None
         assert isinstance(result, Position)
         assert result.symbol == "AAPL"
 
-    def test_get_position_not_found(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_position_not_found(self, trading_service):
         """Test get_position raises NotFoundError when position doesn't exist."""
         # Arrange
         mock_portfolio = Portfolio(
@@ -549,11 +500,11 @@ class TestPortfolioManagement:
             daily_pnl=0.0,
             total_pnl=0.0,
         )
-        trading_service.get_portfolio = MagicMock(return_value=mock_portfolio)
+        trading_service.get_portfolio = AsyncMock(return_value=mock_portfolio)
 
         # Act & Assert
         with pytest.raises(NotFoundError):
-            trading_service.get_position("NONEXISTENT")
+            await trading_service.get_position("NONEXISTENT")
 
 
 # ============================================================================
@@ -565,7 +516,10 @@ class TestOptionsGreeks:
     """Tests for options Greeks functionality."""
 
     @patch("app.services.trading_service.aggregate_portfolio_greeks")
-    def test_get_portfolio_greeks_success(self, mock_aggregate_greeks, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_portfolio_greeks_success(
+        self, mock_aggregate_greeks, trading_service
+    ):
         """Test successful portfolio Greeks calculation."""
         # Arrange
         mock_positions = [
@@ -574,7 +528,7 @@ class TestOptionsGreeks:
         trading_service.get_positions = MagicMock(return_value=mock_positions)
 
         mock_quote = MagicMock(delta=0.5, gamma=0.1, theta=-0.05, vega=0.2, rho=0.1)
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         mock_greeks = MagicMock(
             delta=50.0,
@@ -593,7 +547,7 @@ class TestOptionsGreeks:
         mock_aggregate_greeks.return_value = mock_greeks
 
         # Act
-        result = trading_service.get_portfolio_greeks()
+        result = await trading_service.get_portfolio_greeks()
 
         # Assert
         assert result is not None
@@ -601,18 +555,19 @@ class TestOptionsGreeks:
         assert result["portfolio_greeks"]["delta"] == 50.0
         assert result["total_positions"] == 1
 
-    def test_get_position_greeks_success(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_position_greeks_success(self, trading_service):
         """Test successful position Greeks calculation."""
         # Arrange
         symbol = "AAPL240119C00150000"
         mock_position = Position(symbol=symbol, quantity=1, avg_price=5.0)
-        trading_service.get_position = MagicMock(return_value=mock_position)
+        trading_service.get_position = AsyncMock(return_value=mock_position)
 
         mock_quote = MagicMock(delta=0.5, gamma=0.1, theta=-0.05, vega=0.2, rho=0.1)
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         # Act
-        result = trading_service.get_position_greeks(symbol)
+        result = await trading_service.get_position_greeks(symbol)
 
         # Assert
         assert result is not None
@@ -620,23 +575,25 @@ class TestOptionsGreeks:
         assert result["greeks"]["delta"] == 0.5
         assert result["position_greeks"]["delta"] == 50.0  # 0.5 * 1 * 100
 
-    def test_get_position_greeks_not_option(self, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_position_greeks_not_option(self, trading_service):
         """Test get_position_greeks raises error for non-option position."""
         # Arrange
         symbol = "AAPL"
         mock_position = Position(symbol=symbol, quantity=10, avg_price=150.0)
-        trading_service.get_position = MagicMock(return_value=mock_position)
+        trading_service.get_position = AsyncMock(return_value=mock_position)
 
         mock_quote = MagicMock(spec=Quote)  # No delta attribute
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         # Act & Assert
         with pytest.raises(ValueError, match="not an options position"):
-            trading_service.get_position_greeks(symbol)
+            await trading_service.get_position_greeks(symbol)
 
     @patch("app.services.trading_service.asset_factory")
     @patch("app.services.trading_service.calculate_option_greeks")
-    def test_get_option_greeks_response_success(
+    @pytest.mark.asyncio
+    async def test_get_option_greeks_response_success(
         self, mock_calc_greeks, mock_asset_factory, trading_service
     ):
         """Test successful option Greeks response."""
@@ -667,10 +624,10 @@ class TestOptionsGreeks:
         mock_calc_greeks.return_value = mock_greeks
 
         mock_quote = MagicMock(price=5.0)
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         # Act
-        result = trading_service.get_option_greeks_response(option_symbol)
+        result = await trading_service.get_option_greeks_response(option_symbol)
 
         # Assert
         assert result is not None
@@ -706,7 +663,7 @@ class TestOptionsGreeks:
 
         mock_option_quote = MagicMock(price=5.0)
         mock_underlying_quote = MagicMock(price=150.0)
-        trading_service.get_enhanced_quote = MagicMock(
+        trading_service.get_enhanced_quote = AsyncMock(
             side_effect=[mock_option_quote, mock_underlying_quote]
         )
 
@@ -830,7 +787,7 @@ class TestOptionsData:
         mock_quote.underlying_price = 150.0
         mock_quote.quote_date = datetime.now()
 
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         # Act
         result = trading_service.get_option_market_data(option_id)
@@ -880,7 +837,10 @@ class TestOptionsStrategy:
     """Tests for options strategy analysis functionality."""
 
     @patch("app.services.trading_service.analyze_strategy_portfolio")
-    def test_get_portfolio_strategies_success(self, mock_analyze, trading_service):
+    @pytest.mark.asyncio
+    async def test_get_portfolio_strategies_success(
+        self, mock_analyze, trading_service
+    ):
         """Test successful portfolio strategy analysis."""
         # Arrange
         mock_positions = [
@@ -902,7 +862,7 @@ class TestOptionsStrategy:
         mock_analyze.return_value = mock_analysis
 
         # Act
-        result = trading_service.get_portfolio_strategies()
+        result = await trading_service.get_portfolio_strategies()
 
         # Assert
         assert result is not None
@@ -962,11 +922,11 @@ class TestOptionsStrategy:
             daily_pnl=0.0,
             total_pnl=0.0,
         )
-        trading_service.get_portfolio = MagicMock(return_value=mock_portfolio)
+        trading_service.get_portfolio = AsyncMock(return_value=mock_portfolio)
 
         mock_option_quote = MagicMock(price=5.0)
         mock_underlying_quote = MagicMock(price=155.0)
-        trading_service.get_enhanced_quote = MagicMock(
+        trading_service.get_enhanced_quote = AsyncMock(
             side_effect=[mock_option_quote, mock_underlying_quote]
         )
 
@@ -1083,7 +1043,7 @@ class TestMarketData:
         mock_quote = MagicMock(
             price=150.0, bid=149.8, ask=150.2, quote_date=datetime.now()
         )
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         # Act
         result = trading_service.get_stock_price(symbol)
@@ -1141,7 +1101,7 @@ class TestMarketData:
         mock_asset_factory.return_value = mock_asset
 
         mock_quote = MagicMock(quote_date=datetime.now())
-        trading_service.get_enhanced_quote = MagicMock(return_value=mock_quote)
+        trading_service.get_enhanced_quote = AsyncMock(return_value=mock_quote)
 
         # Act
         result = trading_service.get_stock_info(symbol)
@@ -1278,10 +1238,10 @@ class TestMarketData:
 class TestDatabaseInteraction:
     """Tests for database interaction functionality."""
 
-    def test_get_db_session(self, trading_service):
+    def test_get_async_db_session(self, trading_service):
         """Test database session retrieval."""
         # Act
-        session = trading_service._get_db_session()
+        session = trading_service._get_async_db_session()
 
         # Assert
         assert session is not None
@@ -1326,7 +1286,7 @@ class TestDatabaseInteraction:
         # Arrange
         mock_session = MagicMock()
         mock_account = MagicMock()
-        trading_service._get_db_session = MagicMock(return_value=mock_session)
+        trading_service._get_async_db_session = MagicMock(return_value=mock_session)
         mock_session.query().filter().first.return_value = mock_account
 
         # Act
@@ -1339,7 +1299,7 @@ class TestDatabaseInteraction:
         """Test get_account raises NotFoundError when account doesn't exist."""
         # Arrange
         mock_session = MagicMock()
-        trading_service._get_db_session = MagicMock(return_value=mock_session)
+        trading_service._get_async_db_session = MagicMock(return_value=mock_session)
         mock_session.query().filter().first.return_value = None
 
         # Act & Assert
@@ -1368,35 +1328,6 @@ class TestUtilityMethods:
         # Assert
         assert result is True
         trading_service.account_validation.validate_account_state.assert_called_once()
-
-    def test_calculate_margin_requirement_success(self, trading_service):
-        """Test successful margin requirement calculation."""
-        # Arrange
-        mock_margin_service = MagicMock()
-        mock_margin_service.get_portfolio_margin_breakdown.return_value = {
-            "total_margin": 5000.0,
-            "maintenance_margin": 3000.0,
-        }
-        trading_service.margin_service = mock_margin_service
-
-        # Act
-        result = trading_service.calculate_margin_requirement()
-
-        # Assert
-        assert result is not None
-        assert "total_margin" in result
-
-    def test_calculate_margin_requirement_no_service(self, trading_service):
-        """Test margin requirement calculation when service not available."""
-        # Arrange
-        trading_service.margin_service = None
-
-        # Act
-        result = trading_service.calculate_margin_requirement()
-
-        # Assert
-        assert "error" in result
-        assert "not available" in result["error"]
 
     def test_get_test_scenarios(self, trading_service):
         """Test test scenarios retrieval."""

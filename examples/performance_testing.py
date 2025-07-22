@@ -13,14 +13,14 @@ from typing import Any
 
 import psutil
 
-from app.models.trading import (
+from app.schemas.orders import (
     Order,
     OrderCondition,
     OrderSide,
     OrderStatus,
     OrderType,
-    Position,
 )
+from app.schemas.positions import Position
 from app.services.greeks import calculate_option_greeks
 from app.services.order_execution import OrderExecutionService
 from app.services.strategies.recognition import StrategyRecognitionService
@@ -352,7 +352,7 @@ class OrderExecutionPerformanceTesting:
 
         def validate_multi_leg_order():
             # Create a complex multi-leg order (iron condor)
-            from app.models.trading import MultiLegOrder, OrderLeg
+            from app.schemas.orders import MultiLegOrder, OrderLeg
 
             legs = [
                 OrderLeg(

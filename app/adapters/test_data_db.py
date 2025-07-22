@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import select
 
 from ..models.assets import Asset, Option, Stock, asset_factory
-from ..models.database.trading import TestOptionQuote, TestStockQuote
+from ..models.database.trading import DevOptionQuote, DevStockQuote
 from ..models.quotes import OptionQuote, OptionsChain, Quote
 from ..services.greeks import calculate_option_greeks
 from ..storage.database import get_async_session
@@ -24,7 +24,7 @@ class TestDataDBError(Exception):
     pass
 
 
-class TestDataDBQuoteAdapter(QuoteAdapter):
+class DevDataQuoteAdapter(QuoteAdapter):
     """
     Database-backed test data adapter for development and testing.
 
@@ -50,15 +50,15 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
             config = AdapterConfig()
 
         self.config = config
-        self.name = "TestDataDBQuoteAdapter"
+        self.name = "DevDataQuoteAdapter"
         self.enabled = True
 
         self.current_date = datetime.strptime(current_date, "%Y-%m-%d").date()
         self.scenario = scenario
 
         # Cache for performance
-        self._stock_cache: dict[str, TestStockQuote] = {}
-        self._option_cache: dict[str, TestOptionQuote] = {}
+        self._stock_cache: dict[str, DevStockQuote] = {}
+        self._option_cache: dict[str, DevOptionQuote] = {}
         self._cache_loaded = False
 
     async def _load_cache(self) -> None:
@@ -69,9 +69,9 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         async for db in get_async_session():
             # Load stock quotes for current date and scenario
             stock_result = await db.execute(
-                select(TestStockQuote).where(
-                    TestStockQuote.quote_date == self.current_date,
-                    TestStockQuote.scenario == self.scenario,
+                select(DevStockQuote).where(
+                    DevStockQuote.quote_date == self.current_date,
+                    DevStockQuote.scenario == self.scenario,
                 )
             )
             stock_quotes = stock_result.scalars().all()
@@ -81,9 +81,9 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
 
             # Load option quotes for current date and scenario
             option_result = await db.execute(
-                select(TestOptionQuote).where(
-                    TestOptionQuote.quote_date == self.current_date,
-                    TestOptionQuote.scenario == self.scenario,
+                select(DevOptionQuote).where(
+                    DevOptionQuote.quote_date == self.current_date,
+                    DevOptionQuote.scenario == self.scenario,
                 )
             )
             option_quotes = option_result.scalars().all()
@@ -112,12 +112,15 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         """Get list of available test dates."""
         async for db in get_async_session():
             result = await db.execute(
-                select(TestStockQuote.quote_date.distinct())
-                .where(TestStockQuote.scenario == self.scenario)
-                .order_by(TestStockQuote.quote_date)
+                select(DevStockQuote.quote_date.distinct())
+                .where(DevStockQuote.scenario == self.scenario)
+                .order_by(DevStockQuote.quote_date)
             )
             dates = result.scalars().all()
-            return [date.strftime("%Y-%m-%d") for date in dates]
+            return [
+                date.strftime("%Y-%m-%d") if hasattr(date, "strftime") else str(date)
+                for date in dates
+            ]
 
         return []
 
@@ -125,9 +128,9 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         """Get list of available test scenarios."""
         async for db in get_async_session():
             result = await db.execute(
-                select(TestStockQuote.scenario.distinct())
-                .where(TestStockQuote.scenario.is_not(None))
-                .order_by(TestStockQuote.scenario)
+                select(DevStockQuote.scenario.distinct())
+                .where(DevStockQuote.scenario.is_not(None))
+                .order_by(DevStockQuote.scenario)
             )
             scenarios = result.scalars().all()
             return [scenario for scenario in scenarios if scenario]
@@ -145,7 +148,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         else:
             return None
 
-    async def _get_stock_quote(self, asset: Stock) -> Quote | None:
+    async def _get_stock_quote(self, asset: Asset) -> Quote | None:
         """Get stock quote from database cache."""
         stock_quote = self._stock_cache.get(asset.symbol)
 
@@ -154,10 +157,14 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
 
         return Quote(
             asset=asset,
-            quote_date=datetime.combine(stock_quote.quote_date, datetime.min.time()),
-            price=float(stock_quote.price) if stock_quote.price else None,
-            bid=float(stock_quote.bid) if stock_quote.bid else None,
-            ask=float(stock_quote.ask) if stock_quote.ask else None,
+            quote_date=(
+                datetime.combine(stock_quote.quote_date, datetime.min.time())
+                if isinstance(stock_quote.quote_date, date)
+                else datetime.fromisoformat(str(stock_quote.quote_date))
+            ),
+            price=float(stock_quote.price) if stock_quote.price else 0.0,
+            bid=float(stock_quote.bid) if stock_quote.bid else 0.0,
+            ask=float(stock_quote.ask) if stock_quote.ask else 0.0,
             bid_size=100,  # Default approximation
             ask_size=100,  # Default approximation
             volume=stock_quote.volume if stock_quote.volume is not None else 0,
@@ -190,14 +197,13 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
             and asset.expiration_date
         ):
             try:
-                greeks = await calculate_option_greeks(
-                    underlying_price=underlying_price,
+                greeks = calculate_option_greeks(
+                    option_type=asset.option_type.lower(),
                     strike=asset.strike,
-                    time_to_expiry=(asset.expiration_date - self.current_date).days
-                    / 365.0,
-                    risk_free_rate=0.02,  # 2% risk-free rate
+                    underlying_price=underlying_price,
+                    days_to_expiration=(asset.expiration_date - self.current_date).days,
+                    option_price=price,  # Use the option price from the quote
                     volatility=0.25,  # 25% implied volatility
-                    option_type=asset.option_type,
                 )
             except Exception:
                 # If Greeks calculation fails, continue without them
@@ -205,7 +211,11 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
 
         return OptionQuote(
             asset=asset,
-            quote_date=datetime.combine(option_quote.quote_date, datetime.min.time()),
+            quote_date=(
+                datetime.combine(option_quote.quote_date, datetime.min.time())
+                if isinstance(option_quote.quote_date, date)
+                else datetime.fromisoformat(str(option_quote.quote_date))
+            ),
             price=price,
             bid=bid,
             ask=ask,
@@ -213,11 +223,11 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
             volume=option_quote.volume if option_quote.volume is not None else 0,
             open_interest=None,  # Not in test data
             # Greeks
-            delta=greeks.delta if greeks else None,
-            gamma=greeks.gamma if greeks else None,
-            theta=greeks.theta if greeks else None,
-            vega=greeks.vega if greeks else None,
-            rho=greeks.rho if greeks else None,
+            delta=greeks.get("delta") if greeks else None,
+            gamma=greeks.get("gamma") if greeks else None,
+            theta=greeks.get("theta") if greeks else None,
+            vega=greeks.get("vega") if greeks else None,
+            rho=greeks.get("rho") if greeks else None,
         )
 
     async def get_quotes(self, assets: list[Asset]) -> dict[Asset, Quote]:
@@ -238,7 +248,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         """Get option chain for an underlying (returns list of assets)."""
         await self._load_cache()
 
-        assets = []
+        assets: list[Asset] = []
 
         # Filter options by underlying
         for symbol, option_quote in self._option_cache.items():
@@ -395,7 +405,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
     def get_sample_data_info(self) -> dict[str, Any]:
         """Get information about sample data."""
         return {
-            "adapter": "TestDataDBQuoteAdapter",
+            "adapter": "DevDataQuoteAdapter",
             "current_date": self.current_date.strftime("%Y-%m-%d"),
             "scenario": self.scenario,
             "stock_quotes_cached": len(self._stock_cache),
@@ -409,7 +419,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         for _symbol, option_quote in self._option_cache.items():
             if option_quote.underlying == underlying:
                 dates.append(option_quote.expiration)
-        return sorted(set(dates))
+        return sorted(set(d.date() if hasattr(d, "date") else d for d in dates))
 
     def get_test_scenarios(self) -> dict[str, Any]:
         """Get available test scenarios."""
@@ -421,7 +431,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
 
     def get_available_symbols(self) -> list[str]:
         """Get list of available symbols."""
-        symbols = set()
+        symbols: set[str] = set()
         symbols.update(self._stock_cache.keys())
         symbols.update(self._option_cache.keys())
         return sorted(symbols)
@@ -443,3 +453,7 @@ class TestDataDBQuoteAdapter(QuoteAdapter):
         self._cache_loaded = False
         self._stock_cache.clear()
         self._option_cache.clear()
+
+
+# Alias for backward compatibility
+TestDataDBQuoteAdapter = DevDataQuoteAdapter

@@ -9,14 +9,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.services.trading_service import TradingService, trading_service
+from app.core.dependencies import get_trading_service
+from app.services.trading_service import TradingService
 
 router = APIRouter()
-
-
-def get_trading_service() -> TradingService:
-    """Dependency to get trading service instance."""
-    return trading_service
 
 
 @router.get("/price/{symbol}", response_model=dict[str, Any])

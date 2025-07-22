@@ -1,3 +1,4 @@
+import os
 from datetime import date, datetime
 from typing import Any
 from uuid import uuid4
@@ -16,7 +17,6 @@ from app.models.database.trading import (
     Position as DBPosition,
 )
 from app.models.quotes import OptionQuote, OptionsChain, Quote
-from app.models.trading import Portfolio, PortfolioSummary, Position, StockQuote
 from app.schemas.orders import (
     Order,
     OrderCondition,
@@ -24,6 +24,8 @@ from app.schemas.orders import (
     OrderStatus,
     OrderType,
 )
+from app.schemas.positions import Portfolio, PortfolioSummary, Position
+from app.schemas.trading import StockQuote
 
 # Import schema converters
 from app.utils.schema_converters import (
@@ -34,7 +36,7 @@ from app.utils.schema_converters import (
 
 # Database imports removed - using async patterns only
 from ..adapters.base import QuoteAdapter
-from ..adapters.test_data import TestDataQuoteAdapter
+from ..adapters.test_data import DevDataQuoteAdapter
 from .greeks import calculate_option_greeks
 
 # Import new services
@@ -64,7 +66,7 @@ class TradingService:
 
                 if quote_adapter is None:
                     # Final fallback to CSV test data adapter
-                    quote_adapter = TestDataQuoteAdapter()
+                    quote_adapter = DevDataQuoteAdapter()
 
         self.quote_adapter = quote_adapter
         self.order_execution = OrderExecutionEngine()
@@ -411,7 +413,7 @@ class TradingService:
         position = await self.get_position(symbol)
 
         # Get current quote for Greeks
-        quote = self.get_enhanced_quote(symbol)
+        quote = await self.get_enhanced_quote(symbol)
 
         if not hasattr(quote, "delta"):
             raise ValueError("Position is not an options position")
@@ -477,7 +479,7 @@ class TradingService:
             "summary": analysis["summary"],
         }
 
-    def get_option_greeks_response(
+    async def get_option_greeks_response(
         self, option_symbol: str, underlying_price: float | None = None
     ) -> dict[str, Any]:
         """Get comprehensive Greeks response for an option symbol."""
@@ -489,7 +491,7 @@ class TradingService:
         if not isinstance(asset, Option):
             raise ValueError("Symbol is not an option")
 
-        option_quote = self.get_enhanced_quote(option_symbol)
+        option_quote = await self.get_enhanced_quote(option_symbol)
 
         return {
             "option_symbol": option_symbol,
@@ -651,9 +653,9 @@ class TradingService:
         order = Order(
             id=str(uuid4()),
             symbol=f"MULTI_LEG_{len(order_data.legs)}_LEGS",
-            order_type=order_data.legs[0].order_type
-            if order_data.legs
-            else OrderType.BUY,
+            order_type=(
+                order_data.legs[0].order_type if order_data.legs else OrderType.BUY
+            ),
             quantity=sum(leg.quantity for leg in order_data.legs),
             price=sum(leg.price or 0 for leg in order_data.legs if leg.price),
             condition=getattr(order_data, "condition", OrderCondition.MARKET),
@@ -791,16 +793,20 @@ class TradingService:
             return {
                 "option_id": option_id,
                 "symbol": quote.asset.symbol,
-                "underlying_symbol": quote.asset.underlying.symbol
-                if quote.asset.underlying
-                else "N/A",
+                "underlying_symbol": (
+                    quote.asset.underlying.symbol if quote.asset.underlying else "N/A"
+                ),
                 "strike_price": quote.asset.strike,
-                "expiration_date": quote.asset.expiration_date.isoformat()
-                if quote.asset.expiration_date
-                else "N/A",
-                "option_type": quote.asset.option_type.lower()
-                if quote.asset.option_type
-                else "N/A",
+                "expiration_date": (
+                    quote.asset.expiration_date.isoformat()
+                    if quote.asset.expiration_date
+                    else "N/A"
+                ),
+                "option_type": (
+                    quote.asset.option_type.lower()
+                    if quote.asset.option_type
+                    else "N/A"
+                ),
                 "bid_price": quote.bid,
                 "ask_price": quote.ask,
                 "mark_price": quote.price,
@@ -1051,9 +1057,9 @@ class TradingService:
                 return {
                     "query": query,
                     "results": results[:10],  # Limit to 10 results
-                    "message": "Limited search from test adapter"
-                    if not results
-                    else None,
+                    "message": (
+                        "Limited search from test adapter" if not results else None
+                    ),
                 }
 
         except Exception as e:
@@ -1167,9 +1173,9 @@ class TradingService:
             return {
                 "underlying_symbol": symbol,
                 "underlying_price": chain.underlying_price,
-                "expiration_date": chain.expiration_date.isoformat()
-                if chain.expiration_date
-                else None,
+                "expiration_date": (
+                    chain.expiration_date.isoformat() if chain.expiration_date else None
+                ),
                 "quote_time": datetime.now().isoformat(),
                 "calls": formatted_calls,
                 "puts": formatted_puts,
@@ -1222,14 +1228,12 @@ class TradingService:
                         self.price = data.get("price")
 
                 def __init__(self, legs):
-                    self.legs = legs
-
-                self.legs = [self.MockLeg(leg) for leg in legs]
-                self.condition = (
-                    OrderCondition.LIMIT
-                    if order_type == "limit"
-                    else OrderCondition.MARKET
-                )
+                    self.legs = [MockOrderData.MockLeg(leg) for leg in legs]
+                    self.condition = (
+                        OrderCondition.LIMIT
+                        if order_type == "limit"
+                        else OrderCondition.MARKET
+                    )
 
             mock_order_data = MockOrderData(structured_legs)
 
@@ -1323,9 +1327,11 @@ class TradingService:
                                         "underlying_price": underlying_quote.price,
                                         "intrinsic_value": intrinsic_value,
                                         "position_impact": position_impact,
-                                        "action": "expire_worthless"
-                                        if intrinsic_value == 0
-                                        else "exercise_or_assign",
+                                        "action": (
+                                            "expire_worthless"
+                                            if intrinsic_value == 0
+                                            else "exercise_or_assign"
+                                        ),
                                     }
                                 )
 
@@ -1420,17 +1426,9 @@ def _get_quote_adapter() -> QuoteAdapter:
             print("Falling back to test data adapter")
 
     # Default to test data adapter
-    return TestDataQuoteAdapter()
+    return DevDataQuoteAdapter()
 
 
-# Global service instance - will be created lazily to avoid sync database calls during import
-
-trading_service = None
-
-
-def get_trading_service() -> TradingService:
-    """Get or create the global trading service instance."""
-    global trading_service
-    if trading_service is None:
-        trading_service = TradingService(_get_quote_adapter())
-    return trading_service
+# Global service instance removed - now managed by FastAPI lifespan
+# Use app.core.dependencies.get_trading_service() for dependency injection
+# MCP tools use their own service management via app.mcp.tools

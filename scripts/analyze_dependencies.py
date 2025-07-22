@@ -1,252 +1,323 @@
 #!/usr/bin/env python3
 """
-Circular dependency analysis script for the Open Paper Trading MCP project.
+Dependency analysis script for the Open Paper Trading MCP project.
 """
 
 import ast
 import sys
-from collections import defaultdict
 from pathlib import Path
 
+import toml
 
-class ImportAnalyzer(ast.NodeVisitor):
-    """AST visitor to extract import information from Python files."""
+# Known standard library modules in Python 3.10
+STD_LIB_MODULES = {
+    "abc",
+    "aifc",
+    "argparse",
+    "array",
+    "ast",
+    "asyncio",
+    "atexit",
+    "audioop",
+    "base64",
+    "bdb",
+    "binascii",
+    "bisect",
+    "builtins",
+    "bz2",
+    "calendar",
+    "cgi",
+    "cgitb",
+    "chunk",
+    "cmath",
+    "cmd",
+    "code",
+    "codecs",
+    "codeop",
+    "collections",
+    "colorsys",
+    "compileall",
+    "concurrent",
+    "configparser",
+    "contextlib",
+    "contextvars",
+    "copy",
+    "copyreg",
+    "csv",
+    "ctypes",
+    "curses",
+    "dataclasses",
+    "datetime",
+    "dbm",
+    "decimal",
+    "difflib",
+    "dis",
+    "distutils",
+    "doctest",
+    "email",
+    "encodings",
+    "enum",
+    "errno",
+    "faulthandler",
+    "fcntl",
+    "filecmp",
+    "fileinput",
+    "fnmatch",
+    "fractions",
+    "ftplib",
+    "functools",
+    "gc",
+    "getopt",
+    "getpass",
+    "gettext",
+    "glob",
+    "grp",
+    "gzip",
+    "hashlib",
+    "heapq",
+    "hmac",
+    "html",
+    "http",
+    "imaplib",
+    "imghdr",
+    "imp",
+    "importlib",
+    "inspect",
+    "io",
+    "ipaddress",
+    "itertools",
+    "json",
+    "keyword",
+    "lib2to3",
+    "linecache",
+    "locale",
+    "logging",
+    "lzma",
+    "mailbox",
+    "mailcap",
+    "marshal",
+    "math",
+    "mimetypes",
+    "mmap",
+    "modulefinder",
+    "multiprocessing",
+    "netrc",
+    "nntplib",
+    "numbers",
+    "operator",
+    "optparse",
+    "os",
+    "ossaudiodev",
+    "parser",
+    "pathlib",
+    "pdb",
+    "pickle",
+    "pickletools",
+    "pipes",
+    "pkgutil",
+    "platform",
+    "plistlib",
+    "poplib",
+    "posix",
+    "pprint",
+    "profile",
+    "pstats",
+    "pty",
+    "pwd",
+    "py_compile",
+    "pyclbr",
+    "pydoc",
+    "queue",
+    "quopri",
+    "random",
+    "re",
+    "readline",
+    "reprlib",
+    "resource",
+    "rlcompleter",
+    "runpy",
+    "sched",
+    "secrets",
+    "select",
+    "selectors",
+    "shelve",
+    "shlex",
+    "shutil",
+    "signal",
+    "site",
+    "smtpd",
+    "smtplib",
+    "sndhdr",
+    "socket",
+    "socketserver",
+    "sqlite3",
+    "ssl",
+    "stat",
+    "statistics",
+    "string",
+    "stringprep",
+    "struct",
+    "subprocess",
+    "sunau",
+    "symbol",
+    "symtable",
+    "sys",
+    "sysconfig",
+    "syslog",
+    "tabnanny",
+    "tarfile",
+    "telnetlib",
+    "tempfile",
+    "termios",
+    "textwrap",
+    "threading",
+    "time",
+    "timeit",
+    "tkinter",
+    "token",
+    "tokenize",
+    "trace",
+    "traceback",
+    "tracemalloc",
+    "tty",
+    "turtle",
+    "turtledemo",
+    "types",
+    "typing",
+    "unicodedata",
+    "unittest",
+    "urllib",
+    "uu",
+    "uuid",
+    "venv",
+    "warnings",
+    "wave",
+    "weakref",
+    "webbrowser",
+    "wsgiref",
+    "xdrlib",
+    "xml",
+    "xmlrpc",
+    "zipapp",
+    "zipfile",
+    "zipimport",
+    "zlib",
+}
 
-    def __init__(self) -> None:
-        self.imports: list[str] = []
-        self.from_imports: list[tuple[str, str]] = []
 
-    def visit_Import(self, node: ast.Import) -> None:
+class ImportVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.imports = set()
+
+    def visit_Import(self, node):
         for alias in node.names:
-            self.imports.append(alias.name)
+            self.imports.add(alias.name.split(".")[0])
+        self.generic_visit(node)
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        if node.module:
-            for alias in node.names:
-                self.from_imports.append((node.module, alias.name))
+    def visit_ImportFrom(self, node):
+        if node.module and node.level == 0:  # only check absolute imports
+            self.imports.add(node.module.split(".")[0])
+        self.generic_visit(node)
 
 
-def analyze_file(file_path: Path) -> tuple[list[str], list[tuple[str, str]]]:
-    """Analyze a Python file and extract its imports."""
+def get_imports_from_file(file_path: Path) -> set:
     try:
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
-
         tree = ast.parse(content)
-        analyzer = ImportAnalyzer()
-        analyzer.visit(tree)
-
-        return analyzer.imports, analyzer.from_imports
-    except (SyntaxError, UnicodeDecodeError, Exception) as e:
-        print(f"Error analyzing {file_path}: {e}")
-        return [], []
-
-
-def normalize_module_name(module_name: str, current_package: str) -> str:
-    """Normalize module names to project-relative paths."""
-    if module_name.startswith("app."):
-        return module_name
-    elif module_name.startswith("."):
-        # Relative import
-        if current_package:
-            if module_name.startswith(".."):
-                # Parent package
-                parent_parts = current_package.split(".")[:-1]
-                relative_parts = (
-                    module_name[2:].split(".") if len(module_name) > 2 else []
-                )
-                return (
-                    ".".join(parent_parts + relative_parts)
-                    if parent_parts or relative_parts
-                    else current_package
-                )
-            else:
-                # Same package
-                relative_part = module_name[1:] if len(module_name) > 1 else ""
-                return (
-                    f"{current_package}.{relative_part}"
-                    if relative_part
-                    else current_package
-                )
-    return module_name
+        visitor = ImportVisitor()
+        visitor.visit(tree)
+        return visitor.imports
+    except Exception as e:
+        print(f"Could not parse {file_path}: {e}", file=sys.stderr)
+        return set()
 
 
-def get_package_name(file_path: Path, app_root: Path) -> str:
-    """Get the package name for a file relative to the app root."""
+def get_local_modules(project_root: Path) -> set:
+    local_modules = set()
+    for path in project_root.iterdir():
+        if path.is_dir():
+            if (path / "__init__.py").exists():
+                local_modules.add(path.name)
+    return local_modules
+
+
+def analyze_dependencies():
+    project_root = Path(__file__).parent.parent
+    pyproject_path = project_root / "pyproject.toml"
+
+    # 1. Get declared dependencies from pyproject.toml
     try:
-        relative_path = file_path.relative_to(app_root)
-        if relative_path.name == "__init__.py":
-            relative_path = relative_path.parent
-        else:
-            relative_path = relative_path.with_suffix("")
-
-        return str(relative_path).replace("/", ".").replace("\\", ".")
-    except ValueError:
-        return ""
-
-
-def find_cycles(graph: dict[str, set[str]]) -> list[list[str]]:
-    """Find cycles in a directed graph using DFS."""
-    cycles = []
-    visited = set()
-    rec_stack = set()
-    path: list[str] = []
-
-    def dfs(node: str) -> bool:
-        if node in rec_stack:
-            # Found cycle
-            cycle_start = path.index(node)
-            cycle = [*path[cycle_start:], node]
-            cycles.append(cycle)
-            return True
-
-        if node in visited:
-            return False
-
-        visited.add(node)
-        rec_stack.add(node)
-        path.append(node)
-
-        for neighbor in graph.get(node, set()):
-            if dfs(neighbor):
-                return True
-
-        rec_stack.remove(node)
-        path.pop()
-        return False
-
-    for node in graph:
-        if node not in visited:
-            dfs(node)
-
-    return cycles
-
-
-def analyze_project_dependencies() -> bool:
-    """Analyze the entire project for circular dependencies."""
-    app_root = Path("../app")
-    if not app_root.exists():
-        print(
-            "Error: 'app' directory not found. Run this script from the project root."
+        pyproject_data = toml.load(pyproject_path)
+        # Adjusting for [project] table for dependencies
+        dependencies = set(
+            pkg.split("[")[0].split(">")[0].split("<")[0].split("=")[0]
+            for pkg in pyproject_data.get("project", {}).get("dependencies", [])
         )
-        return False
-
-    # Find all Python files
-    python_files = []
-    for file_path in app_root.rglob("*.py"):
-        if "__pycache__" not in str(file_path):
-            python_files.append(file_path)
-
-    print(f"Analyzing {len(python_files)} Python files...")
-
-    # Build dependency graph
-    dependencies: dict[str, set[str]] = defaultdict(set)
-    file_to_module: dict[Path, str] = {}
-    module_to_file: dict[str, Path] = {}
-
-    # First pass: map files to modules
-    for file_path in python_files:
-        package_name = get_package_name(file_path, Path(".."))
-        file_to_module[file_path] = package_name
-        module_to_file[package_name] = file_path
-
-    # Second pass: analyze imports
-    for file_path in python_files:
-        current_module = file_to_module[file_path]
-        current_package = (
-            ".".join(current_module.split(".")[:-1]) if "." in current_module else ""
+        dev_dependencies = set(
+            pkg.split("[")[0].split(">")[0].split("<")[0].split("=")[0]
+            for pkg in pyproject_data.get("project", {})
+            .get("optional-dependencies", {})
+            .get("dev", [])
         )
+        all_declared_deps = dependencies.union(dev_dependencies)
+        all_declared_deps.discard("python")
+    except Exception as e:
+        print(f"Error reading {pyproject_path}: {e}", file=sys.stderr)
+        return
 
-        imports, from_imports = analyze_file(file_path)
+    # 2. Find all python files and gather imports
+    all_imports = set()
+    for py_file in project_root.rglob("*.py"):
+        if ".venv" in py_file.parts:
+            continue
+        all_imports.update(get_imports_from_file(py_file))
 
-        # Process direct imports
-        for imp in imports:
-            normalized = normalize_module_name(imp, current_package)
-            if normalized.startswith("app."):
-                dependencies[current_module].add(normalized)
+    # 3. Identify third-party imports
+    local_modules = get_local_modules(project_root)
+    third_party_imports = set()
+    for imp in all_imports:
+        if imp not in STD_LIB_MODULES and imp not in local_modules:
+            third_party_imports.add(imp)
 
-        # Process from imports
-        for module, _name in from_imports:
-            normalized = normalize_module_name(module, current_package)
-            if normalized.startswith("app."):
-                dependencies[current_module].add(normalized)
+    # Normalize names (e.g., robin_stocks -> robin-stocks)
+    normalized_third_party = {imp.replace("_", "-") for imp in third_party_imports}
 
-    print("\nDependency Analysis Results:")
-    print(f"{'=' * 50}")
+    # Special mappings for packages where import name differs from package name
+    mapping = {
+        "dotenv": "python-dotenv",
+        "google": "google-api-python-client",
+        "jose": "python-jose",
+        "passlib": "passlib",
+        "robin_stocks": "robin-stocks",
+    }
 
-    # Find cycles
-    cycles = find_cycles(dependencies)
+    mapped_third_party = set()
+    for imp in normalized_third_party:
+        mapped_third_party.add(mapping.get(imp, imp))
 
-    if cycles:
-        print(f"\n🚨 CIRCULAR DEPENDENCIES FOUND: {len(cycles)} cycle(s)")
-        print(f"{'=' * 50}")
+    # 4. Compare and report
+    missing_in_pyproject = mapped_third_party - all_declared_deps
+    unused_in_code = all_declared_deps - mapped_third_party
 
-        for i, cycle in enumerate(cycles, 1):
-            print(f"\nCycle {i}:")
-            for j, module in enumerate(cycle[:-1]):
-                print(f"  {module}")
-                if j < len(cycle) - 2:
-                    print("    ↓ imports")
-            print(f"    ↑ imports back to {cycle[0]}")
+    print("--- Dependency Analysis Report ---")
 
-            # Show actual files involved
-            print("\n  Files involved:")
-            for module in cycle[:-1]:  # Remove duplicate last element
-                f_path: Path | None = module_to_file.get(module)
-                print(f"    {module} → {f_path if f_path else 'Unknown'}")
+    if missing_in_pyproject:
+        print("\n[ERROR] Found imported modules not in pyproject.toml:")
+        for dep in sorted(missing_in_pyproject):
+            print(f"  - {dep}")
     else:
-        print("\n✅ NO CIRCULAR DEPENDENCIES FOUND")
+        print("\n[OK] All imported third-party modules are declared in pyproject.toml.")
 
-    # Show dependency statistics
-    print("\nDependency Statistics:")
-    print(f"{'=' * 30}")
-    print(f"Total modules analyzed: {len(file_to_module)}")
-    print(
-        f"Modules with dependencies: {len([m for m in dependencies if dependencies[m]])}"
-    )
+    if unused_in_code:
+        print("\n[WARNING] Found dependencies in pyproject.toml that may not be used:")
+        for dep in sorted(unused_in_code):
+            print(f"  - {dep}")
+    else:
+        print("\n[OK] All declared dependencies appear to be used in the code.")
 
-    # Show most connected modules
-    dependency_counts = [(len(deps), module) for module, deps in dependencies.items()]
-    dependency_counts.sort(reverse=True)
-
-    print("\nMost connected modules (top 10):")
-    for count, module in dependency_counts[:10]:
-        if count > 0:
-            print(f"  {module}: {count} dependencies")
-
-    # Show modules that are imported by many others
-    imported_by = defaultdict(set)
-    for module, deps in dependencies.items():
-        for dep in deps:
-            imported_by[dep].add(module)
-
-    import_counts = [
-        (len(importers), module) for module, importers in imported_by.items()
-    ]
-    import_counts.sort(reverse=True)
-
-    print("\nMost imported modules (top 10):")
-    for count, module in import_counts[:10]:
-        if count > 0:
-            print(f"  {module}: imported by {count} modules")
-
-    # Detailed dependency mapping
-    print("\nDetailed Dependency Map:")
-    print(f"{'=' * 30}")
-
-    for module in sorted(dependencies.keys()):
-        deps = dependencies[module]
-        if deps:
-            print(f"\n{module}:")
-            for dep in sorted(deps):
-                print(f"  → {dep}")
-
-    return len(cycles) == 0
+    print("\n--- End of Report ---")
 
 
 if __name__ == "__main__":
-    print("Open Paper Trading MCP - Circular Dependency Analysis")
-    print("=" * 60)
-
-    success = analyze_project_dependencies()
-    sys.exit(0 if success else 1)
+    analyze_dependencies()

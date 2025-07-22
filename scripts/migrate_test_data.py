@@ -3,7 +3,7 @@
 Data migration script to populate test data tables from existing CSV files.
 
 This script reads the existing test data CSV files and populates the
-TestStockQuote and TestOptionQuote database tables for Phase 3.
+DevStockQuote and DevOptionQuote database tables for Phase 3.
 """
 
 import asyncio
@@ -22,7 +22,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
 from app.models.assets import Option, Stock, asset_factory
-from app.models.database.trading import TestOptionQuote, TestScenario, TestStockQuote
+from app.models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
 from app.storage.database import get_async_session, init_db
 
 # Expanded symbols for comprehensive test data
@@ -82,7 +82,7 @@ PREDEFINED_SCENARIOS = {
 }
 
 
-class TestDataMigrator:
+class DataMigrator:
     """Migrates test data from CSV files to database tables."""
 
     def __init__(self):
@@ -211,13 +211,13 @@ class TestDataMigrator:
 
         async for db in get_async_session():
             # Clear test stock quotes
-            await db.execute(delete(TestStockQuote))
+            await db.execute(delete(DevStockQuote))
 
             # Clear test option quotes
-            await db.execute(delete(TestOptionQuote))
+            await db.execute(delete(DevOptionQuote))
 
             # Clear test scenarios
-            await db.execute(delete(TestScenario))
+            await db.execute(delete(DevScenario))
 
             await db.commit()
             break
@@ -235,10 +235,10 @@ class TestDataMigrator:
             for i in range(0, len(stock_quotes), self.batch_size):
                 batch = stock_quotes[i : i + self.batch_size]
 
-                # Create TestStockQuote objects
+                # Create DevStockQuote objects
                 db_quotes = []
                 for quote_data in batch:
-                    db_quote = TestStockQuote(**quote_data)
+                    db_quote = DevStockQuote(**quote_data)
                     db_quotes.append(db_quote)
 
                 # Insert batch
@@ -271,10 +271,10 @@ class TestDataMigrator:
             for i in range(0, len(option_quotes), self.batch_size):
                 batch = option_quotes[i : i + self.batch_size]
 
-                # Create TestOptionQuote objects
+                # Create DevOptionQuote objects
                 db_quotes = []
                 for quote_data in batch:
-                    db_quote = TestOptionQuote(**quote_data)
+                    db_quote = DevOptionQuote(**quote_data)
                     db_quotes.append(db_quote)
 
                 # Insert batch
@@ -304,13 +304,13 @@ class TestDataMigrator:
             try:
                 # Count stock quotes
                 stock_result = await db.execute(
-                    select(TestStockQuote).where(TestStockQuote.scenario == scenario)
+                    select(DevStockQuote).where(DevStockQuote.scenario == scenario)
                 )
                 stock_count = len(stock_result.fetchall())
 
                 # Count option quotes
                 option_result = await db.execute(
-                    select(TestOptionQuote).where(TestOptionQuote.scenario == scenario)
+                    select(DevOptionQuote).where(DevOptionQuote.scenario == scenario)
                 )
                 option_count = len(option_result.fetchall())
 
@@ -575,7 +575,7 @@ class TestDataMigrator:
         count = 0
         async for db in get_async_session():
             for _scenario_key, scenario_data in PREDEFINED_SCENARIOS.items():
-                scenario = TestScenario(
+                scenario = DevScenario(
                     name=scenario_data["name"],
                     description=scenario_data["description"],
                     start_date=scenario_data["start_date"],
@@ -601,7 +601,7 @@ class TestDataMigrator:
 
 async def main():
     """Main migration entry point."""
-    migrator = TestDataMigrator()
+    migrator = DataMigrator()
 
     try:
         # Step 1: Create test scenarios

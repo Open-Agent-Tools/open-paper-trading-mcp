@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.base import QuoteAdapter
+from app.adapters.config import get_adapter_factory
 from app.core.config import settings
 from app.services.trading_service import TradingService
 from app.storage.database import get_async_db
@@ -61,7 +61,18 @@ async def check_quote_adapter_health() -> dict[str, Any]:
     start_time = time.time()
 
     try:
-        adapter = QuoteAdapter.create()
+        adapter_factory = get_adapter_factory()
+        adapter = adapter_factory.create_adapter(
+            "test_data"
+        )  # Use test adapter for health checks
+
+        if not adapter:
+            return {
+                "status": HealthStatus.UNHEALTHY,
+                "adapter_type": "test_data",
+                "response_time_ms": round((time.time() - start_time) * 1000, 2),
+                "message": "Failed to create quote adapter",
+            }
 
         # Test quote retrieval for a common symbol
         quote = await adapter.get_quote("AAPL")
@@ -77,9 +88,9 @@ async def check_quote_adapter_health() -> dict[str, Any]:
                 "sample_quote": {
                     "symbol": quote.symbol,
                     "price": quote.price,
-                    "timestamp": quote.timestamp.isoformat()
-                    if quote.timestamp
-                    else None,
+                    "timestamp": (
+                        quote.timestamp.isoformat() if quote.timestamp else None
+                    ),
                 },
             }
         else:
@@ -92,7 +103,7 @@ async def check_quote_adapter_health() -> dict[str, Any]:
     except Exception as e:
         return {
             "status": HealthStatus.UNHEALTHY,
-            "adapter_type": getattr(QuoteAdapter.create(), "adapter_type", "unknown"),
+            "adapter_type": "test_data",
             "response_time_ms": round((time.time() - start_time) * 1000, 2),
             "message": f"Quote adapter error: {e!s}",
         }
@@ -198,9 +209,11 @@ async def detailed_health_check(db: AsyncSession = Depends(get_async_db)):
         "system_info": {
             "service": "open-paper-trading-mcp",
             "version": settings.VERSION if hasattr(settings, "VERSION") else "1.0.0",
-            "environment": settings.ENVIRONMENT
-            if hasattr(settings, "ENVIRONMENT")
-            else "production",
+            "environment": (
+                settings.ENVIRONMENT
+                if hasattr(settings, "ENVIRONMENT")
+                else "production"
+            ),
         },
     }
 

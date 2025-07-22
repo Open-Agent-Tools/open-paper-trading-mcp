@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from ...models.assets import Asset, Option, asset_factory
-from ...models.trading import Position
+from ...schemas.positions import Position
 
 
 class StrategyType(str, Enum):

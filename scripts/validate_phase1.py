@@ -27,8 +27,8 @@ from datetime import datetime
 from app.models.database.base import Base
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Position as DBPosition
-from app.models.trading import StockQuote
 from app.schemas.orders import MultiLegOrderCreate, OrderCreate, OrderLeg, OrderType
+from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
 from app.storage.database import AsyncSessionLocal, async_engine, init_db
 

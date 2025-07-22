@@ -1,36 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
-from app.core.exceptions import NotFoundError, ValidationError
-from app.models.trading import StockQuote
+from app.core.dependencies import get_trading_service
 from app.schemas.orders import MultiLegOrderCreate, Order, OrderCreate
-from app.services.trading_service import TradingService, trading_service
+from app.schemas.trading import StockQuote
+from app.services.trading_service import TradingService
 
 router = APIRouter()
-
-
-def get_trading_service() -> TradingService:
-    """Dependency to get trading service instance."""
-    return trading_service
 
 
 @router.get("/quote/{symbol}", response_model=StockQuote, deprecated=True)
 async def get_quote(
     symbol: str, service: TradingService = Depends(get_trading_service)
 ):
-    try:
-        return service.get_quote(symbol)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    # Custom exceptions are handled by the global exception handler
+    return await service.get_quote(symbol)
 
 
 @router.post("/order", response_model=Order)
 async def create_order(
     order: OrderCreate, service: TradingService = Depends(get_trading_service)
 ):
-    try:
-        return await service.create_order(order)
-    except (NotFoundError, ValidationError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # Custom exceptions are handled by the global exception handler
+    return await service.create_order(order)
 
 
 @router.get("/orders", response_model=list[Order])
@@ -42,20 +33,16 @@ async def get_orders(service: TradingService = Depends(get_trading_service)):
 async def get_order(
     order_id: str, service: TradingService = Depends(get_trading_service)
 ):
-    try:
-        return await service.get_order(order_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    # Custom exceptions are handled by the global exception handler
+    return await service.get_order(order_id)
 
 
 @router.delete("/order/{order_id}")
 async def cancel_order(
     order_id: str, service: TradingService = Depends(get_trading_service)
 ):
-    try:
-        return service.cancel_order(order_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    # Custom exceptions are handled by the global exception handler
+    return await service.cancel_order(order_id)
 
 
 @router.get("/quote/{symbol}/enhanced")

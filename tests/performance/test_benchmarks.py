@@ -61,12 +61,12 @@ class TestPerformanceBenchmarks:
         print(f"  Rate: {order_count / sum(times):.1f} orders/second")
 
         # Performance targets
-        assert avg_time < 0.1, (
-            f"Average order creation time {avg_time:.3f}s exceeds 100ms"
-        )
-        assert median_time < 0.05, (
-            f"Median order creation time {median_time:.3f}s exceeds 50ms"
-        )
+        assert (
+            avg_time < 0.1
+        ), f"Average order creation time {avg_time:.3f}s exceeds 100ms"
+        assert (
+            median_time < 0.05
+        ), f"Median order creation time {median_time:.3f}s exceeds 50ms"
         assert max_time < 0.5, f"Max order creation time {max_time:.3f}s exceeds 500ms"
 
     async def test_portfolio_calculation_performance(
@@ -127,12 +127,12 @@ class TestPerformanceBenchmarks:
         print(f"  Max time: {max_time:.3f}s")
 
         # Performance assertions
-        assert avg_time < 0.5, (
-            f"Portfolio calculation time {avg_time:.3f}s exceeds 500ms"
-        )
-        assert max_time < 1.0, (
-            f"Max portfolio calculation time {max_time:.3f}s exceeds 1s"
-        )
+        assert (
+            avg_time < 0.5
+        ), f"Portfolio calculation time {avg_time:.3f}s exceeds 500ms"
+        assert (
+            max_time < 1.0
+        ), f"Max portfolio calculation time {max_time:.3f}s exceeds 1s"
 
     async def test_quote_retrieval_performance(self):
         """Benchmark quote retrieval performance."""
@@ -165,9 +165,9 @@ class TestPerformanceBenchmarks:
         print(f"  Max time: {max_time:.3f}s")
 
         # Performance assertions
-        assert avg_time < 0.1, (
-            f"Average quote retrieval time {avg_time:.3f}s exceeds 100ms"
-        )
+        assert (
+            avg_time < 0.1
+        ), f"Average quote retrieval time {avg_time:.3f}s exceeds 100ms"
         assert max_time < 0.5, f"Max quote retrieval time {max_time:.3f}s exceeds 500ms"
 
     async def test_concurrent_order_processing(
@@ -276,9 +276,9 @@ class TestPerformanceBenchmarks:
 
         # Performance assertions
         for query_name, avg_time in results.items():
-            assert avg_time < 0.1, (
-                f"{query_name} query time {avg_time:.3f}s exceeds 100ms"
-            )
+            assert (
+                avg_time < 0.1
+            ), f"{query_name} query time {avg_time:.3f}s exceeds 100ms"
 
     async def test_memory_usage_under_load(
         self,
@@ -333,9 +333,9 @@ class TestPerformanceBenchmarks:
         print(f"  Max increase: {max_memory_increase:.1f}MB")
 
         # Memory should not grow indefinitely
-        assert max_memory_increase < 200, (
-            f"Memory usage increased by {max_memory_increase:.1f}MB"
-        )
+        assert (
+            max_memory_increase < 200
+        ), f"Memory usage increased by {max_memory_increase:.1f}MB"
 
     async def test_stress_test_high_volume(
         self, test_client: AsyncClient, created_test_account: str

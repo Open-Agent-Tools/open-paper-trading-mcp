@@ -14,7 +14,7 @@ from app.core.logging import logger
 
 from .base import AdapterConfig, AdapterRegistry, QuoteAdapter
 from .cache import CachedQuoteAdapter, QuoteCache
-from .test_data import TestDataQuoteAdapter
+from .test_data import DevDataQuoteAdapter
 
 
 @dataclass
@@ -24,7 +24,7 @@ class AdapterFactoryConfig:
     # Adapter type mappings
     adapter_types: dict[str, str] = field(
         default_factory=lambda: {
-            "test_data": "app.adapters.test_data.TestDataQuoteAdapter",
+            "test_data": "app.adapters.test_data.DevDataQuoteAdapter",
             "test_data_db": "app.adapters.test_data_db.TestDataDBQuoteAdapter",
             "robinhood": "app.adapters.robinhood.RobinhoodAdapter",
             "polygon": "app.adapters.polygon.PolygonQuoteAdapter",  # Future
@@ -164,7 +164,7 @@ class AdapterFactory:
         try:
             # Create adapter instance
             if adapter_type == "test_data":
-                # TestDataQuoteAdapter has special constructor
+                # DevDataQuoteAdapter has special constructor
                 current_date = expanded_config.config.get("current_date", "2017-03-24")
                 adapter = adapter_class(
                     current_date=current_date, config=expanded_config
@@ -286,9 +286,9 @@ class AdapterFactory:
 
             if adapter_type == "test_data":
                 # Import from current package
-                from .test_data import TestDataQuoteAdapter
+                from .test_data import DevDataQuoteAdapter
 
-                adapter_class = TestDataQuoteAdapter
+                adapter_class = DevDataQuoteAdapter
             elif adapter_type == "test_data_db":
                 # Import from current package
                 from .test_data_db import TestDataDBQuoteAdapter
@@ -577,7 +577,7 @@ def configure_default_registry() -> AdapterRegistry:
     return adapter_registry
 
 
-def create_test_adapter(date: str = "2017-03-24") -> TestDataQuoteAdapter | None:
+def create_test_adapter(date: str = "2017-03-24") -> DevDataQuoteAdapter | None:
     """
     Create a test data adapter with caching.
 
@@ -597,4 +597,4 @@ def create_test_adapter(date: str = "2017-03-24") -> TestDataQuoteAdapter | None
     )
 
     adapter = factory.create_adapter("test_data", config)
-    return adapter if isinstance(adapter, TestDataQuoteAdapter) else None
+    return adapter if isinstance(adapter, DevDataQuoteAdapter) else None
