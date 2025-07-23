@@ -218,4 +218,5 @@ data/logs/
 .claude
 /data/logs
 /data/tokens
-
+CLAUDE.md
+GEMINI.md
