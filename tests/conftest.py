@@ -175,8 +175,236 @@ def mock_trading_service(mocker: Any) -> MagicMock:
     return mock_service
 
 
+# Enhanced Test Fixtures for Integration Testing
+
+@pytest_asyncio.fixture
+async def test_account_data(async_db_session: AsyncSession) -> dict[str, Any]:
+    """Create test account with sample data."""
+    from app.models.database.trading import Account as DBAccount, Position as DBPosition
+    import uuid
+    
+    # Create test account
+    account = DBAccount(
+        id=str(uuid.uuid4()),
+        owner="test_user",
+        cash_balance=100000.0,
+        buying_power=200000.0
+    )
+    async_db_session.add(account)
+    await async_db_session.commit()
+    await async_db_session.refresh(account)
+    
+    # Create test positions
+    positions = [
+        DBPosition(
+            id=str(uuid.uuid4()),
+            account_id=account.id,
+            symbol="AAPL",
+            quantity=100,
+            avg_price=150.0,
+            current_price=155.0,
+            unrealized_pnl=500.0
+        ),
+        DBPosition(
+            id=str(uuid.uuid4()),
+            account_id=account.id,
+            symbol="GOOGL",
+            quantity=50,
+            avg_price=2800.0,
+            current_price=2750.0,
+            unrealized_pnl=-2500.0
+        )
+    ]
+    
+    for position in positions:
+        async_db_session.add(position)
+    
+    await async_db_session.commit()
+    
+    return {
+        "account": account,
+        "positions": positions,
+        "account_id": account.id,
+        "owner": account.owner
+    }
+
+
+@pytest.fixture
+def sample_stock_quotes() -> dict[str, Any]:
+    """Create sample stock quotes for testing."""
+    from app.schemas.trading import StockQuote
+    from datetime import datetime
+    
+    return {
+        "AAPL": StockQuote(
+            symbol="AAPL",
+            price=155.0,
+            change=5.0,
+            change_percent=3.33,
+            volume=1000000,
+            last_updated=datetime.now()
+        ),
+        "GOOGL": StockQuote(
+            symbol="GOOGL",
+            price=2750.0,
+            change=-50.0,
+            change_percent=-1.79,
+            volume=500000,
+            last_updated=datetime.now()
+        ),
+        "MSFT": StockQuote(
+            symbol="MSFT",
+            price=380.0,
+            change=2.5,
+            change_percent=0.66,
+            volume=800000,
+            last_updated=datetime.now()
+        )
+    }
+
+
+@pytest.fixture
+def sample_order_data() -> dict[str, Any]:
+    """Create sample order data for testing."""
+    from app.schemas.orders import OrderCreate, OrderType
+    
+    return {
+        "buy_market": OrderCreate(
+            symbol="AAPL",
+            order_type=OrderType.BUY,
+            quantity=100,
+            price=None  # Market order
+        ),
+        "sell_limit": OrderCreate(
+            symbol="AAPL",
+            order_type=OrderType.SELL,
+            quantity=50,
+            price=160.0
+        ),
+        "buy_limit": OrderCreate(
+            symbol="GOOGL",
+            order_type=OrderType.BUY,
+            quantity=10,
+            price=2700.0
+        )
+    }
+
+
+@pytest_asyncio.fixture
+async def trading_service_with_data(async_db_session: AsyncSession, test_account_data: dict[str, Any]) -> Any:
+    """Create a TradingService instance with test data and mocked quote adapter."""
+    from app.services.trading_service import TradingService
+    from unittest.mock import MagicMock, AsyncMock
+    from app.schemas.trading import StockQuote
+    from datetime import datetime
+    
+    # Create trading service
+    service = TradingService(account_owner=test_account_data["owner"])
+    
+    # Mock the database session
+    service._get_async_db_session = AsyncMock(return_value=async_db_session)
+    
+    # Mock quote adapter with realistic data
+    mock_adapter = MagicMock()
+    mock_adapter.get_quote = AsyncMock()
+    mock_adapter.get_quote.side_effect = lambda symbol: StockQuote(
+        symbol=symbol,
+        price={
+            "AAPL": 155.0,
+            "GOOGL": 2750.0,
+            "MSFT": 380.0
+        }.get(symbol, 100.0),
+        change=0.0,
+        change_percent=0.0,
+        volume=1000000,
+        last_updated=datetime.now()
+    )
+    
+    service.quote_adapter = mock_adapter
+    
+    return service
+
+
+@pytest.fixture
+def mock_quote_adapter() -> MagicMock:
+    """Create a mock quote adapter for testing."""
+    from unittest.mock import MagicMock, AsyncMock
+    from app.schemas.trading import StockQuote
+    from datetime import datetime
+    
+    adapter = MagicMock()
+    adapter.get_quote = AsyncMock()
+    
+    # Default quote response
+    adapter.get_quote.return_value = StockQuote(
+        symbol="TEST",
+        price=100.0,
+        change=0.0,
+        change_percent=0.0,
+        volume=1000000,
+        last_updated=datetime.now()
+    )
+    
+    return adapter
+
+
+@pytest_asyncio.fixture
+async def integration_test_client(async_db_session: AsyncSession, test_account_data: dict[str, Any]) -> TestClient:
+    """Create a test client configured for integration testing."""
+    from app.services.trading_service import TradingService
+    from unittest.mock import AsyncMock
+    
+    # Override database session dependency
+    async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
+        yield async_db_session
+    
+    app.dependency_overrides[get_async_session] = override_get_async_session
+    
+    # Create and configure trading service for integration testing
+    trading_service = TradingService(account_owner=test_account_data["owner"])
+    trading_service._get_async_db_session = AsyncMock(return_value=async_db_session)
+    
+    # Store in app state
+    app.state.trading_service = trading_service
+    
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_scenarios() -> dict[str, Any]:
+    """Create common test scenarios for integration testing."""
+    return {
+        "happy_path_order": {
+            "symbol": "AAPL",
+            "quantity": 100,
+            "order_type": "buy",
+            "expected_cost": 15500.0  # 100 * 155.0
+        },
+        "insufficient_funds": {
+            "symbol": "BERKB",  # Expensive stock
+            "quantity": 1000,
+            "order_type": "buy",
+            "price": 500000.0  # Would exceed account balance
+        },
+        "partial_sell": {
+            "symbol": "AAPL",
+            "quantity": 50,  # Sell half of existing position
+            "order_type": "sell"
+        }
+    }
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Standard database session fixture - all tests should use this."""
     async for session in async_db_session():
         yield session
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    import asyncio
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()

@@ -15,7 +15,7 @@ from app.core.exceptions import NotFoundError
 class AuthService:
     """Service for handling authentication operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self.secret_key = (
             settings.SECRET_KEY if hasattr(settings, "SECRET_KEY") else "secret"
@@ -36,11 +36,11 @@ class AuthService:
 
     def get_password_hash(self, password: str) -> str:
         """Hash a password."""
-        return self.pwd_context.hash(password)
+        return str(self.pwd_context.hash(password))
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
-        return self.pwd_context.verify(plain_password, hashed_password)
+        return bool(self.pwd_context.verify(plain_password, hashed_password))
 
     def get_user(self, username: str) -> dict[str, Any] | None:
         """Get user by username."""
@@ -58,7 +58,7 @@ class AuthService:
         return user
 
     def create_access_token(
-        self, data: dict, expires_delta: timedelta | None = None
+        self, data: dict[str, Any], expires_delta: timedelta | None = None
     ) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
@@ -70,7 +70,7 @@ class AuthService:
             )
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
-        return encoded_jwt
+        return str(encoded_jwt)
 
     def get_current_user(self, token: str) -> dict[str, Any]:
         """Get current user from JWT token."""

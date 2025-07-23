@@ -13,7 +13,7 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import cast
+from typing import Any, cast
 
 from sqlalchemy import and_, select
 
@@ -130,7 +130,7 @@ class OrderExecutionEngine:
     def __init__(self, trading_service: TradingService):
         self.trading_service = trading_service
         self.is_running = False
-        self.monitoring_task: asyncio.Task | None = None
+        self.monitoring_task: asyncio.Task[None] | None = None
         self.executor = ThreadPoolExecutor(max_workers=4)
 
         # Track trigger conditions by symbol
@@ -469,8 +469,8 @@ class OrderExecutionEngine:
                         OrderStatus.FILLED
                     )  # Or could add TRIGGERED status
                     current_time = datetime.utcnow()
-                    db_order.triggered_at = current_time
-                    db_order.filled_at = current_time
+                    setattr(db_order, 'triggered_at', current_time)
+                    setattr(db_order, 'filled_at', current_time)
 
                     await db.commit()
                     logger.info(f"Updated order {order_id} status to triggered")
@@ -548,7 +548,7 @@ class OrderExecutionEngine:
                 f"Unsupported order type for trigger: {order.order_type}"
             )
 
-    def get_status(self) -> dict:
+    def get_status(self) -> dict[str, Any]:
         """Get current status of the execution engine."""
         with self._lock:
             total_conditions = sum(
@@ -565,7 +565,7 @@ class OrderExecutionEngine:
             "symbols": list(self.monitored_symbols),
         }
 
-    def get_monitored_orders(self) -> dict[str, list[dict]]:
+    def get_monitored_orders(self) -> dict[str, list[dict[str, Any]]]:
         """Get currently monitored orders by symbol."""
         with self._lock:
             result = {}

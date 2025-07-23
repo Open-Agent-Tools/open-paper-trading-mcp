@@ -88,7 +88,7 @@ class ComplexOrderValidator:
     - Regulatory compliance checks
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.strategy_rules = self._initialize_strategy_rules()
 
     def validate_order(

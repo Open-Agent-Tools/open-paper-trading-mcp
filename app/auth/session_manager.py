@@ -4,11 +4,13 @@ import asyncio
 import random
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any
+from typing import Any, Callable, TypeVar
 
 import robin_stocks.robinhood as rh  # type: ignore
 
 from app.core.logging import logger
+
+F = TypeVar('F', bound=Callable[..., Any])
 
 
 class AuthenticationError(Exception):
@@ -31,12 +33,12 @@ class NetworkError(Exception):
 
 def auth_retry_with_backoff(
     max_retries: int = 3, base_delay: float = 1.0, max_delay: float = 60.0
-):
+) -> Callable[[F], F]:
     """Decorator for adding exponential backoff retry logic to authentication methods."""
 
-    def decorator(func):
+    def decorator(func: F) -> F:
         @wraps(func)
-        async def wrapper(self, *args, **kwargs):
+        async def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
             for attempt in range(max_retries):
                 try:
                     return await func(self, *args, **kwargs)
@@ -63,7 +65,7 @@ def auth_retry_with_backoff(
                     raise
             return None
 
-        return wrapper
+        return wrapper  # type: ignore
 
     return decorator
 

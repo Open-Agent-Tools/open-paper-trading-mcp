@@ -6,6 +6,7 @@ data consistency and business rule compliance.
 """
 
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import ValidationInfo, field_validator
 
@@ -256,7 +257,7 @@ def validate_pnl(value: float | None, field_name: str = "P&L") -> float | None:
     return float(value)
 
 
-def validate_order_against_account(order, account) -> bool:
+def validate_order_against_account(order: Any, account: Any) -> bool:
     """
     Validate order is compatible with account.
 
@@ -290,7 +291,7 @@ def validate_order_against_account(order, account) -> bool:
     return True
 
 
-def validate_position_consistency(position) -> bool:
+def validate_position_consistency(position: Any) -> bool:
     """
     Validate position data consistency.
 
@@ -349,7 +350,7 @@ def validate_position_consistency(position) -> bool:
     return True
 
 
-def validate_portfolio_consistency(portfolio) -> bool:
+def validate_portfolio_consistency(portfolio: Any) -> bool:
     """
     Validate portfolio data consistency.
 

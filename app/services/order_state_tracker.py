@@ -50,7 +50,7 @@ class OrderStateSnapshot:
     filled_quantity: int | None = None
     metadata: dict[str, Any] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.metadata is None:
             self.metadata = {}
 
@@ -91,7 +91,7 @@ class MemoryEfficientOrderTracker:
         self.current_states: dict[str, OrderStateSnapshot] = {}
 
         # Event callbacks using weak references
-        self.state_change_callbacks: list[weakref.ReferenceType] = []
+        self.state_change_callbacks: list[weakref.ReferenceType[Callable[..., Any]]] = []
 
         # Metrics tracking
         self.metrics = {
@@ -106,7 +106,7 @@ class MemoryEfficientOrderTracker:
         self._lock = threading.RLock()
 
         # Background cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._is_running = False
 
     async def start(self) -> None:
@@ -145,7 +145,7 @@ class MemoryEfficientOrderTracker:
         symbol: str | None = None,
         quantity: int | None = None,
         filled_quantity: int | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Track an order state change efficiently."""
         with self._lock:

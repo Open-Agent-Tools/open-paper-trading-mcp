@@ -146,7 +146,7 @@ async def check_trading_service_health(db: AsyncSession) -> dict[str, Any]:
 
 
 @router.get("/health", response_model=dict[str, Any])
-async def health_check():
+async def health_check() -> dict[str, Any]:
     """Basic health check endpoint."""
     return {
         "status": "ok",
@@ -157,13 +157,13 @@ async def health_check():
 
 
 @router.get("/health/live", response_model=dict[str, Any])
-async def liveness_check():
+async def liveness_check() -> dict[str, Any]:
     """Kubernetes liveness probe endpoint."""
     return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
 
 
 @router.get("/health/ready", response_model=dict[str, Any])
-async def readiness_check(db: AsyncSession = Depends(get_async_db)):
+async def readiness_check(db: AsyncSession = Depends(get_async_db)) -> dict[str, Any]:
     """Kubernetes readiness probe endpoint."""
     # Check database connectivity
     db_health = await check_database_health(db)
@@ -179,7 +179,7 @@ async def readiness_check(db: AsyncSession = Depends(get_async_db)):
 
 
 @router.get("/health/detailed", response_model=dict[str, Any])
-async def detailed_health_check(db: AsyncSession = Depends(get_async_db)):
+async def detailed_health_check(db: AsyncSession = Depends(get_async_db)) -> dict[str, Any]:
     """Detailed health check of all system components."""
     start_time = time.time()
 
@@ -222,7 +222,7 @@ async def detailed_health_check(db: AsyncSession = Depends(get_async_db)):
 
 
 @router.get("/health/metrics", response_model=dict[str, Any])
-async def health_metrics(db: AsyncSession = Depends(get_async_db)):
+async def health_metrics(db: AsyncSession = Depends(get_async_db)) -> dict[str, Any]:
     """Return health metrics in Prometheus format."""
     # Collect metrics
     db_health = await check_database_health(db)
@@ -267,7 +267,7 @@ async def health_metrics(db: AsyncSession = Depends(get_async_db)):
 
 
 @router.get("/health/dependencies", response_model=dict[str, Any])
-async def dependency_health_check():
+async def dependency_health_check() -> dict[str, Any]:
     """Check health of external dependencies."""
     dependencies = []
 

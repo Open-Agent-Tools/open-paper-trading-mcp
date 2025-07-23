@@ -2,7 +2,9 @@
 Unified MCP server that combines all MCP tools.
 """
 
-from fastmcp import FastMCP
+from typing import Any
+
+from fastmcp import FastMCP  # type: ignore
 
 from app.mcp.market_data_tools import (
     get_price_history,
@@ -38,7 +40,7 @@ from app.mcp.tools import (
 # Removed direct Robinhood options tools imports
 
 # Create the unified MCP instance
-mcp: FastMCP = FastMCP("Open Paper Trading MCP")
+mcp: FastMCP[Any] = FastMCP("Open Paper Trading MCP")
 
 # Register all tools from tools.py
 mcp.tool()(get_stock_quote)

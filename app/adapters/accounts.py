@@ -14,7 +14,7 @@ from app.storage.database import get_sync_session
 class DatabaseAccountAdapter(AccountAdapter):
     """Database-backed account adapter."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def get_account(self, account_id: str) -> Account | None:

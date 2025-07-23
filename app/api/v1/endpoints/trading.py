@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.core.dependencies import get_trading_service
@@ -13,7 +15,7 @@ router = APIRouter()
 async def get_quote(
     symbol: str,
     request: Request,
-):
+) -> StockQuote:
     # Custom exceptions are handled by the global exception handler
     service: TradingService = get_trading_service(request)
     return await service.get_quote(symbol)
@@ -23,14 +25,14 @@ async def get_quote(
 async def create_order(
     order: OrderCreate,
     request: Request,
-):
+) -> Order:
     # Custom exceptions are handled by the global exception handler
     service: TradingService = get_trading_service(request)
     return await service.create_order(order)
 
 
 @router.get("/orders", response_model=list[Order])
-async def get_orders(request: Request):
+async def get_orders(request: Request) -> list[Order]:
     service: TradingService = get_trading_service(request)
     return await service.get_orders()
 
@@ -39,7 +41,7 @@ async def get_orders(request: Request):
 async def get_order(
     order_id: str,
     request: Request,
-):
+) -> Order:
     # Custom exceptions are handled by the global exception handler
     service: TradingService = get_trading_service(request)
     return await service.get_order(order_id)
@@ -49,7 +51,7 @@ async def get_order(
 async def cancel_order(
     order_id: str,
     request: Request,
-):
+) -> dict[str, Any]:
     # Custom exceptions are handled by the global exception handler
     service: TradingService = get_trading_service(request)
     return await service.cancel_order(order_id)
@@ -59,7 +61,7 @@ async def cancel_order(
 async def get_enhanced_quote(
     symbol: str,
     request: Request,
-):
+) -> dict[str, Any]:
     """Get enhanced quote with Greeks for options."""
     service: TradingService = get_trading_service(request)
     try:
@@ -100,7 +102,7 @@ async def get_enhanced_quote(
 async def create_multi_leg_order_basic(
     order: MultiLegOrderCreate,
     request: Request,
-):
+) -> Any:
     """Create multi-leg order (basic endpoint)."""
     service: TradingService = get_trading_service(request)
     try:

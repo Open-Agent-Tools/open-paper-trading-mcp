@@ -90,7 +90,7 @@ class Stock(Asset):
     """Stock asset class for specific stock instruments."""
 
     def __init__(self, symbol: str, **data: Any) -> None:
-        super().__init__(symbol=symbol, asset_type="stock", **data)  # type: ignore
+        super().__init__(symbol=symbol, asset_type="stock", **data)
 
 
 class Option(Asset):

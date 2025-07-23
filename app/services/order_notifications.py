@@ -118,7 +118,7 @@ class LogNotificationSender(NotificationSender):
 class WebSocketNotificationSender(NotificationSender):
     """Sends notifications via WebSocket."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.connected_clients: set[Any] = set()  # WebSocket connections
 
     async def send(self, notification: Notification) -> bool:
@@ -155,11 +155,11 @@ class WebSocketNotificationSender(NotificationSender):
 
         return success_count > 0
 
-    def add_client(self, client) -> None:
+    def add_client(self, client: Any) -> None:
         """Add a WebSocket client."""
         self.connected_clients.add(client)
 
-    def remove_client(self, client) -> None:
+    def remove_client(self, client: Any) -> None:
         """Remove a WebSocket client."""
         self.connected_clients.discard(client)
 
@@ -222,14 +222,14 @@ class OrderNotificationManager:
     - Real-time order status updates
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.notification_rules: dict[str, NotificationRule] = {}
         self.senders: dict[NotificationChannel, NotificationSender] = {}
-        self.notification_queue: asyncio.Queue = asyncio.Queue()
+        self.notification_queue: asyncio.Queue[Notification] = asyncio.Queue()
         self.notification_history: list[Notification] = []
 
         # Worker task for processing notifications
-        self.worker_task: asyncio.Task | None = None
+        self.worker_task: asyncio.Task[None] | None = None
         self.is_running = False
 
         # Initialize default senders
@@ -552,7 +552,7 @@ class OrderNotificationManager:
         if len(self.notification_history) > 1000:
             self.notification_history = self.notification_history[-500:]
 
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, Any]:
         """Get notification statistics."""
         total_notifications = len(self.notification_history)
         successful_notifications = sum(

@@ -105,7 +105,7 @@ class PortfolioRiskCalculator:
     - Correlation analysis
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.price_history: dict[str, list[float]] = {}
         self.return_history: dict[str, list[float]] = {}
         self.sector_mappings = self._load_sector_mappings()

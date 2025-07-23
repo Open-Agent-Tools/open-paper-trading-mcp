@@ -131,7 +131,7 @@ class AdapterFactory:
         """
         self.config = config or AdapterFactoryConfig()
         self._adapter_cache: dict[str, type[QuoteAdapter]] = {}
-        self._cache_warming_task: asyncio.Task | None = None
+        self._cache_warming_task: asyncio.Task[None] | None = None
         self._cache_warming_enabled = self.config.cache_warming_config.get(
             "enabled", False
         )
@@ -520,7 +520,7 @@ class AdapterFactory:
         warm_interval = self.config.cache_warming_config.get("warm_interval", 300.0)
         warm_on_startup = self.config.cache_warming_config.get("warm_on_startup", True)
 
-        async def warming_loop():
+        async def warming_loop() -> None:
             # Warm cache on startup if configured
             if warm_on_startup:
                 try:

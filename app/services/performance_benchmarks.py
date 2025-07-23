@@ -126,7 +126,7 @@ class PerformanceMonitor:
         self._lock = threading.Lock()
 
         # Monitoring task
-        self.monitoring_task: asyncio.Task | None = None
+        self.monitoring_task: asyncio.Task[None] | None = None
         self.is_monitoring = False
 
     async def start_monitoring(self) -> None:
@@ -153,7 +153,7 @@ class PerformanceMonitor:
 
         logger.info("Performance monitoring stopped")
 
-    def start_measurement(self, operation: str, metadata: dict | None = None) -> str:
+    def start_measurement(self, operation: str, metadata: dict[str, Any] | None = None) -> str:
         """Start timing an operation."""
         measurement_id = f"{operation}_{int(time.time() * 1000000)}"
 
@@ -167,7 +167,7 @@ class PerformanceMonitor:
         measurement_id: str,
         success: bool = True,
         error: str | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PerformanceMetric | None:
         """End timing an operation."""
         end_time = time.perf_counter()
@@ -210,11 +210,11 @@ class PerformanceMonitor:
 
         return metric
 
-    def measure_sync(self, operation: str, metadata: dict | None = None):
+    def measure_sync(self, operation: str, metadata: dict[str, Any] | None = None) -> "SyncMeasurementContext":
         """Context manager for synchronous operations."""
         return SyncMeasurementContext(self, operation, metadata)
 
-    def measure_async(self, operation: str, metadata: dict | None = None):
+    def measure_async(self, operation: str, metadata: dict[str, Any] | None = None) -> "AsyncMeasurementContext":
         """Context manager for asynchronous operations."""
         return AsyncMeasurementContext(self, operation, metadata)
 
@@ -290,10 +290,10 @@ class PerformanceMonitor:
     async def run_benchmark(
         self,
         test_name: str,
-        test_function,
+        test_function: Any,
         num_operations: int = 100,
         concurrency: int = 10,
-        **kwargs,
+        **kwargs: Any,
     ) -> BenchmarkResult:
         """Run a performance benchmark test."""
         logger.info(
@@ -307,7 +307,7 @@ class PerformanceMonitor:
         semaphore = asyncio.Semaphore(concurrency)
         metrics = []
 
-        async def run_single_operation(op_id: int):
+        async def run_single_operation(op_id: int) -> None:
             async with semaphore:
                 measurement_id = self.start_measurement(test_name, {"op_id": op_id})
 
@@ -482,7 +482,7 @@ class PerformanceMonitor:
 
         logger.warning(f"Performance alert: {message}")
 
-    def add_alert_callback(self, callback) -> None:
+    def add_alert_callback(self, callback: Any) -> None:
         """Add alert callback function."""
         self.alert_callbacks.append(callback)
 
@@ -544,20 +544,20 @@ class SyncMeasurementContext:
         self,
         monitor: PerformanceMonitor,
         operation: str,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.monitor = monitor
         self.operation = operation
         self.metadata = metadata
         self.measurement_id: str | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> "SyncMeasurementContext":
         self.measurement_id = self.monitor.start_measurement(
             self.operation, self.metadata
         )
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.measurement_id:
             success = exc_type is None
             error = str(exc_val) if exc_val else None
@@ -571,20 +571,20 @@ class AsyncMeasurementContext:
         self,
         monitor: PerformanceMonitor,
         operation: str,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.monitor = monitor
         self.operation = operation
         self.metadata = metadata
         self.measurement_id: str | None = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "AsyncMeasurementContext":
         self.measurement_id = self.monitor.start_measurement(
             self.operation, self.metadata
         )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.measurement_id:
             success = exc_type is None
             error = str(exc_val) if exc_val else None

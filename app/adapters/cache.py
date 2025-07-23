@@ -368,7 +368,7 @@ class CachedQuoteAdapter:
             # Cache for longer as expiration dates don't change often
             ttl = max(self.cache.default_ttl, 300.0)  # Min 5 minutes
             self.cache.put(cache_key, dates, ttl)
-            return dates  # type: ignore[no-any-return]
+            return dates
 
         return []
 

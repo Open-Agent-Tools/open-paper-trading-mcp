@@ -7,6 +7,7 @@ trailing stop) into executable market or limit orders.
 
 import logging
 from datetime import datetime
+from typing import Any
 
 from ..schemas.orders import Order, OrderCondition, OrderStatus, OrderType
 
@@ -28,8 +29,8 @@ class OrderConverter:
     be executed by the trading system.
     """
 
-    def __init__(self):
-        self.conversion_history: dict[str, dict] = {}
+    def __init__(self) -> None:
+        self.conversion_history: dict[str, dict[str, Any]] = {}
 
     def convert_stop_loss_to_market(
         self,
@@ -403,7 +404,7 @@ class OrderConverter:
             f"-> Converted: {converted_order.order_type} at price {trigger_price}"
         )
 
-    def get_conversion_history(self, order_id: str) -> dict | None:
+    def get_conversion_history(self, order_id: str) -> dict[str, Any] | None:
         """Get conversion history for an order."""
         return self.conversion_history.get(order_id)
 

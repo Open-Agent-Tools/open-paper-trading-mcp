@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 from ..schemas.orders import Order, OrderStatus
 
@@ -40,7 +41,7 @@ class OrderStateTransition:
     to_status: OrderStatus
     event: OrderEvent
     timestamp: datetime
-    details: dict = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     triggered_by: str = "system"  # user, system, market, etc.
 
 
@@ -54,7 +55,7 @@ class OrderLifecycleState:
     last_updated: datetime
     transitions: list[OrderStateTransition] = field(default_factory=list)
     error_messages: list[str] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Execution details
     filled_quantity: int = 0
@@ -86,12 +87,12 @@ class OrderLifecycleManager:
     - Cleanup of completed orders
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_orders: dict[str, OrderLifecycleState] = {}
         self.completed_orders: dict[str, OrderLifecycleState] = {}
 
         # Event callbacks
-        self.event_callbacks: dict[OrderEvent, list[Callable]] = {
+        self.event_callbacks: dict[OrderEvent, list[Callable[..., Any]]] = {
             event: [] for event in OrderEvent
         }
 
@@ -142,7 +143,7 @@ class OrderLifecycleManager:
         order_id: str,
         new_status: OrderStatus,
         event: OrderEvent,
-        details: dict | None = None,
+        details: dict[str, Any] | None = None,
         triggered_by: str = "system",
     ) -> OrderLifecycleState:
         """Transition an order to a new status."""
@@ -332,7 +333,7 @@ class OrderLifecycleManager:
                 result.append(lifecycle_state)
         return result
 
-    def register_event_callback(self, event: OrderEvent, callback: Callable) -> None:
+    def register_event_callback(self, event: OrderEvent, callback: Callable[..., Any]) -> None:
         """Register a callback for order events."""
         self.event_callbacks[event].append(callback)
 
@@ -351,7 +352,7 @@ class OrderLifecycleManager:
         logger.info(f"Cleaned up {len(orders_to_remove)} completed orders")
         return len(orders_to_remove)
 
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, Any]:
         """Get statistics about order lifecycle."""
         total_orders = len(self.active_orders) + len(self.completed_orders)
 
@@ -427,7 +428,7 @@ class OrderLifecycleManager:
         from_status: OrderStatus | None,
         to_status: OrderStatus,
         event: OrderEvent,
-        details: dict,
+        details: dict[str, Any],
         triggered_by: str = "system",
     ) -> None:
         """Record a state transition."""

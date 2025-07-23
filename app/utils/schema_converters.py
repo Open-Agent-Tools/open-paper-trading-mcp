@@ -7,7 +7,7 @@ field mapping differences and maintain clean separation of concerns.
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Generic, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast
 
 from app.models.assets import asset_factory
 from app.models.database.trading import Account as DBAccount
@@ -33,7 +33,7 @@ class SchemaConverter(Generic[T, U], ABC):
         pass
 
     @abstractmethod
-    def to_database(self, schema: U, **kwargs) -> T:
+    def to_database(self, schema: U, **kwargs: Any) -> T:
         """Convert schema to database model."""
         pass
 
@@ -77,7 +77,7 @@ class AccountConverter(SchemaConverter[DBAccount, Account]):
             positions=positions,
         )
 
-    def to_database(self, schema: Account, **kwargs) -> DBAccount:
+    def to_database(self, schema: Account, **kwargs: Any) -> DBAccount:
         """
         Convert Account schema to DBAccount.
 
@@ -125,7 +125,7 @@ class OrderConverter(SchemaConverter[DBOrder, Order]):
             trail_amount=db_order.trail_amount,
         )
 
-    def to_database(self, schema: Order, **kwargs) -> DBOrder:
+    def to_database(self, schema: Order, **kwargs: Any) -> DBOrder:
         """
         Convert Order schema to DBOrder.
 
@@ -287,7 +287,7 @@ class PositionConverter(SchemaConverter[DBPosition, Position]):
             iv=None,
         )
 
-    def to_database(self, schema: Position, **kwargs) -> DBPosition:
+    def to_database(self, schema: Position, **kwargs: Any) -> DBPosition:
         """
         Convert Position schema to DBPosition.
 

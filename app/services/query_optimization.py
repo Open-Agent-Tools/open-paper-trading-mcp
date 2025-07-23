@@ -7,6 +7,7 @@ operations, leveraging the created indexes for maximum performance.
 
 import logging
 from datetime import datetime, timedelta
+from typing import Any
 
 from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.orm import Session
@@ -104,7 +105,7 @@ class OptimizedOrderQueries:
         account_id: str,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Get order summary for an account.
         Uses: idx_orders_account_created_status
@@ -165,7 +166,7 @@ class OptimizedOrderQueries:
 
     async def get_order_execution_metrics(
         self, start_date: datetime, end_date: datetime
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Get order execution performance metrics.
         Uses multiple indexes for complex aggregation.

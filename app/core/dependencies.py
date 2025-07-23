@@ -5,6 +5,8 @@ This module provides shared dependencies that can be used across
 all API endpoints, following FastAPI best practices.
 """
 
+from typing import cast
+
 from fastapi import Request
 
 from app.services.trading_service import TradingService
@@ -31,4 +33,4 @@ def get_trading_service(request: Request) -> TradingService:
             "TradingService not found in application state. "
             "Ensure the service is initialized in the lifespan context manager."
         )
-    return trading_service
+    return cast(TradingService, trading_service)

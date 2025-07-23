@@ -7,6 +7,7 @@ query performance for order processing, execution monitoring, and analytics.
 
 import logging
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -159,7 +160,7 @@ class DatabaseIndexManager:
 
         return results
 
-    async def analyze_index_usage(self) -> dict[str, dict]:
+    async def analyze_index_usage(self) -> dict[str, dict[str, Any]]:
         """Analyze database index usage statistics."""
         usage_stats = {}
 
@@ -197,7 +198,7 @@ class DatabaseIndexManager:
 
         return usage_stats
 
-    async def get_slow_queries(self, min_duration_ms: int = 100) -> list[dict]:
+    async def get_slow_queries(self, min_duration_ms: int = 100) -> list[dict[str, Any]]:
         """Get slow query information for optimization analysis."""
         slow_queries = []
 
@@ -262,7 +263,7 @@ class DatabaseIndexManager:
 
         return results
 
-    async def check_index_bloat(self) -> dict[str, dict]:
+    async def check_index_bloat(self) -> dict[str, dict[str, Any]]:
         """Check for index bloat that may affect performance."""
         bloat_info = {}
 
@@ -296,7 +297,7 @@ class DatabaseIndexManager:
 
         return bloat_info
 
-    async def suggest_missing_indexes(self) -> list[dict]:
+    async def suggest_missing_indexes(self) -> list[dict[str, Any]]:
         """Suggest potentially missing indexes based on query patterns."""
         suggestions = []
 
@@ -356,7 +357,7 @@ class DatabaseIndexManager:
             logger.error(f"Failed to vacuum/reindex {table_name}: {e}")
             return False
 
-    async def generate_performance_report(self) -> dict:
+    async def generate_performance_report(self) -> dict[str, Any]:
         """Generate comprehensive database performance report."""
         logger.info("Generating database performance report")
 
@@ -375,7 +376,7 @@ class DatabaseIndexManager:
 
         return report
 
-    async def _get_table_sizes(self) -> dict[str, dict]:
+    async def _get_table_sizes(self) -> dict[str, dict[str, Any]]:
         """Get table and index sizes."""
         sizes = {}
 
@@ -411,7 +412,7 @@ class DatabaseIndexManager:
 
         return sizes
 
-    def _generate_recommendations(self, report: dict) -> list[str]:
+    def _generate_recommendations(self, report: dict[str, Any]) -> list[str]:
         """Generate performance recommendations based on report data."""
         recommendations = []
 

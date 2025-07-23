@@ -52,7 +52,7 @@ class QueuedOrder:
     max_attempts: int = 3
     status: ProcessingStatus = ProcessingStatus.QUEUED
     metadata: dict[str, Any] = field(default_factory=dict)
-    callback: Callable | None = None
+    callback: Callable[..., Any] | None = None
 
     def __lt__(self, other: "QueuedOrder") -> bool:
         """Priority comparison for heap queue."""
@@ -111,12 +111,12 @@ class OrderQueue:
         self.completed_orders: dict[str, QueuedOrder] = {}
 
         # Worker management
-        self.workers: set[asyncio.Task] = set()
+        self.workers: set[asyncio.Task[None]] = set()
         self.worker_semaphore = asyncio.Semaphore(max_concurrent_workers)
 
         # Batch processing
         self.batch_queue: dict[str, list[QueuedOrder]] = defaultdict(list)
-        self.batch_timer_task: asyncio.Task | None = None
+        self.batch_timer_task: asyncio.Task[None] | None = None
 
         # Metrics
         self.metrics = QueueMetrics()
@@ -128,8 +128,8 @@ class OrderQueue:
         self.is_draining = False
 
         # Callbacks
-        self.order_processors: dict[OrderType, Callable] = {}
-        self.completion_callbacks: list[Callable] = []
+        self.order_processors: dict[OrderType, Callable[..., Any]] = {}
+        self.completion_callbacks: list[Callable[..., Any]] = []
 
         # Thread safety
         self._queue_lock = asyncio.Lock()
@@ -186,8 +186,8 @@ class OrderQueue:
         self,
         order: Order,
         priority: QueuePriority = QueuePriority.NORMAL,
-        callback: Callable | None = None,
-        metadata: dict | None = None,
+        callback: Callable[..., Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """
         Add an order to the processing queue.
@@ -243,7 +243,7 @@ class OrderQueue:
         self.order_processors[order_type] = processor
         logger.info(f"Registered processor for {order_type}")
 
-    def register_completion_callback(self, callback: Callable) -> None:
+    def register_completion_callback(self, callback: Callable[..., Any]) -> None:
         """Register a callback for order completion events."""
         self.completion_callbacks.append(callback)
 

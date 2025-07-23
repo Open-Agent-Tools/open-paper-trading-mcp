@@ -26,7 +26,7 @@ class TestDataValidationError(Exception):
 class TestDataValidator:
     """Validates test data integrity and consistency."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.validation_errors: list[str] = []
         self.validation_warnings: list[str] = []
 

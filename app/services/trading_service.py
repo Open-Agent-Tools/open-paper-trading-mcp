@@ -889,7 +889,8 @@ class TradingService:
 
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_stock_info"):
-                return await self.quote_adapter.get_stock_info(symbol)
+                result = await self.quote_adapter.get_stock_info(symbol)
+                return dict(result) if result else {}
             else:
                 # Fallback to basic quote data
                 quote = await self.get_enhanced_quote(symbol)
@@ -933,7 +934,8 @@ class TradingService:
 
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_price_history"):
-                return await self.quote_adapter.get_price_history(symbol, period)
+                result = await self.quote_adapter.get_price_history(symbol, period)
+                return dict(result) if result else {}
             else:
                 # Fallback to current quote only
                 quote = await self.get_enhanced_quote(symbol)
@@ -977,7 +979,8 @@ class TradingService:
 
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_stock_news"):
-                return await self.quote_adapter.get_stock_news(symbol)
+                result = await self.quote_adapter.get_stock_news(symbol)
+                return dict(result) if result else {}
             else:
                 return {
                     "symbol": symbol.upper(),
@@ -998,7 +1001,8 @@ class TradingService:
         try:
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "get_top_movers"):
-                return await self.quote_adapter.get_top_movers()
+                result = await self.quote_adapter.get_top_movers()
+                return dict(result) if result else {}
             else:
                 # Fallback to available symbols with basic data
                 symbols = self.get_available_symbols()[:10]  # Top 10
@@ -1038,7 +1042,8 @@ class TradingService:
         try:
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "search_stocks"):
-                return await self.quote_adapter.search_stocks(query)
+                result = await self.quote_adapter.search_stocks(query)
+                return dict(result) if result else {}
             else:
                 # Fallback to symbol matching from available symbols
                 query_upper = query.upper()
@@ -1219,7 +1224,7 @@ class TradingService:
             # Create a mock order data structure for the existing create_multi_leg_order method
             class MockOrderData:
                 class MockLeg:
-                    def __init__(self, data):
+                    def __init__(self, data: dict[str, Any]) -> None:
                         self.symbol = data["symbol"]
                         self.quantity = data["quantity"]
                         self.side = data["side"]
@@ -1228,7 +1233,7 @@ class TradingService:
                         )
                         self.price = data.get("price")
 
-                def __init__(self, legs):
+                def __init__(self, legs: list[dict[str, Any]]) -> None:
                     self.legs = [MockOrderData.MockLeg(leg) for leg in legs]
                     self.condition = (
                         OrderCondition.LIMIT
