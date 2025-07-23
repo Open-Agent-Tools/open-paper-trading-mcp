@@ -60,9 +60,9 @@ class TestAsyncDatabaseArchitecture:
         for method_name in async_methods:
             if hasattr(service, method_name):
                 method = getattr(service, method_name)
-                assert inspect.iscoroutinefunction(method), (
-                    f"{method_name} should be async"
-                )
+                assert inspect.iscoroutinefunction(
+                    method
+                ), f"{method_name} should be async"
 
     @pytest.mark.asyncio
     async def test_database_first_architecture(self):
@@ -564,9 +564,9 @@ class TestArchitecturalCompliance:
         ]
 
         for attr in state_attributes:
-            assert not hasattr(service, attr), (
-                f"Service should not cache {attr} in memory"
-            )
+            assert not hasattr(
+                service, attr
+            ), f"Service should not cache {attr} in memory"
 
     def test_separation_of_concerns(self):
         """Test separation of concerns across layers."""

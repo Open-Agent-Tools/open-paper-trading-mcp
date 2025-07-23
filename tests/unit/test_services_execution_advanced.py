@@ -22,15 +22,14 @@ from app.schemas.orders import (
     OrderType,
 )
 from app.schemas.positions import Portfolio, Position
-from app.services.order_execution import (
-    ExecutionQueue,
-    MarketImpactCalculator,
-    OrderExecutionEngine,
-    OrderExecutionResult,
-    OrderFillSimulator,
-    OrderStateMachine,
-    SlippageEstimator,
+from app.services.estimators import SlippageEstimator
+from app.services.order_execution import OrderExecutionResult, OrderFillSimulator
+from app.services.order_execution_engine import OrderExecutionEngine
+from app.services.order_lifecycle import OrderStateMachine
+from app.services.order_queue import (
+    OrderQueue as ExecutionQueue,
 )
+from app.services.market_impact import MarketImpactCalculator
 
 
 class MockQuoteService:
@@ -129,7 +128,7 @@ def sample_portfolio():
 class TestOrderExecutionEngine:
     """Test OrderExecutionEngine functionality."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_execute_market_buy_order(
         self, order_execution_engine, sample_portfolio
     ):
@@ -149,7 +148,7 @@ class TestOrderExecutionEngine:
         assert len(result.positions_created) == 0  # Should modify existing position
         assert len(result.positions_modified) == 1
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_execute_market_sell_order(
         self, order_execution_engine, sample_portfolio
     ):
@@ -172,7 +171,7 @@ class TestOrderExecutionEngine:
         modified_position = result.positions_modified[0]
         assert modified_position.quantity == 25  # 50 - 25 = 25
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_execute_limit_order(self, order_execution_engine, sample_portfolio):
         """Test execution of limit order."""
         order = OrderCreate(
@@ -189,7 +188,7 @@ class TestOrderExecutionEngine:
         assert result.executed_price <= order.limit_price
         assert result.execution_strategy == "limit_order"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_execute_stop_order(self, order_execution_engine, sample_portfolio):
         """Test execution of stop order."""
         order = OrderCreate(
@@ -206,7 +205,7 @@ class TestOrderExecutionEngine:
         assert result.execution_strategy == "stop_order"
         assert result.executed_price <= order.stop_price
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_insufficient_shares_error(
         self, order_execution_engine, sample_portfolio
     ):
@@ -224,7 +223,7 @@ class TestOrderExecutionEngine:
         assert "insufficient shares" in result.message.lower()
         assert result.executed_quantity == 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_insufficient_cash_error(
         self, order_execution_engine, sample_portfolio
     ):
@@ -242,7 +241,7 @@ class TestOrderExecutionEngine:
         assert "insufficient funds" in result.message.lower()
         assert result.cash_change == 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_new_position_creation(
         self, order_execution_engine, sample_portfolio
     ):
@@ -268,7 +267,7 @@ class TestOrderExecutionEngine:
 class TestExecutionStrategies:
     """Test different execution strategies."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_twap_execution_strategy(
         self, order_execution_engine, sample_portfolio
     ):
@@ -309,7 +308,7 @@ class TestExecutionStrategies:
             assert result.execution_details["child_orders"] == 10
             mock_twap.assert_called_once()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_vwap_execution_strategy(
         self, order_execution_engine, sample_portfolio
     ):
@@ -349,7 +348,7 @@ class TestExecutionStrategies:
             assert result.execution_details["performance_vs_vwap"] == -0.05
             mock_vwap.assert_called_once()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_iceberg_execution_strategy(
         self, order_execution_engine, sample_portfolio
     ):
@@ -698,7 +697,7 @@ class TestSlippageEstimation:
 class TestExecutionQueue:
     """Test order execution queue management."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_queue_order_processing(self):
         """Test processing orders from execution queue."""
         queue = ExecutionQueue()
@@ -735,7 +734,7 @@ class TestExecutionQueue:
         assert len(processed_orders) == 3
         assert queue.is_empty()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_priority_queue_ordering(self):
         """Test priority-based order processing."""
         queue = ExecutionQueue()
@@ -764,7 +763,7 @@ class TestExecutionQueue:
         assert second_order.symbol == "MED"
         assert third_order.symbol == "LOW"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_queue_cancellation(self):
         """Test order cancellation in queue."""
         queue = ExecutionQueue()
@@ -790,7 +789,7 @@ class TestExecutionQueue:
         fake_cancelled = await queue.cancel_order("fake-id")
         assert fake_cancelled is False
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_queue_operations(self):
         """Test concurrent queue operations."""
         queue = ExecutionQueue()
@@ -973,7 +972,7 @@ class TestOrderStateMachine:
 class TestMultiLegOrderExecution:
     """Test multi-leg order execution strategies."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_spread_order_execution(
         self, order_execution_engine, sample_portfolio
     ):
@@ -1028,7 +1027,7 @@ class TestMultiLegOrderExecution:
             assert len(result.positions_created) == 2
             mock_spread.assert_called_once()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_iron_condor_execution(
         self, order_execution_engine, sample_portfolio
     ):
@@ -1093,7 +1092,7 @@ class TestMultiLegOrderExecution:
 class TestExecutionPerformanceOptimization:
     """Test execution performance optimization techniques."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_batch_order_execution(
         self, order_execution_engine, sample_portfolio
     ):
@@ -1126,7 +1125,7 @@ class TestExecutionPerformanceOptimization:
         # Batch execution should be faster than sequential
         assert execution_time < 1.0  # Should complete within 1 second
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_execution_caching(self, order_execution_engine, sample_portfolio):
         """Test caching of execution-related calculations."""
         order = OrderCreate(
@@ -1152,7 +1151,7 @@ class TestExecutionPerformanceOptimization:
         # Second execution should benefit from caching
         assert time2 <= time1  # Allow for some variance
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_execution_safety(
         self, order_execution_engine, sample_portfolio
     ):

@@ -615,9 +615,9 @@ class TestMCPMarketDataToolDocumentation:
             func = getattr(tools, func_name)
             doc = inspect.getdoc(func)
             assert doc is not None and doc.strip(), f"{func_name} should have docstring"
-            assert "TradingService" in doc, (
-                f"{func_name} should mention TradingService routing"
-            )
+            assert (
+                "TradingService" in doc
+            ), f"{func_name} should mention TradingService routing"
 
     def test_parameter_classes_have_descriptions(self):
         """Test parameter model classes have field descriptions."""
@@ -642,12 +642,12 @@ class TestMCPMarketDataToolDocumentation:
             properties = schema.get("properties", {})
 
             for field_name, field_info in properties.items():
-                assert "description" in field_info, (
-                    f"{param_class.__name__}.{field_name} should have description"
-                )
-                assert field_info["description"].strip(), (
-                    f"{param_class.__name__}.{field_name} description should not be empty"
-                )
+                assert (
+                    "description" in field_info
+                ), f"{param_class.__name__}.{field_name} should have description"
+                assert field_info[
+                    "description"
+                ].strip(), f"{param_class.__name__}.{field_name} description should not be empty"
 
     def test_function_signatures_are_async(self):
         """Test that all market data functions are async."""
@@ -666,6 +666,6 @@ class TestMCPMarketDataToolDocumentation:
 
         for func_name in tool_functions:
             func = getattr(tools, func_name)
-            assert inspect.iscoroutinefunction(func), (
-                f"{func_name} should be async function"
-            )
+            assert inspect.iscoroutinefunction(
+                func
+            ), f"{func_name} should be async function"

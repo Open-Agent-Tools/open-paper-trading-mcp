@@ -21,14 +21,12 @@ from app.schemas.orders import (
     OrderType,
 )
 from app.schemas.positions import Portfolio, Position
+from app.services.advanced_validation import ValidationResult
 from app.services.validation import (
-    AccountValidator,
     BusinessRuleValidator,
     MultiLegOrderValidator,
     OrderValidator,
     PositionValidator,
-    ValidationError,
-    ValidationResult,
 )
 
 
@@ -733,7 +731,7 @@ class TestBusinessRuleValidator:
 class TestAsyncValidation:
     """Test async validation operations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_order_validation(self, order_validator):
         """Test async order validation with external data."""
         order = OrderCreate(
@@ -763,7 +761,7 @@ class TestAsyncValidation:
             assert result.is_valid is True
             mock_market_data.assert_called_once_with("AAPL")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_portfolio_validation(
         self, account_validator, sample_portfolio
     ):
@@ -786,7 +784,7 @@ class TestAsyncValidation:
             assert result.is_valid is True
             mock_risk.assert_called_once()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_validation(self, order_validator):
         """Test concurrent validation of multiple orders."""
         orders = [
@@ -806,7 +804,7 @@ class TestAsyncValidation:
         assert len(results) == 5
         assert all(isinstance(result, ValidationResult) for result in results)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_validation_timeout_handling(self, order_validator):
         """Test validation timeout handling."""
         order = OrderCreate(
@@ -929,7 +927,7 @@ class TestValidationRuleEngine:
 class TestValidationPerformance:
     """Test validation performance and optimization."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_validation_performance_benchmark(self, order_validator):
         """Test validation performance under load."""
         orders = [
@@ -968,7 +966,7 @@ class TestValidationPerformance:
         throughput = len(orders) / execution_time
         assert throughput > 200  # At least 200 validations per second
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_validation_caching(self, order_validator):
         """Test validation result caching for performance."""
         order = OrderCreate(

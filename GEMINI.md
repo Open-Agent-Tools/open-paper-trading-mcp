@@ -82,9 +82,9 @@ For direct development workflow that bypasses Docker:
     ```bash
     python scripts/dev.py server     # Start both FastAPI and MCP servers
     python scripts/dev.py test       # Run all tests
-    python3 -m ruff format .         # Format with ruff
-    python3 -m ruff check . --fix    # Lint with ruff
-    python3 -m mypy app/             # Type check with mypy
+    python scripts/dev.py format     # Format code with black and isort
+    python scripts/dev.py lint       # Lint code with flake8
+    python scripts/dev.py typecheck  # Type check with mypy
     python scripts/dev.py check      # Run all checks (format, lint, typecheck, test)
     ```
 
@@ -95,8 +95,99 @@ For direct development workflow that bypasses Docker:
     ```
     *Note: The test suite now has comprehensive coverage with E2E, integration, and performance validation.*
 
+## 3. Scripts Folder Utilities
 
-## 3. Core Technologies
+The `./scripts` folder contains various utility scripts for development, testing, and maintenance:
+
+### Development & Testing Scripts
+
+-   **`dev.py`** - Main development utility script
+    ```bash
+    python scripts/dev.py server     # Start both FastAPI and MCP servers
+    python scripts/dev.py test       # Run all tests
+    python scripts/dev.py format     # Format code with black and isort
+    python scripts/dev.py lint       # Lint code with flake8
+    python scripts/dev.py typecheck  # Type check with mypy
+    python scripts/dev.py check      # Run all checks (format, lint, typecheck, test)
+    ```
+
+-   **`setup_test_db.py`** - Test database management
+    ```bash
+    python scripts/setup_test_db.py          # Setup test database
+    python scripts/setup_test_db.py cleanup  # Clean up test database
+    ```
+
+-   **`validate_phase1.py`** - Phase 1 QA validation script
+    ```bash
+    python scripts/validate_phase1.py  # Validate async methods, database persistence, error handling
+    ```
+
+-   **`test_adk_setup.py`** - ADK (Agent Development Kit) testing utilities
+    ```bash
+    python scripts/test_adk_setup.py  # Test ADK configuration and setup
+    ```
+
+### Database & Performance Scripts
+
+-   **`optimize_database.py`** - Database optimization and index management
+    ```bash
+    python scripts/optimize_database.py  # Create indexes, update statistics, generate performance report
+    ```
+
+-   **`test_db_adapter.py`** - Database adapter testing utilities
+    ```bash
+    python scripts/test_db_adapter.py  # Test database adapter functionality
+    ```
+
+### Code Analysis & Maintenance Scripts
+
+-   **`analyze_dependencies.py`** - Project dependency analysis
+    ```bash
+    python scripts/analyze_dependencies.py  # Analyze project imports and dependencies
+    ```
+
+-   **`check_imports.py`** - Import validation and checking
+    ```bash
+    python scripts/check_imports.py  # Validate import statements across the project
+    ```
+
+-   **`check_missing_classes.py`** - Missing class detection
+    ```bash
+    python scripts/check_missing_classes.py  # Check for missing class definitions
+    ```
+
+-   **`fix_test_imports.py`** - Test import fixing utility
+    ```bash
+    python scripts/fix_test_imports.py  # Fix import issues in test files
+    ```
+
+### Data Management Scripts
+
+-   **`data_loader.py`** - Data loading utilities
+    ```bash
+    python scripts/data_loader.py  # Load and manage test/development data
+    ```
+
+-   **`migrate_test_data.py`** - Test data migration
+    ```bash
+    python scripts/migrate_test_data.py  # Migrate test data between environments
+    ```
+
+-   **`create_scenarios.py`** - Test scenario creation
+    ```bash
+    python scripts/create_scenarios.py  # Create test scenarios for validation
+    ```
+
+### Shell Scripts
+
+-   **`run_adk_eval.sh`** - ADK evaluation runner
+    ```bash
+    ./scripts/run_adk_eval.sh  # Run ADK evaluations with proper environment setup
+    ```
+
+*Note: All Python scripts should be run from the project root directory. Ensure Docker is running for database-dependent scripts.*
+
+## 4. Core Technologies
 
 -   **Backend**: FastAPI (for the REST API), FastMCP (for the AI agent tools).
 -   **Database**: PostgreSQL with SQLAlchemy for the ORM.

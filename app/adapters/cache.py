@@ -54,7 +54,12 @@ class QuoteCache:
         self.max_size = max_size
         self._cache: dict[str, CacheEntry] = {}
         self._lock = RLock()
-        self._stats = {"hits": 0, "misses": 0, "evictions": 0, "cleanups": 0}
+        self._stats = {
+            "hits": 0,
+            "misses": 0,
+            "evictions": 0,
+            "cleanups": 0,
+        }
 
     def get(
         self, key: str

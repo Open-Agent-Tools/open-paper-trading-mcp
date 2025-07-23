@@ -25,7 +25,7 @@ from app.models.database.base import Base
 class TestDatabaseModelValidation:
     """Test SQLAlchemy model validation and constraints."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_model_table_creation(self, async_db_session: AsyncSession):
         """Test that all models create tables correctly."""
         # Get all model classes
@@ -47,7 +47,7 @@ class TestDatabaseModelValidation:
                 exists = result.scalar()
                 assert exists, f"Table {model_class.__tablename__} does not exist"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_account_model_constraints(self, async_db_session: AsyncSession):
         """Test Account model field constraints and validation."""
         from app.models.database.trading import Account
@@ -76,7 +76,7 @@ class TestDatabaseModelValidation:
         assert row.id == "test-account-1"
         assert row.balance == Decimal("10000.00")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_account_model_required_fields(self, async_db_session: AsyncSession):
         """Test Account model required field validation."""
         from app.models.database.trading import Account
@@ -91,7 +91,7 @@ class TestDatabaseModelValidation:
             async_db_session.add(incomplete_account)
             await async_db_session.commit()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_order_model_constraints(self, async_db_session: AsyncSession):
         """Test Order model field constraints and relationships."""
         from app.models.database.trading import Account, Order
@@ -136,7 +136,7 @@ class TestDatabaseModelValidation:
         assert row.symbol == "AAPL"
         assert row.quantity == Decimal("100")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_order_foreign_key_constraint(self, async_db_session: AsyncSession):
         """Test Order model foreign key constraints."""
         from app.models.database.trading import Order
@@ -158,7 +158,7 @@ class TestDatabaseModelValidation:
             async_db_session.add(invalid_order)
             await async_db_session.commit()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_position_model_constraints(self, async_db_session: AsyncSession):
         """Test Position model constraints and calculations."""
         from app.models.database.trading import Account, Position
@@ -204,7 +204,7 @@ class TestDatabaseModelValidation:
         assert row.market_value == Decimal("7500.00")
         assert row.unrealized_pnl == Decimal("225.00")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_transaction_model_audit_trail(self, async_db_session: AsyncSession):
         """Test Transaction model for audit trail purposes."""
         from app.models.database.trading import Account, Transaction
@@ -255,7 +255,7 @@ class TestDatabaseModelValidation:
 class TestModelRelationships:
     """Test SQLAlchemy model relationships and joins."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_account_orders_relationship(self, async_db_session: AsyncSession):
         """Test Account to Orders one-to-many relationship."""
         from app.models.database.trading import Account, Order
@@ -296,18 +296,20 @@ class TestModelRelationships:
 
         # Test relationship query
         result = await async_db_session.execute(
-            text("""
+            text(
+                """
                 SELECT COUNT(o.id) as order_count 
                 FROM accounts a 
                 LEFT JOIN orders o ON a.id = o.account_id 
                 WHERE a.id = :account_id
                 GROUP BY a.id
-            """).bindparam(account_id="rel-account-1")
+            """
+            ).bindparam(account_id="rel-account-1")
         )
         row = result.fetchone()
         assert row.order_count == 3
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_account_positions_relationship(self, async_db_session: AsyncSession):
         """Test Account to Positions one-to-many relationship."""
         from app.models.database.trading import Account, Position
@@ -348,19 +350,21 @@ class TestModelRelationships:
 
         # Test portfolio value calculation
         result = await async_db_session.execute(
-            text("""
+            text(
+                """
                 SELECT SUM(p.market_value) as total_value, COUNT(p.id) as position_count
                 FROM accounts a 
                 LEFT JOIN positions p ON a.id = p.account_id 
                 WHERE a.id = :account_id
                 GROUP BY a.id
-            """).bindparam(account_id="rel-account-2")
+            """
+            ).bindparam(account_id="rel-account-2")
         )
         row = result.fetchone()
         assert row.position_count == 3
         assert row.total_value == Decimal("4650.00")  # 3 * 1550.00
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_order_transaction_relationship(self, async_db_session: AsyncSession):
         """Test Order to Transaction one-to-many relationship."""
         from app.models.database.trading import Account, Order, Transaction
@@ -419,7 +423,8 @@ class TestModelRelationships:
 
         # Verify transaction totals
         result = await async_db_session.execute(
-            text("""
+            text(
+                """
                 SELECT 
                     SUM(t.quantity) as total_quantity,
                     SUM(t.amount) as total_amount,
@@ -428,7 +433,8 @@ class TestModelRelationships:
                 LEFT JOIN transactions t ON o.id = t.order_id 
                 WHERE o.id = :order_id
                 GROUP BY o.id
-            """).bindparam(order_id="rel-order-txn")
+            """
+            ).bindparam(order_id="rel-order-txn")
         )
         row = result.fetchone()
         assert row.fill_count == 2
@@ -442,7 +448,7 @@ class TestModelRelationships:
 class TestSchemaValidation:
     """Test database schema validation and constraints."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_decimal_precision_constraints(self, async_db_session: AsyncSession):
         """Test decimal field precision and scale constraints."""
         from app.models.database.trading import Account
@@ -470,7 +476,7 @@ class TestSchemaValidation:
         balance = result.scalar()
         assert balance == Decimal("99999.99")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_enum_constraints(self, async_db_session: AsyncSession):
         """Test enum field constraints if any exist."""
         from app.models.database.trading import Account, Order
@@ -508,7 +514,7 @@ class TestSchemaValidation:
         # Test invalid enum value would be caught at application level
         # (SQLAlchemy string fields may not have database-level enum constraints)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_timestamp_defaults(self, async_db_session: AsyncSession):
         """Test timestamp field defaults and auto-updates."""
         from app.models.database.trading import Account
@@ -542,7 +548,7 @@ class TestSchemaValidation:
         assert row.created_at is not None
         assert row.updated_at is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_unique_constraints(self, async_db_session: AsyncSession):
         """Test unique constraints if any exist."""
         from app.models.database.trading import Account
@@ -580,7 +586,7 @@ class TestSchemaValidation:
 class TestAsyncOrmOperations:
     """Test async ORM operations and patterns."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_bulk_insert(self, async_db_session: AsyncSession):
         """Test async bulk insert operations."""
         from app.models.database.trading import Account
@@ -611,7 +617,7 @@ class TestAsyncOrmOperations:
         count = result.scalar()
         assert count == 5
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_bulk_update(self, async_db_session: AsyncSession):
         """Test async bulk update operations."""
         from sqlalchemy import update
@@ -651,7 +657,7 @@ class TestAsyncOrmOperations:
         balance = result.scalar()
         assert balance == Decimal("2000.00")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_transaction_rollback(self, async_db_session: AsyncSession):
         """Test async transaction rollback scenarios."""
         from app.models.database.trading import Account
@@ -695,7 +701,7 @@ class TestAsyncOrmOperations:
         count = result.scalar()
         assert count == 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_complex_query(self, async_db_session: AsyncSession):
         """Test complex async queries with joins and aggregations."""
         from app.models.database.trading import Account, Order, Position
@@ -748,7 +754,8 @@ class TestAsyncOrmOperations:
 
         # Complex query: account summary with orders and positions
         result = await async_db_session.execute(
-            text("""
+            text(
+                """
                 SELECT 
                     a.name,
                     a.balance,
@@ -760,7 +767,8 @@ class TestAsyncOrmOperations:
                 LEFT JOIN positions p ON a.id = p.account_id
                 WHERE a.id = :account_id
                 GROUP BY a.id, a.name, a.balance
-            """).bindparam(account_id="complex-query-account")
+            """
+            ).bindparam(account_id="complex-query-account")
         )
 
         row = result.fetchone()
@@ -773,7 +781,7 @@ class TestAsyncOrmOperations:
 class TestModelSerialization:
     """Test model serialization and deserialization patterns."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_account_model_dict_conversion(self, async_db_session: AsyncSession):
         """Test converting Account model to dictionary."""
         from app.models.database.trading import Account
@@ -794,7 +802,7 @@ class TestModelSerialization:
         assert account.balance == Decimal("5000.00")
         assert hasattr(account, "__dict__")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_model_attribute_access(self, async_db_session: AsyncSession):
         """Test model attribute access patterns."""
         # Create account first
@@ -835,7 +843,7 @@ class TestModelSerialization:
         order.status = "filled"
         assert order.status == "filled"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_model_json_serializable_attributes(
         self, async_db_session: AsyncSession
     ):
@@ -885,7 +893,7 @@ class TestModelSerialization:
 class TestDatabaseIndexes:
     """Test database indexes and query optimization."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_table_indexes_exist(self, async_db_session: AsyncSession):
         """Test that expected database indexes exist."""
         # Query for indexes on key tables
@@ -893,11 +901,13 @@ class TestDatabaseIndexes:
 
         for table_name in tables_to_check:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT indexname, indexdef 
                     FROM pg_indexes 
                     WHERE tablename = :table_name
-                """).bindparam(table_name=table_name)
+                """
+                ).bindparam(table_name=table_name)
             )
             indexes = result.fetchall()
 
@@ -908,7 +918,7 @@ class TestDatabaseIndexes:
             primary_key_exists = any("pkey" in idx.indexname for idx in indexes)
             assert primary_key_exists, f"No primary key index found for {table_name}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_foreign_key_indexes(self, async_db_session: AsyncSession):
         """Test that foreign key columns have indexes for performance."""
         # Check for foreign key indexes on common lookup columns
@@ -921,12 +931,14 @@ class TestDatabaseIndexes:
 
         for table_name, column_name in fk_checks:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT indexname 
                     FROM pg_indexes 
                     WHERE tablename = :table_name 
                     AND indexdef LIKE :column_pattern
-                """).bindparam(table_name=table_name, column_pattern=f"%{column_name}%")
+                """
+                ).bindparam(table_name=table_name, column_pattern=f"%{column_name}%")
             )
             indexes = result.fetchall()
 
@@ -936,16 +948,18 @@ class TestDatabaseIndexes:
             if not index_exists:
                 # Check if it's part of a composite index or constraint
                 result2 = await async_db_session.execute(
-                    text("""
+                    text(
+                        """
                         SELECT conname 
                         FROM pg_constraint c
                         JOIN pg_attribute a ON a.attnum = ANY(c.conkey)
                         JOIN pg_class t ON t.oid = c.conrelid
                         WHERE t.relname = :table_name 
                         AND a.attname = :column_name
-                    """).bindparam(table_name=table_name, column_name=column_name)
+                    """
+                    ).bindparam(table_name=table_name, column_name=column_name)
                 )
                 constraints = result2.fetchall()
-                assert len(constraints) > 0 or index_exists, (
-                    f"No index or constraint found for {table_name}.{column_name}"
-                )
+                assert (
+                    len(constraints) > 0 or index_exists
+                ), f"No index or constraint found for {table_name}.{column_name}"

@@ -51,6 +51,15 @@ class OrderCondition(str, Enum):
     STOP_LIMIT = "stop_limit"
 
 
+class OrderTimeInForce(str, Enum):
+    """Order time in force values."""
+
+    DAY = "day"  # Day order
+    GTC = "gtc"  # Good 'til cancelled
+    IOC = "ioc"  # Immediate or cancel
+    FOK = "fok"  # Fill or kill
+
+
 class OrderSide(str, Enum):
     """Order side for multi-leg orders."""
 

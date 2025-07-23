@@ -25,7 +25,7 @@ class TestDatabaseInitialization:
 
     @patch("app.storage.database.async_engine")
     @patch("app.models.database.base.Base")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_creates_all_tables(self, mock_base, mock_engine):
         """Test that init_db creates all tables from Base metadata."""
         mock_metadata = MagicMock()
@@ -43,7 +43,7 @@ class TestDatabaseInitialization:
         # Verify that metadata.create_all was called
         mock_conn.run_sync.assert_called_once_with(mock_metadata.create_all)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_handles_existing_tables(
         self, async_db_session: AsyncSession
     ):
@@ -62,7 +62,7 @@ class TestDatabaseInitialization:
         )
         assert result.fetchone() is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_table_creation_order_respects_dependencies(
         self, async_db_session: AsyncSession
     ):
@@ -91,11 +91,11 @@ class TestDatabaseInitialization:
                         "SELECT 1 FROM information_schema.tables WHERE table_name = :table"
                     ).bindparam(table=dep_table)
                 )
-                assert result.fetchone() is not None, (
-                    f"Dependency table {dep_table} missing for {table_name}"
-                )
+                assert (
+                    result.fetchone() is not None
+                ), f"Dependency table {dep_table} missing for {table_name}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_database_schema_validation(self, async_db_session: AsyncSession):
         """Test that database schema matches expected structure."""
         # Define expected table structures
@@ -153,26 +153,28 @@ class TestDatabaseInitialization:
         for table_name, expected_columns in expected_tables.items():
             # Get actual columns
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT column_name 
                     FROM information_schema.columns 
                     WHERE table_name = :table 
                     ORDER BY ordinal_position
-                """).bindparam(table=table_name)
+                """
+                ).bindparam(table=table_name)
             )
             actual_columns = [row.column_name for row in result.fetchall()]
 
             # Verify all expected columns exist
             for expected_col in expected_columns:
-                assert expected_col in actual_columns, (
-                    f"Column {expected_col} missing from {table_name}"
-                )
+                assert (
+                    expected_col in actual_columns
+                ), f"Column {expected_col} missing from {table_name}"
 
 
 class TestSchemaEvolution:
     """Test schema evolution and migration patterns."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_column_type_validation(self, async_db_session: AsyncSession):
         """Test that columns have correct data types."""
         # Define expected column types for critical fields
@@ -187,19 +189,21 @@ class TestSchemaEvolution:
 
         for (table_name, column_name), expected_type in expected_types.items():
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT data_type 
                     FROM information_schema.columns 
                     WHERE table_name = :table AND column_name = :column
-                """).bindparam(table=table_name, column=column_name)
+                """
+                ).bindparam(table=table_name, column=column_name)
             )
             row = result.fetchone()
             assert row is not None, f"Column {column_name} not found in {table_name}"
-            assert row.data_type == expected_type, (
-                f"Column {table_name}.{column_name} has type {row.data_type}, expected {expected_type}"
-            )
+            assert (
+                row.data_type == expected_type
+            ), f"Column {table_name}.{column_name} has type {row.data_type}, expected {expected_type}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_foreign_key_constraints_exist(self, async_db_session: AsyncSession):
         """Test that foreign key constraints are properly defined."""
         # Define expected foreign key relationships
@@ -212,7 +216,8 @@ class TestSchemaEvolution:
 
         for child_table, child_col, parent_table, parent_col in expected_fks:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT COUNT(*) 
                     FROM information_schema.table_constraints tc
                     JOIN information_schema.key_column_usage kcu 
@@ -224,7 +229,8 @@ class TestSchemaEvolution:
                         AND ccu.table_name = :parent_table
                         AND ccu.column_name = :parent_col
                         AND tc.constraint_type = 'FOREIGN KEY'
-                """).bindparam(
+                """
+                ).bindparam(
                     child_table=child_table,
                     child_col=child_col,
                     parent_table=parent_table,
@@ -232,29 +238,31 @@ class TestSchemaEvolution:
                 )
             )
             count = result.scalar()
-            assert count > 0, (
-                f"Foreign key constraint missing: {child_table}.{child_col} -> {parent_table}.{parent_col}"
-            )
+            assert (
+                count > 0
+            ), f"Foreign key constraint missing: {child_table}.{child_col} -> {parent_table}.{parent_col}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_primary_key_constraints_exist(self, async_db_session: AsyncSession):
         """Test that primary key constraints exist on all tables."""
         tables = ["accounts", "orders", "positions", "transactions"]
 
         for table_name in tables:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT COUNT(*) 
                     FROM information_schema.table_constraints 
                     WHERE table_name = :table AND constraint_type = 'PRIMARY KEY'
-                """).bindparam(table=table_name)
+                """
+                ).bindparam(table=table_name)
             )
             count = result.scalar()
-            assert count == 1, (
-                f"Primary key constraint missing or duplicated for {table_name}"
-            )
+            assert (
+                count == 1
+            ), f"Primary key constraint missing or duplicated for {table_name}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_not_null_constraints_on_critical_fields(
         self, async_db_session: AsyncSession
     ):
@@ -275,39 +283,43 @@ class TestSchemaEvolution:
 
         for table_name, column_name in critical_fields:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT is_nullable 
                     FROM information_schema.columns 
                     WHERE table_name = :table AND column_name = :column
-                """).bindparam(table=table_name, column=column_name)
+                """
+                ).bindparam(table=table_name, column=column_name)
             )
             row = result.fetchone()
             assert row is not None, f"Column {table_name}.{column_name} not found"
-            assert row.is_nullable == "NO", (
-                f"Critical field {table_name}.{column_name} allows NULL"
-            )
+            assert (
+                row.is_nullable == "NO"
+            ), f"Critical field {table_name}.{column_name} allows NULL"
 
 
 class TestIndexOptimization:
     """Test database index creation and optimization."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_primary_key_indexes_exist(self, async_db_session: AsyncSession):
         """Test that primary key indexes are created."""
         tables = ["accounts", "orders", "positions", "transactions"]
 
         for table_name in tables:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT indexname 
                     FROM pg_indexes 
                     WHERE tablename = :table AND indexname LIKE '%_pkey'
-                """).bindparam(table=table_name)
+                """
+                ).bindparam(table=table_name)
             )
             indexes = result.fetchall()
             assert len(indexes) == 1, f"Primary key index missing for {table_name}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_foreign_key_indexes_for_performance(
         self, async_db_session: AsyncSession
     ):
@@ -323,12 +335,14 @@ class TestIndexOptimization:
         for table_name, column_name in fk_columns:
             # Check for explicit indexes on the column
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT COUNT(*) 
                     FROM pg_indexes 
                     WHERE tablename = :table 
                     AND (indexdef LIKE :column_pattern OR indexname LIKE :index_pattern)
-                """).bindparam(
+                """
+                ).bindparam(
                     table=table_name,
                     column_pattern=f"%{column_name}%",
                     index_pattern=f"%{column_name}%",
@@ -338,7 +352,8 @@ class TestIndexOptimization:
 
             # Also check for constraints that create indexes
             result2 = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT COUNT(*)
                     FROM information_schema.table_constraints tc
                     JOIN information_schema.key_column_usage kcu 
@@ -346,16 +361,17 @@ class TestIndexOptimization:
                     WHERE tc.table_name = :table 
                     AND kcu.column_name = :column
                     AND tc.constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE')
-                """).bindparam(table=table_name, column=column_name)
+                """
+                ).bindparam(table=table_name, column=column_name)
             )
             constraint_count = result2.scalar()
 
             # Should have either an explicit index or a constraint that creates an index
-            assert (index_count + constraint_count) > 0, (
-                f"No index found for {table_name}.{column_name}"
-            )
+            assert (
+                index_count + constraint_count
+            ) > 0, f"No index found for {table_name}.{column_name}"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_symbol_columns_have_indexes_for_queries(
         self, async_db_session: AsyncSession
     ):
@@ -369,12 +385,14 @@ class TestIndexOptimization:
         for table_name, column_name in symbol_columns:
             # Check if column has any form of indexing
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT COUNT(*) 
                     FROM pg_indexes 
                     WHERE tablename = :table 
                     AND indexdef LIKE :column_pattern
-                """).bindparam(table=table_name, column_pattern=f"%{column_name}%")
+                """
+                ).bindparam(table=table_name, column_pattern=f"%{column_name}%")
             )
             index_count = result.scalar()
 
@@ -383,7 +401,7 @@ class TestIndexOptimization:
             if index_count == 0:
                 pass  # This is acceptable for current implementation
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_timestamp_columns_for_temporal_queries(
         self, async_db_session: AsyncSession
     ):
@@ -398,25 +416,27 @@ class TestIndexOptimization:
         # Check that timestamp columns exist and are proper types
         for table_name, column_name in timestamp_columns:
             result = await async_db_session.execute(
-                text("""
+                text(
+                    """
                     SELECT data_type 
                     FROM information_schema.columns 
                     WHERE table_name = :table AND column_name = :column
-                """).bindparam(table=table_name, column=column_name)
+                """
+                ).bindparam(table=table_name, column=column_name)
             )
             row = result.fetchone()
-            assert row is not None, (
-                f"Timestamp column {table_name}.{column_name} not found"
-            )
-            assert "timestamp" in row.data_type.lower(), (
-                f"Column {table_name}.{column_name} is not a timestamp type"
-            )
+            assert (
+                row is not None
+            ), f"Timestamp column {table_name}.{column_name} not found"
+            assert (
+                "timestamp" in row.data_type.lower()
+            ), f"Column {table_name}.{column_name} is not a timestamp type"
 
 
 class TestDataIntegrity:
     """Test data integrity during schema operations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_referential_integrity_enforcement(
         self, async_db_session: AsyncSession
     ):
@@ -438,7 +458,7 @@ class TestDataIntegrity:
             async_db_session.add(invalid_order)
             await async_db_session.commit()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_cascade_behavior_on_foreign_keys(
         self, async_db_session: AsyncSession
     ):
@@ -500,7 +520,7 @@ class TestDataIntegrity:
             # This is expected if CASCADE is not configured - foreign key constraint prevents deletion
             await async_db_session.rollback()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_unique_constraint_enforcement(self, async_db_session: AsyncSession):
         """Test that unique constraints are enforced."""
         from datetime import datetime
@@ -537,7 +557,7 @@ class TestDataIntegrity:
             async_db_session.add(account2)
             await async_db_session.commit()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_decimal_precision_preservation(self, async_db_session: AsyncSession):
         """Test that decimal precision is preserved in database operations."""
         from datetime import datetime
@@ -576,15 +596,15 @@ class TestDataIntegrity:
                 )
             )
             stored_value = result.scalar()
-            assert stored_value == expected_value, (
-                f"Decimal precision lost: expected {expected_value}, got {stored_value}"
-            )
+            assert (
+                stored_value == expected_value
+            ), f"Decimal precision lost: expected {expected_value}, got {stored_value}"
 
 
 class TestMigrationSimulation:
     """Test simulated migration scenarios and schema changes."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_safe_column_addition_simulation(
         self, async_db_session: AsyncSession
     ):
@@ -593,12 +613,14 @@ class TestMigrationSimulation:
 
         # Verify current schema state
         result = await async_db_session.execute(
-            text("""
+            text(
+                """
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = 'accounts' 
                 ORDER BY ordinal_position
-            """)
+            """
+            )
         )
         initial_columns = [row.column_name for row in result.fetchall()]
 
@@ -608,11 +630,11 @@ class TestMigrationSimulation:
         # For testing, we just verify the current structure is sound
         essential_columns = ["id", "user_id", "name", "balance", "buying_power"]
         for col in essential_columns:
-            assert col in initial_columns, (
-                f"Essential column {col} missing from accounts table"
-            )
+            assert (
+                col in initial_columns
+            ), f"Essential column {col} missing from accounts table"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_index_creation_impact_simulation(
         self, async_db_session: AsyncSession
     ):
@@ -658,7 +680,7 @@ class TestMigrationSimulation:
         assert query_time < 1.0, f"Query took too long: {query_time}s"
         assert count > 0, "Should find matching accounts"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_data_type_migration_compatibility(
         self, async_db_session: AsyncSession
     ):
@@ -700,6 +722,6 @@ class TestMigrationSimulation:
 
         assert len(stored_values) == len(edge_values)
         for stored, expected in zip(stored_values, edge_values, strict=False):
-            assert stored == expected, (
-                f"Edge value {expected} not stored correctly: got {stored}"
-            )
+            assert (
+                stored == expected
+            ), f"Edge value {expected} not stored correctly: got {stored}"

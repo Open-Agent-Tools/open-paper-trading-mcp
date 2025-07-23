@@ -174,7 +174,9 @@ class AdapterFactory:
                 current_date = expanded_config.config.get("current_date", "2017-03-24")
                 scenario = expanded_config.config.get("scenario", "default")
                 adapter = adapter_class(
-                    current_date=current_date, scenario=scenario, config=expanded_config
+                    current_date=current_date,
+                    scenario=scenario,
+                    config=expanded_config,
                 )
             elif adapter_type == "robinhood":
                 # RobinhoodAdapter has its own config class
@@ -227,14 +229,17 @@ class AdapterFactory:
         return CachedQuoteAdapter(base_adapter, cache)
 
     def configure_registry(
-        self, registry: AdapterRegistry, enabled_adapters: list[str] | None = None
+        self,
+        registry: AdapterRegistry,
+        enabled_adapters: list[str] | None = None,
     ) -> None:
         """
         Configure an adapter registry with default adapters.
 
         Args:
             registry: Registry to configure
-            enabled_adapters: List of adapter types to enable, enables all available if None
+            enabled_adapters: List of adapter types to enable, enables all
+                available if None
         """
         if enabled_adapters is None:
             enabled_adapters = self._get_available_adapters()
@@ -292,7 +297,9 @@ class AdapterFactory:
                 adapter_class = DevDataQuoteAdapter
             elif adapter_type == "test_data_db":
                 # Import from current package
-                from .test_data_db import DevDataQuoteAdapter as TestDataDBQuoteAdapter
+                from .test_data_db import (
+                    TestDataDBQuoteAdapter as TestDataDBQuoteAdapter,
+                )
 
                 adapter_class = TestDataDBQuoteAdapter
             elif adapter_type == "robinhood":
@@ -485,7 +492,7 @@ class AdapterFactory:
             "total_symbols": len(symbols),
             "successful": len(successful_symbols),
             "failed": len(failed_symbols),
-            "success_rate": len(successful_symbols) / len(symbols) if symbols else 0,
+            "success_rate": (len(successful_symbols) / len(symbols) if symbols else 0),
             "duration_seconds": duration,
             "successful_symbols": successful_symbols,
             "failed_symbols": failed_symbols,
@@ -493,7 +500,8 @@ class AdapterFactory:
 
         if self.config.cache_warming_config.get("log_cache_stats", True):
             logger.info(
-                f"Cache warming completed: {stats['successful']}/{stats['total_symbols']} "
+                f"Cache warming completed: {stats['successful']}/"
+                f"{stats['total_symbols']} "
                 f"symbols ({stats['success_rate']:.1%}) in {duration:.2f}s"
             )
 
@@ -578,7 +586,9 @@ def configure_default_registry() -> AdapterRegistry:
     return adapter_registry
 
 
-def create_test_adapter(date: str = "2017-03-24") -> DevDataQuoteAdapter | None:
+def create_test_adapter(
+    date: str = "2017-03-24",
+) -> DevDataQuoteAdapter | None:
     """
     Create a test data adapter with caching.
 

@@ -11,7 +11,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.models.assets import OptionAsset, StockAsset
+from app.models.assets import Option as OptionAsset
+from app.models.assets import Stock as StockAsset
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Order as DBOrder
 from app.models.database.trading import Position as DBPosition

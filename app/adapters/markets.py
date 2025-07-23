@@ -16,7 +16,7 @@ class OrderImpact:
     def __init__(self, order: Order, current_price: float):
         self.order = order
         self.current_price = current_price
-        self.executed_price = current_price  # Will be updated based on order type
+        self.executed_price = current_price  # Will be updated
         self.slippage = 0.0
         self.commission = 0.0
         self.total_cost = 0.0
@@ -118,7 +118,7 @@ class PaperMarketAdapter(MarketAdapter):
     def get_pending_orders(self, account_id: str | None = None) -> list[Order]:
         """Get pending orders, optionally filtered by account."""
         if account_id:
-            # Note: Order schema doesn't have account_id, so return all for now
+            # Note: Order schema doesn't have account_id, so return all
             # TODO: Add account_id to Order schema if needed
             return self.pending_orders.copy()
         return self.pending_orders.copy()
@@ -128,10 +128,18 @@ class PaperMarketAdapter(MarketAdapter):
         # Get current quote
         asset = asset_factory(order.symbol)
         if not asset:
-            return {"success": False, "reason": "Invalid symbol", "impact": None}
+            return {
+                "success": False,
+                "reason": "Invalid symbol",
+                "impact": None,
+            }
         quote = await self.quote_adapter.get_quote(asset)
         if not quote:
-            return {"success": False, "reason": "No quote available", "impact": None}
+            return {
+                "success": False,
+                "reason": "No quote available",
+                "impact": None,
+            }
 
         # Use appropriate estimator
         if order.condition == OrderCondition.MARKET:
@@ -237,7 +245,7 @@ class PaperMarketAdapter(MarketAdapter):
         if can_fill and fill_price > 0:
             order.status = OrderStatus.FILLED
             order.filled_at = datetime.utcnow()
-            # Note: fill_price not stored in schema, would need to add if needed
+            # Note: fill_price not stored in schema
             self.filled_orders.append(order)
             return True
 

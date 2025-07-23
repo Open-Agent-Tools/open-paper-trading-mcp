@@ -39,7 +39,7 @@ class TestConnectionPooling:
         pool = sync_engine.pool
         assert pool is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_engine_pool_configuration(self):
         """Test asynchronous engine connection pool settings."""
         from app.storage.database import async_engine
@@ -53,7 +53,7 @@ class TestConnectionPooling:
         pool = async_engine.pool
         assert pool is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_connection_pool_checkout_checkin(self):
         """Test connection checkout and checkin from pool."""
         from app.storage.database import async_engine
@@ -91,7 +91,7 @@ class TestConnectionPooling:
         call_args = mock_create_async_engine.call_args
         assert call_args is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_multiple_concurrent_connections(self):
         """Test handling of multiple concurrent connections."""
         from app.storage.database import get_async_session
@@ -109,7 +109,7 @@ class TestConnectionPooling:
         # All sessions should succeed
         assert all(result == 1 for result in results)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_connection_pool_exhaustion_handling(self):
         """Test behavior when connection pool is exhausted."""
         from app.storage.database import async_engine
@@ -137,7 +137,7 @@ class TestConnectionPooling:
 class TestConnectionLifecycle:
     """Test connection lifecycle management and cleanup."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_connection_cleanup_on_success(self):
         """Test that connections are properly cleaned up on successful operations."""
         from app.storage.database import get_async_session
@@ -164,7 +164,7 @@ class TestConnectionLifecycle:
         if initial_pool_size is not None and final_pool_size is not None:
             assert final_pool_size == initial_pool_size
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_connection_cleanup_on_exception(self):
         """Test that connections are cleaned up even when exceptions occur."""
         from app.storage.database import get_async_session
@@ -181,7 +181,7 @@ class TestConnectionLifecycle:
             assert result.scalar() == 1
             break
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_session_isolation_between_requests(self):
         """Test that sessions are properly isolated between requests."""
         from app.storage.database import get_async_session
@@ -205,7 +205,7 @@ class TestConnectionLifecycle:
         assert session1_id is not None
         assert session2_id is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_long_running_session_timeout(self):
         """Test behavior of long-running sessions and timeouts."""
         from app.storage.database import get_async_session
@@ -223,7 +223,7 @@ class TestConnectionLifecycle:
             # Should not timeout for reasonable operations
             assert "timeout" not in str(e).lower()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_connection_recovery_after_disconnect(self):
         """Test connection recovery after database disconnect."""
         from app.storage.database import async_engine
@@ -248,7 +248,7 @@ class TestConnectionLifecycle:
 class TestPerformanceCharacteristics:
     """Test performance characteristics under various load patterns."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_session_creation_performance(self):
         """Test performance of session creation and destruction."""
         from app.storage.database import get_async_session
@@ -266,11 +266,11 @@ class TestPerformanceCharacteristics:
         avg_time_per_session = total_time / session_count
 
         # Session creation should be reasonably fast (< 100ms per session)
-        assert avg_time_per_session < 0.1, (
-            f"Session creation too slow: {avg_time_per_session}s"
-        )
+        assert (
+            avg_time_per_session < 0.1
+        ), f"Session creation too slow: {avg_time_per_session}s"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_session_performance(self):
         """Test performance under concurrent session load."""
         from app.storage.database import get_async_session
@@ -304,7 +304,7 @@ class TestPerformanceCharacteristics:
         # (This is a rough heuristic, actual performance depends on hardware)
         assert total_time < 5.0, f"Concurrent operations too slow: {total_time}s"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_transaction_performance(self):
         """Test transaction performance characteristics."""
         from datetime import datetime
@@ -339,11 +339,11 @@ class TestPerformanceCharacteristics:
         transaction_time = end_time - start_time
 
         # Batch insert should be reasonably fast
-        assert transaction_time < 2.0, (
-            f"Batch transaction too slow: {transaction_time}s"
-        )
+        assert (
+            transaction_time < 2.0
+        ), f"Batch transaction too slow: {transaction_time}s"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_query_performance_with_indexes(self):
         """Test query performance on indexed columns."""
         from datetime import datetime
@@ -394,7 +394,7 @@ class TestPerformanceCharacteristics:
             assert user_lookup_time < 0.05, f"User lookup too slow: {user_lookup_time}s"
             break
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_memory_usage_under_load(self):
         """Test memory usage patterns under session load."""
         import gc
@@ -423,7 +423,7 @@ class TestPerformanceCharacteristics:
 class TestConcurrencyAndThreadSafety:
     """Test concurrency patterns and thread safety."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_session_thread_safety(self):
         """Test that async sessions handle concurrent access correctly."""
         from app.storage.database import get_async_session
@@ -504,7 +504,7 @@ class TestConcurrencyAndThreadSafety:
         task_ids = [task_id for task_id, _ in results]
         assert sorted(task_ids) == list(range(5))
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_mixed_sync_async_operations(self):
         """Test that sync and async operations don't interfere."""
         import queue
@@ -547,7 +547,7 @@ class TestConcurrencyAndThreadSafety:
 class TestResourceManagement:
     """Test resource management and cleanup patterns."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_engine_disposal(self):
         """Test proper engine disposal and cleanup."""
         from sqlalchemy.ext.asyncio import create_async_engine
@@ -569,7 +569,7 @@ class TestResourceManagement:
         # Engine should be disposed
         assert test_engine.pool is None or hasattr(test_engine.pool, "_disposed")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_session_resource_cleanup(self):
         """Test that session resources are properly cleaned up."""
         from app.storage.database import get_async_session
@@ -592,7 +592,7 @@ class TestResourceManagement:
             assert result.scalar() == "cleanup_test"
             break
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_connection_leak_prevention(self):
         """Test that connections don't leak under error conditions."""
         from app.storage.database import async_engine
@@ -621,7 +621,7 @@ class TestResourceManagement:
             result = await conn.execute(text("SELECT 1"))
             assert result.scalar() == 1
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_large_result_set_memory_management(self):
         """Test memory management with large result sets."""
         from app.storage.database import get_async_session
@@ -675,7 +675,7 @@ class TestDatabaseEngineConfiguration:
             # This is good for production resilience
             pass
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_engine_connection_parameters(self):
         """Test async engine connection parameters."""
         from app.storage.database import async_engine

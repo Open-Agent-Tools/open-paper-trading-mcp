@@ -499,14 +499,18 @@ class DevDataQuoteAdapter(QuoteAdapter):
 
         # Sort by strike price
         calls.sort(
-            key=lambda x: x.asset.strike
-            if isinstance(x.asset, Option) and x.asset.strike is not None
-            else 0
+            key=lambda x: (
+                x.asset.strike
+                if isinstance(x.asset, Option) and x.asset.strike is not None
+                else 0
+            )
         )
         puts.sort(
-            key=lambda x: x.asset.strike
-            if isinstance(x.asset, Option) and x.asset.strike is not None
-            else 0
+            key=lambda x: (
+                x.asset.strike
+                if isinstance(x.asset, Option) and x.asset.strike is not None
+                else 0
+            )
         )
 
         # Determine expiration date

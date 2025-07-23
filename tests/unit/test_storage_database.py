@@ -109,7 +109,7 @@ class TestBasicSessionOperations:
         mock_session.close.assert_called_once()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_session_basic_usage(self, mock_session_factory):
         """Test basic asynchronous session usage pattern."""
         from unittest.mock import AsyncMock
@@ -143,7 +143,7 @@ class TestBasicSessionOperations:
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_basic_functionality(self):
         """Test basic database initialization functionality."""
         from app.storage.database import init_db
@@ -241,7 +241,7 @@ class TestErrorHandling:
         mock_session.close.assert_called_once()
 
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_connection_error_handling(self, mock_engine):
         """Test init_db handling of connection errors."""
         from sqlalchemy.exc import OperationalError

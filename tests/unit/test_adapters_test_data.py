@@ -815,9 +815,13 @@ class TestDevDataQuoteAdapter:
         def mock_query_side_effect(model_class):
             mock_query = Mock()
             if model_class == DevStockQuote.symbol:
-                mock_query.filter.return_value.distinct.return_value.count.return_value = 2
+                mock_query.filter.return_value.distinct.return_value.count.return_value = (
+                    2
+                )
             elif model_class == DevOptionQuote.symbol:
-                mock_query.filter.return_value.distinct.return_value.count.return_value = 10
+                mock_query.filter.return_value.distinct.return_value.count.return_value = (
+                    10
+                )
             elif model_class == DevStockQuote:
                 mock_query.count.return_value = 100
             elif model_class == DevOptionQuote:
@@ -856,9 +860,13 @@ class TestDevDataQuoteAdapter:
         def mock_query_side_effect(model_class):
             mock_query = Mock()
             if model_class == DevStockQuote.symbol:
-                mock_query.filter.return_value.distinct.return_value.all.return_value = mock_stock_symbols
+                mock_query.filter.return_value.distinct.return_value.all.return_value = (
+                    mock_stock_symbols
+                )
             elif model_class == DevOptionQuote.symbol:
-                mock_query.filter.return_value.distinct.return_value.all.return_value = mock_option_symbols
+                mock_query.filter.return_value.distinct.return_value.all.return_value = (
+                    mock_option_symbols
+                )
             return mock_query
 
         mock_db_session.query.side_effect = mock_query_side_effect

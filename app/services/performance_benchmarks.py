@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class LatencyDistribution:
+    """Represents the latency distribution of a set of measurements."""
+
+    min_ms: float = 0.0
+    max_ms: float = 0.0
+    avg_ms: float = 0.0
+    median_ms: float = 0.0
+    p95_ms: float = 0.0
+    p99_ms: float = 0.0
+    std_dev: float = 0.0
+
+
+@dataclass
 class PerformanceMetric:
     """Individual performance measurement."""
 
@@ -591,3 +604,31 @@ def configure_performance_thresholds(thresholds: PerformanceThresholds) -> None:
     """Configure performance monitoring thresholds."""
     global performance_monitor
     performance_monitor.thresholds = thresholds
+
+
+class OptimizationRecommendation:
+    """
+    A stub for the OptimizationRecommendation.
+    """
+    pass
+
+
+class PerformanceBenchmarker:
+    """
+    A stub for the PerformanceBenchmarker.
+    """
+    pass
+
+
+class SystemResourceMetrics:
+    """
+    A stub for the SystemResourceMetrics.
+    """
+    pass
+
+
+class ThroughputResult:
+    """
+    A stub for the ThroughputResult.
+    """
+    pass

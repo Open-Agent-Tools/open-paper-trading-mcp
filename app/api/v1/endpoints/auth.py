@@ -31,8 +31,8 @@ def get_auth_service() -> AuthService:
 @router.post("/token", response_model=Token, deprecated=True)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    service: AuthService = Depends(get_auth_service),
 ) -> dict[str, str]:
+    service: AuthService = get_auth_service()
     user = service.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -51,8 +51,8 @@ async def login_for_access_token(
 @router.get("/me", response_model=User)
 async def read_users_me(
     token: str = Depends(oauth2_scheme),
-    service: AuthService = Depends(get_auth_service),
 ) -> User:
+    service: AuthService = get_auth_service()
     try:
         user = service.get_current_user(token)
         return User(

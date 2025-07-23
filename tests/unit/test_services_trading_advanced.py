@@ -148,13 +148,13 @@ class TestTradingServiceInitialization:
 class TestAsyncDatabaseOperations:
     """Test async database operations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_async_db_session(self, trading_service):
         """Test async database session retrieval."""
         session = await trading_service._get_async_db_session()
         assert isinstance(session, AsyncSession)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_ensure_account_exists_creates_account(self, trading_service):
         """Test account creation when it doesn't exist."""
         # Clean up any existing account first
@@ -177,7 +177,7 @@ class TestAsyncDatabaseOperations:
         assert account.owner == "test_user"
         assert account.cash_balance == 10000.0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_ensure_account_exists_skips_existing(
         self, trading_service, sample_account
     ):
@@ -195,7 +195,7 @@ class TestAsyncDatabaseOperations:
 class TestQuoteOperations:
     """Test quote-related operations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_quote_success(self, trading_service):
         """Test successful quote retrieval."""
         quote = await trading_service.get_quote("AAPL")
@@ -205,7 +205,7 @@ class TestQuoteOperations:
         assert quote.bid == 149.5
         assert quote.ask == 150.5
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_quote_fallback(self, trading_service):
         """Test quote retrieval with fallback for unknown symbol."""
         quote = await trading_service.get_quote("UNKNOWN")
@@ -213,7 +213,7 @@ class TestQuoteOperations:
         assert quote.symbol == "UNKNOWN"
         assert quote.current_price == 100.0  # Default from mock
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_options_chain(self, trading_service):
         """Test options chain retrieval."""
         chain = await trading_service.get_options_chain("AAPL")
@@ -222,7 +222,7 @@ class TestQuoteOperations:
         assert len(chain.expiration_dates) > 0
         assert len(chain.strikes) > 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_stock_quote_conversion(self, trading_service):
         """Test stock quote conversion to StockQuote schema."""
         with patch.object(trading_service, "get_quote") as mock_get_quote:
@@ -248,7 +248,7 @@ class TestQuoteOperations:
 class TestOrderManagement:
     """Test order management operations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_create_order_success(self, trading_service, sample_account):
         """Test successful order creation."""
         order_create = OrderCreate(
@@ -267,7 +267,7 @@ class TestOrderManagement:
             assert result.order_id is not None
             mock_execute.assert_called_once()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_create_order_validation_failure(
         self, trading_service, sample_account
     ):
@@ -287,13 +287,13 @@ class TestOrderManagement:
             with pytest.raises(ValueError, match="Invalid quantity"):
                 await trading_service.create_order(order_create)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_orders_empty(self, trading_service, sample_account):
         """Test retrieving orders when none exist."""
         orders = await trading_service.get_orders()
         assert len(orders) == 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_orders_with_data(self, trading_service, sample_account):
         """Test retrieving orders with existing data."""
         # Create sample order in database
@@ -314,7 +314,7 @@ class TestOrderManagement:
         assert len(orders) == 1
         assert orders[0].symbol == "AAPL"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_cancel_order_success(self, trading_service, sample_account):
         """Test successful order cancellation."""
         # Create sample order
@@ -339,7 +339,7 @@ class TestOrderManagement:
         await db.refresh(sample_order)
         assert sample_order.status == "cancelled"
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_cancel_order_not_found(self, trading_service):
         """Test cancelling non-existent order."""
         with pytest.raises(NotFoundError):
@@ -349,7 +349,7 @@ class TestOrderManagement:
 class TestPortfolioOperations:
     """Test portfolio-related operations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_portfolio_empty(self, trading_service, sample_account):
         """Test portfolio retrieval when empty."""
         portfolio = await trading_service.get_portfolio()
@@ -359,7 +359,7 @@ class TestPortfolioOperations:
         assert len(portfolio.positions) == 0
         assert portfolio.total_value == 10000.0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_portfolio_with_positions(self, trading_service, sample_account):
         """Test portfolio retrieval with positions."""
         # Create sample position
@@ -383,7 +383,7 @@ class TestPortfolioOperations:
         expected_total = 10000.0 + expected_position_value
         assert abs(portfolio.total_value - expected_total) < 0.01
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_portfolio_summary(self, trading_service, sample_account):
         """Test portfolio summary calculation."""
         # Create sample position
@@ -401,13 +401,13 @@ class TestPortfolioOperations:
         assert summary.cash_balance == 10000.0
         assert summary.positions_count == 1
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_positions_empty(self, trading_service, sample_account):
         """Test retrieving positions when none exist."""
         positions = await trading_service.get_positions()
         assert len(positions) == 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_positions_with_data(self, trading_service, sample_account):
         """Test retrieving positions with existing data."""
         # Create sample positions
@@ -440,7 +440,7 @@ class TestPortfolioOperations:
 class TestAsyncConcurrency:
     """Test async concurrency and error handling."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_quote_requests(self, trading_service):
         """Test concurrent quote requests."""
         symbols = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]
@@ -452,7 +452,7 @@ class TestAsyncConcurrency:
         for i, quote in enumerate(quotes):
             assert quote.symbol == symbols[i]
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_portfolio_operations(
         self, trading_service, sample_account
     ):
@@ -472,7 +472,7 @@ class TestAsyncConcurrency:
         assert isinstance(positions, list)
         assert isinstance(orders, list)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_database_session_isolation(self, trading_service, sample_account):
         """Test database session isolation in concurrent operations."""
 
@@ -506,7 +506,7 @@ class TestAsyncConcurrency:
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_quote_adapter_failure(self, trading_service):
         """Test handling of quote adapter failures."""
         with patch.object(trading_service.quote_adapter, "get_quote") as mock_get_quote:
@@ -515,7 +515,7 @@ class TestErrorHandling:
             with pytest.raises(Exception, match="Network error"):
                 await trading_service.get_quote("AAPL")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_database_connection_failure(self, trading_service):
         """Test handling of database connection failures."""
         with patch.object(trading_service, "_get_async_db_session") as mock_get_session:
@@ -524,7 +524,7 @@ class TestErrorHandling:
             with pytest.raises(Exception, match="Database connection failed"):
                 await trading_service.get_portfolio()
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_invalid_order_data(self, trading_service, sample_account):
         """Test handling of invalid order data."""
         invalid_order = OrderCreate(
@@ -537,7 +537,7 @@ class TestErrorHandling:
         with pytest.raises(ValueError):
             await trading_service.create_order(invalid_order)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_account_not_found_handling(self):
         """Test handling when account doesn't exist."""
         mock_adapter = MockQuoteAdapter()
@@ -556,7 +556,7 @@ class TestErrorHandling:
 class TestBusinessLogicValidation:
     """Test business logic validation and rules."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_buying_power_calculation(self, trading_service, sample_account):
         """Test buying power calculation with positions."""
         # Create leveraged position
@@ -577,7 +577,7 @@ class TestBusinessLogicValidation:
         expected_total_value = 10000.0 + position_value
         assert abs(portfolio.total_value - expected_total_value) < 0.01
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_portfolio_diversity_metrics(self, trading_service, sample_account):
         """Test portfolio diversity calculations."""
         # Create diverse positions
@@ -625,7 +625,7 @@ class TestBusinessLogicValidation:
 class TestPerformanceOptimization:
     """Test performance optimization patterns."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_batch_quote_operations(self, trading_service):
         """Test batch quote operations for performance."""
         symbols = ["AAPL", "GOOGL", "MSFT"]
@@ -644,7 +644,7 @@ class TestPerformanceOptimization:
         # Should complete within reasonable time (allowing for async overhead)
         assert execution_time < 1.0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_database_query_optimization(self, trading_service, sample_account):
         """Test database query optimization."""
         # Create multiple positions

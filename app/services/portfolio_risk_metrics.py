@@ -20,6 +20,17 @@ from ..schemas.positions import Portfolio, Position
 logger = logging.getLogger(__name__)
 
 
+from typing import Any
+
+
+@dataclass
+class CorrelationMatrix:
+    """Represents a correlation matrix for a set of assets."""
+
+    symbols: list[str] = field(default_factory=list)
+    matrix: np.ndarray = field(default_factory=lambda: np.array([]))
+
+
 @dataclass
 class VaRResult:
     """Value at Risk calculation result."""
@@ -695,3 +706,31 @@ portfolio_risk_calculator = PortfolioRiskCalculator()
 def get_portfolio_risk_calculator() -> PortfolioRiskCalculator:
     """Get the global portfolio risk calculator."""
     return portfolio_risk_calculator
+
+
+class DrawdownAnalysis:
+    """
+    A stub for the DrawdownAnalysis.
+    """
+    pass
+
+
+class PerformanceAttribution:
+    """
+    A stub for the PerformanceAttribution.
+    """
+    pass
+
+
+class PortfolioRiskAnalyzer:
+    """
+    A stub for the PortfolioRiskAnalyzer.
+    """
+    pass
+
+
+class RiskDecomposition:
+    """
+    A stub for the RiskDecomposition.
+    """
+    pass

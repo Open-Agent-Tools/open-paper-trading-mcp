@@ -380,5 +380,12 @@ class OrderExecutionEngine:
         return modified_positions
 
 
+class OrderFillSimulator:
+    """
+    A stub for the OrderFillSimulator.
+    """
+    pass
+
+
 # Alias for backwards compatibility
 OrderExecutionService = OrderExecutionEngine

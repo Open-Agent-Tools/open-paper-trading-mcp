@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.core.dependencies import get_trading_service
 from app.core.exceptions import NotFoundError, ValidationError
@@ -11,46 +11,57 @@ router = APIRouter()
 
 @router.get("/quote/{symbol}", response_model=StockQuote, deprecated=True)
 async def get_quote(
-    symbol: str, service: TradingService = Depends(get_trading_service)
+    symbol: str,
+    request: Request,
 ):
     # Custom exceptions are handled by the global exception handler
+    service: TradingService = get_trading_service(request)
     return await service.get_quote(symbol)
 
 
 @router.post("/order", response_model=Order)
 async def create_order(
-    order: OrderCreate, service: TradingService = Depends(get_trading_service)
+    order: OrderCreate,
+    request: Request,
 ):
     # Custom exceptions are handled by the global exception handler
+    service: TradingService = get_trading_service(request)
     return await service.create_order(order)
 
 
 @router.get("/orders", response_model=list[Order])
-async def get_orders(service: TradingService = Depends(get_trading_service)):
+async def get_orders(request: Request):
+    service: TradingService = get_trading_service(request)
     return await service.get_orders()
 
 
 @router.get("/order/{order_id}", response_model=Order)
 async def get_order(
-    order_id: str, service: TradingService = Depends(get_trading_service)
+    order_id: str,
+    request: Request,
 ):
     # Custom exceptions are handled by the global exception handler
+    service: TradingService = get_trading_service(request)
     return await service.get_order(order_id)
 
 
 @router.delete("/order/{order_id}")
 async def cancel_order(
-    order_id: str, service: TradingService = Depends(get_trading_service)
+    order_id: str,
+    request: Request,
 ):
     # Custom exceptions are handled by the global exception handler
+    service: TradingService = get_trading_service(request)
     return await service.cancel_order(order_id)
 
 
 @router.get("/quote/{symbol}/enhanced")
 async def get_enhanced_quote(
-    symbol: str, service: TradingService = Depends(get_trading_service)
+    symbol: str,
+    request: Request,
 ):
     """Get enhanced quote with Greeks for options."""
+    service: TradingService = get_trading_service(request)
     try:
         quote = await service.get_enhanced_quote(symbol)
 
@@ -87,9 +98,11 @@ async def get_enhanced_quote(
 
 @router.post("/order/multi-leg")
 async def create_multi_leg_order_basic(
-    order: MultiLegOrderCreate, service: TradingService = Depends(get_trading_service)
+    order: MultiLegOrderCreate,
+    request: Request,
 ):
     """Create multi-leg order (basic endpoint)."""
+    service: TradingService = get_trading_service(request)
     try:
         return await service.create_multi_leg_order(order)
     except (NotFoundError, ValidationError) as e:

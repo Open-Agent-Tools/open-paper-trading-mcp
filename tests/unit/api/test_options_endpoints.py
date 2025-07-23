@@ -865,9 +865,7 @@ class TestOptionsEndpoints:
         """Test multi-leg order request model validation."""
         # Test with invalid leg structure
         invalid_order_data = {
-            "legs": [
-                {"symbol": "AAPL_230616C00150000"}  # Missing required fields
-            ]
+            "legs": [{"symbol": "AAPL_230616C00150000"}]  # Missing required fields
         }
 
         async with AsyncClient(app=client.app, base_url="http://test") as ac:
@@ -1067,9 +1065,9 @@ class TestOptionsEndpoints:
                 "delta": 0.85 if scenario.get("expected_delta") == "high" else 0.15,
                 "gamma": 0.01,
                 "theta": -0.05,
-                "vega": 0.30
-                if scenario.get("expected_vega_impact") == "high"
-                else 0.05,
+                "vega": (
+                    0.30 if scenario.get("expected_vega_impact") == "high" else 0.05
+                ),
                 "rho": 0.08,
                 "implied_volatility": scenario["volatility"],
                 "scenario": scenario["name"],

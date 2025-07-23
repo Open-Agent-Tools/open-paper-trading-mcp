@@ -68,6 +68,102 @@ pytest -m "database"       # Database tests only
 python scripts/setup_test_db.py cleanup
 ```
 
+## Scripts Folder Reference
+
+The `./scripts` folder contains comprehensive utilities for development, testing, and maintenance. All scripts should be run from the project root directory.
+
+### Development & Testing Scripts
+
+**`scripts/dev.py`** - Primary development utility
+```bash
+python scripts/dev.py server     # Start both FastAPI and MCP servers
+python scripts/dev.py test       # Run all tests with pytest
+python scripts/dev.py format     # Format code with black and isort
+python scripts/dev.py lint       # Lint code with flake8
+python scripts/dev.py typecheck  # Type check with mypy
+python scripts/dev.py check      # Run all checks (format, lint, typecheck, test)
+```
+
+**`scripts/setup_test_db.py`** - Test database management
+```bash
+python scripts/setup_test_db.py          # Create test database and tables
+python scripts/setup_test_db.py cleanup  # Drop test database and clean up
+```
+
+**`scripts/validate_phase1.py`** - Phase 1 QA validation
+```bash
+python scripts/validate_phase1.py  # Validate async methods, database persistence, error handling
+```
+
+**`scripts/test_adk_setup.py`** - ADK testing utilities
+```bash
+python scripts/test_adk_setup.py  # Test ADK configuration and agent setup
+```
+
+### Database & Performance Scripts
+
+**`scripts/optimize_database.py`** - Database optimization
+```bash
+python scripts/optimize_database.py  # Create performance indexes, update statistics, generate reports
+```
+
+**`scripts/test_db_adapter.py`** - Database adapter testing
+```bash
+python scripts/test_db_adapter.py  # Test database adapter functionality and connections
+```
+
+### Code Analysis & Maintenance Scripts
+
+**`scripts/analyze_dependencies.py`** - Dependency analysis
+```bash
+python scripts/analyze_dependencies.py  # Analyze project imports and dependency relationships
+```
+
+**`scripts/check_imports.py`** - Import validation
+```bash
+python scripts/check_imports.py  # Validate import statements and detect issues
+```
+
+**`scripts/check_missing_classes.py`** - Missing class detection
+```bash
+python scripts/check_missing_classes.py  # Identify missing class definitions
+```
+
+**`scripts/fix_test_imports.py`** - Test import fixing
+```bash
+python scripts/fix_test_imports.py  # Automatically fix import issues in test files
+```
+
+### Data Management Scripts
+
+**`scripts/data_loader.py`** - Data loading utilities
+```bash
+python scripts/data_loader.py  # Load and manage development/test data
+```
+
+**`scripts/migrate_test_data.py`** - Test data migration
+```bash
+python scripts/migrate_test_data.py  # Migrate test data between environments
+```
+
+**`scripts/create_scenarios.py`** - Test scenario creation
+```bash
+python scripts/create_scenarios.py  # Generate test scenarios for validation
+```
+
+### Shell Scripts
+
+**`scripts/run_adk_eval.sh`** - ADK evaluation runner
+```bash
+./scripts/run_adk_eval.sh  # Run ADK evaluations with environment setup
+```
+
+**Important Notes:**
+- Ensure Docker is running for database-dependent scripts
+- Scripts requiring database access use the Docker PostgreSQL instance
+- Test database scripts create isolated test environments
+- Performance scripts may take several minutes to complete
+
 ### Service Access Points
 
 - **FastAPI REST API**: http://localhost:2080/api/v1/

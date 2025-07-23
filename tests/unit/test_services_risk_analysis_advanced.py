@@ -281,7 +281,7 @@ class TestBuyingPowerAnalysis:
 class TestVolatilityRiskAnalysis:
     """Test volatility and price risk analysis."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_volatility_exposure_calculation(
         self, risk_analyzer, sample_portfolio, sample_quotes
     ):
@@ -305,7 +305,7 @@ class TestVolatilityRiskAnalysis:
             assert len(tsla_violations) >= 1
             assert tsla_violations[0].check_type == RiskCheckType.VOLATILITY_EXPOSURE
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_portfolio_var_calculation(self, risk_analyzer, sample_portfolio):
         """Test Value at Risk calculation."""
         with patch.object(risk_analyzer, "_get_historical_returns") as mock_returns:
@@ -326,7 +326,7 @@ class TestVolatilityRiskAnalysis:
             assert var_result.var_percent > 0
             assert var_result.method in ["historical", "parametric", "monte_carlo"]
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_stress_testing(self, risk_analyzer, sample_portfolio):
         """Test portfolio stress testing scenarios."""
         stress_scenarios = [
@@ -358,7 +358,7 @@ class TestVolatilityRiskAnalysis:
 class TestOrderImpactAnalysis:
     """Test order impact and pre-trade risk analysis."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_order_impact_simulation_buy(
         self, risk_analyzer, sample_portfolio, sample_quotes
     ):
@@ -391,7 +391,7 @@ class TestOrderImpactAnalysis:
             assert impact_result.portfolio_concentration_change > 0
             assert impact_result.risk_metrics_change is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_order_impact_simulation_sell(
         self, risk_analyzer, sample_portfolio, sample_quotes
     ):
@@ -412,7 +412,7 @@ class TestOrderImpactAnalysis:
         assert impact_result.portfolio_concentration_change < 0  # Reduced concentration
         assert impact_result.cash_impact > 0  # Positive cash from sale
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_order_size_optimization(self, risk_analyzer, sample_portfolio):
         """Test order size optimization recommendations."""
         large_order = OrderCreate(
@@ -482,7 +482,7 @@ class TestOptionsRiskAnalysis:
         assert len(violations) >= 1
         assert violations[0].check_type == RiskCheckType.OPTIONS_LEVEL
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_options_greeks_analysis(self, risk_analyzer):
         """Test options Greeks risk analysis."""
         # Create option position
@@ -519,7 +519,7 @@ class TestOptionsRiskAnalysis:
             theta_violations = [v for v in violations if "theta" in v.message.lower()]
             assert len(theta_violations) >= 1
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_options_expiration_analysis(self, risk_analyzer):
         """Test options expiration risk analysis."""
         # Create option position expiring soon
@@ -558,7 +558,7 @@ class TestOptionsRiskAnalysis:
 class TestRiskMetricsCalculation:
     """Test comprehensive risk metrics calculation."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_comprehensive_risk_analysis(
         self, risk_analyzer, sample_portfolio, sample_quotes
     ):
@@ -585,7 +585,7 @@ class TestRiskMetricsCalculation:
             assert isinstance(result.risk_metrics, RiskMetrics)
             assert result.analysis_timestamp is not None
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_risk_metrics_calculation(self, risk_analyzer, sample_portfolio):
         """Test detailed risk metrics calculation."""
         metrics = await risk_analyzer._calculate_risk_metrics(sample_portfolio)
@@ -597,7 +597,7 @@ class TestRiskMetricsCalculation:
         assert 0 <= metrics.portfolio_concentration <= 1
         assert metrics.volatility >= 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_sector_exposure_analysis(self, risk_analyzer, sample_portfolio):
         """Test sector exposure risk analysis."""
         with patch.object(risk_analyzer, "_get_sector_info") as mock_sector:
@@ -660,7 +660,7 @@ class TestRiskLimitCompliance:
             assert len(violations) >= 1
             assert violations[0].check_type == RiskCheckType.MARGIN_REQUIREMENT
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_risk_limit_escalation(self, risk_analyzer, sample_portfolio):
         """Test risk limit violation escalation."""
         # Create portfolio with multiple severe violations
@@ -694,7 +694,7 @@ class TestRiskLimitCompliance:
 class TestConcurrencyAndPerformance:
     """Test concurrent risk analysis and performance optimization."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_risk_checks(
         self, risk_analyzer, sample_portfolio, sample_quotes
     ):
@@ -717,7 +717,7 @@ class TestConcurrencyAndPerformance:
         execution_time = end_time - start_time
         assert execution_time < 1.0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_batch_quote_operations(self, risk_analyzer, sample_portfolio):
         """Test batch quote operations for risk analysis."""
         symbols = [pos.symbol for pos in sample_portfolio.positions]
@@ -743,7 +743,7 @@ class TestConcurrencyAndPerformance:
             assert all(symbol in quotes for symbol in symbols)
             mock_batch.assert_called_once_with(symbols)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_risk_analysis_caching(self, risk_analyzer, sample_portfolio):
         """Test risk analysis result caching for performance."""
         # First analysis

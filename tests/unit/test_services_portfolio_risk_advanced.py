@@ -204,7 +204,7 @@ class TestPortfolioRiskAnalyzer:
 class TestValueAtRiskCalculation:
     """Test Value at Risk calculation methods."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_historical_var_calculation(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -224,7 +224,7 @@ class TestValueAtRiskCalculation:
             assert var_result.var_percent > 0
             assert var_result.expected_shortfall >= var_result.var_amount
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_parametric_var_calculation(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -252,7 +252,7 @@ class TestValueAtRiskCalculation:
             )
             assert var_result.var_amount > var_95.var_amount
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_monte_carlo_var_calculation(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -286,7 +286,7 @@ class TestValueAtRiskCalculation:
                 assert var_result.var_amount > 0
                 assert "monte_carlo_details" in var_result.metadata
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_conditional_var_calculation(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -370,7 +370,7 @@ class TestExposureMetricsCalculation:
 class TestCorrelationAnalysis:
     """Test correlation analysis and matrix calculations."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_correlation_matrix_calculation(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -402,7 +402,7 @@ class TestCorrelationAnalysis:
             assert np.all(corr_matrix.matrix >= -1.0)
             assert np.all(corr_matrix.matrix <= 1.0)
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_portfolio_diversification_ratio(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -431,7 +431,7 @@ class TestCorrelationAnalysis:
                 assert div_ratio > 1.0
                 assert div_ratio < 2.0  # Reasonable upper bound
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_effective_number_of_bets(self, risk_analyzer, diversified_portfolio):
         """Test effective number of independent bets calculation."""
         with patch.object(
@@ -474,7 +474,7 @@ class TestCorrelationAnalysis:
 class TestRiskDecomposition:
     """Test risk decomposition and attribution analysis."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_component_var_calculation(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -503,7 +503,7 @@ class TestRiskDecomposition:
             for _symbol, contribution in component_var.components.items():
                 assert contribution > 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_marginal_var_calculation(self, risk_analyzer, diversified_portfolio):
         """Test Marginal VaR calculation."""
         with patch.object(risk_analyzer, "calculate_parametric_var") as mock_var:
@@ -523,7 +523,7 @@ class TestRiskDecomposition:
             expected_marginal = (5000.0 - 4800.0) / 10  # Per unit change
             assert abs(marginal_var - expected_marginal) < 1.0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_incremental_var_calculation(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -557,7 +557,7 @@ class TestRiskDecomposition:
 class TestStressTesting:
     """Test portfolio stress testing scenarios."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_market_shock_stress_test(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -596,7 +596,7 @@ class TestStressTesting:
                 assert result.portfolio_pnl < 0  # All scenarios show losses
                 assert len(result.position_impacts) > 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_sector_rotation_stress_test(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -628,7 +628,7 @@ class TestStressTesting:
             assert result.sector_impacts["Technology"] < 0  # Tech hurt by rotation
             assert result.sector_impacts["Financial"] > 0  # Financial benefits
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_tail_risk_scenarios(self, risk_analyzer, diversified_portfolio):
         """Test tail risk scenario analysis."""
         tail_scenarios = [
@@ -668,7 +668,7 @@ class TestStressTesting:
 class TestPerformanceAttribution:
     """Test performance attribution analysis."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_sector_performance_attribution(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -703,7 +703,7 @@ class TestPerformanceAttribution:
             total_attribution = sum(attribution.sector_contributions.values())
             assert abs(total_attribution - attribution.total_excess_return) < 0.001
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_stock_specific_attribution(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -729,7 +729,7 @@ class TestPerformanceAttribution:
 
             assert abs(stock_attribution["AAPL"] - expected_aapl_contribution) < 0.001
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_factor_based_attribution(self, risk_analyzer, diversified_portfolio):
         """Test factor-based performance attribution."""
         factor_exposures = {
@@ -820,7 +820,7 @@ class TestDrawdownAnalysis:
         # Recovery factor should be > 1 (recovered from drawdown)
         assert drawdown_analysis.recovery_factor > 1.0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_rolling_drawdown_monitoring(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -867,7 +867,7 @@ class TestDrawdownAnalysis:
 class TestRiskBudgeting:
     """Test risk budgeting and allocation optimization."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_equal_risk_contribution_portfolio(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -898,7 +898,7 @@ class TestRiskBudgeting:
             total_weight = sum(erc_weights.values())
             assert abs(total_weight - 1.0) < 0.001
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_risk_parity_optimization(self, risk_analyzer, diversified_portfolio):
         """Test risk parity optimization."""
         target_risk_budget = {
@@ -925,7 +925,7 @@ class TestRiskBudgeting:
             assert len(optimized_weights) == 5
             assert abs(sum(optimized_weights.values()) - 1.0) < 0.001
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_risk_budgeting_monitoring(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -965,7 +965,7 @@ class TestRiskBudgeting:
 class TestAdvancedRiskMetrics:
     """Test advanced risk metrics and analytics."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_tail_dependency_analysis(
         self, risk_analyzer, diversified_portfolio, mock_market_data
     ):
@@ -992,7 +992,7 @@ class TestAdvancedRiskMetrics:
                 assert 0 <= dependency <= 1
                 assert len(pair) == 2  # Pair of symbols
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_regime_dependent_risk_analysis(
         self, risk_analyzer, diversified_portfolio
     ):
@@ -1033,7 +1033,7 @@ class TestAdvancedRiskMetrics:
                     > regime_analysis["bull"]["correlation_avg"]
                 )
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_liquidity_adjusted_var(self, risk_analyzer, diversified_portfolio):
         """Test liquidity-adjusted Value at Risk calculation."""
         liquidity_metrics = {

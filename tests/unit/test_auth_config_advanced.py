@@ -181,9 +181,7 @@ class TestRobinhoodConfig:
         }
 
         with patch.dict(os.environ, env_vars):
-            config = RobinhoodConfig(
-                username="override_user"  # Override username only
-            )
+            config = RobinhoodConfig(username="override_user")  # Override username only
 
             assert config.username == "override_user"
             assert config.get_password() == "env_password"  # From env
@@ -201,9 +199,7 @@ class TestRobinhoodConfig:
 
     def test_expires_in_type_conversion(self):
         """Test that expires_in properly converts string to int."""
-        env_vars = {
-            "ROBINHOOD_EXPIRES_IN": "3600"  # String value
-        }
+        env_vars = {"ROBINHOOD_EXPIRES_IN": "3600"}  # String value
 
         with patch.dict(os.environ, env_vars):
             config = RobinhoodConfig()
@@ -475,9 +471,7 @@ class TestRobinhoodConfigValidation:
 
     def test_environment_variable_type_coercion(self):
         """Test that environment variables are properly type-coerced."""
-        env_vars = {
-            "ROBINHOOD_EXPIRES_IN": "7200"  # String that should become int
-        }
+        env_vars = {"ROBINHOOD_EXPIRES_IN": "7200"}  # String that should become int
 
         with patch.dict(os.environ, env_vars):
             config = RobinhoodConfig()

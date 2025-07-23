@@ -28,9 +28,9 @@ class TestAPIEndpointsComprehensive:
         ]
 
         # Should have tests for both endpoints with multiple scenarios
-        assert len(auth_test_methods) >= 15, (
-            f"Expected at least 15 auth tests, found {len(auth_test_methods)}"
-        )
+        assert (
+            len(auth_test_methods) >= 15
+        ), f"Expected at least 15 auth tests, found {len(auth_test_methods)}"
 
         # Verify key test scenarios are covered
         method_names = "\n".join(auth_test_methods)
@@ -48,9 +48,9 @@ class TestAPIEndpointsComprehensive:
         ]
 
         # Should have tests for all health endpoints with multiple scenarios
-        assert len(health_test_methods) >= 20, (
-            f"Expected at least 20 health tests, found {len(health_test_methods)}"
-        )
+        assert (
+            len(health_test_methods) >= 20
+        ), f"Expected at least 20 health tests, found {len(health_test_methods)}"
 
         # Verify key endpoints are covered
         method_names = "\n".join(health_test_methods)
@@ -67,9 +67,9 @@ class TestAPIEndpointsComprehensive:
         ]
 
         # Should have tests for all portfolio endpoints
-        assert len(portfolio_test_methods) >= 25, (
-            f"Expected at least 25 portfolio tests, found {len(portfolio_test_methods)}"
-        )
+        assert (
+            len(portfolio_test_methods) >= 25
+        ), f"Expected at least 25 portfolio tests, found {len(portfolio_test_methods)}"
 
         method_names = "\n".join(portfolio_test_methods)
         assert "test_get_portfolio_success" in method_names
@@ -87,9 +87,9 @@ class TestAPIEndpointsComprehensive:
         ]
 
         # Should have tests for all trading endpoints
-        assert len(trading_test_methods) >= 30, (
-            f"Expected at least 30 trading tests, found {len(trading_test_methods)}"
-        )
+        assert (
+            len(trading_test_methods) >= 30
+        ), f"Expected at least 30 trading tests, found {len(trading_test_methods)}"
 
         method_names = "\n".join(trading_test_methods)
         assert "test_get_quote_success" in method_names
@@ -108,9 +108,9 @@ class TestAPIEndpointsComprehensive:
         ]
 
         # Should have tests for all market data endpoints
-        assert len(market_data_test_methods) >= 25, (
-            f"Expected at least 25 market data tests, found {len(market_data_test_methods)}"
-        )
+        assert (
+            len(market_data_test_methods) >= 25
+        ), f"Expected at least 25 market data tests, found {len(market_data_test_methods)}"
 
         method_names = "\n".join(market_data_test_methods)
         assert "test_get_stock_price_success" in method_names
@@ -129,9 +129,9 @@ class TestAPIEndpointsComprehensive:
         ]
 
         # Should have tests for all options endpoints
-        assert len(options_test_methods) >= 30, (
-            f"Expected at least 30 options tests, found {len(options_test_methods)}"
-        )
+        assert (
+            len(options_test_methods) >= 30
+        ), f"Expected at least 30 options tests, found {len(options_test_methods)}"
 
         method_names = "\n".join(options_test_methods)
         assert "test_get_options_chain_success" in method_names
@@ -160,9 +160,9 @@ class TestAPIEndpointsComprehensive:
             total_tests += len(test_methods)
 
         # Should have comprehensive coverage with at least 150 total tests
-        assert total_tests >= 150, (
-            f"Expected at least 150 total API tests, found {total_tests}"
-        )
+        assert (
+            total_tests >= 150
+        ), f"Expected at least 150 total API tests, found {total_tests}"
 
     def test_endpoint_coverage_completeness(self):
         """Verify all major API endpoints are covered by tests."""
@@ -216,9 +216,9 @@ class TestAPIEndpointsComprehensive:
         # against the actual FastAPI app routes
 
         coverage_percentage = len(expected_endpoints) / len(expected_endpoints) * 100
-        assert coverage_percentage == 100.0, (
-            f"API endpoint coverage: {coverage_percentage}%"
-        )
+        assert (
+            coverage_percentage == 100.0
+        ), f"API endpoint coverage: {coverage_percentage}%"
 
         # Verify we have tests for all major HTTP methods
         http_methods = set()
@@ -227,6 +227,6 @@ class TestAPIEndpointsComprehensive:
             http_methods.add(method)
 
         expected_methods = {"GET", "POST", "DELETE"}
-        assert expected_methods.issubset(http_methods), (
-            f"Missing HTTP methods: {expected_methods - http_methods}"
-        )
+        assert expected_methods.issubset(
+            http_methods
+        ), f"Missing HTTP methods: {expected_methods - http_methods}"

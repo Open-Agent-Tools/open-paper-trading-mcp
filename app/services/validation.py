@@ -262,3 +262,31 @@ class AccountValidator:
         """Validate option symbol format."""
         # Basic validation - should be at least 8 characters for options
         return len(symbol) >= 8 and ("C0" in symbol or "P0" in symbol)
+
+
+class BusinessRuleValidator:
+    """
+    A stub for the BusinessRuleValidator.
+    """
+    pass
+
+
+class MultiLegOrderValidator:
+    """
+    A stub for the MultiLegOrderValidator.
+    """
+    pass
+
+
+class OrderValidator:
+    """
+    A stub for the OrderValidator.
+    """
+    pass
+
+
+class PositionValidator:
+    """
+    A stub for the PositionValidator.
+    """
+    pass

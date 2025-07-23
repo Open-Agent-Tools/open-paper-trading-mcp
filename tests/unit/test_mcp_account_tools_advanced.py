@@ -71,9 +71,9 @@ class TestFutureAccountToolsStructure:
         for category, patterns in expected_patterns.items():
             assert len(patterns) > 0, f"Should have patterns for {category}"
             for pattern in patterns:
-                assert pattern.endswith("Args"), (
-                    f"{pattern} should follow Args naming pattern"
-                )
+                assert pattern.endswith(
+                    "Args"
+                ), f"{pattern} should follow Args naming pattern"
 
     def test_expected_account_tool_functions(self):
         """Test expected function signatures for future account tools."""
@@ -406,9 +406,9 @@ class TestAccountToolsIntegrationStubs:
 
         # Test that method names are valid Python identifiers
         for method_name in expected_methods:
-            assert method_name.isidentifier(), (
-                f"{method_name} should be valid identifier"
-            )
-            assert not method_name.startswith("__"), (
-                f"{method_name} should not be dunder method"
-            )
+            assert (
+                method_name.isidentifier()
+            ), f"{method_name} should be valid identifier"
+            assert not method_name.startswith(
+                "__"
+            ), f"{method_name} should not be dunder method"

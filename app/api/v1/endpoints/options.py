@@ -96,7 +96,6 @@ async def get_options_chain(
     min_strike: float | None = Query(None, description="Minimum strike price"),
     max_strike: float | None = Query(None, description="Maximum strike price"),
     include_greeks: bool = Query(True, description="Include Greeks in response"),
-    service: TradingService = Depends(get_trading_service),
 ) -> OptionsChainResponse:
     """
     Get options chain for an underlying symbol.
@@ -104,6 +103,7 @@ async def get_options_chain(
     Supports filtering by expiration date and strike price range.
     Includes Greeks data when available.
     """
+    service: TradingService = get_trading_service()
     try:
         expiration = None
         if expiration_date:
@@ -128,13 +128,14 @@ async def get_options_chain(
 
 @router.get("/{symbol}/expirations", response_model=dict[str, Any])
 async def get_expiration_dates(
-    symbol: str, service: TradingService = Depends(get_trading_service)
+    symbol: str,
 ) -> dict[str, Any]:
     """
     Get available expiration dates for an underlying symbol.
 
     Returns sorted list of expiration dates with metadata.
     """
+    service: TradingService = get_trading_service()
     try:
         dates = service.get_expiration_dates(symbol)
 
@@ -158,13 +159,13 @@ async def get_expiration_dates(
 @router.post("/orders/multi-leg", response_model=Order)
 async def create_multi_leg_order(
     request: MultiLegOrderRequest,
-    service: TradingService = Depends(get_trading_service),
 ) -> Order:
     """
     Create a multi-leg options order.
 
     Supports complex strategies like spreads, straddles, and condors.
     """
+    service: TradingService = get_trading_service()
     try:
         order = await service.create_multi_leg_order_from_request(
             request.legs, request.order_type, request.net_price
@@ -187,13 +188,13 @@ async def calculate_option_greeks(
         None, description="Override underlying price"
     ),
     volatility: float | None = Query(None, description="Override implied volatility"),
-    service: TradingService = Depends(get_trading_service),
 ) -> GreeksResponse:
     """
     Calculate Greeks for a specific option symbol.
 
     Supports parameter overrides for scenario analysis.
     """
+    service: TradingService = get_trading_service()
     try:
         greeks_data = await service.get_option_greeks_response(
             option_symbol, underlying_price
@@ -210,13 +211,13 @@ async def calculate_option_greeks(
 @router.post("/strategies/analyze", response_model=dict[str, Any])
 async def analyze_portfolio_strategies(
     request: StrategyAnalysisRequest,
-    service: TradingService = Depends(get_trading_service),
 ) -> dict[str, Any]:
     """
     Perform comprehensive strategy analysis for current portfolio.
 
     Includes P&L analysis, Greeks aggregation, and optimization recommendations.
     """
+    service: TradingService = get_trading_service()
     try:
         analysis_result = await service.analyze_portfolio_strategies(
             include_greeks=request.include_greeks,
@@ -242,7 +243,6 @@ async def find_tradable_options_endpoint(
     option_type: str | None = Query(
         None, description="Option type filter: 'call' or 'put'"
     ),
-    service: TradingService = Depends(get_trading_service),
 ) -> dict[str, Any]:
     """
     Find tradable options for a symbol with optional filtering.
@@ -250,6 +250,7 @@ async def find_tradable_options_endpoint(
     This endpoint provides unified access to options discovery
     that works with both test data and live market data.
     """
+    service: TradingService = get_trading_service()
     try:
         result = await service.find_tradable_options(
             symbol, expiration_date, option_type
@@ -263,7 +264,7 @@ async def find_tradable_options_endpoint(
 
 @router.get("/market-data/{option_id}", response_model=dict[str, Any])
 async def get_option_market_data_endpoint(
-    option_id: str, service: TradingService = Depends(get_trading_service)
+    option_id: str,
 ) -> dict[str, Any]:
     """
     Get comprehensive market data for a specific option contract.
@@ -271,6 +272,7 @@ async def get_option_market_data_endpoint(
     Provides pricing, Greeks, volume, and other market data
     through the unified TradingService interface.
     """
+    service: TradingService = get_trading_service()
     try:
         result = await service.get_option_market_data(option_id)
         if "error" in result:

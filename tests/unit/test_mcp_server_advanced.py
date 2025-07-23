@@ -416,9 +416,9 @@ class TestMCPToolDocumentation:
         properties = schema.get("properties", {})
         for field_name, field_info in properties.items():
             assert "description" in field_info, f"{field_name} should have description"
-            assert field_info["description"].strip(), (
-                f"{field_name} description should not be empty"
-            )
+            assert field_info[
+                "description"
+            ].strip(), f"{field_name} description should not be empty"
 
         # Check CreateOrderArgs
         schema = CreateOrderArgs.model_json_schema()

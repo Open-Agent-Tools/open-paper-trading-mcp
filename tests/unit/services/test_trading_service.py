@@ -13,25 +13,25 @@ Tests cover:
 - Async service coordination
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from datetime import datetime, date, timedelta
-from uuid import uuid4
+from unittest.mock import AsyncMock, Mock, patch
 
-from app.services.trading_service import TradingService
+import pytest
+
+from app.core.exceptions import NotFoundError
+from app.models.assets import Call, Stock
+from app.models.quotes import OptionQuote, OptionsChain, Quote
 from app.schemas.orders import (
     Order,
+    OrderCondition,
     OrderCreate,
     OrderStatus,
     OrderType,
-    OrderCondition,
 )
-from app.schemas.positions import Portfolio, Position, PortfolioSummary
+from app.schemas.positions import Portfolio, Position
 from app.schemas.trading import StockQuote
-from app.models.quotes import Quote, OptionQuote, OptionsChain
-from app.models.assets import Stock, Option, Call, Put
-from app.core.exceptions import NotFoundError
+from app.services.trading_service import TradingService
 
 
 @pytest.fixture

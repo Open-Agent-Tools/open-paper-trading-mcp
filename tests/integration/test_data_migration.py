@@ -122,9 +122,9 @@ class TestDataMigration:
                 stock_exists = await db.execute(
                     select(DevStockQuote).where(DevStockQuote.symbol == symbol).limit(1)
                 )
-                assert stock_exists.fetchone() is not None, (
-                    f"Stock quotes missing for {symbol}"
-                )
+                assert (
+                    stock_exists.fetchone() is not None
+                ), f"Stock quotes missing for {symbol}"
 
                 # Check option quotes exist
                 option_exists = await db.execute(
@@ -132,9 +132,9 @@ class TestDataMigration:
                     .where(DevOptionQuote.underlying == symbol)
                     .limit(1)
                 )
-                assert option_exists.fetchone() is not None, (
-                    f"Option quotes missing for {symbol}"
-                )
+                assert (
+                    option_exists.fetchone() is not None
+                ), f"Option quotes missing for {symbol}"
 
             break
 
@@ -183,16 +183,16 @@ class TestDataMigration:
                 quote = quote_row[0]
                 if quote.bid and quote.ask and quote.price:
                     # Price should be between bid and ask
-                    assert quote.bid <= quote.price <= quote.ask, (
-                        f"Price inconsistency for {quote.symbol}: bid={quote.bid}, price={quote.price}, ask={quote.ask}"
-                    )
+                    assert (
+                        quote.bid <= quote.price <= quote.ask
+                    ), f"Price inconsistency for {quote.symbol}: bid={quote.bid}, price={quote.price}, ask={quote.ask}"
 
                     # Spread should be reasonable
                     spread = float(quote.ask - quote.bid)
                     spread_pct = spread / float(quote.price)
-                    assert spread_pct < 0.05, (
-                        f"Spread too wide for {quote.symbol}: {spread_pct:.2%}"
-                    )
+                    assert (
+                        spread_pct < 0.05
+                    ), f"Spread too wide for {quote.symbol}: {spread_pct:.2%}"
 
             # Test option data integrity
             option_quotes = await db.execute(select(DevOptionQuote).limit(100))
@@ -230,9 +230,9 @@ class TestDataMigration:
                     )
                 )
                 records = quotes_in_range.fetchall()
-                assert len(records) > 0, (
-                    f"No quotes found for date range {start_str} to {end_str}"
-                )
+                assert (
+                    len(records) > 0
+                ), f"No quotes found for date range {start_str} to {end_str}"
 
             break
 

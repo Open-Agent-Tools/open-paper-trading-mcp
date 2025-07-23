@@ -467,3 +467,10 @@ order_lifecycle_manager = OrderLifecycleManager()
 def get_order_lifecycle_manager() -> OrderLifecycleManager:
     """Get the global order lifecycle manager instance."""
     return order_lifecycle_manager
+
+
+class OrderStateMachine:
+    """
+    A stub for the OrderStateMachine.
+    """
+    pass

@@ -222,7 +222,7 @@ class TestAsyncSessionManagement:
     """Test asynchronous session management patterns."""
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_async_session_normal_flow(self, mock_session_factory):
         """Test successful async session creation and management."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -244,7 +244,7 @@ class TestAsyncSessionManagement:
         mock_session.__aexit__.assert_called_once()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_async_session_context_manager(self, mock_session_factory):
         """Test async session as context manager."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -263,7 +263,7 @@ class TestAsyncSessionManagement:
         mock_session_factory.assert_called_once()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_get_async_session_exception_propagation(self, mock_session_factory):
         """Test that exceptions are properly propagated from async sessions."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -290,7 +290,7 @@ class TestDatabaseInitialization:
     """Test database initialization and schema creation."""
 
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_creates_tables(self, mock_engine):
         """Test that init_db creates all tables."""
         mock_conn = AsyncMock()
@@ -316,7 +316,7 @@ class TestDatabaseInitialization:
         assert args[0] == Base.metadata.create_all
 
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_handles_connection_errors(self, mock_engine):
         """Test that init_db properly handles connection errors."""
         mock_engine.begin.side_effect = DisconnectionError("Connection lost")
@@ -327,7 +327,7 @@ class TestDatabaseInitialization:
             await init_db()
 
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_handles_metadata_errors(self, mock_engine):
         """Test that init_db handles metadata creation errors."""
         mock_conn = AsyncMock()
@@ -345,7 +345,7 @@ class TestDatabaseInitialization:
 
     @patch("app.models.database.base.Base")
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_imports_base_correctly(self, mock_engine, mock_base):
         """Test that init_db imports Base from correct location."""
         mock_conn = AsyncMock()
@@ -393,7 +393,7 @@ class TestConnectionPoolingAndRecovery:
         working_session.close.assert_called_once()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_session_connection_recovery(self, mock_session_factory):
         """Test async session handles connection recovery."""
         # Setup failing session
@@ -443,7 +443,7 @@ class TestConnectionPoolingAndRecovery:
         mock_session.close.assert_called_once()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_session_integrity_error_handling(self, mock_session_factory):
         """Test async session handles integrity constraint violations."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -505,7 +505,7 @@ class TestTransactionManagement:
         mock_session.commit.assert_not_called()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_transaction_with_savepoints(self, mock_session_factory):
         """Test async transaction with savepoint simulation."""
         mock_session = AsyncMock(spec=AsyncSession)
@@ -558,7 +558,7 @@ class TestTransactionManagement:
         mock_session.rollback.assert_called()
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_session_concurrent_transactions(self, mock_session_factory):
         """Test handling of concurrent transaction patterns."""
         mock_session1 = AsyncMock(spec=AsyncSession)
@@ -724,7 +724,7 @@ class TestErrorHandlingAndResilience:
             pass
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_async_session_creation_failure(self, mock_session_factory):
         """Test handling of async session creation failure."""
         mock_session_factory.side_effect = SQLAlchemyError(
@@ -755,7 +755,7 @@ class TestErrorHandlingAndResilience:
         mock_session.close.assert_called_once()
 
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_connection_timeout(self, mock_engine):
         """Test init_db handling of connection timeouts."""
         from asyncio import TimeoutError
@@ -768,7 +768,7 @@ class TestErrorHandlingAndResilience:
             await init_db()
 
     @patch("app.storage.database.async_engine")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_init_db_partial_failure_recovery(self, mock_engine):
         """Test init_db recovery from partial failures."""
         # First call fails, second succeeds
@@ -830,7 +830,7 @@ class TestSessionLifecycleIntegration:
         assert mock_session_factory.call_count == 2
 
     @patch("app.storage.database.AsyncSessionLocal")
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_nested_async_session_usage(self, mock_session_factory):
         """Test nested usage of async sessions."""
         mock_session1 = AsyncMock(spec=AsyncSession)

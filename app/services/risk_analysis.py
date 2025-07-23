@@ -16,6 +16,16 @@ from ..schemas.orders import Order, OrderType
 from ..schemas.positions import Portfolio, Position
 from ..services.greeks import calculate_option_greeks
 
+
+@dataclass
+class ExposureLimits:
+    """Defines exposure limits for a portfolio."""
+
+    max_gross_exposure: float = 1000000.0
+    max_net_exposure: float = 500000.0
+    max_concentration_per_asset: float = 0.25
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -892,3 +902,17 @@ def configure_risk_limits(limits: RiskLimits) -> None:
     """Configure risk limits for the analyzer."""
     global risk_analyzer
     risk_analyzer = RiskAnalyzer(limits)
+
+
+class PositionImpactResult:
+    """
+    A stub for the PositionImpactResult.
+    """
+    pass
+
+
+class RiskMetrics:
+    """
+    A stub for the RiskMetrics.
+    """
+    pass

@@ -380,9 +380,11 @@ class ComplexOrderValidator:
             leg.quantity
             for leg in sorted(
                 order.legs,
-                key=lambda l: l.asset.strike
-                if isinstance(l.asset, Option) and l.asset.strike is not None
-                else 0.0,
+                key=lambda l: (
+                    l.asset.strike
+                    if isinstance(l.asset, Option) and l.asset.strike is not None
+                    else 0.0
+                ),
             )
         ]
 
@@ -413,9 +415,11 @@ class ComplexOrderValidator:
         # Sort by strike
         sorted_legs = sorted(
             order.legs,
-            key=lambda l: l.asset.strike
-            if isinstance(l.asset, Option) and l.asset.strike is not None
-            else 0.0,
+            key=lambda l: (
+                l.asset.strike
+                if isinstance(l.asset, Option) and l.asset.strike is not None
+                else 0.0
+            ),
         )
 
         # Check for iron condor pattern
@@ -741,9 +745,11 @@ class ComplexOrderValidator:
         # Sort legs by strike
         sorted_legs = sorted(
             order.legs,
-            key=lambda l: l.asset.strike
-            if isinstance(l.asset, Option) and l.asset.strike is not None
-            else 0.0,
+            key=lambda l: (
+                l.asset.strike
+                if isinstance(l.asset, Option) and l.asset.strike is not None
+                else 0.0
+            ),
         )
 
         # Calculate net credit

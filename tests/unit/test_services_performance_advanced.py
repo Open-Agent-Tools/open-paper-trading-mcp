@@ -167,7 +167,7 @@ class TestPerformanceMetricCollection:
         # Buffer should not exceed max size
         assert len(performance_benchmarker.metrics_buffer) == buffer_size
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_context_manager_metric_recording(self, performance_benchmarker):
         """Test automatic metric recording with context manager."""
         async with performance_benchmarker.measure_operation(
@@ -185,7 +185,7 @@ class TestPerformanceMetricCollection:
         assert metric.duration_ms >= 100  # At least 100ms from sleep
         assert metric.metadata["processed_items"] == 10
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_context_manager_exception_handling(self, performance_benchmarker):
         """Test context manager handles exceptions properly."""
         with pytest.raises(ValueError, match="Test error"):
@@ -222,7 +222,7 @@ class TestBenchmarkExecution:
         assert result.avg_latency_ms >= 10.0  # Should be at least 10ms
         assert result.throughput_ops_sec > 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_run_async_benchmark(self, performance_benchmarker):
         """Test running async benchmark."""
 
@@ -260,7 +260,7 @@ class TestBenchmarkExecution:
         assert result.error_rate <= 0.3  # Should be around 20%
         assert result.successful_operations + result.failed_operations == 100
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_benchmark_execution(self, performance_benchmarker):
         """Test concurrent benchmark execution."""
 
@@ -391,7 +391,7 @@ class TestThroughputAnalysis:
             assert throughput.ops_per_second > 0
             assert operation.startswith("test_operation_")
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_real_time_throughput_monitoring(self, performance_benchmarker):
         """Test real-time throughput monitoring."""
         # Start throughput monitoring
@@ -441,7 +441,7 @@ class TestResourceMonitoring:
         assert metrics.network_bytes_sent >= 0
         assert metrics.network_bytes_recv >= 0
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_resource_monitoring_during_load(self, performance_benchmarker):
         """Test resource monitoring during high load operations."""
         # Start resource monitoring
@@ -552,7 +552,7 @@ class TestPerformanceAlerts:
         assert len(throughput_alerts) >= 1
         assert throughput_alerts[0].severity in ["warning", "critical"]
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_alert_escalation(self, performance_benchmarker):
         """Test alert escalation for persistent issues."""
         # Generate persistent high latency
@@ -671,7 +671,7 @@ class TestOptimizationRecommendations:
 class TestConcurrencyAndStressScenarios:
     """Test concurrent benchmarking and stress scenarios."""
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_concurrent_metric_collection(self, performance_benchmarker):
         """Test thread-safe metric collection under concurrency."""
 
@@ -702,7 +702,7 @@ class TestConcurrencyAndStressScenarios:
             op_name = f"concurrent_op_worker_{worker_id}"
             assert performance_benchmarker.operation_counters[op_name] == 50
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_stress_test_scenario(self, performance_benchmarker):
         """Test performance under stress conditions."""
 
@@ -734,7 +734,7 @@ class TestConcurrencyAndStressScenarios:
         # Should capture performance degradation under load
         assert result.p99_latency_ms > result.p50_latency_ms * 2
 
-    @pytest_asyncio.async_test
+    @pytest.mark.asyncio
     async def test_load_ramp_up_analysis(self, performance_benchmarker):
         """Test performance analysis during load ramp-up."""
         load_levels = [1, 5, 10, 20, 50]  # Increasing concurrency levels

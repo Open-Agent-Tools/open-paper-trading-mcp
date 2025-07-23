@@ -6,8 +6,17 @@ Asset models with improvements for FastAPI/MCP architecture.
 
 from datetime import date, datetime
 from typing import Any, Optional, Union
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class OptionType(str, Enum):
+    """
+    A stub for the OptionType.
+    """
+    CALL = "call"
+    PUT = "put"
 
 
 def asset_factory(symbol: Union[str, "Asset", None] = None) -> Optional["Asset"]:
