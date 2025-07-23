@@ -371,7 +371,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
                 return quotes
 
             if isinstance(asset, Option):
-                records = (
+                option_records = (
                     db.query(DevOptionQuote)
                     .filter(
                         and_(
@@ -385,8 +385,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     .all()
                 )
 
-                for record in records:
-                    quote_date_val = cast(date, record.quote_date)
+                for option_record in option_records:
+                    quote_date_val = cast(date, option_record.quote_date)
                     if isinstance(quote_date_val, datetime):
                         quote_date_val = cast(date, quote_date_val.date())
 
@@ -399,7 +399,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     if quote:
                         quotes.append(quote)
             else:
-                records = (
+                stock_records = (
                     db.query(DevStockQuote)
                     .filter(
                         and_(
@@ -413,7 +413,7 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     .all()
                 )
 
-                for stock_record in records:
+                for stock_record in stock_records:
                     quote_date_val = cast(date, stock_record.quote_date)
                     if isinstance(quote_date_val, datetime):
                         quote_date_val = cast(date, quote_date_val.date())

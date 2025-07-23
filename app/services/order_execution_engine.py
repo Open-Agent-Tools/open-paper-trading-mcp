@@ -19,7 +19,7 @@ from sqlalchemy import and_, select
 
 from ..models.assets import asset_factory
 from ..models.database.trading import Order as DBOrder
-from ..schemas.orders import Order, OrderStatus, OrderType
+from ..schemas.orders import Order, OrderCondition, OrderStatus, OrderType
 from ..services.order_conversion import order_converter
 from ..services.trading_service import TradingService, _get_quote_adapter
 from ..storage.database import get_async_session
@@ -429,7 +429,7 @@ class OrderExecutionEngine:
                         stop_price=db_order.stop_price,
                         trail_percent=db_order.trail_percent,
                         trail_amount=db_order.trail_amount,
-                        condition=db_order.condition,
+                        condition=db_order.condition or OrderCondition.MARKET,
                         net_price=db_order.net_price,
                         filled_at=cast(datetime | None, db_order.filled_at),
                     )
@@ -515,7 +515,7 @@ class OrderExecutionEngine:
                             stop_price=db_order.stop_price,
                             trail_percent=db_order.trail_percent,
                             trail_amount=db_order.trail_amount,
-                            condition=db_order.condition,
+                            condition=db_order.condition or OrderCondition.MARKET,
                             net_price=db_order.net_price,
                         )
 
