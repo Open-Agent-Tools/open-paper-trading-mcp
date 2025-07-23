@@ -179,7 +179,9 @@ async def readiness_check(db: AsyncSession = Depends(get_async_db)) -> dict[str,
 
 
 @router.get("/health/detailed", response_model=dict[str, Any])
-async def detailed_health_check(db: AsyncSession = Depends(get_async_db)) -> dict[str, Any]:
+async def detailed_health_check(
+    db: AsyncSession = Depends(get_async_db),
+) -> dict[str, Any]:
     """Detailed health check of all system components."""
     start_time = time.time()
 

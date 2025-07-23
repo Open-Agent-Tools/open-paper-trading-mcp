@@ -14,7 +14,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,7 +41,7 @@ class TestDatabaseModelValidation:
                 result = await conn.execute(
                     text(
                         "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = :table)"
-                    ).bindparam(table=model_class.__tablename__)
+                    ).bindparams(table=model_class.__tablename__)
                 )
                 exists = result.scalar()
                 assert exists, f"Table {model_class.__tablename__} does not exist"
@@ -69,7 +68,7 @@ class TestDatabaseModelValidation:
 
         # Verify account was created
         result = await async_db_session.execute(
-            text("SELECT * FROM accounts WHERE id = :id").bindparam(id="test-account-1")
+            text("SELECT * FROM accounts WHERE id = :id").bindparams(id="test-account-1")
         )
         row = result.fetchone()
         assert row is not None
@@ -129,7 +128,7 @@ class TestDatabaseModelValidation:
 
         # Verify order was created
         result = await async_db_session.execute(
-            text("SELECT * FROM orders WHERE id = :id").bindparam(id="order-123")
+            text("SELECT * FROM orders WHERE id = :id").bindparams(id="order-123")
         )
         row = result.fetchone()
         assert row is not None
@@ -197,7 +196,7 @@ class TestDatabaseModelValidation:
 
         # Verify position calculations
         result = await async_db_session.execute(
-            text("SELECT * FROM positions WHERE id = :id").bindparam(id="position-123")
+            text("SELECT * FROM positions WHERE id = :id").bindparams(id="position-123")
         )
         row = result.fetchone()
         assert row is not None
@@ -243,7 +242,7 @@ class TestDatabaseModelValidation:
 
         # Verify transaction audit fields
         result = await async_db_session.execute(
-            text("SELECT * FROM transactions WHERE id = :id").bindparam(id="txn-123")
+            text("SELECT * FROM transactions WHERE id = :id").bindparams(id="txn-123")
         )
         row = result.fetchone()
         assert row is not None
@@ -304,9 +303,10 @@ class TestModelRelationships:
                 WHERE a.id = :account_id
                 GROUP BY a.id
             """
-            ).bindparam(account_id="rel-account-1")
+            ).bindparams(account_id="rel-account-1")
         )
         row = result.fetchone()
+        assert row is not None
         assert row.order_count == 3
 
     @pytest.mark.asyncio
@@ -358,9 +358,10 @@ class TestModelRelationships:
                 WHERE a.id = :account_id
                 GROUP BY a.id
             """
-            ).bindparam(account_id="rel-account-2")
+            ).bindparams(account_id="rel-account-2")
         )
         row = result.fetchone()
+        assert row is not None
         assert row.position_count == 3
         assert row.total_value == Decimal("4650.00")  # 3 * 1550.00
 
@@ -434,9 +435,10 @@ class TestModelRelationships:
                 WHERE o.id = :order_id
                 GROUP BY o.id
             """
-            ).bindparam(order_id="rel-order-txn")
+            ).bindparams(order_id="rel-order-txn")
         )
         row = result.fetchone()
+        assert row is not None
         assert row.fill_count == 2
         assert row.total_quantity == Decimal("100")
         expected_total = (Decimal("40") * Decimal("149.50")) + (
@@ -469,7 +471,7 @@ class TestSchemaValidation:
 
         # Verify precision is preserved
         result = await async_db_session.execute(
-            text("SELECT balance FROM accounts WHERE id = :id").bindparam(
+            text("SELECT balance FROM accounts WHERE id = :id").bindparams(
                 id="decimal-test"
             )
         )
@@ -542,9 +544,10 @@ class TestSchemaValidation:
         result = await async_db_session.execute(
             text(
                 "SELECT created_at, updated_at FROM accounts WHERE id = :id"
-            ).bindparam(id="timestamp-test")
+            ).bindparams(id="timestamp-test")
         )
         row = result.fetchone()
+        assert row is not None
         assert row.created_at is not None
         assert row.updated_at is not None
 
@@ -768,7 +771,7 @@ class TestAsyncOrmOperations:
                 WHERE a.id = :account_id
                 GROUP BY a.id, a.name, a.balance
             """
-            ).bindparam(account_id="complex-query-account")
+            ).bindparams(account_id="complex-query-account")
         )
 
         row = result.fetchone()
@@ -907,7 +910,7 @@ class TestDatabaseIndexes:
                     FROM pg_indexes 
                     WHERE tablename = :table_name
                 """
-                ).bindparam(table_name=table_name)
+                ).bindparams(table_name=table_name)
             )
             indexes = result.fetchall()
 
@@ -938,7 +941,7 @@ class TestDatabaseIndexes:
                     WHERE tablename = :table_name 
                     AND indexdef LIKE :column_pattern
                 """
-                ).bindparam(table_name=table_name, column_pattern=f"%{column_name}%")
+                ).bindparams(table_name=table_name, column_pattern=f"%{column_name}%")
             )
             indexes = result.fetchall()
 
@@ -957,9 +960,9 @@ class TestDatabaseIndexes:
                         WHERE t.relname = :table_name 
                         AND a.attname = :column_name
                     """
-                    ).bindparam(table_name=table_name, column_name=column_name)
+                    ).bindparams(table_name=table_name, column_name=column_name)
                 )
                 constraints = result2.fetchall()
-                assert (
-                    len(constraints) > 0 or index_exists
-                ), f"No index or constraint found for {table_name}.{column_name}"
+                assert len(constraints) > 0 or index_exists, (
+                    f"No index or constraint found for {table_name}.{column_name}"
+                )

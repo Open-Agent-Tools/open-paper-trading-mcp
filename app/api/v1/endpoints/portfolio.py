@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 
 from app.core.dependencies import get_trading_service
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
@@ -55,11 +55,3 @@ async def get_portfolio_greeks(request: Request) -> dict[str, Any]:
     # Custom exceptions are handled by the global exception handler
     service: TradingService = get_trading_service(request)
     return await service.get_portfolio_greeks()
-
-
-@router.get("/strategies")
-async def get_portfolio_strategies(request: Request) -> dict[str, Any]:
-    """Get strategy analysis for portfolio."""
-    # Custom exceptions are handled by the global exception handler
-    service: TradingService = get_trading_service(request)
-    return await service.get_portfolio_strategies()

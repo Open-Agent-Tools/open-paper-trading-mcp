@@ -5,9 +5,10 @@ Robinhood adapter for live market data integration.
 import asyncio
 import random
 import time
+from collections.abc import Callable
 from datetime import date, datetime
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 import robin_stocks.robinhood as rh  # type: ignore
 
@@ -17,10 +18,12 @@ from app.core.logging import logger
 from app.models.assets import Asset, Option, Stock, asset_factory
 from app.models.quotes import OptionQuote, OptionsChain, Quote
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
-def retry_with_backoff(max_retries: int = 3, base_delay: float = 1.0, max_delay: float = 60.0) -> Callable[[F], F]:
+def retry_with_backoff(
+    max_retries: int = 3, base_delay: float = 1.0, max_delay: float = 60.0
+) -> Callable[[F], F]:
     """Decorator for adding exponential backoff retry logic to async methods."""
 
     def decorator(func: F) -> F:

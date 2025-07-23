@@ -2,7 +2,7 @@
 
 This document tracks the implementation progress and upcoming tasks for the paper trading simulator with dual REST API and MCP interfaces.
 
-## Phase 0: Foundation & QA ✅ **COMPLETED** 2025-07-20
+## Priority 0: Foundation & QA ✅ **COMPLETED** 2025-07-20
 
 **Major Achievements:**
 - **Test Infrastructure**: 5/9 E2E tests passing, AsyncClient working, database setup complete
@@ -13,7 +13,7 @@ This document tracks the implementation progress and upcoming tasks for the pape
 
 ---
 
-## ✅ PHASE 1 CODE CLEANUP COMPLETED - 2025-01-22
+## ✅ Priority 1 CODE CLEANUP COMPLETED - 2025-01-22
 
 **CODE CLEANUP STATUS:** ✅ **COMPLETED**
 
@@ -28,12 +28,30 @@ Comprehensive automated code cleanup completed with significant improvements to 
 
 ---
 
+## ⚠️ DEPRECATED FUNCTIONS - DO NOT RE-IMPLEMENT
+
+**The following functions have been permanently deprecated and removed (2025-01-23):**
+- `calculate_margin_requirement()` - Use external margin calculation services
+- `get_stock_news()` - Use dedicated news APIs instead
+- `get_top_movers()` - Use market data provider's native endpoints  
+- `get_portfolio_strategies()` - Strategy analysis moved to external services
+- `analyze_portfolio_strategies()` - Strategy analysis moved to external services
+- `get_test_scenarios()` - Test data management simplified
+- `set_test_date()` - Test data management simplified
+- `get_available_symbols()` - Test data management simplified  
+- `get_sample_data_info()` - Test data management simplified
+- `get_stock_quote()` - Replaced by `get_enhanced_quote()`
+
+**These functions must NOT be re-implemented in future phases.**
+
+---
+
 ## 🚀 DEVELOPMENT PHASES
 
-### Phase 1: Code Quality & Infrastructure ✅ **COMPLETED** - 2025-01-22
+### Priority 1: Code Quality & Infrastructure ✅ **COMPLETED** - 2025-01-22
 
 **Goal:** Address code quality issues, linting violations, and establish proper development infrastructure.
-**Clarification:** This phase focused on automated code cleanup, linting fixes, type safety validation, and tooling setup to establish a solid foundation for development.
+**Clarification:** This Priority focused on automated code cleanup, linting fixes, type safety validation, and tooling setup to establish a solid foundation for development.
 
 **Status:** ✅ **COMPLETED** - Comprehensive code cleanup completed with 698 linting issues fixed, MyPy validation operational, and development infrastructure validated.
 
@@ -58,9 +76,9 @@ Comprehensive automated code cleanup completed with significant improvements to 
 
 ---
 
-### Phase 2: Advanced Order Management & Execution
+### Priority 2: Advanced Order Management & Execution
 **Goal:** Implement sophisticated order types and execution capabilities for realistic trading simulation.
-**Clarification:** This phase introduces stateful, long-running processes. The `OrderExecutionEngine` will be a persistent, background service that operates independently of the API request/response cycle.
+**Clarification:** This Priority introduces stateful, long-running processes. The `OrderExecutionEngine` will be a persistent, background service that operates independently of the API request/response cycle.
 
 #### 2.1 Asynchronous Task Queue
 - [ ] Set up Celery with a Redis message broker in `docker-compose.yml`.
@@ -101,7 +119,7 @@ Comprehensive automated code cleanup completed with significant improvements to 
 - [ ] Create performance tests for high-volume order processing.
 - [ ] Test edge cases (e.g., market hours, holidays, halted stocks).
 
-### Phase 3: Caching & Performance Infrastructure
+### Priority 3: Caching & Performance Infrastructure
 **Goal:** Implement Redis caching for scalability and performance.
 **Clarification:** The primary goal is to reduce latency for read-heavy operations.
 
@@ -115,7 +133,7 @@ Comprehensive automated code cleanup completed with significant improvements to 
 - [ ] Develop cache invalidation strategies (e.g., on order execution).
 - [ ] Add monitoring for cache hit/miss ratios and performance.
 
-### Phase 4: User Authentication & Multi-Tenancy
+### Priority 4: User Authentication & Multi-Tenancy
 **Goal:** Implement a secure, production-grade user management and authentication system.
 **Clarification:** This is a security-critical phase. Multi-tenancy must ensure strict data isolation between users at the database level.
 
@@ -133,7 +151,7 @@ Comprehensive automated code cleanup completed with significant improvements to 
 - [ ] Implement audit logging for all user actions.
 - [ ] Add rate limiting, security headers, and CSRF protection.
 
-### Phase 5: Advanced Features & User Experience
+### Priority 5: Advanced Features & User Experience
 **Goal:** Enhance the platform with a frontend, advanced tools, and educational features.
 **Clarification:** The frontend should be a separate SPA that communicates with the backend via the REST API.
 
@@ -143,7 +161,7 @@ Comprehensive automated code cleanup completed with significant improvements to 
 
 #### 5.2 Advanced MCP Tools
 - [ ] Build market analysis tools (e.g., `get_technical_indicators`, `scan_market`).
-- [ ] Add options chain analysis and economic news integration.
+- [ ] Add options chain analysis (**Note:** economic news integration uses external APIs, not deprecated `get_stock_news`).
 - [ ] Implement core system tools: `list_tools`, `health_check`.
 - [ ] Implement account and portfolio tools: `account_info`, `account_details`.
 - [ ] Implement advanced market data tools: `stock_ratings`, `stock_events`, `stock_level2_data`, `market_hours`.
@@ -152,11 +170,12 @@ Comprehensive automated code cleanup completed with significant improvements to 
 #### 5.3 Educational & Community Features
 - [ ] Create interactive trading tutorials and guides.
 - [ ] Implement paper trading competitions and leaderboards.
-- [ ] Build a strategy sharing and discovery platform.
+- [ ] Build a strategy sharing and discovery platform (**Note:** uses external strategy analysis, not deprecated portfolio strategy functions).
 
-### Phase 6: Backtesting & Strategy Framework
+### Priority 6: Backtesting & Strategy Framework
 **Goal:** Build comprehensive strategy development and historical analysis capabilities.
 **Clarification:** This phase requires a robust data engineering pipeline for historical data and a backtesting engine that is completely isolated from the live trading service.
+**⚠️ Important:** This phase will implement NEW strategy analysis capabilities, NOT the deprecated `get_portfolio_strategies()` or `analyze_portfolio_strategies()` functions.
 
 #### 6.1 Historical Data Engine
 - [ ] Design and implement a time-series data storage solution.
@@ -164,11 +183,11 @@ Comprehensive automated code cleanup completed with significant improvements to 
 
 #### 6.2 Backtesting Engine & Strategy Framework
 - [ ] Build a backtesting engine with realistic market simulation (slippage, commissions).
-- [ ] Create a plugin architecture for custom trading strategies.
+- [ ] Create a plugin architecture for custom trading strategies (**Note:** completely separate from deprecated strategy functions).
 - [ ] Implement performance analytics (e.g., Sharpe ratio, max drawdown).
 - [ ] Add strategy validation tools (e.g., walk-forward analysis, Monte Carlo simulation).
 
-### Phase 7: Developer Experience & Documentation
+### Priority 7: Developer Experience & Documentation
 **Goal:** Improve the development workflow and provide comprehensive documentation.
 
 #### 7.1 Tooling & Automation
@@ -183,18 +202,3 @@ Comprehensive automated code cleanup completed with significant improvements to 
 - [ ] Create a `CONTRIBUTING.md` file to formalize the development workflow.
 
 ---
-
-## 📊 SUCCESS METRICS
-**Clarification:** These metrics should be measured and tracked automatically as part of the CI/CD pipeline to ensure consistent quality and performance.
-
-### Performance Targets
-- Order execution: <100ms average response time
-- API endpoints: >95% success rate, <200ms P95 latency
-- Cache hit ratio: >80% for quote requests
-- System uptime: >99.9% availability
-
-### Quality Gates
-- Test coverage: >90% for core trading logic
-- Type safety: 100% MyPy compliance maintained
-- Security: Zero high-severity vulnerabilities
-- Documentation: All public APIs documented

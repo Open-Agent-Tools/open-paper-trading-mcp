@@ -2,15 +2,16 @@
 
 import asyncio
 import random
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 import robin_stocks.robinhood as rh  # type: ignore
 
 from app.core.logging import logger
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class AuthenticationError(Exception):

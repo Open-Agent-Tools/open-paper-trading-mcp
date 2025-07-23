@@ -7,7 +7,7 @@ with the unified architecture pattern.
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.core.dependencies import get_trading_service
 from app.services.trading_service import TradingService
@@ -87,49 +87,6 @@ async def get_price_history_endpoint(
         raise HTTPException(
             status_code=500, detail=f"Error getting price history: {e!s}"
         )
-
-
-@router.get("/news/{symbol}", response_model=dict[str, Any])
-async def get_stock_news_endpoint(
-    symbol: str,
-    request: Request,
-) -> dict[str, Any]:
-    """
-    Get news stories for a stock.
-
-    This endpoint provides unified access to news data
-    that works with both test data and live market data.
-    """
-    service: TradingService = get_trading_service(request)
-    try:
-        result = await service.get_stock_news(symbol)
-        if "error" in result:
-            raise HTTPException(status_code=404, detail=result["error"])
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting stock news: {e!s}")
-
-
-@router.get("/movers", response_model=dict[str, Any])
-async def get_top_movers_endpoint(request: Request) -> dict[str, Any]:
-    """
-    Get top movers in the market.
-
-    This endpoint provides unified access to market movers data
-    that works with both test data and live market data.
-    """
-    service: TradingService = get_trading_service(request)
-    try:
-        result = await service.get_top_movers()
-        if "error" in result:
-            raise HTTPException(status_code=404, detail=result["error"])
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting top movers: {e!s}")
 
 
 @router.get("/search", response_model=dict[str, Any])

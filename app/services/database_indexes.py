@@ -198,7 +198,9 @@ class DatabaseIndexManager:
 
         return usage_stats
 
-    async def get_slow_queries(self, min_duration_ms: int = 100) -> list[dict[str, Any]]:
+    async def get_slow_queries(
+        self, min_duration_ms: int = 100
+    ) -> list[dict[str, Any]]:
         """Get slow query information for optimization analysis."""
         slow_queries = []
 

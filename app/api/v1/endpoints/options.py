@@ -10,7 +10,7 @@ Provides comprehensive options trading functionality including:
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.core.dependencies import get_trading_service
@@ -212,30 +212,6 @@ async def calculate_option_greeks(
 
 
 # Strategy Analysis Endpoints
-@router.post("/strategies/analyze", response_model=dict[str, Any])
-async def analyze_portfolio_strategies(
-    analysis_request: StrategyAnalysisRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """
-    Perform comprehensive strategy analysis for current portfolio.
-
-    Includes P&L analysis, Greeks aggregation, and optimization recommendations.
-    """
-    service: TradingService = get_trading_service(request)
-    try:
-        analysis_result = await service.analyze_portfolio_strategies(
-            include_greeks=analysis_request.include_greeks,
-            include_pnl=analysis_request.include_pnl,
-            include_complex_strategies=analysis_request.include_complex_strategies,
-            include_recommendations=analysis_request.include_recommendations,
-        )
-        return analysis_result
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in strategy analysis: {e!s}"
-        )
 
 
 # Unified Options Data Endpoints

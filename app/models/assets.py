@@ -5,8 +5,8 @@ Asset models with improvements for FastAPI/MCP architecture.
 """
 
 from datetime import date, datetime
-from typing import Any, Optional, Union
 from enum import Enum
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -15,6 +15,7 @@ class OptionType(str, Enum):
     """
     A stub for the OptionType.
     """
+
     CALL = "call"
     PUT = "put"
 

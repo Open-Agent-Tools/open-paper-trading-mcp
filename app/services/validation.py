@@ -268,6 +268,7 @@ class BusinessRuleValidator:
     """
     A stub for the BusinessRuleValidator.
     """
+
     pass
 
 
@@ -275,6 +276,7 @@ class MultiLegOrderValidator:
     """
     A stub for the MultiLegOrderValidator.
     """
+
     pass
 
 
@@ -282,6 +284,7 @@ class OrderValidator:
     """
     A stub for the OrderValidator.
     """
+
     pass
 
 
@@ -289,4 +292,5 @@ class PositionValidator:
     """
     A stub for the PositionValidator.
     """
+
     pass

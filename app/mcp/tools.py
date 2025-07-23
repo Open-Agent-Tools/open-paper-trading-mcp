@@ -50,25 +50,6 @@ class GetPositionArgs(BaseModel):
     symbol: str = Field(..., description="Stock symbol to get position for")
 
 
-async def get_stock_quote(args: GetQuoteArgs) -> str:
-    """[DEPRECATED] Get current stock quote for a symbol."""
-    try:
-        quote = await get_mcp_trading_service().get_quote(args.symbol)
-        return json.dumps(
-            {
-                "symbol": quote.symbol,
-                "price": quote.price,
-                "change": quote.change,
-                "change_percent": quote.change_percent,
-                "volume": quote.volume,
-                "last_updated": quote.last_updated.isoformat(),
-            },
-            indent=2,
-        )
-    except Exception as e:
-        return f"Error getting quote: {e!s}"
-
-
 async def create_buy_order(args: CreateOrderArgs) -> str:
     """Create a buy order for a stock."""
     try:
@@ -311,14 +292,6 @@ class CalculateGreeksArgs(BaseModel):
     )
 
 
-class GetStrategyAnalysisArgs(BaseModel):
-    include_greeks: bool = Field(True, description="Include Greeks aggregation")
-    include_pnl: bool = Field(True, description="Include P&L analysis")
-    include_recommendations: bool = Field(
-        True, description="Include optimization recommendations"
-    )
-
-
 class SimulateExpirationArgs(BaseModel):
     processing_date: str | None = Field(
         None, description="Expiration processing date (YYYY-MM-DD)"
@@ -429,21 +402,6 @@ async def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
 
     except Exception as e:
         return f"Error calculating Greeks: {e!s}"
-
-
-async def get_strategy_analysis(args: GetStrategyAnalysisArgs) -> str:
-    """Get comprehensive strategy analysis for current portfolio."""
-    try:
-        analysis_result = await get_mcp_trading_service().analyze_portfolio_strategies(
-            include_greeks=args.include_greeks,
-            include_pnl=args.include_pnl,
-            include_complex_strategies=True,  # Not available in args, default to True
-            include_recommendations=args.include_recommendations,
-        )
-        return json.dumps(analysis_result, indent=2)
-
-    except Exception as e:
-        return f"Error in strategy analysis: {e!s}"
 
 
 async def simulate_option_expiration(args: SimulateExpirationArgs) -> str:

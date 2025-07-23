@@ -91,7 +91,9 @@ class MemoryEfficientOrderTracker:
         self.current_states: dict[str, OrderStateSnapshot] = {}
 
         # Event callbacks using weak references
-        self.state_change_callbacks: list[weakref.ReferenceType[Callable[..., Any]]] = []
+        self.state_change_callbacks: list[
+            weakref.ReferenceType[Callable[..., Any]]
+        ] = []
 
         # Metrics tracking
         self.metrics = {

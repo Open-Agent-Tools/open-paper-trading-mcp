@@ -445,34 +445,6 @@ class TradingService:
             "quote_time": quote.quote_date.isoformat(),
         }
 
-    async def get_portfolio_strategies(self) -> dict[str, Any]:
-        """Get strategy analysis for portfolio."""
-        from .strategies import analyze_strategy_portfolio
-
-        positions = await self.get_positions()
-
-        # Analyze strategies
-        analysis = analyze_strategy_portfolio(positions)
-
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "total_positions": analysis["total_positions"],
-            "total_strategies": analysis["total_strategies"],
-            "strategies": [
-                {
-                    "strategy_type": strategy.strategy_type,
-                    "quantity": strategy.quantity,
-                    "asset_symbol": (
-                        getattr(strategy, "asset", {}).get("symbol", "unknown")
-                        if hasattr(strategy, "asset")
-                        else "unknown"
-                    ),
-                }
-                for strategy in analysis["strategies"]
-            ],
-            "summary": analysis["summary"],
-        }
-
     async def get_option_greeks_response(
         self, option_symbol: str, underlying_price: float | None = None
     ) -> dict[str, Any]:
@@ -568,52 +540,6 @@ class TradingService:
             option_price=option_quote.price,
         )
 
-    async def analyze_portfolio_strategies(
-        self,
-        include_greeks: bool = False,
-        include_pnl: bool = False,
-        include_complex_strategies: bool = False,
-        include_recommendations: bool = False,
-    ) -> dict[str, Any]:
-        """Analyze portfolio for trading strategies."""
-        # Get current positions from database
-        positions = await self.get_positions()
-
-        # Convert to enhanced Position objects
-        enhanced_positions = []
-        for pos in positions:
-            # This is a simplified conversion - in real implementation would need proper Position model
-            enhanced_positions.append(pos)
-
-        strategies = self.strategy_recognition.group_positions_by_strategy(
-            enhanced_positions
-        )
-        summary = self.strategy_recognition.get_strategy_summary(strategies)
-
-        return {
-            "strategies": [strategy.dict() for strategy in strategies],
-            "summary": summary,
-            "total_positions": len(enhanced_positions),
-            "total_strategies": len(strategies),
-        }
-
-    async def calculate_margin_requirement(self) -> dict[str, Any]:
-        """Calculate current portfolio margin requirement."""
-        # Get current positions from database
-        positions = await self.get_positions()
-
-        # Convert to enhanced Position objects
-        enhanced_positions = []
-        for pos in positions:
-            enhanced_positions.append(pos)
-
-        if self.margin_service:
-            return self.margin_service.get_portfolio_margin_breakdown(
-                enhanced_positions, self.quote_adapter
-            )
-        else:
-            return {"error": "Margin service not available"}
-
     async def validate_account_state(self) -> bool:
         """Validate current account state."""
         cash_balance = await self.get_account_balance()
@@ -621,22 +547,6 @@ class TradingService:
         return self.account_validation.validate_account_state(
             cash_balance=cash_balance, positions=positions
         )
-
-    def get_test_scenarios(self) -> dict[str, Any]:
-        """Get available test scenarios for development."""
-        return self.quote_adapter.get_test_scenarios()
-
-    def set_test_date(self, date_str: str) -> None:
-        """Set test data date for historical scenarios."""
-        self.quote_adapter.set_date(date_str)
-
-    def get_available_symbols(self) -> list[str]:
-        """Get all available symbols in test data."""
-        return self.quote_adapter.get_available_symbols()
-
-    def get_sample_data_info(self) -> dict[str, Any]:
-        """Get information about sample data."""
-        return self.quote_adapter.get_sample_data_info()
 
     def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
@@ -960,73 +870,6 @@ class TradingService:
                     "interval": "current",
                     "data_points": [data_point],
                     "message": "Historical data not available, showing current quote only",
-                }
-
-        except Exception as e:
-            return {"error": str(e)}
-
-    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
-        """
-        Get news stories for a stock.
-
-        This method provides a unified interface that works with both
-        test data and live market data adapters.
-        """
-        try:
-            asset = asset_factory(symbol)
-            if not asset:
-                return {"error": f"Invalid symbol: {symbol}"}
-
-            # For now, use the adapter's extended functionality if available
-            if hasattr(self.quote_adapter, "get_stock_news"):
-                result = await self.quote_adapter.get_stock_news(symbol)
-                return dict(result) if result else {}
-            else:
-                return {
-                    "symbol": symbol.upper(),
-                    "news": [],
-                    "message": "News data not available in current adapter",
-                }
-
-        except Exception as e:
-            return {"error": str(e)}
-
-    async def get_top_movers(self) -> dict[str, Any]:
-        """
-        Get top movers in the market.
-
-        This method provides a unified interface that works with both
-        test data and live market data adapters.
-        """
-        try:
-            # For now, use the adapter's extended functionality if available
-            if hasattr(self.quote_adapter, "get_top_movers"):
-                result = await self.quote_adapter.get_top_movers()
-                return dict(result) if result else {}
-            else:
-                # Fallback to available symbols with basic data
-                symbols = self.get_available_symbols()[:10]  # Top 10
-                movers = []
-
-                for symbol in symbols:
-                    try:
-                        price_data = await self.get_stock_price(symbol)
-                        if "error" not in price_data:
-                            movers.append(
-                                {
-                                    "symbol": symbol,
-                                    "price": price_data["price"],
-                                    "change_percent": price_data.get(
-                                        "change_percent", 0
-                                    ),
-                                }
-                            )
-                    except Exception:
-                        continue
-
-                return {
-                    "movers": movers,
-                    "message": "Limited movers data from test adapter",
                 }
 
         except Exception as e:

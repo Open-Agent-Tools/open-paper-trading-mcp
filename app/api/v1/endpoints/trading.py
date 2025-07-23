@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.core.dependencies import get_trading_service
 from app.core.exceptions import NotFoundError, ValidationError

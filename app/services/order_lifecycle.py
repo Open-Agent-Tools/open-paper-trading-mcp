@@ -333,7 +333,9 @@ class OrderLifecycleManager:
                 result.append(lifecycle_state)
         return result
 
-    def register_event_callback(self, event: OrderEvent, callback: Callable[..., Any]) -> None:
+    def register_event_callback(
+        self, event: OrderEvent, callback: Callable[..., Any]
+    ) -> None:
         """Register a callback for order events."""
         self.event_callbacks[event].append(callback)
 
@@ -474,4 +476,5 @@ class OrderStateMachine:
     """
     A stub for the OrderStateMachine.
     """
+
     pass

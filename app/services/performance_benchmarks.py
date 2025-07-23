@@ -153,7 +153,9 @@ class PerformanceMonitor:
 
         logger.info("Performance monitoring stopped")
 
-    def start_measurement(self, operation: str, metadata: dict[str, Any] | None = None) -> str:
+    def start_measurement(
+        self, operation: str, metadata: dict[str, Any] | None = None
+    ) -> str:
         """Start timing an operation."""
         measurement_id = f"{operation}_{int(time.time() * 1000000)}"
 
@@ -210,11 +212,15 @@ class PerformanceMonitor:
 
         return metric
 
-    def measure_sync(self, operation: str, metadata: dict[str, Any] | None = None) -> "SyncMeasurementContext":
+    def measure_sync(
+        self, operation: str, metadata: dict[str, Any] | None = None
+    ) -> "SyncMeasurementContext":
         """Context manager for synchronous operations."""
         return SyncMeasurementContext(self, operation, metadata)
 
-    def measure_async(self, operation: str, metadata: dict[str, Any] | None = None) -> "AsyncMeasurementContext":
+    def measure_async(
+        self, operation: str, metadata: dict[str, Any] | None = None
+    ) -> "AsyncMeasurementContext":
         """Context manager for asynchronous operations."""
         return AsyncMeasurementContext(self, operation, metadata)
 
@@ -610,6 +616,7 @@ class OptimizationRecommendation:
     """
     A stub for the OptimizationRecommendation.
     """
+
     pass
 
 
@@ -617,6 +624,7 @@ class PerformanceBenchmarker:
     """
     A stub for the PerformanceBenchmarker.
     """
+
     pass
 
 
@@ -624,6 +632,7 @@ class SystemResourceMetrics:
     """
     A stub for the SystemResourceMetrics.
     """
+
     pass
 
 
@@ -631,4 +640,5 @@ class ThroughputResult:
     """
     A stub for the ThroughputResult.
     """
+
     pass

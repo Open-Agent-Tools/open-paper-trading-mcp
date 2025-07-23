@@ -20,9 +20,6 @@ from ..schemas.positions import Portfolio, Position
 logger = logging.getLogger(__name__)
 
 
-from typing import Any
-
-
 @dataclass
 class CorrelationMatrix:
     """Represents a correlation matrix for a set of assets."""
@@ -712,6 +709,7 @@ class DrawdownAnalysis:
     """
     A stub for the DrawdownAnalysis.
     """
+
     pass
 
 
@@ -719,6 +717,7 @@ class PerformanceAttribution:
     """
     A stub for the PerformanceAttribution.
     """
+
     pass
 
 
@@ -726,6 +725,7 @@ class PortfolioRiskAnalyzer:
     """
     A stub for the PortfolioRiskAnalyzer.
     """
+
     pass
 
 
@@ -733,4 +733,5 @@ class RiskDecomposition:
     """
     A stub for the RiskDecomposition.
     """
+
     pass

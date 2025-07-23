@@ -384,6 +384,7 @@ class OrderFillSimulator:
     """
     A stub for the OrderFillSimulator.
     """
+
     pass
 
 

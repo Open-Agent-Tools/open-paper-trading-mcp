@@ -908,6 +908,7 @@ class PositionImpactResult:
     """
     A stub for the PositionImpactResult.
     """
+
     pass
 
 
@@ -915,4 +916,5 @@ class RiskMetrics:
     """
     A stub for the RiskMetrics.
     """
+
     pass
