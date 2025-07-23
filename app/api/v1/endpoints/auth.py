@@ -31,7 +31,7 @@ def get_auth_service() -> AuthService:
 @router.post("/token", response_model=Token, deprecated=True)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-) -> dict[str, str]:
+) -> Token:
     service: AuthService = get_auth_service()
     user = service.authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -45,7 +45,7 @@ async def login_for_access_token(
     access_token = service.create_access_token(
         data={"sub": user["username"]}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Token(access_token=access_token, token_type="bearer")
 
 
 @router.get("/me", response_model=User)

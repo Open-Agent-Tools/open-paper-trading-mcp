@@ -468,8 +468,9 @@ class OrderExecutionEngine:
                     db_order.status = (
                         OrderStatus.FILLED
                     )  # Or could add TRIGGERED status
-                    db_order.triggered_at = datetime.utcnow()
-                    db_order.filled_at = datetime.utcnow()
+                    current_time = datetime.utcnow()
+                    db_order.triggered_at = current_time
+                    db_order.filled_at = current_time
 
                     await db.commit()
                     logger.info(f"Updated order {order_id} status to triggered")

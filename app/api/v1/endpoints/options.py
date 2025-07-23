@@ -10,7 +10,7 @@ Provides comprehensive options trading functionality including:
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.core.dependencies import get_trading_service
@@ -90,6 +90,7 @@ class ExpirationSimulationRequest(BaseModel):
 @router.get("/{symbol}/chain", response_model=OptionsChainResponse)
 async def get_options_chain(
     symbol: str,
+    request: Request,
     expiration_date: str | None = Query(
         None, description="Expiration date filter (YYYY-MM-DD)"
     ),
@@ -103,7 +104,7 @@ async def get_options_chain(
     Supports filtering by expiration date and strike price range.
     Includes Greeks data when available.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         expiration = None
         if expiration_date:
@@ -129,13 +130,14 @@ async def get_options_chain(
 @router.get("/{symbol}/expirations", response_model=dict[str, Any])
 async def get_expiration_dates(
     symbol: str,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Get available expiration dates for an underlying symbol.
 
     Returns sorted list of expiration dates with metadata.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         dates = service.get_expiration_dates(symbol)
 
@@ -158,17 +160,18 @@ async def get_expiration_dates(
 # Multi-leg Order Endpoints
 @router.post("/orders/multi-leg", response_model=Order)
 async def create_multi_leg_order(
-    request: MultiLegOrderRequest,
+    order_request: MultiLegOrderRequest,
+    request: Request,
 ) -> Order:
     """
     Create a multi-leg options order.
 
     Supports complex strategies like spreads, straddles, and condors.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         order = await service.create_multi_leg_order_from_request(
-            request.legs, request.order_type, request.net_price
+            order_request.legs, order_request.order_type, order_request.net_price
         )
         return order
 
@@ -184,6 +187,7 @@ async def create_multi_leg_order(
 @router.get("/{option_symbol}/greeks", response_model=GreeksResponse)
 async def calculate_option_greeks(
     option_symbol: str,
+    request: Request,
     underlying_price: float | None = Query(
         None, description="Override underlying price"
     ),
@@ -194,7 +198,7 @@ async def calculate_option_greeks(
 
     Supports parameter overrides for scenario analysis.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         greeks_data = await service.get_option_greeks_response(
             option_symbol, underlying_price
@@ -210,20 +214,21 @@ async def calculate_option_greeks(
 # Strategy Analysis Endpoints
 @router.post("/strategies/analyze", response_model=dict[str, Any])
 async def analyze_portfolio_strategies(
-    request: StrategyAnalysisRequest,
+    analysis_request: StrategyAnalysisRequest,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Perform comprehensive strategy analysis for current portfolio.
 
     Includes P&L analysis, Greeks aggregation, and optimization recommendations.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         analysis_result = await service.analyze_portfolio_strategies(
-            include_greeks=request.include_greeks,
-            include_pnl=request.include_pnl,
-            include_complex_strategies=request.include_complex_strategies,
-            include_recommendations=request.include_recommendations,
+            include_greeks=analysis_request.include_greeks,
+            include_pnl=analysis_request.include_pnl,
+            include_complex_strategies=analysis_request.include_complex_strategies,
+            include_recommendations=analysis_request.include_recommendations,
         )
         return analysis_result
 
@@ -237,6 +242,7 @@ async def analyze_portfolio_strategies(
 @router.get("/{symbol}/search", response_model=dict[str, Any])
 async def find_tradable_options_endpoint(
     symbol: str,
+    request: Request,
     expiration_date: str | None = Query(
         None, description="Expiration date filter (YYYY-MM-DD)"
     ),
@@ -250,7 +256,7 @@ async def find_tradable_options_endpoint(
     This endpoint provides unified access to options discovery
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.find_tradable_options(
             symbol, expiration_date, option_type
@@ -265,6 +271,7 @@ async def find_tradable_options_endpoint(
 @router.get("/market-data/{option_id}", response_model=dict[str, Any])
 async def get_option_market_data_endpoint(
     option_id: str,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Get comprehensive market data for a specific option contract.
@@ -272,7 +279,7 @@ async def get_option_market_data_endpoint(
     Provides pricing, Greeks, volume, and other market data
     through the unified TradingService interface.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.get_option_market_data(option_id)
         if "error" in result:

@@ -2,7 +2,7 @@
 Unified MCP server that combines all MCP tools.
 """
 
-from fastmcp import FastMCP  # type: ignore
+from fastmcp import FastMCP
 
 from app.mcp.market_data_tools import (
     get_price_history,

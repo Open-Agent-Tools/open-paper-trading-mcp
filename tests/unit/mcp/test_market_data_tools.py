@@ -97,7 +97,7 @@ class TestMarketDataToolsParameterValidation:
 class TestMarketDataToolFunctions:
     """Test individual market data tool functions."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_price_success(self):
         """Test successful stock price retrieval."""
         mock_result = {
@@ -117,7 +117,7 @@ class TestMarketDataToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("AAPL")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_price_with_whitespace_symbol(self):
         """Test stock price retrieval with whitespace in symbol."""
         mock_result = {"symbol": "TSLA", "price": 200.00}
@@ -132,7 +132,7 @@ class TestMarketDataToolFunctions:
             mock_service.assert_called_once_with("TSLA")
             assert result == mock_result
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_price_error_handling(self):
         """Test error handling in get_stock_price."""
         with patch.object(trading_service, 'get_stock_price', new_callable=AsyncMock) as mock_service:
@@ -144,7 +144,7 @@ class TestMarketDataToolFunctions:
             assert "error" in result
             assert "API error" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_info_success(self):
         """Test successful stock info retrieval."""
         mock_result = {
@@ -164,7 +164,7 @@ class TestMarketDataToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("GOOGL")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_info_error_handling(self):
         """Test error handling in get_stock_info."""
         with patch.object(trading_service, 'get_stock_info', new_callable=AsyncMock) as mock_service:
@@ -176,7 +176,7 @@ class TestMarketDataToolFunctions:
             assert "error" in result
             assert "Invalid symbol" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_price_history_success(self):
         """Test successful price history retrieval."""
         mock_result = {
@@ -197,7 +197,7 @@ class TestMarketDataToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("MSFT", "month")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_price_history_default_period(self):
         """Test price history with default period."""
         mock_result = {"symbol": "AAPL", "period": "week", "data": []}
@@ -210,7 +210,7 @@ class TestMarketDataToolFunctions:
             
             mock_service.assert_called_once_with("AAPL", "week")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_news_success(self):
         """Test successful stock news retrieval."""
         mock_result = {
@@ -233,7 +233,7 @@ class TestMarketDataToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("NVDA")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_top_movers_success(self):
         """Test successful top movers retrieval."""
         mock_result = {
@@ -254,7 +254,7 @@ class TestMarketDataToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once()
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_top_movers_error_handling(self):
         """Test error handling in get_top_movers."""
         with patch.object(trading_service, 'get_top_movers', new_callable=AsyncMock) as mock_service:
@@ -265,7 +265,7 @@ class TestMarketDataToolFunctions:
             assert "error" in result
             assert "Market data unavailable" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_search_stocks_success(self):
         """Test successful stock search."""
         mock_result = {
@@ -285,7 +285,7 @@ class TestMarketDataToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("Apple")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_search_stocks_error_handling(self):
         """Test error handling in search_stocks."""
         with patch.object(trading_service, 'search_stocks', new_callable=AsyncMock) as mock_service:
@@ -308,7 +308,7 @@ class TestMarketDataToolsIntegration:
         from app.services.trading_service import TradingService
         assert isinstance(trading_service, TradingService)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_all_tools_use_trading_service(self):
         """Test that all tools properly integrate with TradingService."""
         # Mock all TradingService methods used by tools
@@ -347,7 +347,7 @@ class TestMarketDataToolsIntegration:
 class TestMarketDataToolsErrorHandling:
     """Test comprehensive error handling scenarios."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_network_error_handling(self):
         """Test handling of network-related errors."""
         import asyncio
@@ -361,7 +361,7 @@ class TestMarketDataToolsErrorHandling:
             assert "error" in result
             assert "Request timeout" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_service_exception_handling(self):
         """Test handling of service-specific exceptions."""
         with patch.object(trading_service, 'get_stock_info', new_callable=AsyncMock) as mock_service:
@@ -373,7 +373,7 @@ class TestMarketDataToolsErrorHandling:
             assert "error" in result
             assert "Invalid symbol format" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_unexpected_exception_handling(self):
         """Test handling of unexpected exceptions."""
         with patch.object(trading_service, 'search_stocks', new_callable=AsyncMock) as mock_service:
@@ -389,7 +389,7 @@ class TestMarketDataToolsErrorHandling:
 class TestMarketDataToolsInputProcessing:
     """Test input processing and normalization."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_symbol_normalization(self):
         """Test that symbols are properly normalized."""
         test_cases = [
@@ -410,7 +410,7 @@ class TestMarketDataToolsInputProcessing:
                 last_call_args = mock_service.call_args[0]
                 assert last_call_args[0] == expected_symbol
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_query_normalization(self):
         """Test that search queries are properly normalized."""
         test_cases = [
@@ -434,7 +434,7 @@ class TestMarketDataToolsInputProcessing:
 class TestMarketDataToolsResponseFormatting:
     """Test response formatting and structure."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_successful_response_passthrough(self):
         """Test that successful responses are passed through correctly."""
         mock_response = {
@@ -452,7 +452,7 @@ class TestMarketDataToolsResponseFormatting:
             # Should return the exact response from service
             assert result == mock_response
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_error_response_formatting(self):
         """Test that error responses are properly formatted."""
         with patch.object(trading_service, 'get_stock_price', new_callable=AsyncMock) as mock_service:
@@ -466,7 +466,7 @@ class TestMarketDataToolsResponseFormatting:
             assert "error" in result
             assert "Test error" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_empty_response_handling(self):
         """Test handling of empty or None responses."""
         with patch.object(trading_service, 'get_top_movers', new_callable=AsyncMock) as mock_service:
@@ -481,7 +481,7 @@ class TestMarketDataToolsResponseFormatting:
 class TestMarketDataToolsAsyncBehavior:
     """Test async behavior and concurrency."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_concurrent_tool_calls(self):
         """Test that tools can be called concurrently."""
         import asyncio
@@ -507,7 +507,7 @@ class TestMarketDataToolsAsyncBehavior:
             # Service should be called 3 times
             assert mock_service.call_count == 3
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_async_context_preservation(self):
         """Test that async context is preserved across tool calls."""
         import contextvars
@@ -569,7 +569,7 @@ class TestMarketDataToolsCoverage:
         assert GetStockNewsArgs.model_fields['symbol'].description is not None
         assert SearchStocksArgs.model_fields['query'].description is not None
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_edge_case_inputs(self):
         """Test edge case inputs."""
         with patch.object(trading_service, 'get_stock_price', new_callable=AsyncMock) as mock_service:

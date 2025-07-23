@@ -182,7 +182,7 @@ class MockDataFactory:
     ) -> dict[str, Any]:
         """Create mock market data response."""
         if data_type == "price":
-            defaults = {
+            defaults: dict[str, Any] = {
                 "price": 155.0,
                 "change": 2.5,
                 "change_percent": 1.64,
@@ -192,7 +192,7 @@ class MockDataFactory:
         elif data_type == "info":
             defaults = {
                 "name": f"{symbol} Inc.",
-                "sector": "Technology",
+                "sector": "Technology", 
                 "industry": "Consumer Electronics",
                 "pe_ratio": 28.5,
                 "dividend_yield": 0.0055,
@@ -211,7 +211,7 @@ class MockDataFactory:
                 "articles": [
                     {
                         "title": f"{symbol} Reports Strong Earnings",
-                        "url": "https://example.com/news/1",
+                        "url": "https://example.com/news/1", 
                         "published_at": "2023-06-15T14:30:00Z",
                         "source": "MarketWatch",
                     }
@@ -596,14 +596,12 @@ def api_test_utils():
     return APITestUtils
 
 
-# Custom pytest markers for API tests
-pytest.mark.auth = pytest.mark.mark("auth", "Authentication endpoint tests")
-pytest.mark.health = pytest.mark.mark("health", "Health check endpoint tests")
-pytest.mark.portfolio = pytest.mark.mark("portfolio", "Portfolio endpoint tests")
-pytest.mark.trading = pytest.mark.mark("trading", "Trading endpoint tests")
-pytest.mark.market_data = pytest.mark.mark("market_data", "Market data endpoint tests")
-pytest.mark.options = pytest.mark.mark("options", "Options endpoint tests")
-pytest.mark.slow = pytest.mark.mark("slow", "Slow running tests")
-pytest.mark.integration = pytest.mark.mark(
-    "integration", "Integration tests requiring external services"
-)
+# Custom pytest markers for API tests - these would be defined in pytest.ini or pyproject.toml
+# pytest.mark.auth = pytest.mark.auth
+# pytest.mark.health = pytest.mark.health 
+# pytest.mark.portfolio = pytest.mark.portfolio
+# pytest.mark.trading = pytest.mark.trading
+# pytest.mark.market_data = pytest.mark.market_data
+# pytest.mark.options = pytest.mark.options
+# pytest.mark.slow = pytest.mark.slow
+# pytest.mark.integration = pytest.mark.integration

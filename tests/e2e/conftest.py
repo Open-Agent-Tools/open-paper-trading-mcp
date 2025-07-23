@@ -45,7 +45,7 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_async_session() -> AsyncSession:
+async def test_async_session():
     """Create a test database session for each test with isolated engine."""
     import os
 

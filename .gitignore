@@ -213,3 +213,9 @@ data/logs/
 *.pickle
 
 /reference_code/
+.logs
+.tokens
+.claude
+/data/logs
+/data/tokens
+

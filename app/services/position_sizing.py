@@ -327,7 +327,7 @@ class PositionSizingCalculator:
         # Apply constraints
         adjusted_position = max(
             self.parameters.min_position_size,
-            min(adjusted_position, self.parameters.max_position_size),
+            min(float(adjusted_position), self.parameters.max_position_size),
         )
 
         position_value = portfolio.total_value * adjusted_position

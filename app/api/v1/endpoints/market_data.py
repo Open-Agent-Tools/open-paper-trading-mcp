@@ -7,7 +7,7 @@ with the unified architecture pattern.
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.core.dependencies import get_trading_service
 from app.services.trading_service import TradingService
@@ -18,6 +18,7 @@ router = APIRouter()
 @router.get("/price/{symbol}", response_model=dict[str, Any])
 async def get_stock_price_endpoint(
     symbol: str,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Get current stock price and basic metrics.
@@ -25,7 +26,7 @@ async def get_stock_price_endpoint(
     This endpoint provides unified access to stock pricing data
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.get_stock_price(symbol)
         if "error" in result:
@@ -40,6 +41,7 @@ async def get_stock_price_endpoint(
 @router.get("/info/{symbol}", response_model=dict[str, Any])
 async def get_stock_info_endpoint(
     symbol: str,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Get detailed company information and fundamentals for a stock.
@@ -47,7 +49,7 @@ async def get_stock_info_endpoint(
     This endpoint provides unified access to company data
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.get_stock_info(symbol)
         if "error" in result:
@@ -62,6 +64,7 @@ async def get_stock_info_endpoint(
 @router.get("/history/{symbol}", response_model=dict[str, Any])
 async def get_price_history_endpoint(
     symbol: str,
+    request: Request,
     period: str = Query(
         "week", description="Time period: day, week, month, 3month, year, 5year"
     ),
@@ -72,7 +75,7 @@ async def get_price_history_endpoint(
     This endpoint provides unified access to historical data
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.get_price_history(symbol, period)
         if "error" in result:
@@ -89,6 +92,7 @@ async def get_price_history_endpoint(
 @router.get("/news/{symbol}", response_model=dict[str, Any])
 async def get_stock_news_endpoint(
     symbol: str,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Get news stories for a stock.
@@ -96,7 +100,7 @@ async def get_stock_news_endpoint(
     This endpoint provides unified access to news data
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.get_stock_news(symbol)
         if "error" in result:
@@ -109,14 +113,14 @@ async def get_stock_news_endpoint(
 
 
 @router.get("/movers", response_model=dict[str, Any])
-async def get_top_movers_endpoint() -> dict[str, Any]:
+async def get_top_movers_endpoint(request: Request) -> dict[str, Any]:
     """
     Get top movers in the market.
 
     This endpoint provides unified access to market movers data
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.get_top_movers()
         if "error" in result:
@@ -130,6 +134,7 @@ async def get_top_movers_endpoint() -> dict[str, Any]:
 
 @router.get("/search", response_model=dict[str, Any])
 async def search_stocks_endpoint(
+    request: Request,
     query: str = Query(..., description="Search query (symbol or company name)"),
 ) -> dict[str, Any]:
     """
@@ -138,7 +143,7 @@ async def search_stocks_endpoint(
     This endpoint provides unified access to stock search
     that works with both test data and live market data.
     """
-    service: TradingService = get_trading_service()
+    service: TradingService = get_trading_service(request)
     try:
         result = await service.search_stocks(query)
         if "error" in result:

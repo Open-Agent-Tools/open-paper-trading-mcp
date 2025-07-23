@@ -90,7 +90,7 @@ class TestOptionsToolsParameterValidation:
 class TestOptionsToolFunctions:
     """Test individual options tool functions."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_options_chains_success(self):
         """Test successful options chain retrieval."""
         mock_result = {
@@ -117,7 +117,7 @@ class TestOptionsToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("AAPL")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_options_chains_with_whitespace_symbol(self):
         """Test options chain retrieval with whitespace in symbol."""
         mock_result = {"underlying_symbol": "TSLA", "chains": {}}
@@ -132,7 +132,7 @@ class TestOptionsToolFunctions:
             mock_service.assert_called_once_with("TSLA")
             assert result == mock_result
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_options_chains_error_handling(self):
         """Test error handling in get_options_chains."""
         with patch.object(trading_service, 'get_formatted_options_chain', new_callable=AsyncMock) as mock_service:
@@ -144,7 +144,7 @@ class TestOptionsToolFunctions:
             assert "error" in result
             assert "Options data unavailable" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_find_tradable_options_success(self):
         """Test successful tradable options search."""
         mock_result = {
@@ -171,7 +171,7 @@ class TestOptionsToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("AAPL", "2024-12-20", "call")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_find_tradable_options_minimal_args(self):
         """Test find_tradable_options with minimal arguments."""
         mock_result = {"symbol": "GOOGL", "options": [], "count": 0}
@@ -185,7 +185,7 @@ class TestOptionsToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("GOOGL", None, None)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_find_tradable_options_error_handling(self):
         """Test error handling in find_tradable_options."""
         with patch.object(trading_service, 'find_tradable_options', new_callable=AsyncMock) as mock_service:
@@ -197,7 +197,7 @@ class TestOptionsToolFunctions:
             assert "error" in result
             assert "Invalid expiration date" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_option_market_data_success(self):
         """Test successful option market data retrieval."""
         mock_result = {
@@ -230,7 +230,7 @@ class TestOptionsToolFunctions:
             assert result == mock_result
             mock_service.assert_called_once_with("AAPL241220C00150000")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_option_market_data_error_handling(self):
         """Test error handling in get_option_market_data."""
         with patch.object(trading_service, 'get_option_market_data', new_callable=AsyncMock) as mock_service:
@@ -253,7 +253,7 @@ class TestOptionsToolsIntegration:
         from app.services.trading_service import TradingService
         assert isinstance(trading_service, TradingService)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_all_tools_use_trading_service(self):
         """Test that all tools properly integrate with TradingService."""
         # Mock all TradingService methods used by options tools
@@ -280,7 +280,7 @@ class TestOptionsToolsIntegration:
 class TestOptionsToolsErrorHandling:
     """Test comprehensive error handling scenarios."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_network_error_handling(self):
         """Test handling of network-related errors."""
         import asyncio
@@ -294,7 +294,7 @@ class TestOptionsToolsErrorHandling:
             assert "error" in result
             assert "Request timeout" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_service_exception_handling(self):
         """Test handling of service-specific exceptions."""
         with patch.object(trading_service, 'find_tradable_options', new_callable=AsyncMock) as mock_service:
@@ -306,7 +306,7 @@ class TestOptionsToolsErrorHandling:
             assert "error" in result
             assert "Invalid option type" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_unexpected_exception_handling(self):
         """Test handling of unexpected exceptions."""
         with patch.object(trading_service, 'get_option_market_data', new_callable=AsyncMock) as mock_service:
@@ -322,7 +322,7 @@ class TestOptionsToolsErrorHandling:
 class TestOptionsToolsInputProcessing:
     """Test input processing and normalization."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_symbol_normalization(self):
         """Test that symbols are properly normalized."""
         test_cases = [
@@ -343,7 +343,7 @@ class TestOptionsToolsInputProcessing:
                 last_call_args = mock_service.call_args[0]
                 assert last_call_args[0] == expected_symbol
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_option_type_validation(self):
         """Test option type parameter handling."""
         test_cases = ["call", "put", None, "CALL", "PUT"]
@@ -359,7 +359,7 @@ class TestOptionsToolsInputProcessing:
                 last_call_args = mock_service.call_args[0]
                 assert last_call_args[2] == option_type
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_expiration_date_validation(self):
         """Test expiration date parameter handling."""
         test_cases = [
@@ -384,7 +384,7 @@ class TestOptionsToolsInputProcessing:
 class TestOptionsToolsResponseFormatting:
     """Test response formatting and structure."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_successful_response_passthrough(self):
         """Test that successful responses are passed through correctly."""
         mock_response = {
@@ -402,7 +402,7 @@ class TestOptionsToolsResponseFormatting:
             # Should return the exact response from service
             assert result == mock_response
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_error_response_formatting(self):
         """Test that error responses are properly formatted."""
         with patch.object(trading_service, 'get_formatted_options_chain', new_callable=AsyncMock) as mock_service:
@@ -416,7 +416,7 @@ class TestOptionsToolsResponseFormatting:
             assert "error" in result
             assert "Test error" in result["error"]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_empty_response_handling(self):
         """Test handling of empty or None responses."""
         with patch.object(trading_service, 'find_tradable_options', new_callable=AsyncMock) as mock_service:
@@ -432,7 +432,7 @@ class TestOptionsToolsResponseFormatting:
 class TestOptionsToolsAsyncBehavior:
     """Test async behavior and concurrency."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_concurrent_tool_calls(self):
         """Test that tools can be called concurrently."""
         import asyncio
@@ -460,7 +460,7 @@ class TestOptionsToolsAsyncBehavior:
             assert "symbol" in results[1] or "error" in results[1]
             assert "option_id" in results[2] or "error" in results[2]
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_async_context_preservation(self):
         """Test that async context is preserved across tool calls."""
         import contextvars
@@ -486,7 +486,7 @@ class TestOptionsToolsAsyncBehavior:
 class TestOptionsToolsSpecialCases:
     """Test options-specific edge cases and scenarios."""
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_complex_option_symbols(self):
         """Test handling of complex option symbols."""
         complex_symbols = [
@@ -507,7 +507,7 @@ class TestOptionsToolsSpecialCases:
                 assert "option_id" in result or "error" in result
                 mock_service.assert_called_with(symbol)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_multiple_expiration_dates(self):
         """Test handling of multiple expiration dates in chain data."""
         mock_chain_data = {
@@ -530,7 +530,7 @@ class TestOptionsToolsSpecialCases:
             assert len(result["expiration_dates"]) == 3
             assert len(result["chains"]) == 3
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_options_filtering_scenarios(self):
         """Test various filtering scenarios for tradable options."""
         filtering_scenarios = [
@@ -597,7 +597,7 @@ class TestOptionsToolsCoverage:
         assert find_tradable_options.__doc__ is not None
         assert get_option_market_data.__doc__ is not None
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_edge_case_inputs(self):
         """Test edge case inputs."""
         with patch.object(trading_service, 'get_formatted_options_chain', new_callable=AsyncMock) as mock_service:
@@ -625,7 +625,7 @@ class TestOptionsToolsCoverage:
         assert args.expiration_date is None or isinstance(args.expiration_date, str)
         assert args.option_type is None or isinstance(args.option_type, str)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_service_method_signatures(self):
         """Test that service methods are called with correct signatures."""
         with patch.object(trading_service, 'get_formatted_options_chain', new_callable=AsyncMock) as mock_chains, \

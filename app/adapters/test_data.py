@@ -337,8 +337,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     .all()
                 )
 
-                for record in option_records:
-                    quote_date_val = cast(date, record.quote_date)
+                for option_record in option_records:
+                    quote_date_val = cast(date, option_record.quote_date)
                     if isinstance(quote_date_val, datetime):
                         quote_date_val = cast(date, quote_date_val.date())
 
@@ -346,10 +346,10 @@ class DevDataQuoteAdapter(QuoteAdapter):
                         quote_date_val = cast(date, date.today())
 
                     quote = self._cached_option_quote(
-                        record.symbol, cast(date, quote_date_val), self.scenario
+                        option_record.symbol, cast(date, quote_date_val), self.scenario
                     )
                     if quote:
-                        results[record.symbol] = quote
+                        results[option_record.symbol] = quote
 
         # Add None for symbols that weren't found
         for symbol in symbols:
@@ -413,8 +413,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
                     .all()
                 )
 
-                for record in records:
-                    quote_date_val = cast(date, record.quote_date)
+                for stock_record in records:
+                    quote_date_val = cast(date, stock_record.quote_date)
                     if isinstance(quote_date_val, datetime):
                         quote_date_val = cast(date, quote_date_val.date())
 

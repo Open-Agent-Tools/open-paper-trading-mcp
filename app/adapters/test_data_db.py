@@ -77,8 +77,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
             )
             stock_quotes = stock_result.scalars().all()
 
-            for quote in stock_quotes:
-                self._stock_cache[quote.symbol] = quote
+            for stock_quote in stock_quotes:
+                self._stock_cache[stock_quote.symbol] = stock_quote
 
             # Load option quotes for current date and scenario
             option_result = await db.execute(
@@ -89,8 +89,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
             )
             option_quotes = option_result.scalars().all()
 
-            for quote in option_quotes:
-                self._option_cache[quote.symbol] = quote
+            for option_quote in option_quotes:
+                self._option_cache[option_quote.symbol] = option_quote
 
             self._cache_loaded = True
             break

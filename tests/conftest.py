@@ -1,6 +1,7 @@
 import os
 from collections.abc import AsyncGenerator
 from unittest.mock import MagicMock
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -111,15 +112,10 @@ def client(async_db_session: AsyncSession) -> TestClient:
     app.dependency_overrides[get_async_session] = override_get_async_session
 
     # Initialize TradingService for testing and store in app state
-    from app.services.trading_service import (
-        TradingService,
-        _get_quote_adapter,
-        set_global_trading_service,
-    )
+    from app.services.trading_service import TradingService, _get_quote_adapter
 
     trading_service = TradingService(_get_quote_adapter())
     app.state.trading_service = trading_service
-    set_global_trading_service(trading_service)
 
     return TestClient(app)
 
@@ -173,10 +169,10 @@ def auth_headers() -> dict[str, str]:
 
 
 @pytest.fixture
-def mock_trading_service(mocker: MagicMock) -> MagicMock:
+def mock_trading_service(mocker: Any) -> MagicMock:
     """Mock the trading service."""
     mock_service = mocker.patch("app.services.trading_service.trading_service")
-    return mock_service  # type: ignore
+    return mock_service
 
 
 @pytest_asyncio.fixture

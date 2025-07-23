@@ -1,7 +1,8 @@
 import uuid
+from datetime import date, datetime
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
-    JSON,
     BigInteger,
     Boolean,
     Column,
@@ -12,16 +13,20 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     Numeric,
     String,
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.types import JSON, Boolean, Date, DateTime, Float, Integer, String, Text
 
 from app.models.database.base import Base
-from app.schemas.orders import OrderStatus, OrderType
+from app.schemas.orders import OrderCondition, OrderStatus, OrderType
+
+if TYPE_CHECKING:
+    # Import type annotations to avoid circular imports during runtime
+    pass
 
 
 class Account(Base):
@@ -32,7 +37,8 @@ class Account(Base):
     )
     owner: Mapped[str] = mapped_column(String, index=True, unique=True)
     cash_balance: Mapped[float] = mapped_column(Float, default=100000.0)
-    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     positions: Mapped[list["Position"]] = relationship(
@@ -92,6 +98,10 @@ class Order(Base):
     trail_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
     trail_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     triggered_at: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
+    
+    # Additional order fields
+    condition: Mapped[OrderCondition | None] = mapped_column(Enum(OrderCondition), nullable=True)
+    net_price: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Relationships
     account: Mapped["Account"] = relationship("Account", back_populates="orders")

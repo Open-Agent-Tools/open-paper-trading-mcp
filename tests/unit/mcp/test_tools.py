@@ -201,7 +201,7 @@ class TestBasicTradingTools:
         self.mock_service = AsyncMock(spec=TradingService)
         set_mcp_trading_service(self.mock_service)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_quote_success(self):
         """Test successful stock quote retrieval."""
         mock_quote = Mock()
@@ -228,7 +228,7 @@ class TestBasicTradingTools:
         
         self.mock_service.get_quote.assert_called_once_with("AAPL")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_stock_quote_error(self):
         """Test stock quote error handling."""
         self.mock_service.get_quote.side_effect = Exception("Quote not found")
@@ -239,7 +239,7 @@ class TestBasicTradingTools:
         assert "Error getting quote" in result
         assert "Quote not found" in result
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_create_buy_order_success(self):
         """Test successful buy order creation."""
         mock_order = Mock()
@@ -279,7 +279,7 @@ class TestBasicTradingTools:
         assert call_args.price == 150.50
         assert call_args.condition == OrderCondition.MARKET
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_create_sell_order_success(self):
         """Test successful sell order creation."""
         mock_order = Mock()
@@ -309,7 +309,7 @@ class TestBasicTradingTools:
         call_args = self.mock_service.create_order.call_args[0][0]
         assert call_args.order_type == OrderType.SELL
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_all_orders_success(self):
         """Test successful retrieval of all orders."""
         mock_orders = [
@@ -347,7 +347,7 @@ class TestBasicTradingTools:
         assert data[1]["status"] == OrderStatus.PENDING
         assert data[1]["filled_at"] is None
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_order_success(self):
         """Test successful retrieval of specific order."""
         mock_order = Mock()
@@ -371,7 +371,7 @@ class TestBasicTradingTools:
         
         self.mock_service.get_order.assert_called_once_with("order_123")
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_cancel_order_success(self):
         """Test successful order cancellation."""
         mock_result = {"status": "cancelled", "order_id": "order_123"}
@@ -395,7 +395,7 @@ class TestPortfolioTools:
         self.mock_service = AsyncMock(spec=TradingService)
         set_mcp_trading_service(self.mock_service)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_portfolio_success(self):
         """Test successful portfolio retrieval."""
         # Create mock positions
@@ -436,7 +436,7 @@ class TestPortfolioTools:
         assert data["daily_pnl"] == 3000.0
         assert data["total_pnl"] == 10000.0
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_portfolio_summary_success(self):
         """Test successful portfolio summary retrieval."""
         mock_summary = Mock()
@@ -459,7 +459,7 @@ class TestPortfolioTools:
         assert data["daily_pnl_percent"] == 1.5
         assert data["total_pnl_percent"] == 5.0
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_all_positions_success(self):
         """Test successful retrieval of all positions."""
         mock_positions = [
@@ -490,7 +490,7 @@ class TestPortfolioTools:
         assert data[0]["symbol"] == "AAPL"
         assert data[1]["symbol"] == "GOOGL"
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_position_success(self):
         """Test successful retrieval of specific position."""
         mock_position = Mock()
@@ -583,7 +583,7 @@ class TestOptionsTools:
         assert data["expiration_dates"][1] == "2025-01-17"
         assert data["count"] == 2
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_create_multi_leg_order_success(self):
         """Test successful multi-leg order creation."""
         # Mock asset for legs
@@ -625,7 +625,7 @@ class TestOptionsTools:
         assert len(data["legs"]) == 1
         assert data["legs"][0]["symbol"] == "AAPL240119C00195000"
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_calculate_option_greeks_success(self):
         """Test successful option Greeks calculation."""
         mock_greeks = {
@@ -659,7 +659,7 @@ class TestOptionsTools:
             assert data["strike"] == 195.0
             assert data["option_type"] == "call"
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_get_strategy_analysis_success(self):
         """Test successful strategy analysis."""
         mock_analysis = {
@@ -689,7 +689,7 @@ class TestOptionsTools:
         assert call_kwargs["include_recommendations"] is True
         assert call_kwargs["include_complex_strategies"] is True
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_simulate_option_expiration_success(self):
         """Test successful option expiration simulation."""
         mock_result = {
@@ -778,7 +778,7 @@ class TestMCPToolsErrorHandling:
         self.mock_service = AsyncMock(spec=TradingService)
         set_mcp_trading_service(self.mock_service)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_order_creation_error_handling(self):
         """Test order creation error handling."""
         self.mock_service.create_order.side_effect = Exception("Insufficient funds")
@@ -794,7 +794,7 @@ class TestMCPToolsErrorHandling:
         assert "Error creating buy order" in result
         assert "Insufficient funds" in result
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_portfolio_retrieval_error_handling(self):
         """Test portfolio retrieval error handling."""
         self.mock_service.get_portfolio.side_effect = Exception("Database connection failed")
@@ -814,7 +814,7 @@ class TestMCPToolsErrorHandling:
         assert "Error getting options chain" in result
         assert "Options data unavailable" in result
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_greeks_calculation_error_handling(self):
         """Test Greeks calculation error handling."""
         self.mock_service.calculate_greeks.side_effect = ValueError("Invalid option symbol")
@@ -834,7 +834,7 @@ class TestMCPToolsAsyncBehavior:
         self.mock_service = AsyncMock(spec=TradingService)
         set_mcp_trading_service(self.mock_service)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_concurrent_tool_execution(self):
         """Test that tools can execute concurrently."""
         import asyncio
@@ -898,7 +898,7 @@ class TestMCPToolsResponseFormatting:
         self.mock_service = AsyncMock(spec=TradingService)
         set_mcp_trading_service(self.mock_service)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_datetime_serialization(self):
         """Test that datetime objects are properly serialized."""
         mock_order = Mock()
@@ -920,7 +920,7 @@ class TestMCPToolsResponseFormatting:
         assert data["created_at"] == "2024-01-01T10:00:00"
         assert data["filled_at"] == "2024-01-01T10:05:00"
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_none_value_handling(self):
         """Test that None values are properly handled in JSON."""
         mock_order = Mock()
@@ -999,7 +999,7 @@ class TestMCPToolsCoverage:
         # Restore original service
         set_mcp_trading_service(original_service)
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_edge_case_inputs(self):
         """Test edge case inputs for various tools."""
         # Test empty portfolio
@@ -1022,7 +1022,7 @@ class TestMCPToolsCoverage:
         # get_stock_quote should be marked as deprecated
         assert "[DEPRECATED]" in get_stock_quote.__doc__
     
-    @pytest_asyncio.async
+    @pytest.mark.asyncio
     async def test_complex_options_scenarios(self):
         """Test complex options trading scenarios."""
         # Test multi-leg order with multiple legs
