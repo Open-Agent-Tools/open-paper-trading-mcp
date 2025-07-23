@@ -54,42 +54,29 @@ docker-compose up --build
                              |  TradingService |
                              +--------+--------+
                                       |
-         +----------------------------+----------------------------+
-         |                            |                            |
- (Dispatch Task)                      | (Direct Read/Write)        | (Cache Check)
-         V                            V                            V
-+------------------+        +-----------------+        +-----------------+
-| Redis (Broker)   |        | PostgreSQL DB   |        |  Redis (Cache)  |
-+--------+---------+        | (Trading State) |        +--------+--------+
-         |                  +--------+--------+                 |
-         | (Task Queue)              ^                         | (Cache R/W)
-         V                           |                         |
-+----------------+                   | (DB R/W)                |
-| Celery Worker  |-------------------+                         |
-| (Async Tasks)  |                                             |
-+----------------+                                             |
-         |                                                     |
-         +-----------------------------------------------------+
-                                      |
-                                      V
-                              +-----------------+
-                              |  Robinhood API  |
-                              |  (Market Data)  |
-                              +-----------------+
+                   +------------------+------------------+
+                   |                                     |
+        (Direct Read/Write)                   (Market Data Queries)
+                   V                                     V
+         +-----------------+                   +-----------------+
+         | PostgreSQL DB   |                   |  Robinhood API  |
+         | (Trading State) |                   |  (Market Data)  |
+         +-----------------+                   +-----------------+
 ```
 
 **Key Design Decisions:**
-- **Monolithic Architecture**: Both servers run in one process, sharing the TradingService
-- **Database-First**: All state persisted in PostgreSQL, no in-memory storage
+- **Simplified Architecture**: Direct connection between TradingService and data sources
+- **Database-First**: All trading state persisted in PostgreSQL
+- **Real-time Market Data**: Direct API calls to Robinhood for current market information
 - **Async Throughout**: Uses asyncio for high performance
 - **Type Safety**: Full Pydantic validation on all inputs/outputs
 
 ## 🛠️ Technology Stack
 
 - **Backend**: Python, FastAPI, FastMCP
-- **Database**: PostgreSQL, Redis
+- **Database**: PostgreSQL
 - **ORM**: SQLAlchemy
-- **Task Queue**: Celery
+- **Market Data**: Robinhood API
 - **Package Management**: uv
 - **Containerization**: Docker, Docker Compose
 
@@ -155,10 +142,9 @@ See [TODO.md](TODO.md) for the detailed, up-to-date development roadmap.
 
 ### 🚀 Next Development Phases:
 -   **Phase 1: Advanced Order Management**: Stop-loss, stop-limit, and other advanced order types.
--   **Phase 2: Caching & Performance Infrastructure**: Redis caching and async task processing for scalability.
--   **Phase 3: User Authentication & Multi-Tenancy**: A production-grade, secure user management system.
--   **Phase 4: Advanced Features & User Experience**: Frontend dashboard, advanced MCP tools, and educational features.
--   **Phase 5: Backtesting & Strategy Framework**: Historical backtesting and strategy development tools.
+-   **Phase 2: User Authentication & Multi-Tenancy**: A production-grade, secure user management system.
+-   **Phase 3: Advanced Features & User Experience**: Frontend dashboard, advanced MCP tools, and educational features.
+-   **Phase 4: Backtesting & Strategy Framework**: Historical backtesting and strategy development tools.
 
 ## 🤖 MCP Tools Reference
 
