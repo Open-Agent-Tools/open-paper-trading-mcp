@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -30,7 +31,7 @@ def get_auth_service() -> AuthService:
 
 @router.post("/token", response_model=Token, deprecated=True)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     service: AuthService = get_auth_service()
     user = service.authenticate_user(form_data.username, form_data.password)
@@ -50,7 +51,7 @@ async def login_for_access_token(
 
 @router.get("/me", response_model=User)
 async def read_users_me(
-    token: str = Depends(oauth2_scheme),
+    token: Annotated[str, Depends(oauth2_scheme)],
 ) -> User:
     service: AuthService = get_auth_service()
     try:
@@ -65,4 +66,4 @@ async def read_users_me(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None

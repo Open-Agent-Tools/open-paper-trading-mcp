@@ -7,7 +7,7 @@ database connectivity, quote adapter status, and overall system health.
 
 import time
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
@@ -163,7 +163,7 @@ async def liveness_check() -> dict[str, Any]:
 
 
 @router.get("/health/ready", response_model=dict[str, Any])
-async def readiness_check(db: AsyncSession = Depends(get_async_db)) -> dict[str, Any]:
+async def readiness_check(db: Annotated[AsyncSession, Depends(get_async_db)]) -> dict[str, Any]:
     """Kubernetes readiness probe endpoint."""
     # Check database connectivity
     db_health = await check_database_health(db)
@@ -180,7 +180,7 @@ async def readiness_check(db: AsyncSession = Depends(get_async_db)) -> dict[str,
 
 @router.get("/health/detailed", response_model=dict[str, Any])
 async def detailed_health_check(
-    db: AsyncSession = Depends(get_async_db),
+    db: Annotated[AsyncSession, Depends(get_async_db)],
 ) -> dict[str, Any]:
     """Detailed health check of all system components."""
     start_time = time.time()
@@ -224,7 +224,7 @@ async def detailed_health_check(
 
 
 @router.get("/health/metrics", response_model=dict[str, Any])
-async def health_metrics(db: AsyncSession = Depends(get_async_db)) -> dict[str, Any]:
+async def health_metrics(db: Annotated[AsyncSession, Depends(get_async_db)]) -> dict[str, Any]:
     """Return health metrics in Prometheus format."""
     # Collect metrics
     db_health = await check_database_health(db)

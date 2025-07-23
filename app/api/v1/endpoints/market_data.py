@@ -35,7 +35,7 @@ async def get_stock_price_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting stock price: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error getting stock price: {e!s}") from e
 
 
 @router.get("/info/{symbol}", response_model=dict[str, Any])
@@ -58,7 +58,7 @@ async def get_stock_info_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting stock info: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error getting stock info: {e!s}") from e
 
 
 @router.get("/history/{symbol}", response_model=dict[str, Any])
@@ -86,7 +86,7 @@ async def get_price_history_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error getting price history: {e!s}"
-        )
+        ) from e
 
 
 @router.get("/search", response_model=dict[str, Any])
@@ -109,4 +109,4 @@ async def search_stocks_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error searching stocks: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error searching stocks: {e!s}") from e
