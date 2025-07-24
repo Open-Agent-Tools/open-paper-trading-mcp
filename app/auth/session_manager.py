@@ -239,7 +239,7 @@ class SessionManager:
             if self._auth_failure_count >= self.max_auth_failures:
                 self._open_circuit_breaker()
 
-            raise classified_error
+            raise classified_error from e
 
     def get_auth_token(self) -> str | None:
         """Get current authentication token."""

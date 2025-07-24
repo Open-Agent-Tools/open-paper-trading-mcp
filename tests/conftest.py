@@ -400,7 +400,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Standard database session fixture - all tests should use this."""
     # Use the same logic as async_db_session but avoid circular reference
     import os
-    
+
     database_url = os.getenv(
         "DATABASE_URL",
         "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db",

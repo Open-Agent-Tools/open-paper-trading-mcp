@@ -630,15 +630,15 @@ async def all_option_positions() -> dict[str, Any]:
 
         total_market_value = 0.0
         total_unrealized_pnl = 0.0
-        
+
         for p in option_positions:
             if p.get("status") == "open":
                 market_val = p.get("market_value")
-                if isinstance(market_val, (int, float)):
+                if isinstance(market_val, int | float):
                     total_market_value += market_val
-                    
+
                 unrealized_pnl = p.get("unrealized_pnl")
-                if isinstance(unrealized_pnl, (int, float)):
+                if isinstance(unrealized_pnl, int | float):
                     total_unrealized_pnl += unrealized_pnl
 
         return success_response(

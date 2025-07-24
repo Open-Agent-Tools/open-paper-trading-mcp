@@ -176,8 +176,9 @@ async def health_check() -> dict[str, Any]:
         # Check database connectivity
         try:
             # Import here to avoid circular dependencies
-            from app.storage.database import AsyncSessionLocal
             from sqlalchemy import text
+
+            from app.storage.database import AsyncSessionLocal
 
             async with AsyncSessionLocal() as session:
                 # Simple test query

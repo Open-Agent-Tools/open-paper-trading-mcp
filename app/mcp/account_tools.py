@@ -123,7 +123,11 @@ async def positions() -> dict[str, Any]:
                     "market_value": pos.quantity * (pos.current_price or 0),
                     "unrealized_pnl": pos.unrealized_pnl,
                     "unrealized_pnl_percent": (
-                        ((pos.unrealized_pnl or 0) / ((pos.avg_price or 0) * pos.quantity)) * 100
+                        (
+                            (pos.unrealized_pnl or 0)
+                            / ((pos.avg_price or 0) * pos.quantity)
+                        )
+                        * 100
                         if (pos.avg_price or 0) * pos.quantity > 0
                         else 0
                     ),

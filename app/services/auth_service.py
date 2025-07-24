@@ -79,8 +79,8 @@ class AuthService:
             username = payload.get("sub")
             if not isinstance(username, str) or username is None:
                 raise NotFoundError("Invalid token")
-        except JWTError:
-            raise NotFoundError("Invalid token")
+        except JWTError as e:
+            raise NotFoundError("Invalid token") from e
 
         user = self.get_user(username)
         if user is None:
