@@ -89,6 +89,23 @@ class DatabaseAccountAdapter(AccountAdapter):
                 return True
             return False
 
+    async def get_all_accounts(self) -> list[Account]:
+        """Retrieve all accounts."""
+        async for db in get_async_session():
+            stmt = select(DBAccount)
+            db_accounts = (await db.execute(stmt)).scalars().all()
+
+            return [
+                Account(
+                    id=db_account.id,
+                    cash_balance=float(db_account.cash_balance),
+                    positions=[],
+                    name=f"Account-{db_account.id}",
+                    owner=db_account.owner,
+                )
+                for db_account in db_accounts
+            ]
+
 
 class LocalFileSystemAccountAdapter(AccountAdapter):
     """File system-backed account adapter (for compatibility)."""

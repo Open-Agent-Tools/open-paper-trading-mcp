@@ -107,8 +107,7 @@ class TestAccountErrorIntegration:
                     account = DBAccount(
                         id="test-123",
                         owner="test_user",
-                        cash_balance=Decimal("10000.0"),
-                        buying_power=Decimal("10000.0")
+                        cash_balance=10000.0
                     )
                     mock_result.scalar_one_or_none.return_value = account
                     mock_session.execute.return_value = mock_result
@@ -352,8 +351,7 @@ class TestAccountErrorIntegration:
         account = DBAccount(
             id="test-123",
             owner="test_user",
-            cash_balance=Decimal("10000.0"),
-            buying_power=Decimal("10000.0")
+            cash_balance=10000.0
         )
         mock_result.scalar_one_or_none.return_value = account
         
