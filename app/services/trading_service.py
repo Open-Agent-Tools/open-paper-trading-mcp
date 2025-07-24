@@ -52,14 +52,16 @@ class TradingService:
         if not isinstance(account_owner, str):
             raise TypeError("account_owner must be a string")
         if not account_owner.strip():
-            raise InputValidationError("account_owner cannot be empty or whitespace-only")
+            raise InputValidationError(
+                "account_owner cannot be empty or whitespace-only"
+            )
         if len(account_owner) > 255:
             raise InputValidationError("account_owner must be 255 characters or less")
-        
+
         # Validate db_session input
-        if db_session is not None and not hasattr(db_session, 'execute'):
+        if db_session is not None and not hasattr(db_session, "execute"):
             raise TypeError("db_session must be a valid AsyncSession instance or None")
-        
+
         # Initialize services
         if quote_adapter is None:
             # Use adapter factory to create quote adapter based on configuration
@@ -102,17 +104,21 @@ class TradingService:
         """Get an async database session."""
         if self._db_session is not None:
             return self._db_session
-            
+
         # Fallback to creating a new session (production use)
         from app.storage.database import get_async_session
+
         async for session in get_async_session():
             return session
-    
+        
+        # This should never be reached, but mypy requires it
+        raise RuntimeError("Unable to obtain database session")
+
     async def _execute_with_session(self, operation):
         """Execute a database operation with proper session management."""
         session_injected = self._db_session is not None
         db = await self._get_async_db_session()
-        
+
         try:
             return await operation(db)
         finally:
@@ -156,7 +162,7 @@ class TradingService:
                 for pos in initial_positions:
                     db.add(pos)
                 await db.commit()
-        
+
         await self._execute_with_session(_operation)
 
     async def _get_account(self) -> DBAccount:
@@ -173,7 +179,7 @@ class TradingService:
             if not account:
                 raise NotFoundError(f"Account for owner {self.account_owner} not found")
             return account
-        
+
         return await self._execute_with_session(_operation)
 
     async def get_account_balance(self) -> float:
@@ -232,7 +238,7 @@ class TradingService:
 
             # Use converter to convert to schema
             return await self.order_converter.to_schema(db_order)
-        
+
         return await self._execute_with_session(_operation)
 
     async def get_orders(self) -> list[Order]:
@@ -252,7 +258,7 @@ class TradingService:
                 order = await self.order_converter.to_schema(db_order)
                 orders.append(order)
             return orders
-        
+
         return await self._execute_with_session(_operation)
 
     async def get_order(self, order_id: str) -> Order:
@@ -273,7 +279,7 @@ class TradingService:
 
             # Use converter to convert to schema
             return await self.order_converter.to_schema(db_order)
-        
+
         return await self._execute_with_session(_operation)
 
     async def cancel_order(self, order_id: str) -> dict[str, str]:
@@ -296,7 +302,7 @@ class TradingService:
             await db.commit()
 
             return {"message": "Order cancelled successfully"}
-        
+
         return await self._execute_with_session(_operation)
 
     async def cancel_all_stock_orders(self) -> dict[str, Any]:
@@ -337,7 +343,7 @@ class TradingService:
                 "cancelled_orders": cancelled_orders,
                 "total_cancelled": len(cancelled_orders),
             }
-        
+
         return await self._execute_with_session(_operation)
 
     async def cancel_all_option_orders(self) -> dict[str, Any]:
@@ -383,7 +389,7 @@ class TradingService:
                 "cancelled_orders": cancelled_orders,
                 "total_cancelled": len(cancelled_orders),
             }
-        
+
         return await self._execute_with_session(_operation)
 
     async def get_portfolio(self) -> Portfolio:
@@ -427,7 +433,7 @@ class TradingService:
                 daily_pnl=total_pnl,
                 total_pnl=total_pnl,
             )
-        
+
         return await self._execute_with_session(_operation)
 
     async def get_portfolio_summary(self) -> PortfolioSummary:
@@ -704,7 +710,7 @@ class TradingService:
             db.add(db_order)
             await db.commit()
             await db.refresh(db_order)
-        
+
         await self._execute_with_session(_operation)
 
         return order
@@ -1371,7 +1377,6 @@ class TradingService:
     def get_available_symbols(self) -> list[str]:
         """Get list of available symbols."""
         return self.quote_adapter.get_available_symbols()
-
 
     async def get_market_hours(self) -> dict[str, Any]:
         """

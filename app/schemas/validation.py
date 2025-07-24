@@ -275,14 +275,18 @@ def validate_order_against_account(order: Any, account: Any) -> bool:
         ValueError: If order is invalid for account
     """
     # Check account has sufficient balance for buy orders
-    if hasattr(order, "order_type") and order.order_type in ["buy", "buy_to_open"]:
-        if order.price and order.quantity:
-            order_cost = order.price * order.quantity
-            if order_cost > account.cash_balance:
-                raise ValueError(
-                    f"Insufficient funds: Order cost ${order_cost:.2f} "
-                    f"exceeds account balance ${account.cash_balance:.2f}"
-                )
+    if (
+        hasattr(order, "order_type")
+        and order.order_type in ["buy", "buy_to_open"]
+        and order.price
+        and order.quantity
+    ):
+        order_cost = order.price * order.quantity
+        if order_cost > account.cash_balance:
+            raise ValueError(
+                f"Insufficient funds: Order cost ${order_cost:.2f} "
+                f"exceeds account balance ${account.cash_balance:.2f}"
+            )
 
     # Validate symbol format if present
     if hasattr(order, "symbol"):

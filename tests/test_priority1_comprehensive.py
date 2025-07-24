@@ -8,19 +8,21 @@ This module provides extensive test coverage for Priority 1 functionality:
 - Order schemas and validation
 """
 
-import pytest
-import asyncio
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
-from decimal import Decimal
+from unittest.mock import AsyncMock, MagicMock
 
-from app.services.trading_service import TradingService, _get_quote_adapter
-from app.services.order_execution_engine import OrderExecutionEngine, TriggerCondition
+import pytest
+
+from app.models.assets import Stock
 from app.schemas.orders import (
-    OrderCreate, OrderType, OrderCondition, OrderStatus, Order
+    OrderCondition,
+    OrderCreate,
+    OrderStatus,
+    OrderType,
 )
 from app.schemas.trading import StockQuote
-from app.models.assets import Stock
+from app.services.order_execution_engine import OrderExecutionEngine, TriggerCondition
+from app.services.trading_service import TradingService, _get_quote_adapter
 
 
 class TestTradingServiceComprehensive:
@@ -50,9 +52,9 @@ class TestTradingServiceComprehensive:
         mock_quote.volume = 1000000
         mock_quote.quote_date = datetime.now()
         mock_adapter.get_quote.return_value = mock_quote
-        
+
         service = TradingService(quote_adapter=mock_adapter, account_owner="test_user")
-        
+
         quote = await service.get_quote("AAPL")
         assert quote.symbol == "AAPL"
         assert quote.price == 150.75
@@ -63,9 +65,9 @@ class TestTradingServiceComprehensive:
         """Test quote retrieval for non-existent symbol."""
         mock_adapter = AsyncMock()
         mock_adapter.get_quote.return_value = None
-        
+
         service = TradingService(quote_adapter=mock_adapter, account_owner="test_user")
-        
+
         with pytest.raises(Exception) as exc_info:
             await service.get_quote("INVALID")
         assert "not found" in str(exc_info.value).lower()
@@ -74,7 +76,7 @@ class TestTradingServiceComprehensive:
         """Test the quote adapter factory function."""
         adapter = _get_quote_adapter()
         assert adapter is not None
-        assert hasattr(adapter, 'get_quote')
+        assert hasattr(adapter, "get_quote")
 
 
 class TestOrderExecutionEngineComprehensive:
@@ -84,7 +86,7 @@ class TestOrderExecutionEngineComprehensive:
         """Test OrderExecutionEngine initialization."""
         service = TradingService(account_owner="test_user")
         engine = OrderExecutionEngine(service)
-        
+
         assert engine.trading_service == service
         assert engine.is_running is False
         assert engine.monitoring_task is None
@@ -100,9 +102,9 @@ class TestOrderExecutionEngineComprehensive:
             symbol="AAPL",
             trigger_type="stop_loss",
             trigger_price=140.0,
-            order_type=OrderType.SELL
+            order_type=OrderType.SELL,
         )
-        
+
         assert condition.order_id == "test_order_123"
         assert condition.symbol == "AAPL"
         assert condition.trigger_type == "stop_loss"
@@ -116,9 +118,9 @@ class TestOrderExecutionEngineComprehensive:
             symbol="AAPL",
             trigger_type="stop_loss",
             trigger_price=140.0,
-            order_type=OrderType.SELL
+            order_type=OrderType.SELL,
         )
-        
+
         # Should trigger when price falls at or below stop price
         assert condition.should_trigger(139.0) is True
         assert condition.should_trigger(140.0) is True  # Exact price triggers
@@ -131,9 +133,9 @@ class TestOrderExecutionEngineComprehensive:
             symbol="AAPL",
             trigger_type="stop_limit",
             trigger_price=160.0,
-            order_type=OrderType.BUY
+            order_type=OrderType.BUY,
         )
-        
+
         # Should trigger when price rises at or above stop price
         assert condition.should_trigger(161.0) is True
         assert condition.should_trigger(160.0) is True  # Exact price triggers
@@ -143,15 +145,15 @@ class TestOrderExecutionEngineComprehensive:
         """Test OrderExecutionEngine trigger logic."""
         service = TradingService(account_owner="test_user")
         engine = OrderExecutionEngine(service)
-        
+
         condition = TriggerCondition(
             order_id="test_order_123",
             symbol="AAPL",
             trigger_type="stop_loss",
             trigger_price=140.0,
-            order_type=OrderType.SELL
+            order_type=OrderType.SELL,
         )
-        
+
         # Test the engine's trigger logic
         assert engine._should_trigger(condition, 139.0) is True
         assert engine._should_trigger(condition, 141.0) is False
@@ -167,9 +169,9 @@ class TestOrderSchemasComprehensive:
             order_type=OrderType.BUY,
             quantity=100,
             price=150.0,
-            condition=OrderCondition.LIMIT
+            condition=OrderCondition.LIMIT,
         )
-        
+
         assert order.symbol == "AAPL"
         assert order.order_type == OrderType.BUY
         assert order.quantity == 100
@@ -182,9 +184,9 @@ class TestOrderSchemasComprehensive:
             symbol="GOOGL",
             order_type=OrderType.SELL,
             quantity=50,
-            condition=OrderCondition.MARKET
+            condition=OrderCondition.MARKET,
         )
-        
+
         assert order.symbol == "GOOGL"
         assert order.order_type == OrderType.SELL
         assert order.quantity == 50
@@ -215,7 +217,7 @@ class TestOrderSchemasComprehensive:
                 order_type=OrderType.BUY,
                 quantity=-100,  # Invalid negative quantity
                 price=150.0,
-                condition=OrderCondition.LIMIT
+                condition=OrderCondition.LIMIT,
             )
 
     def test_order_create_validation_zero_quantity(self):
@@ -226,7 +228,7 @@ class TestOrderSchemasComprehensive:
                 order_type=OrderType.BUY,
                 quantity=0,  # Invalid zero quantity
                 price=150.0,
-                condition=OrderCondition.LIMIT
+                condition=OrderCondition.LIMIT,
             )
 
     def test_order_create_validation_negative_price(self):
@@ -237,7 +239,7 @@ class TestOrderSchemasComprehensive:
             order_type=OrderType.BUY,
             quantity=100,
             price=-150.0,  # Negative price is currently allowed
-            condition=OrderCondition.LIMIT
+            condition=OrderCondition.LIMIT,
         )
         # Should create successfully but with negative price
         assert order.price == -150.0
@@ -250,9 +252,9 @@ class TestOrderSchemasComprehensive:
             change=2.50,
             change_percent=1.64,
             volume=2500000,
-            last_updated=datetime.now()
+            last_updated=datetime.now(),
         )
-        
+
         assert quote.symbol == "AAPL"
         assert quote.price == 155.75
         assert quote.change == 2.50
@@ -273,13 +275,13 @@ class TestPriorityOneIntegration:
     async def test_trading_service_quote_integration(self):
         """Test integration between TradingService and quote adapter."""
         service = TradingService(account_owner="test_user")
-        
+
         try:
             # This should work with test data adapter
             quote = await service.get_quote("AAPL")
             assert quote is not None
             assert quote.symbol == "AAPL"
-            assert isinstance(quote.price, (int, float))
+            assert isinstance(quote.price, int | float)
         except Exception as e:
             # If it fails, ensure it's a data issue, not a system issue
             assert "not found" in str(e).lower() or "symbol" in str(e).lower()
@@ -288,10 +290,10 @@ class TestPriorityOneIntegration:
         """Test integration between OrderExecutionEngine and TradingService."""
         service = TradingService(account_owner="test_user")
         engine = OrderExecutionEngine(service)
-        
+
         # Verify the engine can access trading service methods
-        assert hasattr(engine.trading_service, 'get_quote')
-        assert hasattr(engine.trading_service, 'account_owner')
+        assert hasattr(engine.trading_service, "get_quote")
+        assert hasattr(engine.trading_service, "account_owner")
         assert engine.trading_service.account_owner == "test_user"
 
     def test_order_validation_schema_integration(self):
@@ -299,19 +301,27 @@ class TestPriorityOneIntegration:
         # Test valid order scenarios
         valid_orders = [
             OrderCreate(
-                symbol="AAPL", order_type=OrderType.BUY, quantity=100,
-                price=150.0, condition=OrderCondition.LIMIT
+                symbol="AAPL",
+                order_type=OrderType.BUY,
+                quantity=100,
+                price=150.0,
+                condition=OrderCondition.LIMIT,
             ),
             OrderCreate(
-                symbol="GOOGL", order_type=OrderType.SELL, quantity=50,
-                condition=OrderCondition.MARKET
+                symbol="GOOGL",
+                order_type=OrderType.SELL,
+                quantity=50,
+                condition=OrderCondition.MARKET,
             ),
             OrderCreate(
-                symbol="MSFT", order_type=OrderType.BUY, quantity=200,
-                price=300.0, condition=OrderCondition.LIMIT
-            )
+                symbol="MSFT",
+                order_type=OrderType.BUY,
+                quantity=200,
+                price=300.0,
+                condition=OrderCondition.LIMIT,
+            ),
         ]
-        
+
         for order in valid_orders:
             assert order.symbol is not None
             assert order.order_type in [OrderType.BUY, OrderType.SELL]
@@ -324,12 +334,12 @@ class TestPriorityOneIntegration:
         """Test OrderExecutionEngine async operations."""
         service = TradingService(account_owner="test_user")
         engine = OrderExecutionEngine(service)
-        
+
         # Test engine has async methods
-        assert hasattr(engine, 'start')
-        assert hasattr(engine, 'stop')
-        assert hasattr(engine, 'add_trigger_order')
-        
+        assert hasattr(engine, "start")
+        assert hasattr(engine, "stop")
+        assert hasattr(engine, "add_trigger_order")
+
         # Test that we can call these methods without errors
         # (they may not complete due to missing database, but should not crash)
         try:

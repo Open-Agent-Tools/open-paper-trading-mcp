@@ -56,7 +56,6 @@ async def get_price_history(symbol: str, period: str = "week") -> dict[str, Any]
         return handle_tool_exception("get_price_history", e)
 
 
-
 async def search_stocks(query: str) -> dict[str, Any]:
     """
     Search for stocks by symbol or company name.

@@ -8,12 +8,9 @@ for the filesystem-backed account adapter.
 import json
 import os
 import tempfile
-import uuid
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 
 from app.adapters.accounts import LocalFileSystemAccountAdapter
 from app.schemas.accounts import Account
@@ -48,9 +45,9 @@ class TestLocalFileSystemAccountAdapter:
         """Test that adapter creates root directory if it doesn't exist."""
         with tempfile.TemporaryDirectory() as temp_dir:
             non_existent_path = os.path.join(temp_dir, "new_accounts")
-            
+
             adapter = LocalFileSystemAccountAdapter(non_existent_path)
-            
+
             assert os.path.exists(non_existent_path)
             assert adapter.root_path == non_existent_path
 
@@ -58,22 +55,22 @@ class TestLocalFileSystemAccountAdapter:
         """Test _get_account_path method."""
         expected_path = os.path.join(temp_dir, "test-account.json")
         actual_path = adapter._get_account_path("test-account")
-        
+
         assert actual_path == expected_path
 
     @pytest.mark.asyncio
     async def test_put_account_success(self, adapter, sample_account, temp_dir):
         """Test successful account storage."""
         await adapter.put_account(sample_account)
-        
+
         # Verify file was created
         expected_path = os.path.join(temp_dir, f"{sample_account.id}.json")
         assert os.path.exists(expected_path)
-        
+
         # Verify file contents
         with open(expected_path) as f:
             data = json.load(f)
-            
+
         assert data["id"] == sample_account.id
         assert data["cash_balance"] == sample_account.cash_balance
         assert data["owner"] == sample_account.owner
@@ -84,10 +81,10 @@ class TestLocalFileSystemAccountAdapter:
         """Test successful account retrieval."""
         # First store the account
         await adapter.put_account(sample_account)
-        
+
         # Then retrieve it
         result = await adapter.get_account(sample_account.id)
-        
+
         assert result is not None
         assert result.id == sample_account.id
         assert result.cash_balance == sample_account.cash_balance
@@ -107,7 +104,7 @@ class TestLocalFileSystemAccountAdapter:
         corrupted_file = os.path.join(temp_dir, "corrupted.json")
         with open(corrupted_file, "w") as f:
             f.write("{ invalid json content }")
-        
+
         result = await adapter.get_account("corrupted")
         assert result is None
 
@@ -118,7 +115,7 @@ class TestLocalFileSystemAccountAdapter:
         empty_file = os.path.join(temp_dir, "empty.json")
         with open(empty_file, "w") as f:
             f.write("")
-        
+
         result = await adapter.get_account("empty")
         assert result is None
 
@@ -133,7 +130,7 @@ class TestLocalFileSystemAccountAdapter:
         """Test get_account_ids with multiple accounts."""
         # Create multiple account files
         account_ids = ["acc-1", "acc-2", "acc-3"]
-        
+
         for account_id in account_ids:
             account = Account(
                 id=account_id,
@@ -143,9 +140,9 @@ class TestLocalFileSystemAccountAdapter:
                 owner="test_user",
             )
             await adapter.put_account(account)
-        
+
         result = await adapter.get_account_ids()
-        
+
         assert len(result) == 3
         assert set(result) == set(account_ids)
 
@@ -161,16 +158,16 @@ class TestLocalFileSystemAccountAdapter:
             owner="test_user",
         )
         await adapter.put_account(account)
-        
+
         # Create non-JSON files
         with open(os.path.join(temp_dir, "not-json.txt"), "w") as f:
             f.write("This is not a JSON file")
-        
+
         with open(os.path.join(temp_dir, "no-extension"), "w") as f:
             f.write("{}")
-        
+
         result = await adapter.get_account_ids()
-        
+
         assert len(result) == 1
         assert result[0] == "valid-account"
 
@@ -178,7 +175,7 @@ class TestLocalFileSystemAccountAdapter:
     async def test_account_exists_true(self, adapter, sample_account):
         """Test account_exists returns True for existing account."""
         await adapter.put_account(sample_account)
-        
+
         result = await adapter.account_exists(sample_account.id)
         assert result is True
 
@@ -194,11 +191,11 @@ class TestLocalFileSystemAccountAdapter:
         # First create the account
         await adapter.put_account(sample_account)
         assert await adapter.account_exists(sample_account.id) is True
-        
+
         # Delete the account
         result = await adapter.delete_account(sample_account.id)
         assert result is True
-        
+
         # Verify it's gone
         assert await adapter.account_exists(sample_account.id) is False
 
@@ -220,7 +217,7 @@ class TestLocalFileSystemAccountAdapter:
             owner="original_owner",
         )
         await adapter.put_account(original_account)
-        
+
         # Update the account
         updated_account = Account(
             id="update-test",
@@ -230,7 +227,7 @@ class TestLocalFileSystemAccountAdapter:
             owner="updated_owner",
         )
         await adapter.put_account(updated_account)
-        
+
         # Verify the update
         result = await adapter.get_account("update-test")
         assert result is not None
@@ -239,10 +236,12 @@ class TestLocalFileSystemAccountAdapter:
 
     @pytest.mark.asyncio
     @patch("builtins.open")
-    async def test_put_account_file_permission_error(self, mock_open, adapter, sample_account):
+    async def test_put_account_file_permission_error(
+        self, mock_open, adapter, sample_account
+    ):
         """Test file permission error during put_account."""
         mock_open.side_effect = PermissionError("Permission denied")
-        
+
         with pytest.raises(PermissionError):
             await adapter.put_account(sample_account)
 
@@ -251,7 +250,7 @@ class TestLocalFileSystemAccountAdapter:
     async def test_get_account_file_permission_error(self, mock_open, adapter):
         """Test file permission error during get_account."""
         mock_open.side_effect = PermissionError("Permission denied")
-        
+
         # Should return None on any exception
         result = await adapter.get_account("test-account")
         assert result is None
@@ -259,8 +258,7 @@ class TestLocalFileSystemAccountAdapter:
     @pytest.mark.asyncio
     async def test_json_serialization_with_datetime(self, adapter, temp_dir):
         """Test JSON serialization handles datetime objects properly."""
-        from datetime import datetime
-        
+
         # Create account with datetime in positions (if they had timestamps)
         account = Account(
             id="datetime-test",
@@ -269,10 +267,10 @@ class TestLocalFileSystemAccountAdapter:
             name="DateTime Test Account",
             owner="test_user",
         )
-        
+
         # This should not raise an error
         await adapter.put_account(account)
-        
+
         # Verify it can be read back
         result = await adapter.get_account("datetime-test")
         assert result is not None
@@ -303,10 +301,10 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
             name="Zero Balance Account",
             owner="test_user",
         )
-        
+
         await adapter.put_account(zero_balance_account)
         result = await adapter.get_account("zero-balance-test")
-        
+
         assert result is not None
         assert result.cash_balance == 0.0
 
@@ -322,10 +320,10 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
             name="Special ID Account",
             owner="test_user",
         )
-        
+
         await adapter.put_account(special_account)
         result = await adapter.get_account(special_id)
-        
+
         assert result is not None
         assert result.id == special_id
 
@@ -339,10 +337,10 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
             name="Unicode Test Account",
             owner="用户测试",  # Chinese characters
         )
-        
+
         await adapter.put_account(unicode_account)
         result = await adapter.get_account("unicode-test")
-        
+
         assert result is not None
         assert result.owner == "用户测试"
 
@@ -350,7 +348,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
     async def test_large_number_of_accounts(self, adapter):
         """Test handling a large number of accounts."""
         num_accounts = 100
-        
+
         # Create many accounts
         for i in range(num_accounts):
             account = Account(
@@ -361,11 +359,11 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
                 owner=f"user_{i}",
             )
             await adapter.put_account(account)
-        
+
         # Verify all were created
         account_ids = await adapter.get_account_ids()
         assert len(account_ids) == num_accounts
-        
+
         # Verify we can retrieve them all
         for i in range(num_accounts):
             result = await adapter.get_account(f"account-{i:03d}")
@@ -377,7 +375,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         """Test that file operations don't interfere with each other."""
         # This is a basic test - true concurrency testing would require threading
         accounts = []
-        
+
         # Create accounts rapidly
         for i in range(10):
             account = Account(
@@ -389,7 +387,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
             )
             accounts.append(account)
             await adapter.put_account(account)
-        
+
         # Verify all were created correctly
         for i, account in enumerate(accounts):
             result = await adapter.get_account(account.id)
@@ -409,25 +407,25 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
             owner="test_user",
         )
         await adapter.put_account(account)
-        
+
         # Verify it exists
         assert await adapter.account_exists("corruption-test") is True
-        
+
         # Corrupt the file
         corrupted_path = os.path.join(temp_dir, "corruption-test.json")
         with open(corrupted_path, "w") as f:
             f.write("{ corrupted json ")
-        
+
         # Getting the account should return None (graceful handling)
         result = await adapter.get_account("corruption-test")
         assert result is None
-        
+
         # But file still exists, so account_exists should return True
         assert await adapter.account_exists("corruption-test") is True
-        
+
         # We can overwrite the corrupted file
         await adapter.put_account(account)
-        
+
         # Now it should work again
         result = await adapter.get_account("corruption-test")
         assert result is not None

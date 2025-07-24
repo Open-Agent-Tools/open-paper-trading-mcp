@@ -539,7 +539,6 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting price history for {symbol}: {e}")
             return {"error": str(e)}
 
-
     async def search_stocks(self, query: str) -> dict[str, Any]:
         """Search for stocks by symbol or company name."""
         try:

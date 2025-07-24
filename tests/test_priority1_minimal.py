@@ -8,12 +8,10 @@ This module tests the core Priority 1 functionality with minimal database usage:
 """
 
 import pytest
-import asyncio
-from datetime import datetime
 
-from app.services.trading_service import TradingService
+from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.order_execution_engine import OrderExecutionEngine
-from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+from app.services.trading_service import TradingService
 
 
 class TestPriority1Minimal:
@@ -24,7 +22,7 @@ class TestPriority1Minimal:
         service = TradingService(account_owner="test_user")
         assert service is not None
         assert service.account_owner == "test_user"
-        assert hasattr(service, 'quote_adapter')
+        assert hasattr(service, "quote_adapter")
 
     def test_order_execution_engine_initialization(self):
         """Test that OrderExecutionEngine can be instantiated."""
@@ -41,7 +39,7 @@ class TestPriority1Minimal:
             order_type=OrderType.BUY,
             quantity=100,
             price=150.0,
-            condition=OrderCondition.LIMIT
+            condition=OrderCondition.LIMIT,
         )
         assert order_data.symbol == "AAPL"
         assert order_data.order_type == OrderType.BUY
@@ -60,13 +58,13 @@ class TestPriority1Minimal:
         """Test that quote adapter initializes properly."""
         service = TradingService(account_owner="test_user")
         assert service.quote_adapter is not None
-        
+
         # Try to get a quote (should not fail due to adapter setup)
         try:
             quote = await service.get_quote("AAPL")
             # If successful, verify basic structure
-            assert hasattr(quote, 'symbol')
-            assert hasattr(quote, 'price')
+            assert hasattr(quote, "symbol")
+            assert hasattr(quote, "price")
         except Exception as e:
             # If it fails, it should be due to missing data, not setup issues
             assert "not found" in str(e).lower() or "symbol" in str(e).lower()
@@ -75,24 +73,20 @@ class TestPriority1Minimal:
         """Test OrderExecutionEngine has required attributes."""
         service = TradingService(account_owner="test_user")
         engine = OrderExecutionEngine(service)
-        
+
         # Check key attributes exist
-        assert hasattr(engine, 'trading_service')
-        assert hasattr(engine, 'trigger_conditions')
-        assert hasattr(engine, 'last_market_data_update')
-        assert hasattr(engine, 'monitored_symbols')
+        assert hasattr(engine, "trading_service")
+        assert hasattr(engine, "trigger_conditions")
+        assert hasattr(engine, "last_market_data_update")
+        assert hasattr(engine, "monitored_symbols")
 
     def test_priority1_modules_import(self):
         """Test that Priority 1 modules can be imported successfully."""
         # Test core service imports
-        from app.services.trading_service import TradingService
-        from app.services.order_execution_engine import OrderExecutionEngine
-        
+
         # Test schema imports
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
-        
+
         # Test model imports
-        from app.models.database.trading import Account, Order, Position
-        
+
         # All imports successful
         assert True

@@ -40,5 +40,6 @@ class ConflictError(CustomException):
 
 class InputValidationError(CustomException):
     """Exception raised for input validation failures."""
+
     def __init__(self, detail: str = "Invalid input provided"):
         super().__init__(status_code=422, detail=detail)

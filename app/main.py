@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DatabaseError, IntegrityError, OperationalError
 
 from app.adapters.config import get_adapter_factory
 from app.api.routes import api_router
@@ -158,6 +159,85 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
 
     return JSONResponse(
         status_code=422,
+        content=error_content,
+    )
+
+
+@app.exception_handler(OperationalError)
+async def operational_error_handler(
+    request: Request, exc: OperationalError
+) -> JSONResponse:
+    """Handle database operational errors (connection issues, timeouts, etc.)."""
+    import logging
+    from datetime import UTC, datetime
+
+    logger = logging.getLogger(__name__)
+    logger.error(f"Database operational error: {exc}", exc_info=True)
+
+    error_content = {
+        "error": {
+            "type": "ServiceUnavailable",
+            "message": "Service temporarily unavailable due to database issues",
+            "status_code": 503,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "path": str(request.url.path),
+        }
+    }
+
+    return JSONResponse(
+        status_code=503,
+        content=error_content,
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(
+    request: Request, exc: IntegrityError
+) -> JSONResponse:
+    """Handle database integrity constraint violations."""
+    import logging
+    from datetime import UTC, datetime
+
+    logger = logging.getLogger(__name__)
+    logger.error(f"Database integrity error: {exc}", exc_info=True)
+
+    error_content = {
+        "error": {
+            "type": "BadRequest",
+            "message": "Data constraint violation",
+            "status_code": 400,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "path": str(request.url.path),
+        }
+    }
+
+    return JSONResponse(
+        status_code=400,
+        content=error_content,
+    )
+
+
+@app.exception_handler(DatabaseError)
+async def database_error_handler(request: Request, exc: DatabaseError) -> JSONResponse:
+    """Handle general database errors."""
+    import logging
+    from datetime import UTC, datetime
+
+    logger = logging.getLogger(__name__)
+    logger.error(f"Database error: {exc}", exc_info=True)
+
+    error_content = {
+        "error": {
+            "type": "InternalServerError",
+            "message": "Database error occurred",
+            "status_code": 500,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "path": str(request.url.path),
+        }
+    }
+
+    return JSONResponse(
+        status_code=500,
         content=error_content,
     )
 

@@ -241,14 +241,14 @@ class PerformanceMonitor:
     def end_timing(self, operation: str) -> float:
         """End timing an operation and return duration in seconds."""
         end_time = time.perf_counter()
-        
+
         if operation not in self.active_measurements:
             logger.warning(f"Timing for operation '{operation}' not found")
             return 0.0
-        
+
         start_time = self.active_measurements.pop(operation)
         duration_seconds = end_time - start_time
-        
+
         # Also record as a metric for consistency
         metric = PerformanceMetric(
             operation=operation,
@@ -258,17 +258,17 @@ class PerformanceMonitor:
             success=True,
             metadata={},
         )
-        
+
         with self._lock:
             self.metrics[operation].append(metric)
             self.counters[f"{operation}_total"] += 1
             self.counters[f"{operation}_success"] += 1
-            
+
             # Update timing buckets
             self.timing_buckets[operation].append(duration_seconds * 1000)
             if len(self.timing_buckets[operation]) > 1000:
                 self.timing_buckets[operation] = self.timing_buckets[operation][-1000:]
-        
+
         return duration_seconds
 
     def get_current_stats(self, operation: str) -> dict[str, Any]:

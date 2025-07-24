@@ -16,7 +16,6 @@ app_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(app_dir))
 
 from app.services.database_indexes import DatabaseIndexManager
-from app.storage.database import async_engine
 
 # Configure logging
 logging.basicConfig(

@@ -6,8 +6,8 @@ for the database-backed account adapter.
 """
 
 import uuid
-from datetime import datetime, UTC
-from unittest.mock import AsyncMock, patch
+from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -39,7 +39,9 @@ class TestDatabaseAccountAdapter:
         )
 
     @pytest.mark.asyncio
-    async def test_get_account_success(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_get_account_success(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test successful account retrieval."""
         # Create account in database
         db_account = DBAccount(
@@ -53,9 +55,11 @@ class TestDatabaseAccountAdapter:
         await db_session.commit()
 
         # Mock get_async_session to return our test session
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Test retrieval
@@ -69,22 +73,33 @@ class TestDatabaseAccountAdapter:
             assert result.positions == []
 
     @pytest.mark.asyncio
-    async def test_get_account_not_found(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_get_account_not_found(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account retrieval when account doesn't exist."""
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             result = await adapter.get_account("nonexistent-account")
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_put_account_new(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession, sample_account: Account):
+    async def test_put_account_new(
+        self,
+        adapter: DatabaseAccountAdapter,
+        db_session: AsyncSession,
+        sample_account: Account,
+    ):
         """Test creating a new account."""
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Put the account
@@ -98,7 +113,9 @@ class TestDatabaseAccountAdapter:
             assert result.cash_balance == sample_account.cash_balance
 
     @pytest.mark.asyncio
-    async def test_put_account_update_existing(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_put_account_update_existing(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test updating an existing account."""
         # Create initial account
         original_account = Account(
@@ -108,10 +125,12 @@ class TestDatabaseAccountAdapter:
             name="Original Account",
             owner="original_owner",
         )
-        
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             await adapter.put_account(original_account)
@@ -124,7 +143,7 @@ class TestDatabaseAccountAdapter:
                 name="Updated Account",
                 owner="updated_owner",
             )
-            
+
             await adapter.put_account(updated_account)
 
             # Verify the update
@@ -134,7 +153,9 @@ class TestDatabaseAccountAdapter:
             assert result.owner == "updated_owner"
 
     @pytest.mark.asyncio
-    async def test_put_account_with_default_owner(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_put_account_with_default_owner(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test creating account with None owner uses default."""
         account_with_none_owner = Account(
             id="default-owner-test",
@@ -143,10 +164,12 @@ class TestDatabaseAccountAdapter:
             name="Test Account",
             owner=None,  # This should use "default"
         )
-        
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             await adapter.put_account(account_with_none_owner)
@@ -157,7 +180,9 @@ class TestDatabaseAccountAdapter:
             assert result.owner == "default"
 
     @pytest.mark.asyncio
-    async def test_get_account_ids(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_get_account_ids(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test retrieving all account IDs."""
         # Create multiple accounts
         accounts = [
@@ -165,36 +190,44 @@ class TestDatabaseAccountAdapter:
             DBAccount(id="acc-2", owner="user2", cash_balance=2000.0),
             DBAccount(id="acc-3", owner="user3", cash_balance=3000.0),
         ]
-        
+
         for account in accounts:
             db_session.add(account)
         await db_session.commit()
 
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             result = await adapter.get_account_ids()
-            
+
             assert len(result) == 3
             assert "acc-1" in result
             assert "acc-2" in result
             assert "acc-3" in result
 
     @pytest.mark.asyncio
-    async def test_get_account_ids_empty(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_get_account_ids_empty(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test retrieving account IDs when no accounts exist."""
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             result = await adapter.get_account_ids()
             assert result == []
 
     @pytest.mark.asyncio
-    async def test_account_exists_true(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_account_exists_true(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account_exists returns True for existing account."""
         # Create account
         db_account = DBAccount(
@@ -205,27 +238,35 @@ class TestDatabaseAccountAdapter:
         db_session.add(db_account)
         await db_session.commit()
 
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             result = await adapter.account_exists("exists-test")
             assert result is True
 
     @pytest.mark.asyncio
-    async def test_account_exists_false(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_account_exists_false(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account_exists returns False for non-existent account."""
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             result = await adapter.account_exists("does-not-exist")
             assert result is False
 
     @pytest.mark.asyncio
-    async def test_delete_account_success(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_delete_account_success(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test successful account deletion."""
         # Create account
         db_account = DBAccount(
@@ -236,9 +277,11 @@ class TestDatabaseAccountAdapter:
         db_session.add(db_account)
         await db_session.commit()
 
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Delete the account
@@ -250,11 +293,15 @@ class TestDatabaseAccountAdapter:
             assert exists is False
 
     @pytest.mark.asyncio
-    async def test_delete_account_not_found(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_delete_account_not_found(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test deleting non-existent account returns False."""
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             result = await adapter.delete_account("does-not-exist")
@@ -271,7 +318,9 @@ class TestDatabaseAccountAdapterEdgeCases:
         return DatabaseAccountAdapter()
 
     @pytest.mark.asyncio
-    async def test_account_with_zero_balance(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_account_with_zero_balance(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account with zero cash balance."""
         zero_balance_account = Account(
             id="zero-balance-test",
@@ -280,20 +329,24 @@ class TestDatabaseAccountAdapterEdgeCases:
             name="Zero Balance Account",
             owner="test_user",
         )
-        
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             await adapter.put_account(zero_balance_account)
-            
+
             result = await adapter.get_account("zero-balance-test")
             assert result is not None
             assert result.cash_balance == 0.0
 
     @pytest.mark.asyncio
-    async def test_account_with_very_large_balance(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_account_with_very_large_balance(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account with very large cash balance."""
         large_balance_account = Account(
             id="large-balance-test",
@@ -302,20 +355,24 @@ class TestDatabaseAccountAdapterEdgeCases:
             name="Large Balance Account",
             owner="test_user",
         )
-        
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             await adapter.put_account(large_balance_account)
-            
+
             result = await adapter.get_account("large-balance-test")
             assert result is not None
             assert result.cash_balance == 999999999.99
 
     @pytest.mark.asyncio
-    async def test_account_with_long_id(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_account_with_long_id(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account with very long ID."""
         long_id = "a" * 255  # Very long ID
         long_id_account = Account(
@@ -325,20 +382,24 @@ class TestDatabaseAccountAdapterEdgeCases:
             name="Long ID Account",
             owner="test_user",
         )
-        
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             await adapter.put_account(long_id_account)
-            
+
             result = await adapter.get_account(long_id)
             assert result is not None
             assert result.id == long_id
 
     @pytest.mark.asyncio
-    async def test_account_with_special_characters_in_owner(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_account_with_special_characters_in_owner(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test account with special characters in owner name."""
         special_chars_account = Account(
             id="special-chars-test",
@@ -347,24 +408,30 @@ class TestDatabaseAccountAdapterEdgeCases:
             name="Special Chars Account",
             owner="user@example.com!#$%",
         )
-        
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             await adapter.put_account(special_chars_account)
-            
+
             result = await adapter.get_account("special-chars-test")
             assert result is not None
             assert result.owner == "user@example.com!#$%"
 
     @pytest.mark.asyncio
-    async def test_rapid_account_operations(self, adapter: DatabaseAccountAdapter, db_session: AsyncSession):
+    async def test_rapid_account_operations(
+        self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
+    ):
         """Test rapid creation, update, and deletion of accounts."""
-        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+        with patch("app.adapters.accounts.get_async_session") as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Create multiple accounts rapidly

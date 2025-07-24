@@ -7,7 +7,7 @@ import statistics
 import time
 import tracemalloc
 from collections.abc import Callable
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 

@@ -35,6 +35,7 @@ class DatabaseAccountAdapter(AccountAdapter):
                 name=f"Account-{db_account.id}",
                 owner=db_account.owner,
             )
+        return None
 
     async def put_account(self, account: Account) -> None:
         """Store or update an account."""
@@ -60,6 +61,7 @@ class DatabaseAccountAdapter(AccountAdapter):
                 db.add(db_account)
 
             await db.commit()
+            return
 
     async def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
@@ -67,6 +69,7 @@ class DatabaseAccountAdapter(AccountAdapter):
             stmt = select(DBAccount.id)
             result = await db.execute(stmt)
             return [row[0] for row in result.all()]
+        return []
 
     async def account_exists(self, account_id: str) -> bool:
         """Check if an account exists."""
@@ -74,12 +77,13 @@ class DatabaseAccountAdapter(AccountAdapter):
             stmt = select(func.count(DBAccount.id)).filter(DBAccount.id == account_id)
             count = (await db.execute(stmt)).scalar()
             return (count or 0) > 0
+        return False
 
     async def delete_account(self, account_id: str) -> bool:
         """Delete an account."""
         if not account_id:  # Handle empty string
             return False
-            
+
         async for db in get_async_session():
             stmt = select(DBAccount).filter(DBAccount.id == account_id)
             db_account = (await db.execute(stmt)).scalar_one_or_none()
@@ -88,6 +92,7 @@ class DatabaseAccountAdapter(AccountAdapter):
                 await db.commit()
                 return True
             return False
+        return False
 
     async def get_all_accounts(self) -> list[Account]:
         """Retrieve all accounts."""
@@ -105,6 +110,7 @@ class DatabaseAccountAdapter(AccountAdapter):
                 )
                 for db_account in db_accounts
             ]
+        return []
 
 
 class LocalFileSystemAccountAdapter(AccountAdapter):

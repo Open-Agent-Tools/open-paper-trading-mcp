@@ -8,15 +8,16 @@ This module tests the core Priority 1 functionality:
 - Database connectivity
 """
 
+from datetime import datetime
+
 import pytest
 import pytest_asyncio
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.trading_service import TradingService
-from app.services.order_execution_engine import OrderExecutionEngine
-from app.schemas.orders import OrderCreate, OrderType, OrderCondition, OrderStatus
 from app.models.database.trading import Account as DBAccount
+from app.schemas.orders import OrderCondition, OrderCreate, OrderType
+from app.services.order_execution_engine import OrderExecutionEngine
+from app.services.trading_service import TradingService
 
 
 @pytest.mark.db_crud
@@ -27,10 +28,10 @@ class TestPriority1Core:
     async def trading_service(self, async_db_session: AsyncSession) -> TradingService:
         """Create a TradingService instance for testing."""
         from unittest.mock import AsyncMock, MagicMock
-        from app.models.quotes import Quote
+
         from app.models.assets import Stock
-        from datetime import datetime
-        
+        from app.models.quotes import Quote
+
         # Create a mock quote adapter that doesn't use database
         mock_adapter = MagicMock()
         mock_adapter.get_quote = AsyncMock()
@@ -42,11 +43,11 @@ class TestPriority1Core:
             ask=150.05,
             volume=1000000,
         )
-        
+
         return TradingService(
             account_owner="test_user",
             db_session=async_db_session,
-            quote_adapter=mock_adapter
+            quote_adapter=mock_adapter,
         )
 
     @pytest.mark.asyncio
@@ -79,12 +80,12 @@ class TestPriority1Core:
             order_type=OrderType.BUY,
             quantity=100,
             price=150.0,
-            condition=OrderCondition.LIMIT
+            condition=OrderCondition.LIMIT,
         )
-        
+
         # Ensure account exists first
         await trading_service._ensure_account_exists()
-        
+
         # Test order creation
         order = await trading_service.create_order(order_data)
         assert order is not None
@@ -102,15 +103,12 @@ class TestPriority1Core:
     async def test_database_connectivity(self, async_db_session: AsyncSession):
         """Test database connectivity and basic operations."""
         # Test that we can create and query an account
-        account = DBAccount(
-            owner="test_user_db",
-            cash_balance=10000.0
-        )
-        
+        account = DBAccount(owner="test_user_db", cash_balance=10000.0)
+
         async_db_session.add(account)
         await async_db_session.commit()
         await async_db_session.refresh(account)
-        
+
         assert account.owner == "test_user_db"
         assert account.cash_balance == 10000.0
 
@@ -121,7 +119,7 @@ class TestPriority1Core:
         """Test portfolio retrieval functionality."""
         # Ensure account exists
         await trading_service._ensure_account_exists()
-        
+
         # Get portfolio
         portfolio = await trading_service.get_portfolio()
         assert portfolio is not None

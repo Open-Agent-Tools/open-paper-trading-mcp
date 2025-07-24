@@ -360,7 +360,6 @@ class DevDataQuoteAdapter(QuoteAdapter):
             ],
         }
 
-
     async def search_stocks(self, query: str) -> dict[str, Any]:
         """Search for stocks."""
         return {

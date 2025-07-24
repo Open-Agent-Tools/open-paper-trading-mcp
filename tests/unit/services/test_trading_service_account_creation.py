@@ -3,25 +3,24 @@ Comprehensive tests for TradingService account creation and initialization funct
 
 This module focuses specifically on testing the core account creation logic:
 - _ensure_account_exists() function
-- _get_account() function  
+- _get_account() function
 - __init__() method
 - Default balance assignment ($10,000)
 - Initial position setup (AAPL, GOOGL seed data)
 - Edge cases and error handling
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 import pytest_asyncio
-from datetime import datetime
-from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.trading_service import TradingService
-from app.models.database.trading import Account as DBAccount, Position as DBPosition
-from app.core.exceptions import NotFoundError
 from app.adapters.test_data import DevDataQuoteAdapter
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Position as DBPosition
+from app.services.trading_service import TradingService
 
 
 @pytest.mark.db_crud
@@ -33,6 +32,7 @@ class TestTradingServiceAccountCreation:
         """Provide a clean database session for each test."""
         # Ensure database is clean before each test
         from sqlalchemy import delete
+
         await db_session.execute(delete(DBPosition))
         await db_session.execute(delete(DBAccount))
         await db_session.commit()
@@ -43,26 +43,31 @@ class TestTradingServiceAccountCreation:
         """Create a mock quote adapter for testing."""
         adapter = MagicMock()
         adapter.get_quote = AsyncMock()
-        adapter.get_available_symbols = MagicMock(return_value=["AAPL", "GOOGL", "MSFT"])
+        adapter.get_available_symbols = MagicMock(
+            return_value=["AAPL", "GOOGL", "MSFT"]
+        )
         adapter.is_market_open = AsyncMock(return_value=True)
         return adapter
 
     @pytest_asyncio.fixture
-    async def trading_service_factory(self, clean_db_session: AsyncSession, mock_quote_adapter: MagicMock):
+    async def trading_service_factory(
+        self, clean_db_session: AsyncSession, mock_quote_adapter: MagicMock
+    ):
         """Factory to create TradingService instances for testing."""
+
         def _create_service(account_owner: str = "test_user", quote_adapter=None):
             if quote_adapter is None:
                 quote_adapter = mock_quote_adapter
-            
+
             # Inject the database session into the service
             service = TradingService(
                 quote_adapter=quote_adapter,
                 account_owner=account_owner,
-                db_session=clean_db_session
+                db_session=clean_db_session,
             )
-            
+
             return service
-        
+
         return _create_service
 
     # ========================================================================
@@ -77,7 +82,7 @@ class TestTradingServiceAccountCreation:
         # Arrange
         account_owner = "new_test_user"
         service = trading_service_factory(account_owner=account_owner)
-        
+
         # Verify account doesn't exist initially
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
@@ -90,7 +95,7 @@ class TestTradingServiceAccountCreation:
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
         account = result.scalar_one_or_none()
-        
+
         assert account is not None
         assert account.owner == account_owner
         assert account.cash_balance == 10000.0  # Default balance
@@ -116,12 +121,11 @@ class TestTradingServiceAccountCreation:
 
         # Check AAPL position
         aapl_stmt = select(DBPosition).where(
-            DBPosition.account_id == account.id,
-            DBPosition.symbol == "AAPL"
+            DBPosition.account_id == account.id, DBPosition.symbol == "AAPL"
         )
         aapl_result = await clean_db_session.execute(aapl_stmt)
         aapl_position = aapl_result.scalar_one_or_none()
-        
+
         assert aapl_position is not None
         assert aapl_position.symbol == "AAPL"
         assert aapl_position.quantity == 10
@@ -129,12 +133,11 @@ class TestTradingServiceAccountCreation:
 
         # Check GOOGL position
         googl_stmt = select(DBPosition).where(
-            DBPosition.account_id == account.id,
-            DBPosition.symbol == "GOOGL"
+            DBPosition.account_id == account.id, DBPosition.symbol == "GOOGL"
         )
         googl_result = await clean_db_session.execute(googl_stmt)
         googl_position = googl_result.scalar_one_or_none()
-        
+
         assert googl_position is not None
         assert googl_position.symbol == "GOOGL"
         assert googl_position.quantity == 2
@@ -148,10 +151,10 @@ class TestTradingServiceAccountCreation:
         # Arrange
         account_owner = "existing_user"
         service = trading_service_factory(account_owner=account_owner)
-        
+
         # Create initial account
         await service._ensure_account_exists()
-        
+
         # Get initial account data
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
@@ -166,7 +169,7 @@ class TestTradingServiceAccountCreation:
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
         accounts = result.scalars().all()
-        
+
         assert len(accounts) == 1
         assert accounts[0].id == initial_id
         assert accounts[0].created_at == initial_created_at
@@ -189,7 +192,7 @@ class TestTradingServiceAccountCreation:
             stmt = select(DBAccount).where(DBAccount.owner == owner)
             result = await clean_db_session.execute(stmt)
             account = result.scalar_one_or_none()
-            
+
             assert account is not None
             assert account.owner == owner
             assert account.cash_balance == 10000.0
@@ -234,10 +237,10 @@ class TestTradingServiceAccountCreation:
         # Arrange
         account_owner = "existing_account_user"
         service = trading_service_factory(account_owner=account_owner)
-        
+
         # Create account first
         await service._ensure_account_exists()
-        
+
         # Modify the balance to test we get the same account
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
@@ -294,8 +297,7 @@ class TestTradingServiceAccountCreation:
         """Test __init__() uses provided custom adapter."""
         # Act
         service = TradingService(
-            quote_adapter=mock_quote_adapter,
-            account_owner="custom_user"
+            quote_adapter=mock_quote_adapter, account_owner="custom_user"
         )
 
         # Assert
@@ -304,7 +306,7 @@ class TestTradingServiceAccountCreation:
 
     def test_init_with_dev_data_adapter_fallback(self):
         """Test __init__() falls back to DevDataQuoteAdapter when factory fails."""
-        with patch('app.adapters.config.get_adapter_factory') as mock_factory:
+        with patch("app.adapters.config.get_adapter_factory") as mock_factory:
             # Mock factory to return None for all adapters
             mock_adapter_factory = MagicMock()
             mock_adapter_factory.create_adapter.return_value = None
@@ -329,8 +331,7 @@ class TestTradingServiceAccountCreation:
         """Test __init__() properly initializes all service components."""
         # Act
         service = TradingService(
-            quote_adapter=mock_quote_adapter,
-            account_owner="component_test_user"
+            quote_adapter=mock_quote_adapter, account_owner="component_test_user"
         )
 
         # Assert - All required components are initialized
@@ -397,12 +398,11 @@ class TestTradingServiceAccountCreation:
 
         # Assert AAPL position
         aapl_stmt = select(DBPosition).where(
-            DBPosition.account_id == account.id,
-            DBPosition.symbol == "AAPL"
+            DBPosition.account_id == account.id, DBPosition.symbol == "AAPL"
         )
         aapl_result = await clean_db_session.execute(aapl_stmt)
         aapl_position = aapl_result.scalar_one()
-        
+
         assert aapl_position.symbol == "AAPL"
         assert aapl_position.quantity == 10
         assert aapl_position.avg_price == 145.00
@@ -410,12 +410,11 @@ class TestTradingServiceAccountCreation:
 
         # Assert GOOGL position
         googl_stmt = select(DBPosition).where(
-            DBPosition.account_id == account.id,
-            DBPosition.symbol == "GOOGL"
+            DBPosition.account_id == account.id, DBPosition.symbol == "GOOGL"
         )
         googl_result = await clean_db_session.execute(googl_stmt)
         googl_position = googl_result.scalar_one()
-        
+
         assert googl_position.symbol == "GOOGL"
         assert googl_position.quantity == 2
         assert googl_position.avg_price == 2850.00
@@ -437,7 +436,7 @@ class TestTradingServiceAccountCreation:
         positions_stmt = select(DBPosition).where(DBPosition.account_id == account.id)
         positions_result = await clean_db_session.execute(positions_stmt)
         positions = positions_result.scalars().all()
-        
+
         assert len(positions) == 2
         symbols = [pos.symbol for pos in positions]
         assert "AAPL" in symbols
@@ -461,14 +460,14 @@ class TestTradingServiceAccountCreation:
         positions_stmt = select(DBPosition).where(DBPosition.account_id == account.id)
         positions_result = await clean_db_session.execute(positions_stmt)
         positions = positions_result.scalars().all()
-        
+
         # Should still only have 2 positions total
         assert len(positions) == 2
-        
+
         # Verify exact counts for each symbol
         aapl_positions = [pos for pos in positions if pos.symbol == "AAPL"]
         googl_positions = [pos for pos in positions if pos.symbol == "GOOGL"]
-        
+
         assert len(aapl_positions) == 1
         assert len(googl_positions) == 1
 
@@ -479,17 +478,23 @@ class TestTradingServiceAccountCreation:
     def test_init_with_empty_account_owner(self):
         """Test __init__() raises InputValidationError for empty account owner string."""
         from app.core.exceptions import InputValidationError
-        
+
         # Act & Assert
-        with pytest.raises(InputValidationError, match="account_owner cannot be empty or whitespace-only"):
+        with pytest.raises(
+            InputValidationError,
+            match="account_owner cannot be empty or whitespace-only",
+        ):
             TradingService(account_owner="")
 
     def test_init_with_whitespace_only_account_owner(self):
         """Test __init__() raises InputValidationError for whitespace-only account owner."""
         from app.core.exceptions import InputValidationError
-        
+
         # Act & Assert
-        with pytest.raises(InputValidationError, match="account_owner cannot be empty or whitespace-only"):
+        with pytest.raises(
+            InputValidationError,
+            match="account_owner cannot be empty or whitespace-only",
+        ):
             TradingService(account_owner="   ")
 
     def test_init_with_none_account_owner(self):
@@ -507,21 +512,23 @@ class TestTradingServiceAccountCreation:
     def test_init_with_very_long_account_owner(self):
         """Test __init__() raises InputValidationError for account owner longer than 255 chars."""
         from app.core.exceptions import InputValidationError
-        
+
         long_owner = "a" * 256  # 256 characters (over the limit)
-        
+
         # Act & Assert
-        with pytest.raises(InputValidationError, match="account_owner must be 255 characters or less"):
+        with pytest.raises(
+            InputValidationError, match="account_owner must be 255 characters or less"
+        ):
             TradingService(account_owner=long_owner)
 
     def test_init_with_account_owner_exactly_255_chars(self):
         """Test __init__() accepts account owner with exactly 255 characters."""
         # Arrange
         owner_255_chars = "a" * 255  # Exactly 255 characters
-        
+
         # Act
         service = TradingService(account_owner=owner_255_chars)
-        
+
         # Assert
         assert service.account_owner == owner_255_chars
 
@@ -529,14 +536,16 @@ class TestTradingServiceAccountCreation:
         """Test __init__() strips leading and trailing whitespace from account owner."""
         # Act
         service = TradingService(account_owner="  test_user  ")
-        
+
         # Assert
         assert service.account_owner == "test_user"
 
     def test_init_with_invalid_db_session(self):
         """Test __init__() raises TypeError for invalid db_session."""
         # Act & Assert
-        with pytest.raises(TypeError, match="db_session must be a valid AsyncSession instance or None"):
+        with pytest.raises(
+            TypeError, match="db_session must be a valid AsyncSession instance or None"
+        ):
             TradingService(account_owner="test", db_session="invalid_session")
 
     @pytest.mark.asyncio
@@ -551,14 +560,14 @@ class TestTradingServiceAccountCreation:
             "user_with_underscores",
             "user with spaces",
             "用户",  # Unicode characters
-            "user123"
+            "user123",
         ]
 
         # Act & Assert
         for owner in special_owners:
             service = trading_service_factory(account_owner=owner)
             await service._ensure_account_exists()
-            
+
             account = await service._get_account()
             assert account.owner == owner
             assert account.cash_balance == 10000.0
@@ -607,8 +616,7 @@ class TestTradingServiceAccountCreation:
 
         # Act
         service = TradingService(
-            quote_adapter=adapter,
-            account_owner="test_adapter_user"
+            quote_adapter=adapter, account_owner="test_adapter_user"
         )
 
         # Assert
@@ -632,13 +640,13 @@ class TestTradingServiceAccountCreation:
             service = TradingService(
                 quote_adapter=adapter,
                 account_owner=account_owner,
-                db_session=clean_db_session  # Properly inject the session
+                db_session=clean_db_session,  # Properly inject the session
             )
 
             # Test account creation
             await service._ensure_account_exists()
             account = await service._get_account()
-            
+
             assert account.owner == account_owner
             assert account.cash_balance == 10000.0
 
@@ -652,7 +660,7 @@ class TestTradingServiceAccountCreation:
     ):
         """Test account creation completes within reasonable time."""
         import time
-        
+
         # Arrange
         service = trading_service_factory(account_owner="performance_test_user")
 
@@ -675,20 +683,20 @@ class TestTradingServiceAccountCreation:
     ):
         """Test multiple account operations complete within reasonable time."""
         import time
-        
+
         # Arrange
         service = trading_service_factory(account_owner="multi_ops_user")
 
         # Act
         start_time = time.time()
-        
+
         # Multiple operations
         await service._ensure_account_exists()
         await service._get_account()
         await service.get_account_balance()
         await service._get_account()  # Multiple calls
         await service.get_account_balance()
-        
+
         end_time = time.time()
 
         # Assert
@@ -706,11 +714,11 @@ class TestTradingServiceAccountCreation:
         """Test _ensure_account_exists() handles database connection errors."""
         # Arrange
         service = trading_service_factory(account_owner="db_error_user")
-        
+
         # Mock database session to raise an error
         async def mock_failing_db_session():
             raise Exception("Database connection failed")
-        
+
         service._get_async_db_session = mock_failing_db_session
 
         # Act & Assert
@@ -718,17 +726,15 @@ class TestTradingServiceAccountCreation:
             await service._ensure_account_exists()
 
     @pytest.mark.asyncio
-    async def test_get_account_database_error_handling(
-        self, trading_service_factory
-    ):
+    async def test_get_account_database_error_handling(self, trading_service_factory):
         """Test _get_account() handles database connection errors."""
         # Arrange
         service = trading_service_factory(account_owner="db_error_get_user")
-        
+
         # Mock database session to raise an error
         async def mock_failing_db_session():
             raise Exception("Database connection failed")
-        
+
         service._get_async_db_session = mock_failing_db_session
 
         # Act & Assert
@@ -766,7 +772,7 @@ class TestTradingServiceAccountCreation:
         positions_stmt = select(DBPosition).where(DBPosition.account_id == account.id)
         positions_result = await clean_db_session.execute(positions_stmt)
         positions = positions_result.scalars().all()
-        
+
         assert len(positions) == 2
         symbols = [pos.symbol for pos in positions]
         assert "AAPL" in symbols
@@ -779,31 +785,35 @@ class TestTradingServiceAccountCreation:
         """Test account creation is safe under concurrent access."""
         # Arrange
         account_owner = "concurrent_test_user"
-        
+
         # Create first service and account
         service1 = trading_service_factory(account_owner=account_owner)
         await service1._ensure_account_exists()
-        
+
         # Create a second service that tries to create the same account
         service2 = trading_service_factory(account_owner=account_owner)
-        
+
         # Act - Second service tries to ensure account exists (should not create duplicate)
-        await service2._ensure_account_exists()  # Should gracefully handle existing account
+        await (
+            service2._ensure_account_exists()
+        )  # Should gracefully handle existing account
 
         # Assert - Only one account was created
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
         accounts = result.scalars().all()
-        
+
         assert len(accounts) == 1
         assert accounts[0].owner == account_owner
         assert accounts[0].cash_balance == 10000.0
 
         # Verify positions are not duplicated
-        positions_stmt = select(DBPosition).where(DBPosition.account_id == accounts[0].id)
+        positions_stmt = select(DBPosition).where(
+            DBPosition.account_id == accounts[0].id
+        )
         positions_result = await clean_db_session.execute(positions_stmt)
         positions = positions_result.scalars().all()
-        
+
         assert len(positions) == 2  # Should still only have 2 positions
 
     @pytest.mark.asyncio
@@ -813,7 +823,7 @@ class TestTradingServiceAccountCreation:
         """Test proper handling of duplicate account creation attempts."""
         # Arrange
         account_owner = "duplicate_test_user"
-        
+
         # Create first account manually in database
         account = DBAccount(
             owner=account_owner,
@@ -821,18 +831,18 @@ class TestTradingServiceAccountCreation:
         )
         clean_db_session.add(account)
         await clean_db_session.commit()
-        
+
         # Create service that will try to ensure the same account exists
         service = trading_service_factory(account_owner=account_owner)
-        
+
         # Act - Service should handle the existing account gracefully
         await service._ensure_account_exists()
-        
+
         # Assert - Original account should be unchanged
         stmt = select(DBAccount).where(DBAccount.owner == account_owner)
         result = await clean_db_session.execute(stmt)
         accounts = result.scalars().all()
-        
+
         assert len(accounts) == 1
         assert accounts[0].owner == account_owner
         assert accounts[0].cash_balance == 5000.0  # Original balance preserved

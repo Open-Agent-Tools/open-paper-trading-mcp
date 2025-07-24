@@ -25,6 +25,7 @@ from app.main import app
 # Import models to ensure they're registered with Base
 from app.models.database import trading  # noqa: F401
 from app.models.database.base import Base
+
 # Import database utilities but we'll create test-specific engines
 from app.storage.database import get_async_session
 
@@ -34,6 +35,7 @@ from app.storage.database import get_async_session
 def event_loop_policy():
     """Set event loop policy for the session."""
     import asyncio
+
     return asyncio.DefaultEventLoopPolicy()
 
 
@@ -43,11 +45,11 @@ async def setup_test_database():
     # Create engine in the current event loop
     database_url = os.environ.get(
         "TEST_DATABASE_URL",
-        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db"
+        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db",
     )
-    
+
     session_engine = create_async_engine(database_url, echo=False, future=True)
-    
+
     # Create tables using session engine
     async with session_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -61,30 +63,27 @@ async def setup_test_database():
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Standard database session fixture - all tests should use this."""
-    import asyncio
-    
+
     # Create engine in current event loop (critical for AsyncIO compatibility)
     database_url = os.environ.get(
         "TEST_DATABASE_URL",
-        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db"
+        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db",
     )
-    
+
     # Create fresh engine for each test to ensure correct event loop binding
     test_engine = create_async_engine(
-        database_url, 
-        echo=False, 
+        database_url,
+        echo=False,
         future=True,
         pool_pre_ping=True,  # Verify connections before use
-        pool_recycle=300     # Recycle connections every 5 minutes
+        pool_recycle=300,  # Recycle connections every 5 minutes
     )
-    
+
     # Create session factory bound to current event loop
     test_session_factory = async_sessionmaker(
-        bind=test_engine, 
-        class_=AsyncSession, 
-        expire_on_commit=False
+        bind=test_engine, class_=AsyncSession, expire_on_commit=False
     )
-    
+
     try:
         # Clean up any existing test data BEFORE test runs
         async with test_engine.begin() as conn:
@@ -128,28 +127,21 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Alias for db_session to maintain backward compatibility."""
     # Use the same pattern as db_session but as separate fixture
-    import asyncio
-    
+
     database_url = os.environ.get(
         "TEST_DATABASE_URL",
-        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db"
+        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db",
     )
-    
+
     # Create fresh engine for each test to ensure correct event loop binding
     test_engine = create_async_engine(
-        database_url, 
-        echo=False, 
-        future=True,
-        pool_pre_ping=True,
-        pool_recycle=300
+        database_url, echo=False, future=True, pool_pre_ping=True, pool_recycle=300
     )
-    
+
     test_session_factory = async_sessionmaker(
-        bind=test_engine, 
-        class_=AsyncSession, 
-        expire_on_commit=False
+        bind=test_engine, class_=AsyncSession, expire_on_commit=False
     )
-    
+
     try:
         # Clean up any existing test data BEFORE test runs
         async with test_engine.begin() as conn:
@@ -207,7 +199,9 @@ def client(async_db_session: AsyncSession) -> TestClient:
 
 
 @pytest_asyncio.fixture
-async def test_async_session(async_db_session: AsyncSession) -> AsyncGenerator[AsyncSession, None]:
+async def test_async_session(
+    async_db_session: AsyncSession,
+) -> AsyncGenerator[AsyncSession, None]:
     """Create a new async database session for a test - alias for async_db_session."""
     # Use the same session as async_db_session to avoid conflicts
     yield async_db_session
@@ -321,10 +315,8 @@ def sample_stock_quotes() -> dict[str, Any]:
 @pytest.fixture
 def sample_order_data() -> dict[str, Any]:
     """Create sample order data for testing."""
-    from app.schemas.orders import OrderCreate, OrderType
+    from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
-    from app.schemas.orders import OrderCondition
-    
     return {
         "buy_market": OrderCreate(
             symbol="AAPL",
@@ -334,16 +326,16 @@ def sample_order_data() -> dict[str, Any]:
             condition=OrderCondition.MARKET,
         ),
         "sell_limit": OrderCreate(
-            symbol="AAPL", 
-            order_type=OrderType.SELL, 
-            quantity=50, 
+            symbol="AAPL",
+            order_type=OrderType.SELL,
+            quantity=50,
             price=160.0,
             condition=OrderCondition.LIMIT,
         ),
         "buy_limit": OrderCreate(
-            symbol="GOOGL", 
-            order_type=OrderType.BUY, 
-            quantity=10, 
+            symbol="GOOGL",
+            order_type=OrderType.BUY,
+            quantity=10,
             price=2700.0,
             condition=OrderCondition.LIMIT,
         ),
@@ -366,7 +358,8 @@ async def trading_service_with_data(
 
     # Override the database session via dependency injection
     from unittest.mock import patch
-    with patch.object(service, '_get_async_db_session', return_value=async_db_session):
+
+    with patch.object(service, "_get_async_db_session", return_value=async_db_session):
         pass  # Service will use the mocked session
 
     # Mock quote adapter with realistic data
@@ -415,7 +408,6 @@ async def integration_test_client(
     async_db_session: AsyncSession, test_account_data: dict[str, Any]
 ) -> TestClient:
     """Create a test client configured for integration testing."""
-    from unittest.mock import AsyncMock
 
     from app.services.trading_service import TradingService
 
@@ -463,6 +455,6 @@ def test_scenarios() -> dict[str, Any]:
 def performance_monitor():
     """Create a performance monitor for testing."""
     from app.services.performance_benchmarks import PerformanceMonitor
-    
+
     monitor = PerformanceMonitor()
     return monitor

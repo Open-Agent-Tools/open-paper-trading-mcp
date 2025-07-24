@@ -1,8 +1,8 @@
 """
 Comprehensive test coverage for OrderExecutionEngine database functions.
 
-This module provides complete test coverage for the database interaction 
-functions in the OrderExecutionEngine, covering normal operations, edge cases, 
+This module provides complete test coverage for the database interaction
+functions in the OrderExecutionEngine, covering normal operations, edge cases,
 error scenarios, and performance benchmarks.
 
 Test Coverage Areas:
@@ -19,16 +19,15 @@ Functions Tested:
 import asyncio
 import uuid
 from datetime import datetime
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.database.trading import Account as DBAccount, Order as DBOrder
-from app.schemas.orders import OrderStatus, OrderType, OrderCondition
+from app.models.database.trading import Account as DBAccount
+from app.models.database.trading import Order as DBOrder
+from app.schemas.orders import OrderCondition, OrderStatus, OrderType
 from app.services.order_execution_engine import OrderExecutionEngine
 from app.services.trading_service import TradingService
 
@@ -48,7 +47,7 @@ class TestLoadOrderById:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         order_id = str(uuid.uuid4())
         db_order = DBOrder(
             id=order_id,
@@ -64,20 +63,26 @@ class TestLoadOrderById:
         )
         db_session.add(db_order)
         await db_session.commit()
-        
+
         # Create trading service and execution engine
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
+
         # Mock get_async_session to use our test session
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Load the order
             result = await engine._load_order_by_id(order_id)
-            
+
             # Verify result
             assert result is not None
             assert result.id == order_id
@@ -92,18 +97,24 @@ class TestLoadOrderById:
     @pytest.mark.asyncio
     async def test_load_order_by_id_not_found(self, db_session: AsyncSession):
         """Test loading a non-existent order."""
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
+
         fake_order_id = str(uuid.uuid4())
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             result = await engine._load_order_by_id(fake_order_id)
-            
+
             assert result is None
 
     @pytest.mark.asyncio
@@ -116,11 +127,11 @@ class TestLoadOrderById:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         order_id = str(uuid.uuid4())
         created_time = datetime.now()
         filled_time = datetime.now()
-        
+
         db_order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -139,17 +150,23 @@ class TestLoadOrderById:
         )
         db_session.add(db_order)
         await db_session.commit()
-        
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             result = await engine._load_order_by_id(order_id)
-            
+
             # Verify all fields are properly loaded
             assert result is not None
             assert result.trail_percent == 5.0
@@ -160,19 +177,27 @@ class TestLoadOrderById:
     @pytest.mark.asyncio
     async def test_load_order_by_id_database_error(self, db_session: AsyncSession):
         """Test handling database errors during order loading."""
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 mock_session = AsyncMock()
-                mock_session.execute.side_effect = DatabaseError("DB connection failed", None, None)
+                mock_session.execute.side_effect = DatabaseError(
+                    "DB connection failed", None, None
+                )
                 yield mock_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             order_id = str(uuid.uuid4())
             result = await engine._load_order_by_id(order_id)
-            
+
             # Should return None on database error
             assert result is None
 
@@ -192,11 +217,11 @@ class TestLoadPendingOrders:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         # Create various pending orders (only trigger orders should be loaded)
         trigger_order_types = [OrderType.BUY, OrderType.SELL, OrderType.BUY]
         created_orders = []
-        
+
         for i, order_type in enumerate(trigger_order_types):
             order_id = str(uuid.uuid4())
             db_order = DBOrder(
@@ -213,7 +238,7 @@ class TestLoadPendingOrders:
             )
             created_orders.append(order_type)
             db_session.add(db_order)
-        
+
         # Create non-trigger orders (should not be loaded)
         non_trigger_order = DBOrder(
             id=str(uuid.uuid4()),
@@ -227,35 +252,41 @@ class TestLoadPendingOrders:
             condition=OrderCondition.MARKET,
         )
         db_session.add(non_trigger_order)
-        
+
         await db_session.commit()
-        
+
         # Create trading service and execution engine
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Mock the add_order method to track what orders are added
             added_orders = []
-            
+
             async def mock_add_order(order):
                 added_orders.append(order)
-            
+
             engine.add_order = mock_add_order
-            
+
             # Load pending orders
             await engine._load_pending_orders()
-            
+
             # Verify correct orders were loaded
             assert len(added_orders) == 3  # Only trigger orders
             loaded_symbols = {order.symbol for order in added_orders}
             expected_symbols = {"TRIGGER0", "TRIGGER1", "TRIGGER2"}
             assert loaded_symbols == expected_symbols
-            
+
             # Verify order types
             loaded_types = {order.order_type for order in added_orders}
             expected_types = set(trigger_order_types)
@@ -264,22 +295,30 @@ class TestLoadPendingOrders:
     @pytest.mark.asyncio
     async def test_load_pending_orders_empty_database(self, db_session: AsyncSession):
         """Test loading pending orders when none exist."""
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             added_orders = []
+
             async def mock_add_order(order):
                 added_orders.append(order)
+
             engine.add_order = mock_add_order
-            
+
             # Should complete without error
             await engine._load_pending_orders()
-            
+
             # No orders should be added
             assert len(added_orders) == 0
 
@@ -293,10 +332,10 @@ class TestLoadPendingOrders:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         # Create orders with different statuses
         statuses = [OrderStatus.PENDING, OrderStatus.FILLED, OrderStatus.CANCELLED]
-        
+
         for i, status in enumerate(statuses):
             db_order = DBOrder(
                 id=str(uuid.uuid4()),
@@ -311,24 +350,32 @@ class TestLoadPendingOrders:
                 condition=OrderCondition.STOP,
             )
             db_session.add(db_order)
-        
+
         await db_session.commit()
-        
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             added_orders = []
+
             async def mock_add_order(order):
                 added_orders.append(order)
+
             engine.add_order = mock_add_order
-            
+
             await engine._load_pending_orders()
-            
+
             # Only pending order should be loaded
             assert len(added_orders) == 1
             assert added_orders[0].symbol == "STATUS0"
@@ -337,16 +384,24 @@ class TestLoadPendingOrders:
     @pytest.mark.asyncio
     async def test_load_pending_orders_database_error(self, db_session: AsyncSession):
         """Test handling database errors during pending order loading."""
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 mock_session = AsyncMock()
-                mock_session.execute.side_effect = DatabaseError("DB connection failed", None, None)
+                mock_session.execute.side_effect = DatabaseError(
+                    "DB connection failed", None, None
+                )
                 yield mock_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Should complete without raising exception
             await engine._load_pending_orders()
             # No orders should be loaded due to error
@@ -357,7 +412,9 @@ class TestUpdateOrderTriggeredStatus:
     """Test OrderExecutionEngine._update_order_triggered_status() function."""
 
     @pytest.mark.asyncio
-    async def test_update_order_triggered_status_success(self, db_session: AsyncSession):
+    async def test_update_order_triggered_status_success(
+        self, db_session: AsyncSession
+    ):
         """Test successfully updating order triggered status."""
         # Create test account and order
         account = DBAccount(
@@ -367,7 +424,7 @@ class TestUpdateOrderTriggeredStatus:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         order_id = str(uuid.uuid4())
         db_order = DBOrder(
             id=order_id,
@@ -383,45 +440,61 @@ class TestUpdateOrderTriggeredStatus:
         )
         db_session.add(db_order)
         await db_session.commit()
-        
+
         # Verify initial status
         assert db_order.status == OrderStatus.PENDING
         assert db_order.filled_at is None
-        
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             trigger_price = 144.0
             await engine._update_order_triggered_status(order_id, trigger_price)
-            
+
             # Verify status was updated
             await db_session.refresh(db_order)
             assert db_order.status == OrderStatus.FILLED
             assert db_order.filled_at is not None
 
     @pytest.mark.asyncio
-    async def test_update_order_triggered_status_not_found(self, db_session: AsyncSession):
+    async def test_update_order_triggered_status_not_found(
+        self, db_session: AsyncSession
+    ):
         """Test updating status for non-existent order."""
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
+
         fake_order_id = str(uuid.uuid4())
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Should complete without error (order not found case)
             await engine._update_order_triggered_status(fake_order_id, 100.0)
 
     @pytest.mark.asyncio
-    async def test_update_order_triggered_status_multiple_orders(self, db_session: AsyncSession):
+    async def test_update_order_triggered_status_multiple_orders(
+        self, db_session: AsyncSession
+    ):
         """Test updating status for multiple orders."""
         account = DBAccount(
             id=str(uuid.uuid4()),
@@ -430,7 +503,7 @@ class TestUpdateOrderTriggeredStatus:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         # Create multiple orders
         orders = []
         for i in range(3):
@@ -449,21 +522,27 @@ class TestUpdateOrderTriggeredStatus:
             )
             orders.append((order_id, db_order))
             db_session.add(db_order)
-        
+
         await db_session.commit()
-        
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Update status for all orders
             for order_id, _ in orders:
                 await engine._update_order_triggered_status(order_id, 144.0)
-            
+
             # Verify all orders were updated
             for _, db_order in orders:
                 await db_session.refresh(db_order)
@@ -471,20 +550,30 @@ class TestUpdateOrderTriggeredStatus:
                 assert db_order.filled_at is not None
 
     @pytest.mark.asyncio
-    async def test_update_order_triggered_status_database_error(self, db_session: AsyncSession):
+    async def test_update_order_triggered_status_database_error(
+        self, db_session: AsyncSession
+    ):
         """Test handling database errors during status update."""
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
+
         order_id = str(uuid.uuid4())
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 mock_session = AsyncMock()
-                mock_session.execute.side_effect = DatabaseError("DB connection failed", None, None)
+                mock_session.execute.side_effect = DatabaseError(
+                    "DB connection failed", None, None
+                )
                 yield mock_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Should complete without raising exception
             await engine._update_order_triggered_status(order_id, 100.0)
 
@@ -504,7 +593,7 @@ class TestOrderExecutionEngineIntegration:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         order_id = str(uuid.uuid4())
         db_order = DBOrder(
             id=order_id,
@@ -520,24 +609,30 @@ class TestOrderExecutionEngineIntegration:
         )
         db_session.add(db_order)
         await db_session.commit()
-        
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Step 1: Load the order
             loaded_order = await engine._load_order_by_id(order_id)
             assert loaded_order is not None
             assert loaded_order.status == OrderStatus.PENDING
-            
+
             # Step 2: Update the order status
             trigger_price = 144.0
             await engine._update_order_triggered_status(order_id, trigger_price)
-            
+
             # Step 3: Verify the update
             updated_order = await engine._load_order_by_id(order_id)
             assert updated_order is not None
@@ -553,7 +648,7 @@ class TestOrderExecutionEngineIntegration:
         )
         db_session.add(account)
         await db_session.commit()
-        
+
         order_id = str(uuid.uuid4())
         db_order = DBOrder(
             id=order_id,
@@ -569,32 +664,38 @@ class TestOrderExecutionEngineIntegration:
         )
         db_session.add(db_order)
         await db_session.commit()
-        
-        trading_service = TradingService(account_owner="test_user", db_session=db_session)
+
+        trading_service = TradingService(
+            account_owner="test_user", db_session=db_session
+        )
         engine = OrderExecutionEngine(trading_service)
-        
-        with patch('app.services.order_execution_engine.get_async_session') as mock_get_session:
+
+        with patch(
+            "app.services.order_execution_engine.get_async_session"
+        ) as mock_get_session:
+
             async def mock_session_generator():
                 yield db_session
+
             mock_get_session.side_effect = lambda: mock_session_generator()
-            
+
             # Run concurrent operations
             async def load_order():
                 return await engine._load_order_by_id(order_id)
-            
+
             async def update_order():
                 await engine._update_order_triggered_status(order_id, 144.0)
                 return "updated"
-            
+
             # Should handle concurrent access gracefully
             results = await asyncio.gather(
-                load_order(),
-                update_order(),
-                return_exceptions=True
+                load_order(), update_order(), return_exceptions=True
             )
-            
+
             # At least one operation should succeed
-            success_count = sum(1 for result in results if not isinstance(result, Exception))
+            success_count = sum(
+                1 for result in results if not isinstance(result, Exception)
+            )
             assert success_count >= 1
 
 
