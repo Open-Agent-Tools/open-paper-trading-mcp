@@ -360,30 +360,6 @@ class DevDataQuoteAdapter(QuoteAdapter):
             ],
         }
 
-    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
-        """Get stock news."""
-        return {
-            "symbol": symbol.upper(),
-            "news": [
-                {
-                    "title": f"Test news for {symbol.upper()}",
-                    "summary": f"This is test news for {symbol.upper()}",
-                    "published_at": self.current_date.strftime("%Y-%m-%d"),
-                }
-            ],
-        }
-
-    async def get_top_movers(self) -> dict[str, Any]:
-        """Get top movers."""
-        return {
-            "movers": [
-                {
-                    "symbol": "AAPL",
-                    "change_percent": "2.5",
-                    "price": "150.00",
-                }
-            ]
-        }
 
     async def search_stocks(self, query: str) -> dict[str, Any]:
         """Search for stocks."""

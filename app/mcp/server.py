@@ -28,9 +28,7 @@ from app.mcp.core_tools import (
 from app.mcp.market_data_tools import (
     get_price_history,
     get_stock_info,
-    get_stock_news,
     get_stock_price,
-    get_top_movers,
     search_stocks,
     search_stocks_tool,
 )
@@ -112,8 +110,6 @@ mcp.tool()(stock_events)
 mcp.tool()(stock_level2_data)
 
 # Register additional market data tools
-mcp.tool()(get_stock_news)
-mcp.tool()(get_top_movers)
 mcp.tool()(search_stocks)
 
 # =============================================================================

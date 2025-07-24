@@ -11,7 +11,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from typing import Any
 
@@ -543,7 +543,7 @@ class OrderNotificationManager:
                 notification.failed_channels.add(channel)
 
         if success:
-            notification.sent_at = datetime.utcnow()
+            notification.sent_at = datetime.now(UTC)
 
         # Store in history
         self.notification_history.append(notification)

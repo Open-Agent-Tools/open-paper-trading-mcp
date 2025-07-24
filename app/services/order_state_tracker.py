@@ -13,7 +13,7 @@ import weakref
 from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from enum import Enum
 from typing import Any, cast
 
@@ -101,7 +101,7 @@ class MemoryEfficientOrderTracker:
             "events_by_type": defaultdict(int),
             "active_orders": 0,
             "memory_usage_kb": 0,
-            "last_cleanup": datetime.utcnow(),
+            "last_cleanup": datetime.now(UTC),
         }
 
         # Thread safety
@@ -155,7 +155,7 @@ class MemoryEfficientOrderTracker:
             snapshot = OrderStateSnapshot(
                 order_id=order_id,
                 status=new_status,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 event=event,
                 symbol=symbol,
                 quantity=quantity,
@@ -232,7 +232,7 @@ class MemoryEfficientOrderTracker:
         limit: int = 100,
     ) -> list[OrderStateSnapshot]:
         """Get recent state change events with filtering."""
-        cutoff = datetime.utcnow() - timedelta(minutes=minutes)
+        cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         events: list[OrderStateSnapshot] = []
 
         with self._lock:
@@ -296,11 +296,11 @@ class MemoryEfficientOrderTracker:
                 return snapshot.timestamp - start_time
 
         # Order still active
-        return datetime.utcnow() - start_time
+        return datetime.now(UTC) - start_time
 
     def get_fill_rate_by_symbol(self, hours: int = 24) -> dict[str, dict[str, Any]]:
         """Calculate fill rates by symbol for recent orders."""
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         symbol_stats: dict[str, dict[str, int]] = defaultdict(
             lambda: {"total": 0, "filled": 0}
         )
@@ -371,7 +371,7 @@ class MemoryEfficientOrderTracker:
                 if total_snapshots < self.config.max_total_snapshots:
                     return {"orders_cleaned": 0, "snapshots_removed": 0}
 
-            cutoff = datetime.utcnow() - timedelta(days=self.config.max_history_days)
+            cutoff = datetime.now(UTC) - timedelta(days=self.config.max_history_days)
 
             orders_cleaned = 0
             snapshots_removed = 0
@@ -412,7 +412,7 @@ class MemoryEfficientOrderTracker:
                     del self.current_states[order_id]
 
             # Update metrics
-            self.metrics["last_cleanup"] = datetime.utcnow()
+            self.metrics["last_cleanup"] = datetime.now(UTC)
             self.metrics["active_orders"] = len(self.current_states)
 
             logger.info(
@@ -477,7 +477,7 @@ class MemoryEfficientOrderTracker:
                 "events_by_type": defaultdict(int),
                 "active_orders": 0,
                 "memory_usage_kb": 0,
-                "last_cleanup": datetime.utcnow(),
+                "last_cleanup": datetime.now(UTC),
             }
 
         logger.info("Order state tracker reset")

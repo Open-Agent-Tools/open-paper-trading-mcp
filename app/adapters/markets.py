@@ -1,7 +1,7 @@
 """Market adapter implementations."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any
 
 from app.adapters.base import MarketAdapter, QuoteAdapter
@@ -94,7 +94,7 @@ class PaperMarketAdapter(MarketAdapter):
             order.id = str(uuid.uuid4())[:8]
 
         # Set submission time
-        order.created_at = datetime.utcnow()
+        order.created_at = datetime.now(UTC)
         order.status = OrderStatus.PENDING
 
         # Add to pending orders
@@ -244,7 +244,7 @@ class PaperMarketAdapter(MarketAdapter):
         # Fill the order if possible
         if can_fill and fill_price > 0:
             order.status = OrderStatus.FILLED
-            order.filled_at = datetime.utcnow()
+            order.filled_at = datetime.now(UTC)
             # Note: fill_price not stored in schema
             self.filled_orders.append(order)
             return True

@@ -7,7 +7,7 @@ import statistics
 import time
 import tracemalloc
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, UTC
 from decimal import Decimal
 from typing import Any
 
@@ -275,7 +275,7 @@ class DatabasePerformanceTesting:
                     current_price=Decimal(str(55.0 + i * 0.5)),
                     market_value=Decimal(str((100 + i) * (55.0 + i * 0.5))),
                     delta=Decimal(str(0.5 + i * 0.01)) if i % 2 == 0 else None,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
                 positions.append(position)
             return positions
@@ -300,7 +300,7 @@ class DatabasePerformanceTesting:
                     price=Decimal(str(100.0 + i)),
                     condition=OrderCondition.LIMIT,
                     status=OrderStatus.PENDING,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
                 orders.append(order)
             return orders
@@ -329,7 +329,7 @@ class OrderExecutionPerformanceTesting:
                 price=Decimal("150.00"),
                 condition=OrderCondition.LIMIT,
                 status=OrderStatus.PENDING,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             )
 
             # Simulate validation logic (simplified)
@@ -592,7 +592,7 @@ class SystemResourceTesting:
                     price=Decimal(str(100.0 + i % 50)),
                     condition=OrderCondition.LIMIT,
                     status=OrderStatus.PENDING,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
                 orders.append(order)
 
@@ -605,7 +605,7 @@ class SystemResourceTesting:
                     cost_basis=Decimal(str(50.0 + i * 0.1)),
                     current_price=Decimal(str(55.0 + i * 0.1)),
                     market_value=Decimal(str((100 + i) * (55.0 + i * 0.1))),
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
                 positions.append(position)
 

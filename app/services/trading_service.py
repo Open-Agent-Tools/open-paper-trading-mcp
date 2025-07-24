@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import InputValidationError, NotFoundError
 from app.models.assets import Option, asset_factory
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Order as DBOrder
@@ -44,7 +44,22 @@ class TradingService:
         self,
         quote_adapter: QuoteAdapter | None = None,
         account_owner: str = "default",
+        db_session: AsyncSession | None = None,
     ) -> None:
+        # Validate account_owner input
+        if account_owner is None:
+            raise TypeError("account_owner cannot be None")
+        if not isinstance(account_owner, str):
+            raise TypeError("account_owner must be a string")
+        if not account_owner.strip():
+            raise InputValidationError("account_owner cannot be empty or whitespace-only")
+        if len(account_owner) > 255:
+            raise InputValidationError("account_owner must be 255 characters or less")
+        
+        # Validate db_session input
+        if db_session is not None and not hasattr(db_session, 'execute'):
+            raise TypeError("db_session must be a valid AsyncSession instance or None")
+        
         # Initialize services
         if quote_adapter is None:
             # Use adapter factory to create quote adapter based on configuration
@@ -72,8 +87,9 @@ class TradingService:
         self.order_converter = OrderConverter()
         self.position_converter = PositionConverter(self)
 
-        # Account configuration
-        self.account_owner = account_owner
+        # Account configuration (store the trimmed value)
+        self.account_owner = account_owner.strip()
+        self._db_session = db_session  # Optional injected session
 
         # Service components
         self.margin_service = None  # Placeholder for margin service
@@ -84,18 +100,30 @@ class TradingService:
 
     async def _get_async_db_session(self) -> AsyncSession:
         """Get an async database session."""
-        from app.storage.database import get_async_session
-
-        async_generator = get_async_session()
-        session = await async_generator.__anext__()
-        return session
+        if self._db_session is not None:
+            return self._db_session
+            
+        # Fallback to creating a new session (production use)
+        from app.storage.database import AsyncSessionLocal
+        return AsyncSessionLocal()
+    
+    async def _execute_with_session(self, operation):
+        """Execute a database operation with proper session management."""
+        session_injected = self._db_session is not None
+        db = await self._get_async_db_session()
+        
+        try:
+            return await operation(db)
+        finally:
+            # Only close session if we created it (not injected)
+            if not session_injected:
+                await db.close()
 
     async def _ensure_account_exists(self) -> None:
         """Ensure the account exists in the database."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
@@ -127,8 +155,8 @@ class TradingService:
                 for pos in initial_positions:
                     db.add(pos)
                 await db.commit()
-        finally:
-            await db.close()
+        
+        await self._execute_with_session(_operation)
 
     async def _get_account(self) -> DBAccount:
         """Get the current account from database."""
@@ -137,16 +165,15 @@ class TradingService:
         # Ensure account exists first
         await self._ensure_account_exists()
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
             if not account:
                 raise NotFoundError(f"Account for owner {self.account_owner} not found")
             return account
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def get_account_balance(self) -> float:
         """Get current account balance from database."""
@@ -184,8 +211,7 @@ class TradingService:
         # Validate symbol exists
         await self.get_quote(order_data.symbol)
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             # Create database order
@@ -205,15 +231,14 @@ class TradingService:
 
             # Use converter to convert to schema
             return await self.order_converter.to_schema(db_order)
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def get_orders(self) -> list[Order]:
         """Get all orders."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             stmt = select(DBOrder).where(DBOrder.account_id == account.id)
@@ -226,8 +251,8 @@ class TradingService:
                 order = await self.order_converter.to_schema(db_order)
                 orders.append(order)
             return orders
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def get_order(self, order_id: str) -> Order:
         """Get a specific order by ID."""
@@ -368,8 +393,7 @@ class TradingService:
         """Get complete portfolio information."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             stmt = select(DBPosition).where(DBPosition.account_id == account.id)
@@ -406,8 +430,8 @@ class TradingService:
                 daily_pnl=total_pnl,
                 total_pnl=total_pnl,
             )
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def get_portfolio_summary(self) -> PortfolioSummary:
         """Get portfolio summary."""
@@ -1352,140 +1376,6 @@ class TradingService:
         """Get list of available symbols."""
         return self.quote_adapter.get_available_symbols()
 
-    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
-        """
-        Get news stories for a stock.
-
-        This method provides a unified interface that works with both
-        test data and live market data adapters.
-        """
-        try:
-            asset = asset_factory(symbol)
-            if not asset:
-                return {"error": f"Invalid symbol: {symbol}"}
-
-            # Use the adapter's extended functionality if available
-            if hasattr(self.quote_adapter, "get_stock_news"):
-                result = await self.quote_adapter.get_stock_news(symbol)
-                return dict(result) if result else {}
-            else:
-                # Fallback to simulated news data
-                return {
-                    "symbol": symbol.upper(),
-                    "articles": [
-                        {
-                            "title": f"{symbol.upper()} Reports Strong Quarter Results",
-                            "summary": "Company beats analyst expectations with solid revenue growth.",
-                            "published_at": (
-                                datetime.now() - timedelta(hours=2)
-                            ).isoformat(),
-                            "source": "Financial News Network",
-                            "sentiment": "positive",
-                            "url": f"https://example.com/news/{symbol.lower()}-earnings",
-                        },
-                        {
-                            "title": f"Analysts Upgrade {symbol.upper()} Price Target",
-                            "summary": "Multiple analysts raise price targets following recent developments.",
-                            "published_at": (
-                                datetime.now() - timedelta(hours=6)
-                            ).isoformat(),
-                            "source": "Market Watch",
-                            "sentiment": "positive",
-                            "url": f"https://example.com/news/{symbol.lower()}-upgrade",
-                        },
-                        {
-                            "title": f"{symbol.upper()} Announces New Partnership",
-                            "summary": "Strategic partnership expected to drive future growth.",
-                            "published_at": (
-                                datetime.now() - timedelta(days=1)
-                            ).isoformat(),
-                            "source": "Business Journal",
-                            "sentiment": "neutral",
-                            "url": f"https://example.com/news/{symbol.lower()}-partnership",
-                        },
-                    ],
-                    "total_articles": 3,
-                    "last_updated": datetime.now().isoformat(),
-                    "message": "Simulated news data from fallback implementation",
-                }
-
-        except Exception as e:
-            return {"error": str(e)}
-
-    async def get_top_movers(self) -> dict[str, Any]:
-        """
-        Get top movers in the market.
-
-        This method provides a unified interface that works with both
-        test data and live market data adapters.
-        """
-        try:
-            # Use the adapter's extended functionality if available
-            if hasattr(self.quote_adapter, "get_top_movers"):
-                result = await self.quote_adapter.get_top_movers()
-                return dict(result) if result else {}
-            else:
-                # Fallback to simulated top movers using available symbols
-                available_symbols = self.get_available_symbols()[
-                    :10
-                ]  # Limit to first 10
-
-                gainers = []
-                losers = []
-
-                # Create simulated data for some symbols
-                import random
-
-                for _i, symbol in enumerate(available_symbols[:5]):
-                    try:
-                        quote = await self.get_enhanced_quote(symbol)
-                        if quote and quote.price:
-                            change_percent = random.uniform(1.5, 8.5)  # Gainers
-                            change = (quote.price * change_percent) / 100
-                            gainers.append(
-                                {
-                                    "symbol": symbol,
-                                    "price": quote.price,
-                                    "change": round(change, 2),
-                                    "change_percent": round(change_percent, 2),
-                                    "volume": getattr(
-                                        quote, "volume", random.randint(100000, 5000000)
-                                    ),
-                                }
-                            )
-                    except Exception:
-                        continue
-
-                for _i, symbol in enumerate(available_symbols[5:8]):
-                    try:
-                        quote = await self.get_enhanced_quote(symbol)
-                        if quote and quote.price:
-                            change_percent = random.uniform(-6.5, -1.0)  # Losers
-                            change = (quote.price * change_percent) / 100
-                            losers.append(
-                                {
-                                    "symbol": symbol,
-                                    "price": quote.price,
-                                    "change": round(change, 2),
-                                    "change_percent": round(change_percent, 2),
-                                    "volume": getattr(
-                                        quote, "volume", random.randint(100000, 5000000)
-                                    ),
-                                }
-                            )
-                    except Exception:
-                        continue
-
-                return {
-                    "gainers": gainers[:5],
-                    "losers": losers[:5],
-                    "most_active": (gainers + losers)[:5],
-                    "last_updated": datetime.now().isoformat(),
-                    "message": "Simulated top movers data from fallback implementation",
-                }
-
-        except Exception as e:
-            return {"error": str(e)}
 
     async def get_market_hours(self) -> dict[str, Any]:
         """

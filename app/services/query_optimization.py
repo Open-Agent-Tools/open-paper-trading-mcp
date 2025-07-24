@@ -6,7 +6,7 @@ operations, leveraging the created indexes for maximum performance.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Any
 
 from sqlalchemy import and_, func, or_, select, text
@@ -150,7 +150,7 @@ class OptimizedOrderQueries:
         Get recently filled orders.
         Uses: idx_orders_filled_at
         """
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         query = (
             select(Order)
@@ -326,7 +326,7 @@ class OptimizedOrderQueries:
         Get symbols with high order frequency.
         Uses: idx_orders_symbol_created
         """
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         frequency_query = (
             select(Order.symbol, func.count(Order.id).label("order_count"))
@@ -393,7 +393,7 @@ class OptimizedOrderQueries:
         Clean up old completed orders to maintain performance.
         Uses: idx_orders_created_status
         """
-        cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days_old)
 
         # Count total orders to clean
         count_query = select(func.count(Order.id)).where(

@@ -6,7 +6,7 @@ database connectivity, quote adapter status, and overall system health.
 """
 
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
@@ -150,7 +150,7 @@ async def health_check() -> dict[str, Any]:
     """Basic health check endpoint."""
     return {
         "status": "ok",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "service": "open-paper-trading-mcp",
         "version": settings.VERSION if hasattr(settings, "VERSION") else "1.0.0",
     }
@@ -159,7 +159,7 @@ async def health_check() -> dict[str, Any]:
 @router.get("/health/live", response_model=dict[str, Any])
 async def liveness_check() -> dict[str, Any]:
     """Kubernetes liveness probe endpoint."""
-    return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "alive", "timestamp": datetime.now(UTC).isoformat()}
 
 
 @router.get("/health/ready", response_model=dict[str, Any])
@@ -173,11 +173,11 @@ async def readiness_check(
     if db_health["status"] == HealthStatus.UNHEALTHY:
         return {
             "status": "not_ready",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "reason": "Database unavailable",
         }
 
-    return {"status": "ready", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ready", "timestamp": datetime.now(UTC).isoformat()}
 
 
 @router.get("/health/detailed", response_model=dict[str, Any])
@@ -206,7 +206,7 @@ async def detailed_health_check(
 
     return {
         "status": overall_status,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "total_check_time_ms": round(total_time, 2),
         "components": {
             "database": db_health,
@@ -269,7 +269,7 @@ async def health_metrics(
         f'health_overall_up{{service="open-paper-trading"}} {overall_health}'
     )
 
-    return {"metrics": "\n".join(metrics), "timestamp": datetime.utcnow().isoformat()}
+    return {"metrics": "\n".join(metrics), "timestamp": datetime.now(UTC).isoformat()}
 
 
 @router.get("/health/dependencies", response_model=dict[str, Any])
@@ -313,4 +313,4 @@ async def dependency_health_check() -> dict[str, Any]:
             }
         )
 
-    return {"dependencies": dependencies, "timestamp": datetime.utcnow().isoformat()}
+    return {"dependencies": dependencies, "timestamp": datetime.now(UTC).isoformat()}

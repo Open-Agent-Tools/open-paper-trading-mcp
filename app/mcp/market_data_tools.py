@@ -56,33 +56,6 @@ async def get_price_history(symbol: str, period: str = "week") -> dict[str, Any]
         return handle_tool_exception("get_price_history", e)
 
 
-async def get_stock_news(symbol: str) -> dict[str, Any]:
-    """
-    Get news stories for a stock.
-
-    This function now routes through TradingService for unified data access.
-    """
-    symbol = symbol.strip().upper()
-
-    try:
-        result = await get_trading_service().get_stock_news(symbol)
-        return success_response(result)
-    except Exception as e:
-        return handle_tool_exception("get_stock_news", e)
-
-
-async def get_top_movers() -> dict[str, Any]:
-    """
-    Get top movers in the market.
-
-    This function now routes through TradingService for unified data access.
-    """
-    try:
-        result = await get_trading_service().get_top_movers()
-        return success_response(result)
-    except Exception as e:
-        return handle_tool_exception("get_top_movers", e)
-
 
 async def search_stocks(query: str) -> dict[str, Any]:
     """

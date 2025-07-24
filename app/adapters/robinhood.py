@@ -539,42 +539,6 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error getting price history for {symbol}: {e}")
             return {"error": str(e)}
 
-    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
-        """Get news stories for a stock."""
-        try:
-            if not await self._ensure_authenticated():
-                return {"error": "Authentication failed"}
-
-            news_data = rh.stocks.get_news(symbol)
-
-            if not news_data:
-                return {"error": f"No news data found for symbol: {symbol}"}
-
-            return {
-                "symbol": symbol.upper(),
-                "news": news_data,
-            }
-
-        except Exception as e:
-            logger.error(f"Error getting news for {symbol}: {e}")
-            return {"error": str(e)}
-
-    async def get_top_movers(self) -> dict[str, Any]:
-        """Get top movers in the market."""
-        try:
-            if not await self._ensure_authenticated():
-                return {"error": "Authentication failed"}
-
-            movers_data = rh.stocks.get_top_movers()
-
-            if not movers_data:
-                return {"error": "No top movers data found"}
-
-            return {"movers": movers_data}
-
-        except Exception as e:
-            logger.error(f"Error getting top movers: {e}")
-            return {"error": str(e)}
 
     async def search_stocks(self, query: str) -> dict[str, Any]:
         """Search for stocks by symbol or company name."""

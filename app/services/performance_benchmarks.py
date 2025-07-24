@@ -13,7 +13,7 @@ import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from statistics import mean, median, stdev
 from typing import Any
 
@@ -234,6 +234,43 @@ class PerformanceMonitor:
         with self._lock:
             self.gauges[name] = value
 
+    def start_timing(self, operation: str) -> None:
+        """Start timing an operation (simplified interface for tests)."""
+        self.active_measurements[operation] = time.perf_counter()
+
+    def end_timing(self, operation: str) -> float:
+        """End timing an operation and return duration in seconds."""
+        end_time = time.perf_counter()
+        
+        if operation not in self.active_measurements:
+            logger.warning(f"Timing for operation '{operation}' not found")
+            return 0.0
+        
+        start_time = self.active_measurements.pop(operation)
+        duration_seconds = end_time - start_time
+        
+        # Also record as a metric for consistency
+        metric = PerformanceMetric(
+            operation=operation,
+            start_time=start_time,
+            end_time=end_time,
+            duration_ms=duration_seconds * 1000,
+            success=True,
+            metadata={},
+        )
+        
+        with self._lock:
+            self.metrics[operation].append(metric)
+            self.counters[f"{operation}_total"] += 1
+            self.counters[f"{operation}_success"] += 1
+            
+            # Update timing buckets
+            self.timing_buckets[operation].append(duration_seconds * 1000)
+            if len(self.timing_buckets[operation]) > 1000:
+                self.timing_buckets[operation] = self.timing_buckets[operation][-1000:]
+        
+        return duration_seconds
+
     def get_current_stats(self, operation: str) -> dict[str, Any]:
         """Get current statistics for an operation."""
         with self._lock:
@@ -306,7 +343,7 @@ class PerformanceMonitor:
             f"Running benchmark: {test_name} ({num_operations} ops, {concurrency} concurrent)"
         )
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         start_perf = time.perf_counter()
 
         # Create semaphore for concurrency control
@@ -332,7 +369,7 @@ class PerformanceMonitor:
         tasks = [run_single_operation(i) for i in range(num_operations)]
         await asyncio.gather(*tasks, return_exceptions=True)
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         end_perf = time.perf_counter()
 
         # Calculate results
@@ -494,7 +531,7 @@ class PerformanceMonitor:
 
     def get_recent_alerts(self, hours: int = 24) -> list[PerformanceAlert]:
         """Get recent alerts."""
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         return [alert for alert in self.alerts if alert.timestamp > cutoff]
 
     def clear_metrics(self, operation: str | None = None) -> None:
@@ -513,7 +550,7 @@ class PerformanceMonitor:
     def export_metrics(self, operation: str | None = None) -> dict[str, Any]:
         """Export metrics for external analysis."""
         data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "stats": self.get_all_stats(),
             "alerts": [
                 {

@@ -118,14 +118,14 @@ async def custom_exception_handler(
     request: Request, exc: CustomException
 ) -> JSONResponse:
     """Handle custom exceptions with structured error responses."""
-    from datetime import datetime
+    from datetime import datetime, UTC
 
     error_content = {
         "error": {
             "type": exc.__class__.__name__,
             "message": str(exc.detail),
             "status_code": exc.status_code,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url.path),
         }
     }
@@ -139,7 +139,7 @@ async def custom_exception_handler(
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
     """Handle ValueError exceptions as validation errors."""
-    from datetime import datetime
+    from datetime import datetime, UTC
 
     from app.core.exceptions import ValidationError
 
@@ -151,7 +151,7 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
             "type": "ValidationError",
             "message": str(exc),
             "status_code": 422,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url.path),
         }
     }
@@ -166,7 +166,7 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions with generic error response."""
     import logging
-    from datetime import datetime
+    from datetime import datetime, UTC
 
     # Log the unexpected error
     logger = logging.getLogger(__name__)
@@ -177,7 +177,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             "type": "InternalServerError",
             "message": "An internal server error occurred",
             "status_code": 500,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url.path),
         }
     }

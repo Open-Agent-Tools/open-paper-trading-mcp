@@ -6,7 +6,7 @@ trailing stop) into executable market or limit orders.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any
 
 from ..schemas.orders import Order, OrderCondition, OrderStatus, OrderType
@@ -83,7 +83,7 @@ class OrderConverter:
             quantity=abs(order.quantity),
             price=None,  # Market order has no price
             status=OrderStatus.PENDING,
-            created_at=triggered_at or datetime.utcnow(),
+            created_at=triggered_at or datetime.now(UTC),
             condition=OrderCondition.MARKET,
             stop_price=None,
             trail_percent=None,
@@ -150,7 +150,7 @@ class OrderConverter:
             quantity=abs(order.quantity),  # Convert to positive
             price=order.price,  # Use the limit price
             status=OrderStatus.PENDING,
-            created_at=triggered_at or datetime.utcnow(),
+            created_at=triggered_at or datetime.now(UTC),
             condition=OrderCondition.LIMIT,
             stop_price=None,
             trail_percent=None,
@@ -271,7 +271,7 @@ class OrderConverter:
             price=None,  # Market order has no price
             condition=OrderCondition.MARKET,
             status=OrderStatus.PENDING,
-            created_at=triggered_at or datetime.utcnow(),
+            created_at=triggered_at or datetime.now(UTC),
             stop_price=None,
             trail_percent=None,
             trail_amount=None,
@@ -392,7 +392,7 @@ class OrderConverter:
             "trigger_price": trigger_price,
             "original_type": original_order.order_type,
             "converted_type": converted_order.order_type,
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(UTC),
         }
 
         if original_order.id:

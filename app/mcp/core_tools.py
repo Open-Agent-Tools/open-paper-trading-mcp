@@ -39,8 +39,6 @@ async def list_tools() -> dict[str, Any]:
                     "stock_ratings",
                     "stock_events",
                     "stock_level2_data",
-                    "get_stock_news",
-                    "get_top_movers",
                     "search_stocks",
                     "price_history",  # alias
                     "stock_price",  # alias

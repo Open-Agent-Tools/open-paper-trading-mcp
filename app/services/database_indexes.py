@@ -6,7 +6,7 @@ query performance for order processing, execution monitoring, and analytics.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any
 
 from sqlalchemy import text
@@ -364,7 +364,7 @@ class DatabaseIndexManager:
         logger.info("Generating database performance report")
 
         report = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "index_usage": await self.analyze_index_usage(),
             "slow_queries": await self.get_slow_queries(),
             "index_bloat": await self.check_index_bloat(),

@@ -8,7 +8,7 @@ including state transitions, validation, and event tracking.
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from enum import Enum
 from typing import Any
 
@@ -119,8 +119,8 @@ class OrderLifecycleManager:
         lifecycle_state = OrderLifecycleState(
             order=order,
             current_status=OrderStatus.PENDING,
-            created_at=datetime.utcnow(),
-            last_updated=datetime.utcnow(),
+            created_at=datetime.now(UTC),
+            last_updated=datetime.now(UTC),
             remaining_quantity=abs(order.quantity),
         )
 
@@ -161,7 +161,7 @@ class OrderLifecycleManager:
 
         # Update state
         lifecycle_state.current_status = new_status
-        lifecycle_state.last_updated = datetime.utcnow()
+        lifecycle_state.last_updated = datetime.now(UTC)
 
         # Update lifecycle flags
         self._update_lifecycle_flags(lifecycle_state)
@@ -217,7 +217,7 @@ class OrderLifecycleManager:
                 total_filled_value / lifecycle_state.filled_quantity
             )
 
-        lifecycle_state.last_updated = datetime.utcnow()
+        lifecycle_state.last_updated = datetime.now(UTC)
 
         # Determine new status
         if lifecycle_state.remaining_quantity <= 0:
@@ -341,7 +341,7 @@ class OrderLifecycleManager:
 
     def cleanup_completed_orders(self, older_than_hours: int = 24) -> int:
         """Clean up completed orders older than specified hours."""
-        cutoff_time = datetime.utcnow() - timedelta(hours=older_than_hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=older_than_hours)
 
         orders_to_remove = []
         for order_id, lifecycle_state in self.completed_orders.items():
@@ -444,7 +444,7 @@ class OrderLifecycleManager:
             from_status=from_status or OrderStatus.PENDING,
             to_status=to_status,
             event=event,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             details=details,
             triggered_by=triggered_by,
         )

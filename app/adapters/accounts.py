@@ -3,12 +3,15 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
+
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.base import AccountAdapter
 from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
-from app.storage.database import get_sync_session
+from app.storage.database import get_async_session
 
 
 class DatabaseAccountAdapter(AccountAdapter):
@@ -17,10 +20,12 @@ class DatabaseAccountAdapter(AccountAdapter):
     def __init__(self) -> None:
         pass
 
-    def get_account(self, account_id: str) -> Account | None:
+    async def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
-        with get_sync_session() as db:
-            db_account = db.query(DBAccount).filter(DBAccount.id == account_id).first()
+        async with get_async_session() as db:
+            stmt = select(DBAccount).filter(DBAccount.id == account_id)
+            db_account = (await db.execute(stmt)).scalar_one_or_none()
+
         if not db_account:
             return None
 
@@ -32,47 +37,53 @@ class DatabaseAccountAdapter(AccountAdapter):
             owner=db_account.owner,
         )
 
-    def put_account(self, account: Account) -> None:
+    async def put_account(self, account: Account) -> None:
         """Store or update an account."""
-        with get_sync_session() as db:
-            db_account = db.query(DBAccount).filter(DBAccount.id == account.id).first()
+        async with get_async_session() as db:
+            stmt = select(DBAccount).filter(DBAccount.id == account.id)
+            db_account = (await db.execute(stmt)).scalar_one_or_none()
 
-        if db_account:
-            # Update existing
-            if account.owner:
-                db_account.owner = account.owner
-            db_account.cash_balance = account.cash_balance
-            db_account.updated_at = datetime.utcnow()
-        else:
-            # Create new
-            db_account = DBAccount(
-                id=account.id,
-                owner=account.owner or "default",
-                cash_balance=account.cash_balance,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-            )
-            db.add(db_account)
-
-            db.commit()
-
-    def get_account_ids(self) -> list[str]:
-        """Get all account IDs."""
-        with get_sync_session() as db:
-            return [acc.id for acc in db.query(DBAccount.id).all()]
-
-    def account_exists(self, account_id: str) -> bool:
-        """Check if an account exists."""
-        with get_sync_session() as db:
-            return db.query(DBAccount).filter(DBAccount.id == account_id).count() > 0
-
-    def delete_account(self, account_id: str) -> bool:
-        """Delete an account."""
-        with get_sync_session() as db:
-            db_account = db.query(DBAccount).filter(DBAccount.id == account_id).first()
             if db_account:
-                db.delete(db_account)
-                db.commit()
+                # Update existing
+                if account.owner:
+                    db_account.owner = account.owner
+                db_account.cash_balance = account.cash_balance
+                db_account.updated_at = datetime.now(UTC)
+            else:
+                # Create new
+                db_account = DBAccount(
+                    id=account.id,
+                    owner=account.owner or "default",
+                    cash_balance=account.cash_balance,
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
+                )
+                db.add(db_account)
+
+            await db.commit()
+
+    async def get_account_ids(self) -> list[str]:
+        """Get all account IDs."""
+        async with get_async_session() as db:
+            stmt = select(DBAccount.id)
+            result = await db.execute(stmt)
+            return [row[0] for row in result.all()]
+
+    async def account_exists(self, account_id: str) -> bool:
+        """Check if an account exists."""
+        async with get_async_session() as db:
+            stmt = select(func.count(DBAccount.id)).filter(DBAccount.id == account_id)
+            count = (await db.execute(stmt)).scalar()
+            return count > 0
+
+    async def delete_account(self, account_id: str) -> bool:
+        """Delete an account."""
+        async with get_async_session() as db:
+            stmt = select(DBAccount).filter(DBAccount.id == account_id)
+            db_account = (await db.execute(stmt)).scalar_one_or_none()
+            if db_account:
+                await db.delete(db_account)
+                await db.commit()
                 return True
             return False
 

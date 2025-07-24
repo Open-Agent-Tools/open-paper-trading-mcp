@@ -12,7 +12,7 @@ import logging
 import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any, cast
 
 from sqlalchemy import and_, select
@@ -49,7 +49,7 @@ class TriggerCondition:
         self.trigger_type = trigger_type  # 'stop_loss', 'stop_limit', 'trailing_stop'
         self.trigger_price = trigger_price
         self.order_type = order_type
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(UTC)
         self.high_water_mark: float | None = None  # For trailing stops
         self.low_water_mark: float | None = None  # For trailing stops
 
@@ -140,7 +140,7 @@ class OrderExecutionEngine:
         # Performance tracking
         self.orders_processed = 0
         self.orders_triggered = 0
-        self.last_market_data_update = datetime.utcnow()
+        self.last_market_data_update = datetime.now(UTC)
 
         # Thread safety
         self._lock = threading.Lock()
@@ -354,7 +354,7 @@ class OrderExecutionEngine:
             for condition, trigger_price in triggered_orders:
                 await self._process_triggered_order(condition, trigger_price)
 
-            self.last_market_data_update = datetime.utcnow()
+            self.last_market_data_update = datetime.now(UTC)
 
         except Exception as e:
             logger.error(f"Error in check_trigger_conditions: {e}", exc_info=True)
@@ -468,7 +468,7 @@ class OrderExecutionEngine:
                     db_order.status = (
                         OrderStatus.FILLED
                     )  # Or could add TRIGGERED status
-                    current_time = datetime.utcnow()
+                    current_time = datetime.now(UTC)
                     db_order.triggered_at = current_time  # type: ignore[assignment]
                     db_order.filled_at = current_time  # type: ignore[assignment]
 

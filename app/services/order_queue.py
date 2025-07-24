@@ -12,7 +12,7 @@ import logging
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum, IntEnum
 from typing import Any
 
@@ -210,7 +210,7 @@ class OrderQueue:
         queued_order = QueuedOrder(
             order=order,
             priority=priority,
-            queued_at=datetime.utcnow(),
+            queued_at=datetime.now(UTC),
             callback=callback,
             metadata=metadata or {},
         )
@@ -255,7 +255,7 @@ class OrderQueue:
 
         # Calculate recent throughput
         recent_processed = self.metrics.total_processed
-        time_elapsed = (datetime.utcnow() - self.metrics.last_reset).total_seconds()
+        time_elapsed = (datetime.now(UTC) - self.metrics.last_reset).total_seconds()
         throughput = recent_processed / time_elapsed if time_elapsed > 0 else 0
 
         return {
@@ -314,7 +314,7 @@ class OrderQueue:
 
                 # Calculate queue wait time
                 wait_time = (
-                    datetime.utcnow() - queued_order.queued_at
+                    datetime.now(UTC) - queued_order.queued_at
                 ).total_seconds() * 1000
                 self._queue_wait_times.append(wait_time)
                 if len(self._queue_wait_times) > 1000:
@@ -326,7 +326,7 @@ class OrderQueue:
 
     async def _process_order(self, queued_order: QueuedOrder, worker_id: int) -> None:
         """Process a single order."""
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         try:
             # Find appropriate processor
@@ -409,7 +409,7 @@ class OrderQueue:
                 self.completed_orders[queued_order.order.id] = queued_order
 
             # Update processing time metrics
-            processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            processing_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
             self._processing_times.append(processing_time)
             if len(self._processing_times) > 1000:
                 self._processing_times = self._processing_times[-500:]
@@ -432,7 +432,7 @@ class OrderQueue:
 
         # Reset status and re-queue
         queued_order.status = ProcessingStatus.QUEUED
-        queued_order.queued_at = datetime.utcnow()
+        queued_order.queued_at = datetime.now(UTC)
 
         async with self._queue_lock:
             heapq.heappush(self.priority_queue, queued_order)

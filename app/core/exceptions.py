@@ -36,3 +36,9 @@ class ForbiddenError(CustomException):
 class ConflictError(CustomException):
     def __init__(self, detail: str = "Conflict"):
         super().__init__(status_code=409, detail=detail)
+
+
+class InputValidationError(CustomException):
+    """Exception raised for input validation failures."""
+    def __init__(self, detail: str = "Invalid input provided"):
+        super().__init__(status_code=422, detail=detail)
