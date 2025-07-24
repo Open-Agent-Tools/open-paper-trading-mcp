@@ -6,7 +6,7 @@ database connectivity, quote adapter status, and overall system health.
 """
 
 import time
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends

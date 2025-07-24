@@ -12,6 +12,7 @@ from datetime import datetime
 import pytest
 import pytest_asyncio
 from sqlalchemy.exc import DatabaseError, IntegrityError, OperationalError
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import ValidationError
 
 from app.adapters.accounts import (
@@ -71,6 +72,7 @@ class TestAccountValidationErrors:
         assert account.cash_balance == 0.01
 
 
+@pytest.mark.db_crud
 class TestDatabaseAccountAdapterErrors:
     """Test database adapter error handling scenarios."""
 
@@ -90,60 +92,73 @@ class TestDatabaseAccountAdapterErrors:
             owner="test_user",
         )
 
-    @patch('app.adapters.accounts.get_sync_session')
-    def test_get_account_nonexistent_id(self, mock_session, adapter):
+    @pytest.mark.asyncio
+    @patch('app.adapters.accounts.get_async_session')
+    async def test_get_account_nonexistent_id(self, mock_session, adapter):
         """Test getting a non-existent account."""
-        mock_db = MagicMock()
-        mock_session.return_value.__enter__.return_value = mock_db
-        mock_db.query.return_value.filter.return_value.first.return_value = None
+        # Mock async context manager
+        mock_db = AsyncMock()
+        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aexit__.return_value = None
+        
+        # Mock the execute result chain
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
         
         nonexistent_id = str(uuid.uuid4())
-        result = adapter.get_account(nonexistent_id)
+        result = await adapter.get_account(nonexistent_id)
         assert result is None
 
-    @patch('app.adapters.accounts.get_sync_session')
-    def test_get_account_database_connection_error(self, mock_session, adapter):
+    @pytest.mark.asyncio
+    @patch('app.adapters.accounts.get_async_session')
+    async def test_get_account_database_connection_error(self, mock_session, adapter):
         """Test database connection failure during get_account."""
         mock_session.side_effect = OperationalError("Connection failed", None, None)
         
         with pytest.raises(OperationalError):
-            adapter.get_account("test-id")
+            await adapter.get_account("test-id")
 
-    @patch('app.adapters.accounts.get_sync_session')
-    def test_put_account_integrity_error(self, mock_session, adapter, sample_account):
+    @pytest.mark.asyncio
+    async def test_put_account_integrity_error(self, adapter, sample_account, db_session: AsyncSession):
         """Test database integrity constraint violation."""
-        # Mock the context manager to track queries and commits
-        mock_context = MagicMock()
-        mock_db = MagicMock()
-        mock_session.return_value = mock_context
-        mock_context.__enter__.return_value = mock_db
-        mock_context.__exit__.return_value = None
-        
-        # Mock query to return None (new account scenario) 
-        mock_db.query.return_value.filter.return_value.first.return_value = None
-        
-        # Mock commit to raise IntegrityError outside the context manager
-        # Note: This tests the current implementation which has a bug where
-        # commit is called outside the context manager
-        original_commit = mock_db.commit
-        
-        def commit_side_effect():
-            raise IntegrityError("Duplicate key", None, None)
-        
-        mock_db.commit = commit_side_effect
-        
-        with pytest.raises(IntegrityError):
-            adapter.put_account(sample_account)
+        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+            # Mock session that will yield our mock database
+            mock_db = AsyncMock()
+            
+            async def mock_session_generator():
+                yield mock_db
+            mock_get_session.side_effect = lambda: mock_session_generator()
+            
+            # Mock query to return None (new account scenario)
+            mock_result = MagicMock()
+            mock_result.scalar_one_or_none.return_value = None
+            mock_db.execute = AsyncMock(return_value=mock_result)
+            
+            # Mock add and commit to raise IntegrityError
+            mock_db.add = MagicMock()
+            mock_db.commit = AsyncMock(side_effect=IntegrityError("Duplicate key", None, None))
+            
+            with pytest.raises(IntegrityError):
+                await adapter.put_account(sample_account)
 
-    @patch('app.adapters.accounts.get_sync_session')
-    def test_delete_account_nonexistent(self, mock_session, adapter):
+    @pytest.mark.asyncio
+    async def test_delete_account_nonexistent(self, adapter):
         """Test deleting a non-existent account."""
-        mock_db = MagicMock()
-        mock_session.return_value.__enter__.return_value = mock_db
-        mock_db.query.return_value.filter.return_value.first.return_value = None
-        
-        result = adapter.delete_account("nonexistent-id")
-        assert result is False
+        with patch('app.adapters.accounts.get_async_session') as mock_get_session:
+            mock_db = AsyncMock()
+            
+            async def mock_session_generator():
+                yield mock_db
+            mock_get_session.side_effect = lambda: mock_session_generator()
+            
+            # Mock the execute result chain
+            mock_result = MagicMock()
+            mock_result.scalar_one_or_none.return_value = None
+            mock_db.execute = AsyncMock(return_value=mock_result)
+            
+            result = await adapter.delete_account("nonexistent-id")
+            assert result is False
 
 
 class TestFileSystemAccountAdapterErrors:
@@ -165,31 +180,35 @@ class TestFileSystemAccountAdapterErrors:
             owner="test_user",
         )
 
-    def test_get_account_nonexistent_file(self, adapter):
+    @pytest.mark.asyncio
+    async def test_get_account_nonexistent_file(self, adapter):
         """Test getting account from non-existent file."""
-        result = adapter.get_account("nonexistent-account")
+        result = await adapter.get_account("nonexistent-account")
         assert result is None
 
-    def test_get_account_corrupted_json(self, adapter, tmp_path):
+    @pytest.mark.asyncio
+    async def test_get_account_corrupted_json(self, adapter, tmp_path):
         """Test reading corrupted JSON file."""
         # Create corrupted JSON file
         corrupted_file = tmp_path / "corrupted.json"
         corrupted_file.write_text("{ invalid json content }")
         
-        result = adapter.get_account("corrupted")
+        result = await adapter.get_account("corrupted")
         assert result is None
 
     @patch('builtins.open')
-    def test_put_account_file_permission_error(self, mock_open, adapter, sample_account):
+    @pytest.mark.asyncio
+    async def test_put_account_file_permission_error(self, mock_open, adapter, sample_account):
         """Test file permission error during put_account."""
         mock_open.side_effect = PermissionError("Permission denied")
         
         with pytest.raises(PermissionError):
-            adapter.put_account(sample_account)
+            await adapter.put_account(sample_account)
 
-    def test_delete_account_nonexistent_file(self, adapter):
+    @pytest.mark.asyncio
+    async def test_delete_account_nonexistent_file(self, adapter):
         """Test deleting non-existent account file."""
-        result = adapter.delete_account("nonexistent-account")
+        result = await adapter.delete_account("nonexistent-account")
         assert result is False
 
 
@@ -210,11 +229,12 @@ class TestErrorMessageAccuracy:
         error_msg = str(exc_info.value)
         assert "Cash balance cannot be negative" in error_msg
 
-    def test_database_error_propagation(self):
+    @pytest.mark.asyncio
+    async def test_database_error_propagation(self):
         """Test that database errors are properly propagated with context."""
         adapter = DatabaseAccountAdapter()
         
-        with patch('app.adapters.accounts.get_sync_session') as mock_session:
+        with patch('app.adapters.accounts.get_async_session') as mock_session:
             mock_session.side_effect = OperationalError(
                 "Connection to database failed",
                 None,
@@ -222,7 +242,7 @@ class TestErrorMessageAccuracy:
             )
             
             with pytest.raises(OperationalError) as exc_info:
-                adapter.get_account("test-id")
+                await adapter.get_account("test-id")
             
             error_msg = str(exc_info.value)
             assert "Connection to database failed" in error_msg

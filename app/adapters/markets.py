@@ -1,7 +1,7 @@
 """Market adapter implementations."""
 
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from app.adapters.base import MarketAdapter, QuoteAdapter

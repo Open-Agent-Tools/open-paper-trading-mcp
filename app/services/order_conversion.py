@@ -6,7 +6,7 @@ trailing stop) into executable market or limit orders.
 """
 
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from ..schemas.orders import Order, OrderCondition, OrderStatus, OrderType

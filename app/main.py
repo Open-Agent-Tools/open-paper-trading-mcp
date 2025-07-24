@@ -118,7 +118,7 @@ async def custom_exception_handler(
     request: Request, exc: CustomException
 ) -> JSONResponse:
     """Handle custom exceptions with structured error responses."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     error_content = {
         "error": {
@@ -139,7 +139,7 @@ async def custom_exception_handler(
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
     """Handle ValueError exceptions as validation errors."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     from app.core.exceptions import ValidationError
 
@@ -166,7 +166,7 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions with generic error response."""
     import logging
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     # Log the unexpected error
     logger = logging.getLogger(__name__)

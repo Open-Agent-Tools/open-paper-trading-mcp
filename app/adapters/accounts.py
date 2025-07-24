@@ -3,10 +3,9 @@
 import json
 import os
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime
 
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
 from app.adapters.base import AccountAdapter
 from app.models.database.trading import Account as DBAccount
@@ -22,24 +21,24 @@ class DatabaseAccountAdapter(AccountAdapter):
 
     async def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
-        async with get_async_session() as db:
+        async for db in get_async_session():
             stmt = select(DBAccount).filter(DBAccount.id == account_id)
             db_account = (await db.execute(stmt)).scalar_one_or_none()
 
-        if not db_account:
-            return None
+            if not db_account:
+                return None
 
-        return Account(
-            id=db_account.id,
-            cash_balance=float(db_account.cash_balance),
-            positions=[],  # Positions loaded separately
-            name=f"Account-{db_account.id}",
-            owner=db_account.owner,
-        )
+            return Account(
+                id=db_account.id,
+                cash_balance=float(db_account.cash_balance),
+                positions=[],  # Positions loaded separately
+                name=f"Account-{db_account.id}",
+                owner=db_account.owner,
+            )
 
     async def put_account(self, account: Account) -> None:
         """Store or update an account."""
-        async with get_async_session() as db:
+        async for db in get_async_session():
             stmt = select(DBAccount).filter(DBAccount.id == account.id)
             db_account = (await db.execute(stmt)).scalar_one_or_none()
 
@@ -48,15 +47,15 @@ class DatabaseAccountAdapter(AccountAdapter):
                 if account.owner:
                     db_account.owner = account.owner
                 db_account.cash_balance = account.cash_balance
-                db_account.updated_at = datetime.now(UTC)
+                db_account.updated_at = datetime.now()
             else:
                 # Create new
                 db_account = DBAccount(
                     id=account.id,
                     owner=account.owner or "default",
                     cash_balance=account.cash_balance,
-                    created_at=datetime.now(UTC),
-                    updated_at=datetime.now(UTC),
+                    created_at=datetime.now(),
+                    updated_at=datetime.now(),
                 )
                 db.add(db_account)
 
@@ -64,21 +63,24 @@ class DatabaseAccountAdapter(AccountAdapter):
 
     async def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
-        async with get_async_session() as db:
+        async for db in get_async_session():
             stmt = select(DBAccount.id)
             result = await db.execute(stmt)
             return [row[0] for row in result.all()]
 
     async def account_exists(self, account_id: str) -> bool:
         """Check if an account exists."""
-        async with get_async_session() as db:
+        async for db in get_async_session():
             stmt = select(func.count(DBAccount.id)).filter(DBAccount.id == account_id)
             count = (await db.execute(stmt)).scalar()
-            return count > 0
+            return (count or 0) > 0
 
     async def delete_account(self, account_id: str) -> bool:
         """Delete an account."""
-        async with get_async_session() as db:
+        if not account_id:  # Handle empty string
+            return False
+            
+        async for db in get_async_session():
             stmt = select(DBAccount).filter(DBAccount.id == account_id)
             db_account = (await db.execute(stmt)).scalar_one_or_none()
             if db_account:
@@ -99,7 +101,7 @@ class LocalFileSystemAccountAdapter(AccountAdapter):
         """Get file path for an account."""
         return os.path.join(self.root_path, f"{account_id}.json")
 
-    def get_account(self, account_id: str) -> Account | None:
+    async def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
         path = self._get_account_path(account_id)
         if not os.path.exists(path):
@@ -112,13 +114,13 @@ class LocalFileSystemAccountAdapter(AccountAdapter):
         except Exception:
             return None
 
-    def put_account(self, account: Account) -> None:
+    async def put_account(self, account: Account) -> None:
         """Store or update an account."""
         path = self._get_account_path(account.id)
         with open(path, "w") as f:
             json.dump(account.model_dump(), f, indent=2, default=str)
 
-    def get_account_ids(self) -> list[str]:
+    async def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
         account_ids = []
         for filename in os.listdir(self.root_path):
@@ -126,11 +128,11 @@ class LocalFileSystemAccountAdapter(AccountAdapter):
                 account_ids.append(filename[:-5])  # Remove .json extension
         return account_ids
 
-    def account_exists(self, account_id: str) -> bool:
+    async def account_exists(self, account_id: str) -> bool:
         """Check if an account exists."""
         return os.path.exists(self._get_account_path(account_id))
 
-    def delete_account(self, account_id: str) -> bool:
+    async def delete_account(self, account_id: str) -> bool:
         """Delete an account."""
         path = self._get_account_path(account_id)
         if os.path.exists(path):

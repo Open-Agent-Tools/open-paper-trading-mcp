@@ -160,9 +160,9 @@ async def health_check() -> dict[str, Any]:
             # Import here to avoid circular dependencies
             from sqlalchemy import text
 
-            from app.storage.database import AsyncSessionLocal
+            from app.storage.database import get_async_session
 
-            async with AsyncSessionLocal() as session:
+            async for session in get_async_session():
                 # Simple test query
                 result = await session.execute(text("SELECT 1"))
                 if result:

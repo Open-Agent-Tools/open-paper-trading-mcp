@@ -12,7 +12,7 @@ import logging
 import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, UTC
+from datetime import datetime
 from typing import Any, cast
 
 from sqlalchemy import and_, select
@@ -49,7 +49,7 @@ class TriggerCondition:
         self.trigger_type = trigger_type  # 'stop_loss', 'stop_limit', 'trailing_stop'
         self.trigger_price = trigger_price
         self.order_type = order_type
-        self.created_at = datetime.now(UTC)
+        self.created_at = datetime.now()
         self.high_water_mark: float | None = None  # For trailing stops
         self.low_water_mark: float | None = None  # For trailing stops
 
@@ -140,7 +140,7 @@ class OrderExecutionEngine:
         # Performance tracking
         self.orders_processed = 0
         self.orders_triggered = 0
-        self.last_market_data_update = datetime.now(UTC)
+        self.last_market_data_update = datetime.now()
 
         # Thread safety
         self._lock = threading.Lock()
@@ -354,7 +354,7 @@ class OrderExecutionEngine:
             for condition, trigger_price in triggered_orders:
                 await self._process_triggered_order(condition, trigger_price)
 
-            self.last_market_data_update = datetime.now(UTC)
+            self.last_market_data_update = datetime.now()
 
         except Exception as e:
             logger.error(f"Error in check_trigger_conditions: {e}", exc_info=True)
@@ -433,7 +433,7 @@ class OrderExecutionEngine:
                         net_price=db_order.net_price,
                         filled_at=cast(datetime | None, db_order.filled_at),
                     )
-                break
+                return None
         except Exception as e:
             logger.error(f"Failed to load order {order_id}: {e}")
 
@@ -468,13 +468,13 @@ class OrderExecutionEngine:
                     db_order.status = (
                         OrderStatus.FILLED
                     )  # Or could add TRIGGERED status
-                    current_time = datetime.now(UTC)
+                    current_time = datetime.now()
                     db_order.triggered_at = current_time  # type: ignore[assignment]
                     db_order.filled_at = current_time  # type: ignore[assignment]
 
                     await db.commit()
                     logger.info(f"Updated order {order_id} status to triggered")
-                break
+                return
 
         except Exception as e:
             logger.error(f"Failed to update order status for {order_id}: {e}")
@@ -483,18 +483,12 @@ class OrderExecutionEngine:
         """Load pending trigger orders from the database."""
         try:
             async for db in get_async_session():
-                # Load pending orders that can be converted
+                # Load pending orders that can be converted (trigger orders with STOP condition)
                 result = await db.execute(
                     select(DBOrder).where(
                         and_(
                             DBOrder.status == OrderStatus.PENDING,
-                            DBOrder.order_type.in_(
-                                [
-                                    OrderType.STOP_LOSS,
-                                    OrderType.STOP_LIMIT,
-                                    OrderType.TRAILING_STOP,
-                                ]
-                            ),
+                            DBOrder.condition == OrderCondition.STOP,
                         )
                     )
                 )
@@ -526,26 +520,27 @@ class OrderExecutionEngine:
                         continue
 
                 logger.info(f"Loaded {len(db_orders)} pending trigger orders")
-                break
+                return
 
         except Exception as e:
             logger.error(f"Failed to load pending orders: {e}")
 
     def _get_initial_trigger_price(self, order: Order) -> float:
         """Get the initial trigger price for an order."""
-        if order.order_type in [OrderType.STOP_LOSS, OrderType.STOP_LIMIT]:
+        if order.condition == OrderCondition.STOP:
             if order.stop_price is None:
                 raise OrderExecutionError(f"Missing stop_price for {order.order_type}")
             return order.stop_price
 
-        elif order.order_type == OrderType.TRAILING_STOP:
-            # For trailing stops, we'll set the initial trigger based on current market price
-            # This would need to be updated when we get the first market data point
-            return 0.0  # Will be updated dynamically
+        elif order.condition == OrderCondition.STOP_LIMIT:
+            # For stop limit orders, use the stop price
+            if order.stop_price is None:
+                raise OrderExecutionError(f"Missing stop_price for {order.order_type}")
+            return order.stop_price
 
         else:
             raise OrderExecutionError(
-                f"Unsupported order type for trigger: {order.order_type}"
+                f"Unsupported order condition for trigger: {order.condition}"
             )
 
     def get_status(self) -> dict[str, Any]:

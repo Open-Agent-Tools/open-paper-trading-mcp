@@ -104,8 +104,9 @@ class TradingService:
             return self._db_session
             
         # Fallback to creating a new session (production use)
-        from app.storage.database import AsyncSessionLocal
-        return AsyncSessionLocal()
+        from app.storage.database import get_async_session
+        async for session in get_async_session():
+            return session
     
     async def _execute_with_session(self, operation):
         """Execute a database operation with proper session management."""
@@ -258,8 +259,7 @@ class TradingService:
         """Get a specific order by ID."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             stmt = select(DBOrder).where(
@@ -273,15 +273,14 @@ class TradingService:
 
             # Use converter to convert to schema
             return await self.order_converter.to_schema(db_order)
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def cancel_order(self, order_id: str) -> dict[str, str]:
         """Cancel a specific order."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             stmt = select(DBOrder).where(
@@ -297,21 +296,20 @@ class TradingService:
             await db.commit()
 
             return {"message": "Order cancelled successfully"}
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def cancel_all_stock_orders(self) -> dict[str, Any]:
         """Cancel all open stock orders."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             # Get all open stock orders (orders without options-specific indicators)
             stmt = select(DBOrder).where(
                 DBOrder.account_id == account.id,
-                DBOrder.status.in_([OrderStatus.PENDING, OrderStatus.TRIGGERED]),
+                DBOrder.status.in_([OrderStatus.PENDING]),
                 # Assume stock orders have simple symbols (no option-style identifiers)
                 ~DBOrder.symbol.like("%C%"),  # Basic heuristic for non-option symbols
                 ~DBOrder.symbol.like("%P%"),
@@ -339,21 +337,20 @@ class TradingService:
                 "cancelled_orders": cancelled_orders,
                 "total_cancelled": len(cancelled_orders),
             }
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def cancel_all_option_orders(self) -> dict[str, Any]:
         """Cancel all open option orders."""
         from sqlalchemy import select
 
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             account = await self._get_account()
 
             # Get all open option orders (orders with options-specific indicators)
             stmt = select(DBOrder).where(
                 DBOrder.account_id == account.id,
-                DBOrder.status.in_([OrderStatus.PENDING, OrderStatus.TRIGGERED]),
+                DBOrder.status.in_([OrderStatus.PENDING]),
                 # Assume option orders have option-style symbols or specific order types
                 (
                     DBOrder.symbol.like("%C%")
@@ -386,8 +383,8 @@ class TradingService:
                 "cancelled_orders": cancelled_orders,
                 "total_cancelled": len(cancelled_orders),
             }
-        finally:
-            await db.close()
+        
+        return await self._execute_with_session(_operation)
 
     async def get_portfolio(self) -> Portfolio:
         """Get complete portfolio information."""
@@ -688,8 +685,7 @@ class TradingService:
         )
 
         # Persist to database using the same pattern as create_order
-        db = await self._get_async_db_session()
-        try:
+        async def _operation(db: AsyncSession):
             # Query for the account ID instead of using account_owner directly
             account = await self._get_account()
 
@@ -708,8 +704,8 @@ class TradingService:
             db.add(db_order)
             await db.commit()
             await db.refresh(db_order)
-        finally:
-            await db.close()
+        
+        await self._execute_with_session(_operation)
 
         return order
 

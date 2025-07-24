@@ -6,7 +6,7 @@ operations, leveraging the created indexes for maximum performance.
 """
 
 import logging
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import and_, func, or_, select, text

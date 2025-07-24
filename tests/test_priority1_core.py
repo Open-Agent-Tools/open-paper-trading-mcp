@@ -19,6 +19,7 @@ from app.schemas.orders import OrderCreate, OrderType, OrderCondition, OrderStat
 from app.models.database.trading import Account as DBAccount
 
 
+@pytest.mark.db_crud
 class TestPriority1Core:
     """Test Priority 1 core functionality."""
 

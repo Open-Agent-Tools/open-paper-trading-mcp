@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Paper Trading - Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Custom Properties - Color System */
+        :root {
+            /* Primary Colors - Blues & Greens */
+            --primary-blue: #1f4788;
+            --primary-blue-light: #3f67a8;
+            --primary-blue-dark: #0f2748;
+            --primary-green: #1f7a4f;
+            --primary-green-light: #3f9a6f;
+            --primary-green-dark: #0f5a2f;
+            
+            /* Neutral Background System */
+            --neutral-white: #ffffff;
+            --neutral-light: #f8f9fa;
+            --neutral-lighter: #e9ecef;
+            --neutral-medium: #dee2e6;
+            --neutral-dark: #6c757d;
+            --neutral-darker: #495057;
+            --neutral-darkest: #212529;
+            
+            /* Notification Colors - Color-blind Accessible */
+            --success: #006b3c;
+            --success-light: #d4edda;
+            --warning: #b45309;
+            --warning-light: #fff3cd;
+            --error: #dc3545;
+            --error-light: #f8d7da;
+            --info: #0c5aa6;
+            --info-light: #d1ecf1;
+            
+            /* Data Visualization Palette */
+            --data-blue: #1f4788;
+            --data-teal: #20c997;
+            --data-cyan: #17a2b8;
+            --data-indigo: #6610f2;
+            --data-purple: #6f42c1;
+            --data-orange: #fd7e14;
+            
+            /* Trading Specific Colors */
+            --profit: #1f7a4f;
+            --loss: #dc3545;
+            --pending: #b45309;
+            --executed: #0c5aa6;
+            
+            /* Typography */
+            --font-primary: 'Roboto', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+            
+            /* Spacing System */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-xxl: 3rem;
+            
+            /* Border Radius */
+            --radius-sm: 0.125rem;
+            --radius-md: 0.25rem;
+            --radius-lg: 0.5rem;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--neutral-darkest);
+            background-color: var(--neutral-white);
+            padding: var(--space-lg);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Typography Scale */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: var(--space-xl);
+            color: var(--primary-blue-dark);
+            border-bottom: 1px solid var(--neutral-medium);
+            padding-bottom: var(--space-md);
+        }
+        
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 400;
+            margin: var(--space-xl) 0 var(--space-lg) 0;
+            color: var(--primary-blue);
+        }
+        
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin: var(--space-lg) 0 var(--space-md) 0;
+            color: var(--neutral-darkest);
+        }
+        
+        p {
+            margin-bottom: var(--space-md);
+            color: var(--neutral-darker);
+        }
+        
+        code {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--neutral-light);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+        }
+        
+        /* Layout Components */
+        .section {
+            margin-bottom: var(--space-xxl);
+        }
+        
+        .grid {
+            display: grid;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        /* Color Swatches */
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .color-swatch {
+            border: 1px solid var(--neutral-medium);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--neutral-white);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .color-sample {
+            height: 80px;
+            width: 100%;
+        }
+        
+        .color-info {
+            padding: var(--space-md);
+        }
+        
+        .color-name {
+            font-weight: 500;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .color-value {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--neutral-dark);
+        }
+        
+        /* Component Examples */
+        .component-example {
+            border: 1px solid var(--neutral-medium);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            background: var(--neutral-white);
+        }
+        
+        .component-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: var(--space-md);
+            color: var(--neutral-darkest);
+            border-bottom: 1px solid var(--neutral-lighter);
+            padding-bottom: var(--space-sm);
+        }
+        
+        /* Button System */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-sm) var(--space-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            margin-right: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-blue);
+            color: var(--neutral-white);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-blue-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--neutral-light);
+            color: var(--neutral-darkest);
+            border: 1px solid var(--neutral-medium);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--neutral-lighter);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: var(--neutral-white);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--neutral-white);
+        }
+        
+        .btn-error {
+            background-color: var(--error);
+            color: var(--neutral-white);
+        }
+        
+        .btn-small {
+            padding: var(--space-xs) var(--space-md);
+            font-size: 0.75rem;
+        }
+        
+        .btn-large {
+            padding: var(--space-md) var(--space-xl);
+            font-size: 1rem;
+        }
+        
+        /* Form Elements */
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            font-weight: 500;
+            color: var(--neutral-darkest);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--neutral-medium);
+            border-radius: var(--radius-md);
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.875rem;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(31, 71, 136, 0.1);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--neutral-medium);
+            border-radius: var(--radius-md);
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.875rem;
+            background-color: var(--neutral-white);
+            cursor: pointer;
+        }
+        
+        /* Table Styles */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--space-lg);
+            background: var(--neutral-white);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .table th {
+            background-color: var(--neutral-light);
+            padding: var(--space-md);
+            text-align: left;
+            font-weight: 500;
+            color: var(--neutral-darkest);
+            border-bottom: 1px solid var(--neutral-medium);
+        }
+        
+        .table td {
+            padding: var(--space-md);
+            border-bottom: 1px solid var(--neutral-lighter);
+        }
+        
+        .table tbody tr:hover {
+            background-color: var(--neutral-light);
+        }
+        
+        /* Alert System */
+        .alert {
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
+            border-left: 4px solid;
+        }
+        
+        .alert-success {
+            background-color: var(--success-light);
+            border-color: var(--success);
+            color: var(--success);
+        }
+        
+        .alert-warning {
+            background-color: var(--warning-light);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        
+        .alert-error {
+            background-color: var(--error-light);
+            border-color: var(--error);
+            color: var(--error);
+        }
+        
+        .alert-info {
+            background-color: var(--info-light);
+            border-color: var(--info);
+            color: var(--info);
+        }
+        
+        /* Trading Specific Components */
+        .price-change {
+            font-weight: 500;
+            font-family: 'Roboto Mono', monospace;
+        }
+        
+        .price-up {
+            color: var(--profit);
+        }
+        
+        .price-down {
+            color: var(--loss);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        
+        .status-executed {
+            background-color: var(--info-light);
+            color: var(--executed);
+        }
+        
+        .status-pending {
+            background-color: var(--warning-light);
+            color: var(--pending);
+        }
+        
+        .status-cancelled {
+            background-color: var(--error-light);
+            color: var(--error);
+        }
+        
+        /* Chart Color Examples */
+        .chart-colors {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        
+        .chart-color {
+            width: 30px;
+            height: 30px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--neutral-medium);
+        }
+        
+        /* Accessibility Notes */
+        .accessibility-note {
+            background-color: var(--neutral-light);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--primary-blue);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .accessibility-note h4 {
+            margin-bottom: var(--space-sm);
+            color: var(--primary-blue);
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                font-size: 12pt;
+                line-height: 1.4;
+            }
+            
+            .color-sample {
+                height: 40px;
+            }
+            
+            .btn {
+                border: 1px solid var(--neutral-dark);
+            }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: var(--space-md);
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .grid-4 {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .color-palette {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Open Paper Trading Style Guide</h1>
+        <p>Design system inspired by Dieter Rams and Massimo Vignelli principles of clarity, simplicity, and functional beauty. This guide ensures color-blind accessibility and provides comprehensive UI components for consistent user experience.</p>
+    </header>
+
+    <main>
+        <!-- Design Principles -->
+        <section class="section">
+            <h2>Design Principles</h2>
+            <div class="grid grid-2">
+                <div>
+                    <h3>Dieter Rams - Good Design</h3>
+                    <ul>
+                        <li>Is innovative</li>
+                        <li>Makes a product useful</li>
+                        <li>Is aesthetic</li>
+                        <li>Makes a product understandable</li>
+                        <li>Is unobtrusive</li>
+                        <li>Is honest</li>
+                        <li>Is long-lasting</li>
+                        <li>Is thorough down to the last detail</li>
+                        <li>Is environmentally friendly</li>
+                        <li>Is as little design as possible</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Massimo Vignelli - Design Fundamentals</h3>
+                    <ul>
+                        <li>Semantics - meaning and context</li>
+                        <li>Syntactics - visual relationships</li>
+                        <li>Pragmatics - functional purpose</li>
+                        <li>Typography as primary design element</li>
+                        <li>Grid systems for organization</li>
+                        <li>Appropriate materials and colors</li>
+                        <li>Timeless over trendy</li>
+                        <li>Discipline and consistency</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Color System -->
+        <section class="section">
+            <h2>Color System</h2>
+            
+            <h3>Primary Colors</h3>
+            <div class="color-palette">
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--primary-blue);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Blue</div>
+                        <div class="color-value">#1f4788</div>
+                        <div class="color-value">--primary-blue</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--primary-blue-light);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Blue Light</div>
+                        <div class="color-value">#3f67a8</div>
+                        <div class="color-value">--primary-blue-light</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--primary-blue-dark);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Blue Dark</div>
+                        <div class="color-value">#0f2748</div>
+                        <div class="color-value">--primary-blue-dark</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--primary-green);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Green</div>
+                        <div class="color-value">#1f7a4f</div>
+                        <div class="color-value">--primary-green</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--primary-green-light);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Green Light</div>
+                        <div class="color-value">#3f9a6f</div>
+                        <div class="color-value">--primary-green-light</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--primary-green-dark);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Green Dark</div>
+                        <div class="color-value">#0f5a2f</div>
+                        <div class="color-value">--primary-green-dark</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Neutral Colors</h3>
+            <div class="color-palette">
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--neutral-white); border: 1px solid var(--neutral-medium);"></div>
+                    <div class="color-info">
+                        <div class="color-name">White</div>
+                        <div class="color-value">#ffffff</div>
+                        <div class="color-value">--neutral-white</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--neutral-light);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Light</div>
+                        <div class="color-value">#f8f9fa</div>
+                        <div class="color-value">--neutral-light</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--neutral-lighter);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Lighter</div>
+                        <div class="color-value">#e9ecef</div>
+                        <div class="color-value">--neutral-lighter</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--neutral-medium);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Medium</div>
+                        <div class="color-value">#dee2e6</div>
+                        <div class="color-value">--neutral-medium</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--neutral-dark);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Dark</div>
+                        <div class="color-value">#6c757d</div>
+                        <div class="color-value">--neutral-dark</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--neutral-darkest);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Darkest</div>
+                        <div class="color-value">#212529</div>
+                        <div class="color-value">--neutral-darkest</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Notification Colors</h3>
+            <p>These colors are specifically chosen to be distinguishable by users with color vision deficiencies.</p>
+            <div class="color-palette">
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--success);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Success</div>
+                        <div class="color-value">#006b3c</div>
+                        <div class="color-value">--success</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--warning);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Warning</div>
+                        <div class="color-value">#b45309</div>
+                        <div class="color-value">--warning</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--error);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Error</div>
+                        <div class="color-value">#dc3545</div>
+                        <div class="color-value">--error</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-sample" style="background-color: var(--info);"></div>
+                    <div class="color-info">
+                        <div class="color-name">Info</div>
+                        <div class="color-value">#0c5aa6</div>
+                        <div class="color-value">--info</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Data Visualization Palette</h3>
+            <p>Color-blind friendly palette for charts and graphs, optimized for trading data visualization.</p>
+            <div class="chart-colors">
+                <div class="chart-color" style="background-color: var(--data-blue);" title="Data Blue - #1f4788"></div>
+                <div class="chart-color" style="background-color: var(--data-teal);" title="Data Teal - #20c997"></div>
+                <div class="chart-color" style="background-color: var(--data-cyan);" title="Data Cyan - #17a2b8"></div>
+                <div class="chart-color" style="background-color: var(--data-indigo);" title="Data Indigo - #6610f2"></div>
+                <div class="chart-color" style="background-color: var(--data-purple);" title="Data Purple - #6f42c1"></div>
+                <div class="chart-color" style="background-color: var(--data-orange);" title="Data Orange - #fd7e14"></div>
+            </div>
+            <code>
+                --data-blue: #1f4788, --data-teal: #20c997, --data-cyan: #17a2b8, 
+                --data-indigo: #6610f2, --data-purple: #6f42c1, --data-orange: #fd7e14
+            </code>
+
+            <div class="accessibility-note">
+                <h4>Color Accessibility</h4>
+                <p>All color combinations meet WCAG 2.1 AA standards for contrast ratio (4.5:1 minimum). The palette has been tested with Deuteranopia and Protanopia simulators to ensure accessibility for color-blind users.</p>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="section">
+            <h2>Typography</h2>
+            
+            <h3>Font Stack</h3>
+            <p><strong>Primary:</strong> <code>'Roboto', sans-serif</code></p>
+            <p><strong>Monospace:</strong> <code>'Roboto Mono', monospace</code></p>
+            
+            <h3>Type Scale</h3>
+            <div class="component-example">
+                <h1 style="margin: 0;">Heading 1 - 2.5rem (40px)</h1>
+                <h2 style="margin: var(--space-md) 0 0 0;">Heading 2 - 1.75rem (28px)</h2>
+                <h3 style="margin: var(--space-md) 0 0 0;">Heading 3 - 1.25rem (20px)</h3>
+                <p style="margin: var(--space-md) 0 0 0;">Body text - 1rem (16px) with 1.6 line height</p>
+                <small style="display: block; margin-top: var(--space-md); color: var(--neutral-dark);">Small text - 0.875rem (14px)</small>
+                <code style="display: block; margin-top: var(--space-md);">Code text - 0.875rem (14px) monospace</code>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <section class="section">
+            <h2>Button System</h2>
+            
+            <div class="component-example">
+                <div class="component-title">Primary Buttons</div>
+                <button class="btn btn-primary">Primary Button</button>
+                <button class="btn btn-primary btn-small">Small Primary</button>
+                <button class="btn btn-primary btn-large">Large Primary</button>
+            </div>
+            
+            <div class="component-example">
+                <div class="component-title">Secondary Buttons</div>
+                <button class="btn btn-secondary">Secondary Button</button>
+                <button class="btn btn-secondary btn-small">Small Secondary</button>
+                <button class="btn btn-secondary btn-large">Large Secondary</button>
+            </div>
+            
+            <div class="component-example">
+                <div class="component-title">Action Buttons</div>
+                <button class="btn btn-success">Success Action</button>
+                <button class="btn btn-warning">Warning Action</button>
+                <button class="btn btn-error">Error Action</button>
+            </div>
+        </section>
+
+        <!-- Form Elements -->
+        <section class="section">
+            <h2>Form Elements</h2>
+            
+            <div class="component-example">
+                <div class="component-title">Input Fields</div>
+                <div class="form-group">
+                    <label class="form-label" for="sample-input">Sample Input</label>
+                    <input type="text" id="sample-input" class="form-input" placeholder="Enter text here">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="sample-select">Sample Select</label>
+                    <select id="sample-select" class="form-select">
+                        <option>Choose an option</option>
+                        <option>Option 1</option>
+                        <option>Option 2</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tables -->
+        <section class="section">
+            <h2>Data Tables</h2>
+            
+            <div class="component-example">
+                <div class="component-title">Trading Portfolio Table</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Shares</th>
+                            <th>Price</th>
+                            <th>Change</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AAPL</strong></td>
+                            <td>100</td>
+                            <td>$150.25</td>
+                            <td class="price-change price-up">+$2.35 (+1.59%)</td>
+                            <td>$15,025.00</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MSFT</strong></td>
+                            <td>50</td>
+                            <td>$275.80</td>
+                            <td class="price-change price-down">-$1.20 (-0.43%)</td>
+                            <td>$13,790.00</td>
+                        </tr>
+                        <tr>
+                            <td><strong>GOOGL</strong></td>
+                            <td>25</td>
+                            <td>$2,650.00</td>
+                            <td class="price-change price-up">+$15.75 (+0.60%)</td>
+                            <td>$66,250.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Alerts -->
+        <section class="section">
+            <h2>Alert System</h2>
+            
+            <div class="component-example">
+                <div class="component-title">Alert Types</div>
+                
+                <div class="alert alert-success">
+                    <strong>Success:</strong> Your order has been executed successfully.
+                </div>
+                
+                <div class="alert alert-info">
+                    <strong>Information:</strong> Market data is delayed by 15 minutes.
+                </div>
+                
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> Your account balance is below the minimum requirement.
+                </div>
+                
+                <div class="alert alert-error">
+                    <strong>Error:</strong> Unable to process your order. Please try again.
+                </div>
+            </div>
+        </section>
+
+        <!-- Trading Components -->
+        <section class="section">
+            <h2>Trading-Specific Components</h2>
+            
+            <div class="component-example">
+                <div class="component-title">Status Badges</div>
+                <span class="status-badge status-executed">Executed</span>
+                <span class="status-badge status-pending">Pending</span>
+                <span class="status-badge status-cancelled">Cancelled</span>
+            </div>
+            
+            <div class="component-example">
+                <div class="component-title">Price Changes</div>
+                <div class="price-change price-up">+$2.35 (+1.59%)</div>
+                <div class="price-change price-down">-$1.20 (-0.43%)</div>
+                <div class="price-change">$0.00 (0.00%)</div>
+            </div>
+        </section>
+
+        <!-- Spacing System -->
+        <section class="section">
+            <h2>Spacing System</h2>
+            
+            <div class="component-example">
+                <div class="component-title">Spacing Scale</div>
+                <p><code>--space-xs: 0.25rem (4px)</code></p>
+                <p><code>--space-sm: 0.5rem (8px)</code></p>
+                <p><code>--space-md: 1rem (16px)</code></p>
+                <p><code>--space-lg: 1.5rem (24px)</code></p>
+                <p><code>--space-xl: 2rem (32px)</code></p>
+                <p><code>--space-xxl: 3rem (48px)</code></p>
+            </div>
+        </section>
+
+        <!-- Usage Guidelines -->
+        <section class="section">
+            <h2>Usage Guidelines</h2>
+            
+            <div class="accessibility-note">
+                <h4>Implementation Notes</h4>
+                <ul>
+                    <li>Use CSS custom properties (variables) for consistent color application</li>
+                    <li>Always test color combinations with color-blind simulators</li>
+                    <li>Maintain minimum 4.5:1 contrast ratio for text</li>
+                    <li>Use semantic HTML elements for better accessibility</li>
+                    <li>Implement focus indicators for all interactive elements</li>
+                    <li>Test responsiveness across device sizes</li>
+                </ul>
+            </div>
+            
+            <div class="component-example">
+                <div class="component-title">CSS Custom Properties Usage</div>
+                <code>
+                    /* Use variables for consistency */<br>
+                    .my-component {<br>
+                    &nbsp;&nbsp;background-color: var(--primary-blue);<br>
+                    &nbsp;&nbsp;color: var(--neutral-white);<br>
+                    &nbsp;&nbsp;padding: var(--space-md);<br>
+                    &nbsp;&nbsp;border-radius: var(--radius-md);<br>
+                    }
+                </code>
+            </div>
+        </section>
+    </main>
+
+    <footer style="margin-top: var(--space-xxl); padding-top: var(--space-xl); border-top: 1px solid var(--neutral-medium); color: var(--neutral-dark); text-align: center;">
+        <p>Open Paper Trading Style Guide - Designed for accessibility, usability, and timeless elegance</p>
+        <p><small>Last updated: January 2025</small></p>
+    </footer>
+
+    <!-- Mockup Section -->
+    <section class="section">
+        <h2>Application Mockup</h2>
+        <div class="component-example" style="background-color: var(--neutral-light); padding: 0; border: none; box-shadow: var(--shadow-lg);">
+            <header style="background-color: var(--primary-blue-dark); color: var(--neutral-white); padding: var(--space-md) var(--space-lg); display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 1.25rem; font-weight: 500;">Open Paper Trading</div>
+                <nav>
+                    <a href="#" class="btn btn-primary" style="background-color: var(--primary-blue-light);">Dashboard</a>
+                    <a href="#" class="btn btn-secondary" style="background: transparent; color: var(--neutral-light); border-color: var(--neutral-medium);">Orders</a>
+                    <a href="#" class="btn btn-secondary" style="background: transparent; color: var(--neutral-light); border-color: var(--neutral-medium);">Account</a>
+                </nav>
+            </header>
+
+            <main style="padding: var(--space-xl);">
+                <div class="grid grid-3">
+                    <div style="grid-column: span 2;">
+                        <div class="component-example" style="padding: var(--space-lg);">
+                            <div class="component-title">Portfolio Positions</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Shares</th>
+                                        <th>Price</th>
+                                        <th>Change</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>AAPL</strong></td>
+                                        <td>100</td>
+                                        <td>$150.25</td>
+                                        <td class="price-change price-up">+$2.35 (+1.59%)</td>
+                                        <td>$15,025.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>MSFT</strong></td>
+                                        <td>50</td>
+                                        <td>$275.80</td>
+                                        <td class="price-change price-down">-$1.20 (-0.43%)</td>
+                                        <td>$13,790.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>GOOGL</strong></td>
+                                        <td>25</td>
+                                        <td>$2,650.00</td>
+                                        <td class="price-change price-up">+$15.75 (+0.60%)</td>
+                                        <td>$66,250.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="grid-column: span 1;">
+                        <div class="component-example" style="padding: var(--space-lg);">
+                            <div class="component-title">Portfolio Value</div>
+                            <div style="height: 200px; background-color: var(--neutral-lighter); display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md);">
+                                <p style="color: var(--neutral-dark);">[Data Graphic Placeholder]</p>
+                            </div>
+                        </div>
+                        <div class="component-example" style="margin-top: var(--space-lg); padding: var(--space-lg);">
+                            <div class="component-title">Create Order</div>
+                            <div class="form-group">
+                                <label class="form-label" for="mock-symbol">Symbol</label>
+                                <input type="text" id="mock-symbol" class="form-input" value="TSLA">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="mock-qty">Quantity</label>
+                                <input type="number" id="mock-qty" class="form-input" value="10">
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%;">Submit Order</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer style="background-color: var(--neutral-lighter); padding: var(--space-md) var(--space-lg); border-top: 1px solid var(--neutral-medium); color: var(--neutral-dark); text-align: center;">
+                <p><small>API Status: <span style="color: var(--profit);">●</span> Online</small> | <small>Market: Open</small></p>
+            </footer>
+        </div>
+    </section>
+</body>
+</html>

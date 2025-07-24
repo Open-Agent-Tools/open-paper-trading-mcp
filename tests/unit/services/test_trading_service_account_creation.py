@@ -24,6 +24,7 @@ from app.core.exceptions import NotFoundError
 from app.adapters.test_data import DevDataQuoteAdapter
 
 
+@pytest.mark.db_crud
 class TestTradingServiceAccountCreation:
     """Test suite for TradingService account creation and initialization."""
 

@@ -51,27 +51,27 @@ class AccountAdapter(ABC):
     """Abstract base class for account storage adapters."""
 
     @abstractmethod
-    def get_account(self, account_id: str) -> Account | None:
+    async def get_account(self, account_id: str) -> Account | None:
         """Retrieve an account by ID."""
         pass
 
     @abstractmethod
-    def put_account(self, account: Account) -> None:
+    async def put_account(self, account: Account) -> None:
         """Store or update an account."""
         pass
 
     @abstractmethod
-    def get_account_ids(self) -> list[str]:
+    async def get_account_ids(self) -> list[str]:
         """Get all account IDs."""
         pass
 
     @abstractmethod
-    def account_exists(self, account_id: str) -> bool:
+    async def account_exists(self, account_id: str) -> bool:
         """Check if an account exists."""
         pass
 
     @abstractmethod
-    def delete_account(self, account_id: str) -> bool:
+    async def delete_account(self, account_id: str) -> bool:
         """Delete an account."""
         pass
 

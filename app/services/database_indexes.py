@@ -6,7 +6,7 @@ query performance for order processing, execution monitoring, and analytics.
 """
 
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import text
