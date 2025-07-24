@@ -398,8 +398,43 @@ def test_scenarios() -> dict[str, Any]:
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Standard database session fixture - all tests should use this."""
-    async for session in async_db_session():
-        yield session
+    # Use the same logic as async_db_session but avoid circular reference
+    import os
+    
+    database_url = os.getenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db",
+    )
+
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    test_engine = create_async_engine(database_url, echo=False, future=True)
+    TestSessionLocal = async_sessionmaker(
+        bind=test_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    try:
+        # Ensure tables exist and clean up
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            await conn.execute(text("TRUNCATE TABLE transactions CASCADE"))
+            await conn.execute(text("TRUNCATE TABLE orders CASCADE"))
+            await conn.execute(text("TRUNCATE TABLE positions CASCADE"))
+            await conn.execute(text("TRUNCATE TABLE accounts CASCADE"))
+            await conn.commit()
+
+        # Create session
+        async with TestSessionLocal() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+    finally:
+        await test_engine.dispose()
 
 
 @pytest.fixture(scope="session")
