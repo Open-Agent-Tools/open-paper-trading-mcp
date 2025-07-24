@@ -272,18 +272,29 @@ def sample_order_data() -> dict[str, Any]:
     """Create sample order data for testing."""
     from app.schemas.orders import OrderCreate, OrderType
 
+    from app.schemas.orders import OrderCondition
+    
     return {
         "buy_market": OrderCreate(
             symbol="AAPL",
             order_type=OrderType.BUY,
             quantity=100,
             price=None,  # Market order
+            condition=OrderCondition.MARKET,
         ),
         "sell_limit": OrderCreate(
-            symbol="AAPL", order_type=OrderType.SELL, quantity=50, price=160.0
+            symbol="AAPL", 
+            order_type=OrderType.SELL, 
+            quantity=50, 
+            price=160.0,
+            condition=OrderCondition.LIMIT,
         ),
         "buy_limit": OrderCreate(
-            symbol="GOOGL", order_type=OrderType.BUY, quantity=10, price=2700.0
+            symbol="GOOGL", 
+            order_type=OrderType.BUY, 
+            quantity=10, 
+            price=2700.0,
+            condition=OrderCondition.LIMIT,
         ),
     }
 
@@ -302,8 +313,10 @@ async def trading_service_with_data(
     # Create trading service
     service = TradingService(account_owner=test_account_data["owner"])
 
-    # Mock the database session
-    service._get_async_db_session = AsyncMock(return_value=async_db_session)
+    # Override the database session via dependency injection
+    from unittest.mock import patch
+    with patch.object(service, '_get_async_db_session', return_value=async_db_session):
+        pass  # Service will use the mocked session
 
     # Mock quote adapter with realistic data
     mock_adapter = MagicMock()
@@ -363,7 +376,7 @@ async def integration_test_client(
 
     # Create and configure trading service for integration testing
     trading_service = TradingService(account_owner=test_account_data["owner"])
-    trading_service._get_async_db_session = AsyncMock(return_value=async_db_session)
+    # Note: Database session will be overridden by FastAPI dependency injection
 
     # Store in app state
     app.state.trading_service = trading_service

@@ -6,15 +6,11 @@ Adapted from reference implementation with enhanced validation capabilities.
 
 from datetime import date
 
+from app.core.exceptions import ValidationError
+
 from ..models.assets import Asset, Option
 from ..schemas.orders import MultiLegOrder, OrderLeg, OrderType
 from ..schemas.positions import Position
-
-
-class ValidationError(Exception):
-    """Custom exception for validation errors."""
-
-    pass
 
 
 class AccountValidator:

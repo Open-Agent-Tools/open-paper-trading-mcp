@@ -7,8 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.mcp.base import get_trading_service
 from app.mcp.response_utils import handle_tool_exception, success_response
-from app.services.trading_service import TradingService
 
 
 # Argument classes for backward compatibility with tests
@@ -63,23 +63,6 @@ class OptionsChainsArgs(BaseModel):
     symbol: str
 
 
-# MCP tools will receive TradingService instance as dependency
-_trading_service: TradingService | None = None
-
-
-def set_mcp_trading_service(service: TradingService) -> None:
-    """Set the trading service for MCP tools."""
-    global _trading_service
-    _trading_service = service
-
-
-def get_mcp_trading_service() -> TradingService:
-    """Get the trading service for MCP tools."""
-    if _trading_service is None:
-        raise RuntimeError("TradingService not initialized for MCP tools")
-    return _trading_service
-
-
 # New direct parameter functions (main API)
 async def options_chains(symbol: str) -> dict[str, Any]:
     """
@@ -93,7 +76,7 @@ async def options_chains(symbol: str) -> dict[str, Any]:
     """
     try:
         # Use TradingService to get options chain
-        chain_data = await get_mcp_trading_service().get_formatted_options_chain(
+        chain_data = await get_trading_service().get_formatted_options_chain(
             symbol.strip().upper()
         )
         return success_response(chain_data)
@@ -116,7 +99,7 @@ async def find_options(
         Dict containing filtered options data or error
     """
     try:
-        result = await get_mcp_trading_service().find_tradable_options(
+        result = await get_trading_service().find_tradable_options(
             symbol.strip().upper(), expiration_date, option_type
         )
         return success_response(result)
@@ -135,7 +118,7 @@ async def option_market_data(option_id: str) -> dict[str, Any]:
         Dict containing market data or error
     """
     try:
-        result = await get_mcp_trading_service().get_option_market_data(option_id)
+        result = await get_trading_service().get_option_market_data(option_id)
         return success_response(result)
     except Exception as e:
         return handle_tool_exception("option_market_data", e)
@@ -215,7 +198,7 @@ async def option_historicals(
             )
 
         # Try to get historical data from adapter if available
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # Check if adapter has historical data capability
         if hasattr(trading_service.quote_adapter, "get_option_historicals"):
@@ -333,7 +316,7 @@ async def aggregate_option_positions() -> dict[str, Any]:
         Dict containing aggregated position data and portfolio Greeks
     """
     try:
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # Get all positions
         positions = await trading_service.get_positions()
@@ -496,7 +479,7 @@ async def all_option_positions() -> dict[str, Any]:
         Dict containing all option positions with full details
     """
     try:
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # Get all positions from the portfolio
         positions = await trading_service.get_positions()

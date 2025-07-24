@@ -68,7 +68,11 @@ class OrderValidationMixin:
     ) -> float | None:
         """Validate price based on order condition."""
         # If we have access to the condition field
-        if hasattr(info.data, "condition") and info.data.get("condition") == "limit" and v is None:
+        if (
+            hasattr(info.data, "condition")
+            and info.data.get("condition") == "limit"
+            and v is None
+        ):
             raise ValueError("Limit orders must have a price specified")
         return v
 

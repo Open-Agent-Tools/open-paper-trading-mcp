@@ -8,24 +8,8 @@ tool listing, and market status information.
 from datetime import UTC
 from typing import Any
 
+from app.mcp.base import get_trading_service
 from app.mcp.response_utils import handle_tool_exception, success_response
-from app.services.trading_service import TradingService
-
-# MCP tools will receive TradingService instance as dependency
-_trading_service: TradingService | None = None
-
-
-def set_mcp_trading_service(service: TradingService) -> None:
-    """Set the trading service for MCP tools."""
-    global _trading_service
-    _trading_service = service
-
-
-def get_mcp_trading_service() -> TradingService:
-    """Get the trading service for MCP tools."""
-    if _trading_service is None:
-        raise RuntimeError("TradingService not initialized for MCP tools")
-    return _trading_service
 
 
 async def list_tools() -> dict[str, Any]:
@@ -159,7 +143,7 @@ async def health_check() -> dict[str, Any]:
 
         # Check trading service
         try:
-            trading_service = get_mcp_trading_service()
+            trading_service = get_trading_service()
             # Test basic service functionality by getting adapter info
             if (
                 hasattr(trading_service, "quote_adapter")
@@ -194,7 +178,7 @@ async def health_check() -> dict[str, Any]:
 
         # Check market data adapter
         try:
-            trading_service = get_mcp_trading_service()
+            trading_service = get_trading_service()
             if hasattr(trading_service, "quote_adapter"):
                 # Test adapter by checking its type
                 adapter_type = type(trading_service.quote_adapter).__name__
@@ -251,7 +235,7 @@ async def market_hours() -> dict[str, Any]:
         dict[str, Any]: Market hours information with standardized response format
     """
     try:
-        result = await get_mcp_trading_service().get_market_hours()
+        result = await get_trading_service().get_market_hours()
         return success_response(result)
     except Exception as e:
         return handle_tool_exception("market_hours", e)
@@ -270,7 +254,7 @@ async def stock_ratings(symbol: str) -> dict[str, Any]:
     symbol = symbol.strip().upper()
 
     try:
-        result = await get_mcp_trading_service().get_stock_ratings(symbol)
+        result = await get_trading_service().get_stock_ratings(symbol)
         return success_response(result)
     except Exception as e:
         return handle_tool_exception("stock_ratings", e)
@@ -289,7 +273,7 @@ async def stock_events(symbol: str) -> dict[str, Any]:
     symbol = symbol.strip().upper()
 
     try:
-        result = await get_mcp_trading_service().get_stock_events(symbol)
+        result = await get_trading_service().get_stock_events(symbol)
         return success_response(result)
     except Exception as e:
         return handle_tool_exception("stock_events", e)
@@ -308,7 +292,7 @@ async def stock_level2_data(symbol: str) -> dict[str, Any]:
     symbol = symbol.strip().upper()
 
     try:
-        result = await get_mcp_trading_service().get_stock_level2_data(symbol)
+        result = await get_trading_service().get_stock_level2_data(symbol)
         return success_response(result)
     except Exception as e:
         return handle_tool_exception("stock_level2_data", e)

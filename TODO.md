@@ -10,6 +10,30 @@
 - **Database Cleanup**: Cleared all test data from Docker PostgreSQL
 - **Project Cleanup**: Fixed pyproject.toml dependencies, removed build artifacts
 - **Code Quality**: Fixed critical linting errors, maintained MyPy compliance
+- **Architecture Refactoring**: Eliminated code duplication and implemented dependency injection pattern
+- **Service Container**: Centralized service management with proper lifecycle control
+- **Exception Consolidation**: Unified error handling patterns across all modules
+
+---
+
+## ✅ Priority 0: Code Architecture Refactoring (COMPLETED)
+**Goal**: Eliminate code duplication and improve maintainability of service dependencies.
+
+### 0.1 Dependency Injection Refactoring
+- [x] **Create Service Container**: Implement `app/core/container.py` with dependency injection pattern
+- [x] **Consolidate MCP Global State**: Remove 6 duplicated `_trading_service` globals across MCP tools
+- [x] **Create MCP Base Module**: Add `app/mcp/base.py` with shared service access pattern
+- [x] **Simplify Service Initialization**: Refactor `app/main.py` lines 46-71 to use container pattern
+
+### 0.2 Exception Hierarchy Cleanup  
+- [x] **Consolidate ValidationError**: Remove duplicate from `app.services.validation`, use `app.core.exceptions`
+- [x] **Standardize Error Handling**: Ensure consistent exception patterns across all modules
+
+### 0.3 Service Factory Pattern
+- [x] **Extract Service Factory**: Create `app/core/service_factory.py` for centralized service creation
+- [x] **Update Import Dependencies**: Refactor 15+ files importing TradingService to use container
+
+**Results**: 12 files modified, 120+ lines of duplicated code removed, improved testability and maintainability
 
 ---
 

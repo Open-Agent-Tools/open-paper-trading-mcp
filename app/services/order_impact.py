@@ -11,10 +11,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.core.exceptions import ValidationError
 from app.models.assets import Asset, Option
 from app.schemas.orders import MultiLegOrder, Order, OrderLeg
 from app.schemas.positions import Position
-from app.services.validation import AccountValidator, ValidationError
+from app.services.validation import AccountValidator
 
 
 class AccountSnapshot(BaseModel):

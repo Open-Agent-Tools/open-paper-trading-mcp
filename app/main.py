@@ -42,35 +42,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     print("Starting up FastAPI server...")
     await initialize_database()
 
-    # Initialize TradingService and store in application state
-    from app.mcp.account_tools import (
-        set_mcp_trading_service as set_account_trading_service,
-    )
-    from app.mcp.core_tools import set_mcp_trading_service as set_core_trading_service
-    from app.mcp.market_data_tools import (
-        set_mcp_trading_service as set_market_data_trading_service,
-    )
-    from app.mcp.options_tools import (
-        set_mcp_trading_service as set_options_trading_service,
-    )
-    from app.mcp.tools import set_mcp_trading_service
-    from app.mcp.trading_tools import (
-        set_mcp_trading_service as set_trading_tools_trading_service,
-    )
-    from app.services.trading_service import TradingService, _get_quote_adapter
+    # Initialize services using service factory
+    from app.core.container import container
+    from app.core.service_factory import register_services
+    from app.services.trading_service import TradingService
 
-    trading_service = TradingService(_get_quote_adapter())
+    # Register all services in the container
+    register_services()
+
+    # Store TradingService in application state for FastAPI dependencies
+    trading_service = container.get(TradingService)
     app.state.trading_service = trading_service
 
-    # Set TradingService for all MCP tool modules
-    set_mcp_trading_service(trading_service)
-    set_account_trading_service(trading_service)
-    set_market_data_trading_service(trading_service)
-    set_options_trading_service(trading_service)
-    set_trading_tools_trading_service(trading_service)
-    set_core_trading_service(trading_service)
+    # Lock container to prevent further service registration
+    container.lock()
 
-    print("TradingService initialized and set for all MCP tool modules")
+    print("Services initialized and registered in container")
 
     # Authenticate with Robinhood
     robinhood_client = get_robinhood_client()

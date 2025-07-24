@@ -7,30 +7,13 @@ as specified in MCP_TOOLS.md.
 
 from typing import Any
 
+from app.mcp.base import get_trading_service
 from app.mcp.response_utils import (
     error_response,
     handle_tool_exception,
     success_response,
 )
 from app.schemas.orders import OrderCondition, OrderCreate, OrderStatus, OrderType
-from app.services.trading_service import TradingService
-
-# MCP tools will receive TradingService instance as dependency
-_trading_service: TradingService | None = None
-
-
-def set_mcp_trading_service(service: TradingService) -> None:
-    """Set the trading service for MCP tools."""
-    global _trading_service
-    _trading_service = service
-
-
-def get_mcp_trading_service() -> TradingService:
-    """Get the trading service for MCP tools."""
-    if _trading_service is None:
-        raise RuntimeError("TradingService not initialized for MCP tools")
-    return _trading_service
-
 
 # =============================================================================
 # ORDER MANAGEMENT TOOLS
@@ -63,7 +46,7 @@ async def buy_stock_market(symbol: str, quantity: int) -> dict[str, Any]:
         symbol = symbol.strip().upper()
 
         # Get current quote for the stock
-        quote = await get_mcp_trading_service().get_quote(symbol)
+        quote = await get_trading_service().get_quote(symbol)
         current_price = quote.price
 
         if current_price is None or current_price <= 0:
@@ -77,7 +60,7 @@ async def buy_stock_market(symbol: str, quantity: int) -> dict[str, Any]:
             price=current_price,  # Use current market price for execution
             condition=OrderCondition.MARKET,
         )
-        order = await get_mcp_trading_service().create_order(order_data)
+        order = await get_trading_service().create_order(order_data)
 
         data = {
             "order_id": order.id,
@@ -113,7 +96,7 @@ async def sell_stock_market(symbol: str, quantity: int) -> dict[str, Any]:
         symbol = symbol.strip().upper()
 
         # Get current quote for the stock
-        quote = await get_mcp_trading_service().get_quote(symbol)
+        quote = await get_trading_service().get_quote(symbol)
         current_price = quote.price
 
         if current_price is None or current_price <= 0:
@@ -130,7 +113,7 @@ async def sell_stock_market(symbol: str, quantity: int) -> dict[str, Any]:
             price=current_price,  # Use current market price for execution
             condition=OrderCondition.MARKET,
         )
-        order = await get_mcp_trading_service().create_order(order_data)
+        order = await get_trading_service().create_order(order_data)
 
         data = {
             "order_id": order.id,
@@ -163,7 +146,7 @@ async def buy_stock_limit(
             price=limit_price,
             condition=OrderCondition.LIMIT,
         )
-        order = await get_mcp_trading_service().create_order(order_data)
+        order = await get_trading_service().create_order(order_data)
         data = {
             "id": order.id,
             "symbol": order.symbol,
@@ -192,7 +175,7 @@ async def sell_stock_limit(
             price=limit_price,
             condition=OrderCondition.LIMIT,
         )
-        order = await get_mcp_trading_service().create_order(order_data)
+        order = await get_trading_service().create_order(order_data)
         data = {
             "id": order.id,
             "symbol": order.symbol,
@@ -405,7 +388,7 @@ async def cancel_stock_order_by_id(order_id: str) -> dict[str, Any]:
         dict[str, Any]: Success response with cancellation details or error
     """
     try:
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # First, get the order to validate it's a stock order
         order = await trading_service.get_order(order_id)
@@ -463,7 +446,7 @@ async def cancel_option_order_by_id(order_id: str) -> dict[str, Any]:
         dict[str, Any]: Success response with cancellation details or error
     """
     try:
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # First, get the order to validate it's an option order
         order = await trading_service.get_order(order_id)
@@ -521,7 +504,7 @@ async def cancel_all_stock_orders_tool() -> dict[str, Any]:
         dict[str, Any]: Success response with bulk cancellation results or error
     """
     try:
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # Use the new bulk cancellation method
         result = await trading_service.cancel_all_stock_orders()
@@ -545,7 +528,7 @@ async def cancel_all_option_orders_tool() -> dict[str, Any]:
         dict[str, Any]: Success response with bulk cancellation results or error
     """
     try:
-        trading_service = get_mcp_trading_service()
+        trading_service = get_trading_service()
 
         # Use the new bulk cancellation method
         result = await trading_service.cancel_all_option_orders()

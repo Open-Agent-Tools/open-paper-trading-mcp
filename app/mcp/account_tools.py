@@ -7,24 +7,8 @@ following the MCP_TOOLS.md specification.
 
 from typing import Any
 
+from app.mcp.base import get_trading_service
 from app.mcp.response_utils import handle_tool_exception, success_response
-from app.services.trading_service import TradingService
-
-# MCP tools will receive TradingService instance as dependency
-_trading_service: TradingService | None = None
-
-
-def set_mcp_trading_service(service: TradingService) -> None:
-    """Set the trading service for MCP tools."""
-    global _trading_service
-    _trading_service = service
-
-
-def get_mcp_trading_service() -> TradingService:
-    """Get the trading service for MCP tools."""
-    if _trading_service is None:
-        raise RuntimeError("TradingService not initialized for MCP tools")
-    return _trading_service
 
 
 async def account_info() -> dict[str, Any]:
@@ -33,7 +17,7 @@ async def account_info() -> dict[str, Any]:
     """
     try:
         # Get account data from trading service
-        service = get_mcp_trading_service()
+        service = get_trading_service()
         account = await service._get_account()
 
         data = {
@@ -55,7 +39,7 @@ async def portfolio() -> dict[str, Any]:
     Provides a high-level overview of the portfolio.
     """
     try:
-        portfolio = await get_mcp_trading_service().get_portfolio()
+        portfolio = await get_trading_service().get_portfolio()
         positions_data = []
         for pos in portfolio.positions:
             positions_data.append(
@@ -86,8 +70,8 @@ async def account_details() -> dict[str, Any]:
     Gets comprehensive account details including buying power and cash balances.
     """
     try:
-        portfolio = await get_mcp_trading_service().get_portfolio()
-        summary = await get_mcp_trading_service().get_portfolio_summary()
+        portfolio = await get_trading_service().get_portfolio()
+        summary = await get_trading_service().get_portfolio_summary()
 
         data = {
             "account_id": "DEMO_ACCOUNT",
@@ -111,7 +95,7 @@ async def positions() -> dict[str, Any]:
     Gets current stock positions with quantities and values.
     """
     try:
-        positions = await get_mcp_trading_service().get_positions()
+        positions = await get_trading_service().get_positions()
         positions_data = []
         for pos in positions:
             positions_data.append(

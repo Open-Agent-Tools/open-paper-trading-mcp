@@ -11,11 +11,12 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.core.exceptions import ValidationError
 from app.models.assets import Option, asset_factory
 from app.models.quotes import OptionQuote, Quote
 from app.schemas.orders import MultiLegOrder, Order
 from app.services.strategies import AdvancedStrategyAnalyzer
-from app.services.validation import AccountValidator, ValidationError
+from app.services.validation import AccountValidator
 
 
 class ValidationSeverity(str, Enum):
