@@ -43,13 +43,34 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await initialize_database()
 
     # Initialize TradingService and store in application state
+    from app.mcp.account_tools import (
+        set_mcp_trading_service as set_account_trading_service,
+    )
+    from app.mcp.core_tools import set_mcp_trading_service as set_core_trading_service
+    from app.mcp.market_data_tools import (
+        set_mcp_trading_service as set_market_data_trading_service,
+    )
+    from app.mcp.options_tools import (
+        set_mcp_trading_service as set_options_trading_service,
+    )
     from app.mcp.tools import set_mcp_trading_service
+    from app.mcp.trading_tools import (
+        set_mcp_trading_service as set_trading_tools_trading_service,
+    )
     from app.services.trading_service import TradingService, _get_quote_adapter
 
     trading_service = TradingService(_get_quote_adapter())
     app.state.trading_service = trading_service
-    set_mcp_trading_service(trading_service)  # For MCP tools
-    print("TradingService initialized and stored in application state")
+
+    # Set TradingService for all MCP tool modules
+    set_mcp_trading_service(trading_service)
+    set_account_trading_service(trading_service)
+    set_market_data_trading_service(trading_service)
+    set_options_trading_service(trading_service)
+    set_trading_tools_trading_service(trading_service)
+    set_core_trading_service(trading_service)
+
+    print("TradingService initialized and set for all MCP tool modules")
 
     # Authenticate with Robinhood
     robinhood_client = get_robinhood_client()

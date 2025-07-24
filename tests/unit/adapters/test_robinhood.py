@@ -2,17 +2,17 @@
 Comprehensive tests for Robinhood adapter with mocked API calls.
 """
 
-import pytest
 import asyncio
 import time
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from datetime import datetime, date
-from decimal import Decimal
+from datetime import date, datetime
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from app.adapters.robinhood import RobinhoodAdapter, RobinhoodConfig, retry_with_backoff
-from app.models.assets import Stock, Option
-from app.models.quotes import Quote, OptionQuote, OptionsChain
 from app.auth.session_manager import SessionManager
+from app.models.assets import Option, Stock
+from app.models.quotes import OptionQuote, Quote
 
 
 class TestRobinhoodConfig:
@@ -236,43 +236,45 @@ class TestRobinhoodAdapter:
             expiration_date=date(2024, 1, 19),
         )
 
-        with patch(
-            "app.adapters.robinhood.rh.options.find_options_by_expiration_and_strike"
-        ) as mock_find:
-            with patch(
+        with (
+            patch(
+                "app.adapters.robinhood.rh.options.find_options_by_expiration_and_strike"
+            ) as mock_find,
+            patch(
                 "app.adapters.robinhood.rh.options.get_option_market_data_by_id"
-            ) as mock_market:
-                with patch.object(adapter, "_get_stock_quote") as mock_stock_quote:
-                    mock_find.return_value = [{"id": "option_id_123"}]
-                    mock_market.return_value = {
-                        "bid_price": "5.25",
-                        "ask_price": "5.75",
-                        "volume": "500",
-                        "open_interest": "1000",
-                    }
+            ) as mock_market,
+            patch.object(adapter, "_get_stock_quote") as mock_stock_quote,
+        ):
+            mock_find.return_value = [{"id": "option_id_123"}]
+            mock_market.return_value = {
+                "bid_price": "5.25",
+                "ask_price": "5.75",
+                "volume": "500",
+                "open_interest": "1000",
+            }
 
-                    stock_quote = Quote(
-                        asset=underlying,
-                        quote_date=datetime.now(),
-                        price=150.0,
-                        bid=149.50,
-                        ask=150.50,
-                        bid_size=100,
-                        ask_size=100,
-                        volume=1000000,
-                    )
-                    mock_stock_quote.return_value = stock_quote
+            stock_quote = Quote(
+                asset=underlying,
+                quote_date=datetime.now(),
+                price=150.0,
+                bid=149.50,
+                ask=150.50,
+                bid_size=100,
+                ask_size=100,
+                volume=1000000,
+            )
+            mock_stock_quote.return_value = stock_quote
 
-                    quote = await adapter.get_quote(option)
+            quote = await adapter.get_quote(option)
 
-                    assert quote is not None
-                    assert isinstance(quote, OptionQuote)
-                    assert quote.asset is option
-                    assert quote.bid == 5.25
-                    assert quote.ask == 5.75
-                    assert quote.price == 5.5  # (bid + ask) / 2
-                    assert quote.underlying_price == 150.0
-                    assert quote.volume == 500
+            assert quote is not None
+            assert isinstance(quote, OptionQuote)
+            assert quote.asset is option
+            assert quote.bid == 5.25
+            assert quote.ask == 5.75
+            assert quote.price == 5.5  # (bid + ask) / 2
+            assert quote.underlying_price == 150.0
+            assert quote.volume == 500
 
     @pytest.mark.asyncio
     async def test_get_option_quote_no_data(self, adapter):
@@ -528,36 +530,36 @@ class TestRobinhoodAdapter:
     @pytest.mark.asyncio
     async def test_get_stock_info_success(self, adapter):
         """Test successful stock info retrieval."""
-        with patch(
-            "app.adapters.robinhood.rh.stocks.get_fundamentals"
-        ) as mock_fundamentals:
-            with patch(
+        with (
+            patch(
+                "app.adapters.robinhood.rh.stocks.get_fundamentals"
+            ) as mock_fundamentals,
+            patch(
                 "app.adapters.robinhood.rh.stocks.get_instruments_by_symbols"
-            ) as mock_instruments:
-                with patch(
-                    "app.adapters.robinhood.rh.stocks.get_name_by_symbol"
-                ) as mock_name:
-                    mock_fundamentals.return_value = [
-                        {
-                            "sector": "Technology",
-                            "industry": "Consumer Electronics",
-                            "market_cap": "3000000000000",
-                            "pe_ratio": "25.5",
-                            "dividend_yield": "0.5",
-                        }
-                    ]
-                    mock_instruments.return_value = [
-                        {"simple_name": "Apple", "tradeable": True}
-                    ]
-                    mock_name.return_value = "Apple Inc."
+            ) as mock_instruments,
+            patch("app.adapters.robinhood.rh.stocks.get_name_by_symbol") as mock_name,
+        ):
+            mock_fundamentals.return_value = [
+                {
+                    "sector": "Technology",
+                    "industry": "Consumer Electronics",
+                    "market_cap": "3000000000000",
+                    "pe_ratio": "25.5",
+                    "dividend_yield": "0.5",
+                }
+            ]
+            mock_instruments.return_value = [
+                {"simple_name": "Apple", "tradeable": True}
+            ]
+            mock_name.return_value = "Apple Inc."
 
-                    info = await adapter.get_stock_info("AAPL")
+            info = await adapter.get_stock_info("AAPL")
 
-                    assert info["symbol"] == "AAPL"
-                    assert info["company_name"] == "Apple Inc."
-                    assert info["sector"] == "Technology"
-                    assert info["industry"] == "Consumer Electronics"
-                    assert info["tradeable"] is True
+            assert info["symbol"] == "AAPL"
+            assert info["company_name"] == "Apple Inc."
+            assert info["sector"] == "Technology"
+            assert info["industry"] == "Consumer Electronics"
+            assert info["tradeable"] is True
 
     @pytest.mark.asyncio
     async def test_get_price_history_success(self, adapter):
@@ -866,7 +868,7 @@ class TestRobinhoodAdapterPerformance:
         initial_size = sys.getsizeof(adapter)
 
         # Simulate processing many quotes
-        for i in range(1000):
+        for _i in range(1000):
             adapter._request_count += 1
             adapter._total_request_time += 0.1
 

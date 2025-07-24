@@ -12,11 +12,6 @@ import pytest
 import pytest_asyncio
 
 from app.mcp.market_data_tools import (
-    GetPriceHistoryArgs,
-    GetStockInfoArgs,
-    GetStockNewsArgs,
-    GetStockPriceArgs,
-    SearchStocksArgs,
     get_price_history,
     get_stock_info,
     get_stock_news,
@@ -59,67 +54,9 @@ class TestMCPMarketDataToolsModule:
 
         for func_name in expected_functions:
             assert hasattr(tools, func_name), f"Should have {func_name} function"
-            func = getattr(tools, func_name)
-            assert callable(func), f"{func_name} should be callable"
-
-
-class TestMCPMarketDataParameterValidation:
-    """Test parameter validation for market data tools."""
-
-    def test_get_stock_price_args_validation(self):
-        """Test GetStockPriceArgs parameter validation."""
-        # Valid args
-        args = GetStockPriceArgs(symbol="AAPL")
-        assert args.symbol == "AAPL"
-
-        # Test required field
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            GetStockPriceArgs()  # Missing required symbol
-
-    def test_get_stock_info_args_validation(self):
-        """Test GetStockInfoArgs parameter validation."""
-        args = GetStockInfoArgs(symbol="GOOGL")
-        assert args.symbol == "GOOGL"
-
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            GetStockInfoArgs()  # Missing required symbol
-
-    def test_get_price_history_args_validation(self):
-        """Test GetPriceHistoryArgs parameter validation."""
-        # Valid args with default period
-        args = GetPriceHistoryArgs(symbol="MSFT")
-        assert args.symbol == "MSFT"
-        assert args.period == "week"  # Default value
-
-        # Valid args with custom period
-        args = GetPriceHistoryArgs(symbol="TSLA", period="month")
-        assert args.symbol == "TSLA"
-        assert args.period == "month"
-
-        # Test valid periods
-        valid_periods = ["day", "week", "month", "3month", "year", "5year"]
-        for period in valid_periods:
-            args = GetPriceHistoryArgs(symbol="TEST", period=period)
-            assert args.period == period
-
-    def test_get_stock_news_args_validation(self):
-        """Test GetStockNewsArgs parameter validation."""
-        args = GetStockNewsArgs(symbol="NVDA")
-        assert args.symbol == "NVDA"
-
-    def test_search_stocks_args_validation(self):
-        """Test SearchStocksArgs parameter validation."""
-        args = SearchStocksArgs(query="Apple Inc")
-        assert args.query == "Apple Inc"
-
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            SearchStocksArgs()  # Missing required query
+            assert callable(getattr(tools, func_name)), (
+                f"{func_name} should be callable"
+            )
 
 
 class TestMCPMarketDataAsyncBehavior:
@@ -216,8 +153,7 @@ class TestMCPMarketDataAsyncBehavior:
     @pytest.mark.asyncio
     async def test_get_stock_price_async(self, mock_trading_service):
         """Test get_stock_price async execution."""
-        args = GetStockPriceArgs(symbol="AAPL")
-        result = await get_stock_price(args)
+        result = await get_stock_price(symbol="AAPL")
 
         # Verify service call
         mock_trading_service.get_stock_price.assert_called_once_with("AAPL")
@@ -232,8 +168,7 @@ class TestMCPMarketDataAsyncBehavior:
     @pytest.mark.asyncio
     async def test_get_stock_info_async(self, mock_trading_service):
         """Test get_stock_info async execution."""
-        args = GetStockInfoArgs(symbol="AAPL")
-        result = await get_stock_info(args)
+        result = await get_stock_info(symbol="AAPL")
 
         # Verify service call
         mock_trading_service.get_stock_info.assert_called_once_with("AAPL")
@@ -248,8 +183,7 @@ class TestMCPMarketDataAsyncBehavior:
     @pytest.mark.asyncio
     async def test_get_price_history_async(self, mock_trading_service):
         """Test get_price_history async execution."""
-        args = GetPriceHistoryArgs(symbol="AAPL", period="month")
-        result = await get_price_history(args)
+        result = await get_price_history(symbol="AAPL", period="month")
 
         # Verify service call
         mock_trading_service.get_price_history.assert_called_once_with("AAPL", "month")
@@ -264,8 +198,7 @@ class TestMCPMarketDataAsyncBehavior:
     @pytest.mark.asyncio
     async def test_get_stock_news_async(self, mock_trading_service):
         """Test get_stock_news async execution."""
-        args = GetStockNewsArgs(symbol="AAPL")
-        result = await get_stock_news(args)
+        result = await get_stock_news(symbol="AAPL")
 
         # Verify service call
         mock_trading_service.get_stock_news.assert_called_once_with("AAPL")
@@ -299,8 +232,7 @@ class TestMCPMarketDataAsyncBehavior:
     @pytest.mark.asyncio
     async def test_search_stocks_async(self, mock_trading_service):
         """Test search_stocks async execution."""
-        args = SearchStocksArgs(query="Apple")
-        result = await search_stocks(args)
+        result = await search_stocks(query="Apple")
 
         # Verify service call
         mock_trading_service.search_stocks.assert_called_once_with("Apple")
@@ -331,8 +263,7 @@ class TestMCPMarketDataSymbolHandling:
     @pytest.mark.asyncio
     async def test_symbol_uppercase_conversion(self, mock_trading_service):
         """Test that symbols are converted to uppercase."""
-        args = GetStockPriceArgs(symbol="aapl")  # lowercase
-        await get_stock_price(args)
+        await get_stock_price(symbol="aapl")  # lowercase
 
         # Should call service with uppercase symbol
         mock_trading_service.get_stock_price.assert_called_once_with("AAPL")
@@ -340,8 +271,7 @@ class TestMCPMarketDataSymbolHandling:
     @pytest.mark.asyncio
     async def test_symbol_whitespace_stripping(self, mock_trading_service):
         """Test that whitespace is stripped from symbols."""
-        args = GetStockPriceArgs(symbol="  MSFT  ")  # with spaces
-        await get_stock_price(args)
+        await get_stock_price(symbol="  MSFT  ")  # with spaces
 
         # Should call service with clean symbol
         mock_trading_service.get_stock_price.assert_called_once_with("MSFT")
@@ -349,8 +279,7 @@ class TestMCPMarketDataSymbolHandling:
     @pytest.mark.asyncio
     async def test_combined_symbol_cleaning(self, mock_trading_service):
         """Test combined symbol cleaning (strip + uppercase)."""
-        args = GetStockPriceArgs(symbol="  googl  ")  # lowercase with spaces
-        await get_stock_price(args)
+        await get_stock_price(symbol="  googl  ")  # lowercase with spaces
 
         # Should call service with clean, uppercase symbol
         mock_trading_service.get_stock_price.assert_called_once_with("GOOGL")
@@ -361,8 +290,7 @@ class TestMCPMarketDataSymbolHandling:
         with patch("app.mcp.market_data_tools.trading_service") as mock_service:
             mock_service.search_stocks = Mock(return_value={"results": []})
 
-            args = SearchStocksArgs(query="  Apple Inc  ")  # with spaces
-            await search_stocks(args)
+            await search_stocks(query="  Apple Inc  ")  # with spaces
 
             # Should call service with stripped query (but preserve case for company names)
             mock_service.search_stocks.assert_called_once_with("Apple Inc")
@@ -379,8 +307,7 @@ class TestMCPMarketDataErrorHandling:
                 "Market data service unavailable"
             )
 
-            args = GetStockPriceArgs(symbol="INVALID")
-            result = await get_stock_price(args)
+            result = await get_stock_price(symbol="INVALID")
 
             # Should return error dict, not raise
             assert isinstance(result, dict)
@@ -395,8 +322,7 @@ class TestMCPMarketDataErrorHandling:
                 "Invalid symbol format"
             )
 
-            args = GetStockInfoArgs(symbol="INVALID")
-            result = await get_stock_info(args)
+            result = await get_stock_info(symbol="INVALID")
 
             # Should return error dict
             assert isinstance(result, dict)
@@ -411,8 +337,7 @@ class TestMCPMarketDataErrorHandling:
                 "Database connection failed"
             )
 
-            args = GetPriceHistoryArgs(symbol="AAPL", period="week")
-            result = await get_price_history(args)
+            result = await get_price_history(symbol="AAPL", period="week")
 
             # Should return error dict
             assert isinstance(result, dict)
@@ -440,8 +365,7 @@ class TestMCPMarketDataErrorHandling:
         with patch("app.mcp.market_data_tools.trading_service") as mock_service:
             mock_service.search_stocks.side_effect = TimeoutError("Search timeout")
 
-            args = SearchStocksArgs(query="Apple")
-            result = await search_stocks(args)
+            result = await search_stocks(query="Apple")
 
             # Should return error dict
             assert isinstance(result, dict)
@@ -488,22 +412,22 @@ class TestMCPMarketDataServiceIntegration:
             mock_service.search_stocks = Mock(return_value={"results": []})
 
             # Test each tool calls appropriate service method
-            await get_stock_price(GetStockPriceArgs(symbol="TEST"))
+            await get_stock_price(symbol="TEST")
             mock_service.get_stock_price.assert_called()
 
-            await get_stock_info(GetStockInfoArgs(symbol="TEST"))
+            await get_stock_info(symbol="TEST")
             mock_service.get_stock_info.assert_called()
 
-            await get_price_history(GetPriceHistoryArgs(symbol="TEST"))
+            await get_price_history(symbol="TEST")
             mock_service.get_price_history.assert_called()
 
-            await get_stock_news(GetStockNewsArgs(symbol="TEST"))
+            await get_stock_news(symbol="TEST")
             mock_service.get_stock_news.assert_called()
 
             await get_top_movers()
             mock_service.get_top_movers.assert_called()
 
-            await search_stocks(SearchStocksArgs(query="test"))
+            await search_stocks(query="test")
             mock_service.search_stocks.assert_called()
 
     @pytest.mark.asyncio
@@ -518,8 +442,7 @@ class TestMCPMarketDataServiceIntegration:
         with patch("app.mcp.market_data_tools.trading_service") as mock_service:
             mock_service.get_stock_price.return_value = expected_response
 
-            args = GetStockPriceArgs(symbol="AAPL")
-            result = await get_stock_price(args)
+            result = await get_stock_price(symbol="AAPL")
 
             # Should pass through the exact response
             assert result == expected_response
@@ -547,8 +470,7 @@ class TestMCPMarketDataConcurrency:
             # Create concurrent requests
             tasks = []
             for symbol in symbols:
-                args = GetStockPriceArgs(symbol=symbol)
-                task = asyncio.create_task(get_stock_price(args))
+                task = asyncio.create_task(get_stock_price(symbol=symbol))
                 tasks.append(task)
 
             # Wait for all to complete
@@ -577,10 +499,10 @@ class TestMCPMarketDataConcurrency:
 
             # Create mixed concurrent requests
             tasks = [
-                get_stock_price(GetStockPriceArgs(symbol="AAPL")),
-                get_stock_info(GetStockInfoArgs(symbol="GOOGL")),
+                get_stock_price(symbol="AAPL"),
+                get_stock_info(symbol="GOOGL"),
                 get_top_movers(),
-                search_stocks(SearchStocksArgs(query="Microsoft")),
+                search_stocks(query="Microsoft"),
             ]
 
             results = await asyncio.gather(*tasks)
@@ -615,39 +537,9 @@ class TestMCPMarketDataToolDocumentation:
             func = getattr(tools, func_name)
             doc = inspect.getdoc(func)
             assert doc is not None and doc.strip(), f"{func_name} should have docstring"
-            assert (
-                "TradingService" in doc
-            ), f"{func_name} should mention TradingService routing"
-
-    def test_parameter_classes_have_descriptions(self):
-        """Test parameter model classes have field descriptions."""
-        from app.mcp.market_data_tools import (
-            GetPriceHistoryArgs,
-            GetStockInfoArgs,
-            GetStockNewsArgs,
-            GetStockPriceArgs,
-            SearchStocksArgs,
-        )
-
-        parameter_classes = [
-            GetStockPriceArgs,
-            GetStockInfoArgs,
-            GetPriceHistoryArgs,
-            GetStockNewsArgs,
-            SearchStocksArgs,
-        ]
-
-        for param_class in parameter_classes:
-            schema = param_class.model_json_schema()
-            properties = schema.get("properties", {})
-
-            for field_name, field_info in properties.items():
-                assert (
-                    "description" in field_info
-                ), f"{param_class.__name__}.{field_name} should have description"
-                assert field_info[
-                    "description"
-                ].strip(), f"{param_class.__name__}.{field_name} description should not be empty"
+            assert "TradingService" in doc, (
+                f"{func_name} should mention TradingService routing"
+            )
 
     def test_function_signatures_are_async(self):
         """Test that all market data functions are async."""
@@ -666,6 +558,6 @@ class TestMCPMarketDataToolDocumentation:
 
         for func_name in tool_functions:
             func = getattr(tools, func_name)
-            assert inspect.iscoroutinefunction(
-                func
-            ), f"{func_name} should be async function"
+            assert inspect.iscoroutinefunction(func), (
+                f"{func_name} should be async function"
+            )

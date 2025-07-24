@@ -237,7 +237,7 @@ class TestStateTransitions:
 
     def test_valid_state_transition(self, lifecycle_manager, sample_order):
         """Test valid state transition."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         updated_state = lifecycle_manager.transition_order(
             sample_order.id,
@@ -255,7 +255,7 @@ class TestStateTransitions:
         self, lifecycle_manager, sample_order
     ):
         """Test invalid state transition raises error."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         # Try to transition from PENDING directly to CANCELLED then to FILLED (invalid)
         lifecycle_manager.transition_order(
@@ -326,7 +326,7 @@ class TestFillDetailsManagement:
 
     def test_update_fill_details_partial_fill(self, lifecycle_manager, sample_order):
         """Test updating fill details for partial fill."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         updated_state = lifecycle_manager.update_fill_details(
             sample_order.id, filled_quantity=50, fill_price=150.25, commission=5.00
@@ -340,7 +340,7 @@ class TestFillDetailsManagement:
 
     def test_update_fill_details_complete_fill(self, lifecycle_manager, sample_order):
         """Test updating fill details for complete fill."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         updated_state = lifecycle_manager.update_fill_details(
             sample_order.id, filled_quantity=100, fill_price=150.50, commission=7.50
@@ -406,7 +406,7 @@ class TestOrderActions:
 
     def test_cancel_order_success(self, lifecycle_manager, sample_order):
         """Test successful order cancellation."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         cancelled_state = lifecycle_manager.cancel_order(
             sample_order.id, reason="User requested", triggered_by="user"
@@ -425,7 +425,7 @@ class TestOrderActions:
         self, lifecycle_manager, sample_order
     ):
         """Test cancelling non-cancellable order raises error."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         # Transition to filled state (cannot cancel)
         lifecycle_manager.transition_order(
@@ -437,7 +437,7 @@ class TestOrderActions:
 
     def test_reject_order_success(self, lifecycle_manager, sample_order):
         """Test successful order rejection."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         rejected_state = lifecycle_manager.reject_order(
             sample_order.id, reason="Insufficient funds", triggered_by="risk_management"
@@ -449,7 +449,7 @@ class TestOrderActions:
 
     def test_expire_order_success(self, lifecycle_manager, sample_order):
         """Test successful order expiration."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         expired_state = lifecycle_manager.expire_order(
             sample_order.id, reason="End of trading day"
@@ -460,7 +460,7 @@ class TestOrderActions:
 
     def test_trigger_order_success(self, lifecycle_manager, sample_order):
         """Test successful order triggering."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         triggered_state = lifecycle_manager.trigger_order(
             sample_order.id, trigger_price=149.50, triggered_by="market"
@@ -608,7 +608,7 @@ class TestEventCallbacks:
             callback_calls.append((lifecycle_state.order.id, event))
 
         lifecycle_manager.register_event_callback(OrderEvent.FILLED, fill_callback)
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         # Trigger fill event
         lifecycle_manager.transition_order(
@@ -633,7 +633,7 @@ class TestEventCallbacks:
         lifecycle_manager.register_event_callback(OrderEvent.CANCELLED, callback1)
         lifecycle_manager.register_event_callback(OrderEvent.CANCELLED, callback2)
 
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
         lifecycle_manager.cancel_order(sample_order.id)
 
         assert len(callback1_calls) == 1
@@ -692,7 +692,7 @@ class TestCleanupAndMaintenance:
 
     def test_cleanup_no_old_orders(self, lifecycle_manager, sample_order):
         """Test cleanup when no orders are old enough."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
         lifecycle_manager.transition_order(
             sample_order.id, OrderStatus.FILLED, OrderEvent.FILLED
         )
@@ -832,7 +832,7 @@ class TestLifecycleManagerErrorHandling:
         self, lifecycle_manager, sample_order
     ):
         """Test attempting to transition from terminal state."""
-        lifecycle_state = lifecycle_manager.create_order(sample_order)
+        lifecycle_manager.create_order(sample_order)
 
         # Complete the order
         lifecycle_manager.transition_order(

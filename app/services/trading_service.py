@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -272,6 +272,95 @@ class TradingService:
             await db.commit()
 
             return {"message": "Order cancelled successfully"}
+        finally:
+            await db.close()
+
+    async def cancel_all_stock_orders(self) -> dict[str, Any]:
+        """Cancel all open stock orders."""
+        from sqlalchemy import select
+
+        db = await self._get_async_db_session()
+        try:
+            account = await self._get_account()
+
+            # Get all open stock orders (orders without options-specific indicators)
+            stmt = select(DBOrder).where(
+                DBOrder.account_id == account.id,
+                DBOrder.status.in_([OrderStatus.PENDING, OrderStatus.TRIGGERED]),
+                # Assume stock orders have simple symbols (no option-style identifiers)
+                ~DBOrder.symbol.like("%C%"),  # Basic heuristic for non-option symbols
+                ~DBOrder.symbol.like("%P%"),
+            )
+            result = await db.execute(stmt)
+            open_stock_orders = result.scalars().all()
+
+            cancelled_orders = []
+            for order in open_stock_orders:
+                order.status = OrderStatus.CANCELLED
+                cancelled_orders.append(
+                    {
+                        "id": order.id,
+                        "symbol": order.symbol,
+                        "order_type": order.order_type,
+                        "quantity": order.quantity,
+                        "price": order.price,
+                    }
+                )
+
+            await db.commit()
+
+            return {
+                "message": f"Cancelled {len(cancelled_orders)} stock orders",
+                "cancelled_orders": cancelled_orders,
+                "total_cancelled": len(cancelled_orders),
+            }
+        finally:
+            await db.close()
+
+    async def cancel_all_option_orders(self) -> dict[str, Any]:
+        """Cancel all open option orders."""
+        from sqlalchemy import select
+
+        db = await self._get_async_db_session()
+        try:
+            account = await self._get_account()
+
+            # Get all open option orders (orders with options-specific indicators)
+            stmt = select(DBOrder).where(
+                DBOrder.account_id == account.id,
+                DBOrder.status.in_([OrderStatus.PENDING, OrderStatus.TRIGGERED]),
+                # Assume option orders have option-style symbols or specific order types
+                (
+                    DBOrder.symbol.like("%C%")
+                    | DBOrder.symbol.like("%P%")
+                    | DBOrder.order_type.in_(
+                        [OrderType.BTO, OrderType.STO, OrderType.BTC, OrderType.STC]
+                    )
+                ),
+            )
+            result = await db.execute(stmt)
+            open_option_orders = result.scalars().all()
+
+            cancelled_orders = []
+            for order in open_option_orders:
+                order.status = OrderStatus.CANCELLED
+                cancelled_orders.append(
+                    {
+                        "id": order.id,
+                        "symbol": order.symbol,
+                        "order_type": order.order_type,
+                        "quantity": order.quantity,
+                        "price": order.price,
+                    }
+                )
+
+            await db.commit()
+
+            return {
+                "message": f"Cancelled {len(cancelled_orders)} option orders",
+                "cancelled_orders": cancelled_orders,
+                "total_cancelled": len(cancelled_orders),
+            }
         finally:
             await db.close()
 
@@ -1258,6 +1347,363 @@ class TradingService:
 
         except Exception as e:
             return {"error": f"Simulation failed: {e!s}"}
+
+    def get_available_symbols(self) -> list[str]:
+        """Get list of available symbols."""
+        return self.quote_adapter.get_available_symbols()
+
+    async def get_stock_news(self, symbol: str) -> dict[str, Any]:
+        """
+        Get news stories for a stock.
+
+        This method provides a unified interface that works with both
+        test data and live market data adapters.
+        """
+        try:
+            asset = asset_factory(symbol)
+            if not asset:
+                return {"error": f"Invalid symbol: {symbol}"}
+
+            # Use the adapter's extended functionality if available
+            if hasattr(self.quote_adapter, "get_stock_news"):
+                result = await self.quote_adapter.get_stock_news(symbol)
+                return dict(result) if result else {}
+            else:
+                # Fallback to simulated news data
+                return {
+                    "symbol": symbol.upper(),
+                    "articles": [
+                        {
+                            "title": f"{symbol.upper()} Reports Strong Quarter Results",
+                            "summary": "Company beats analyst expectations with solid revenue growth.",
+                            "published_at": (
+                                datetime.now() - timedelta(hours=2)
+                            ).isoformat(),
+                            "source": "Financial News Network",
+                            "sentiment": "positive",
+                            "url": f"https://example.com/news/{symbol.lower()}-earnings",
+                        },
+                        {
+                            "title": f"Analysts Upgrade {symbol.upper()} Price Target",
+                            "summary": "Multiple analysts raise price targets following recent developments.",
+                            "published_at": (
+                                datetime.now() - timedelta(hours=6)
+                            ).isoformat(),
+                            "source": "Market Watch",
+                            "sentiment": "positive",
+                            "url": f"https://example.com/news/{symbol.lower()}-upgrade",
+                        },
+                        {
+                            "title": f"{symbol.upper()} Announces New Partnership",
+                            "summary": "Strategic partnership expected to drive future growth.",
+                            "published_at": (
+                                datetime.now() - timedelta(days=1)
+                            ).isoformat(),
+                            "source": "Business Journal",
+                            "sentiment": "neutral",
+                            "url": f"https://example.com/news/{symbol.lower()}-partnership",
+                        },
+                    ],
+                    "total_articles": 3,
+                    "last_updated": datetime.now().isoformat(),
+                    "message": "Simulated news data from fallback implementation",
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def get_top_movers(self) -> dict[str, Any]:
+        """
+        Get top movers in the market.
+
+        This method provides a unified interface that works with both
+        test data and live market data adapters.
+        """
+        try:
+            # Use the adapter's extended functionality if available
+            if hasattr(self.quote_adapter, "get_top_movers"):
+                result = await self.quote_adapter.get_top_movers()
+                return dict(result) if result else {}
+            else:
+                # Fallback to simulated top movers using available symbols
+                available_symbols = self.get_available_symbols()[
+                    :10
+                ]  # Limit to first 10
+
+                gainers = []
+                losers = []
+
+                # Create simulated data for some symbols
+                import random
+
+                for _i, symbol in enumerate(available_symbols[:5]):
+                    try:
+                        quote = await self.get_enhanced_quote(symbol)
+                        if quote and quote.price:
+                            change_percent = random.uniform(1.5, 8.5)  # Gainers
+                            change = (quote.price * change_percent) / 100
+                            gainers.append(
+                                {
+                                    "symbol": symbol,
+                                    "price": quote.price,
+                                    "change": round(change, 2),
+                                    "change_percent": round(change_percent, 2),
+                                    "volume": getattr(
+                                        quote, "volume", random.randint(100000, 5000000)
+                                    ),
+                                }
+                            )
+                    except Exception:
+                        continue
+
+                for _i, symbol in enumerate(available_symbols[5:8]):
+                    try:
+                        quote = await self.get_enhanced_quote(symbol)
+                        if quote and quote.price:
+                            change_percent = random.uniform(-6.5, -1.0)  # Losers
+                            change = (quote.price * change_percent) / 100
+                            losers.append(
+                                {
+                                    "symbol": symbol,
+                                    "price": quote.price,
+                                    "change": round(change, 2),
+                                    "change_percent": round(change_percent, 2),
+                                    "volume": getattr(
+                                        quote, "volume", random.randint(100000, 5000000)
+                                    ),
+                                }
+                            )
+                    except Exception:
+                        continue
+
+                return {
+                    "gainers": gainers[:5],
+                    "losers": losers[:5],
+                    "most_active": (gainers + losers)[:5],
+                    "last_updated": datetime.now().isoformat(),
+                    "message": "Simulated top movers data from fallback implementation",
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def get_market_hours(self) -> dict[str, Any]:
+        """
+        Get market hours and status information.
+
+        This method provides a unified interface that works with both
+        test data and live market data adapters.
+        """
+        try:
+            # Use the adapter's extended functionality if available
+            if hasattr(self.quote_adapter, "get_market_hours"):
+                result = await self.quote_adapter.get_market_hours()
+                return dict(result) if result else {}
+            else:
+                # Fallback to basic market status check
+                is_open = await self.quote_adapter.is_market_open()
+
+                # Return basic market hours info
+                return {
+                    "is_market_open": is_open,
+                    "market_status": "open" if is_open else "closed",
+                    "timezone": "US/Eastern",
+                    "regular_hours": {"start": "09:30", "end": "16:00"},
+                    "extended_hours": {
+                        "premarket_start": "04:00",
+                        "premarket_end": "09:30",
+                        "aftermarket_start": "16:00",
+                        "aftermarket_end": "20:00",
+                    },
+                    "message": "Market hours data from fallback implementation",
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def get_stock_ratings(self, symbol: str) -> dict[str, Any]:
+        """
+        Get analyst ratings and recommendations for a stock.
+
+        This method provides a unified interface that works with both
+        test data and live market data adapters.
+        """
+        try:
+            asset = asset_factory(symbol)
+            if not asset:
+                return {"error": f"Invalid symbol: {symbol}"}
+
+            # Use the adapter's extended functionality if available
+            if hasattr(self.quote_adapter, "get_stock_ratings"):
+                result = await self.quote_adapter.get_stock_ratings(symbol)
+                return dict(result) if result else {}
+            else:
+                # Fallback to simulated ratings data
+                return {
+                    "symbol": symbol.upper(),
+                    "overall_rating": "Hold",
+                    "rating_score": 3.2,
+                    "analyst_count": 12,
+                    "ratings_breakdown": {
+                        "strong_buy": 2,
+                        "buy": 3,
+                        "hold": 5,
+                        "sell": 2,
+                        "strong_sell": 0,
+                    },
+                    "price_targets": {
+                        "average_target": 155.50,
+                        "high_target": 175.00,
+                        "low_target": 140.00,
+                        "median_target": 152.00,
+                    },
+                    "last_updated": datetime.now().isoformat(),
+                    "message": "Simulated ratings data from fallback implementation",
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def get_stock_events(self, symbol: str) -> dict[str, Any]:
+        """
+        Get corporate events and calendar items for a stock.
+
+        This method provides a unified interface that works with both
+        test data and live market data adapters.
+        """
+        try:
+            asset = asset_factory(symbol)
+            if not asset:
+                return {"error": f"Invalid symbol: {symbol}"}
+
+            # Use the adapter's extended functionality if available
+            if hasattr(self.quote_adapter, "get_stock_events"):
+                result = await self.quote_adapter.get_stock_events(symbol)
+                return dict(result) if result else {}
+            else:
+                # Fallback to simulated events data
+                next_earnings = datetime.now() + timedelta(days=30)
+                next_dividend = datetime.now() + timedelta(days=45)
+
+                return {
+                    "symbol": symbol.upper(),
+                    "upcoming_events": [
+                        {
+                            "event_type": "earnings",
+                            "event_date": next_earnings.isoformat(),
+                            "description": f"Q{(next_earnings.month - 1) // 3 + 1} Earnings Report",
+                            "confirmed": False,
+                        },
+                        {
+                            "event_type": "dividend",
+                            "event_date": next_dividend.isoformat(),
+                            "description": "Quarterly Dividend Payment",
+                            "estimated_amount": 0.50,
+                            "confirmed": False,
+                        },
+                    ],
+                    "recent_events": [
+                        {
+                            "event_type": "earnings",
+                            "event_date": (
+                                datetime.now() - timedelta(days=90)
+                            ).isoformat(),
+                            "description": "Previous Quarter Earnings",
+                            "confirmed": True,
+                        }
+                    ],
+                    "last_updated": datetime.now().isoformat(),
+                    "message": "Simulated events data from fallback implementation",
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def get_stock_level2_data(self, symbol: str) -> dict[str, Any]:
+        """
+        Get Level 2 market data (order book) for a stock.
+
+        This method provides a unified interface that works with both
+        test data and live market data adapters.
+        """
+        try:
+            asset = asset_factory(symbol)
+            if not asset:
+                return {"error": f"Invalid symbol: {symbol}"}
+
+            # Use the adapter's extended functionality if available
+            if hasattr(self.quote_adapter, "get_stock_level2_data"):
+                result = await self.quote_adapter.get_stock_level2_data(symbol)
+                return dict(result) if result else {}
+            else:
+                # Get current quote for base price
+                quote = await self.get_enhanced_quote(symbol)
+                if not quote or not quote.price:
+                    return {"error": f"No market data available for {symbol}"}
+
+                base_price = quote.price
+                bid_price = quote.bid or (base_price - 0.01)
+                ask_price = quote.ask or (base_price + 0.01)
+
+                # Simulate Level 2 order book data
+                return {
+                    "symbol": symbol.upper(),
+                    "bid_levels": [
+                        {"price": round(bid_price, 2), "size": 1000, "orders": 5},
+                        {
+                            "price": round(bid_price - 0.01, 2),
+                            "size": 2500,
+                            "orders": 8,
+                        },
+                        {
+                            "price": round(bid_price - 0.02, 2),
+                            "size": 1800,
+                            "orders": 6,
+                        },
+                        {
+                            "price": round(bid_price - 0.03, 2),
+                            "size": 3200,
+                            "orders": 12,
+                        },
+                        {"price": round(bid_price - 0.04, 2), "size": 800, "orders": 3},
+                    ],
+                    "ask_levels": [
+                        {"price": round(ask_price, 2), "size": 1200, "orders": 4},
+                        {
+                            "price": round(ask_price + 0.01, 2),
+                            "size": 1900,
+                            "orders": 7,
+                        },
+                        {
+                            "price": round(ask_price + 0.02, 2),
+                            "size": 2200,
+                            "orders": 9,
+                        },
+                        {
+                            "price": round(ask_price + 0.03, 2),
+                            "size": 1500,
+                            "orders": 6,
+                        },
+                        {
+                            "price": round(ask_price + 0.04, 2),
+                            "size": 2800,
+                            "orders": 11,
+                        },
+                    ],
+                    "market_maker_moves": {
+                        "total_bid_size": 10300,
+                        "total_ask_size": 9600,
+                        "spread": round(ask_price - bid_price, 2),
+                        "spread_percentage": round(
+                            ((ask_price - bid_price) / base_price) * 100, 4
+                        ),
+                    },
+                    "last_updated": datetime.now().isoformat(),
+                    "message": "Simulated Level 2 data from fallback implementation",
+                }
+
+        except Exception as e:
+            return {"error": str(e)}
 
 
 # Initialize adapter based on configuration

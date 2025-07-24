@@ -597,12 +597,12 @@ class TestMCPOptionsToolDocumentation:
             properties = schema.get("properties", {})
 
             for field_name, field_info in properties.items():
-                assert (
-                    "description" in field_info
-                ), f"{param_class.__name__}.{field_name} should have description"
-                assert field_info[
-                    "description"
-                ].strip(), f"{param_class.__name__}.{field_name} description should not be empty"
+                assert "description" in field_info, (
+                    f"{param_class.__name__}.{field_name} should have description"
+                )
+                assert field_info["description"].strip(), (
+                    f"{param_class.__name__}.{field_name} description should not be empty"
+                )
 
     def test_options_function_signatures_are_async(self):
         """Test that all options functions are async."""
@@ -618,9 +618,9 @@ class TestMCPOptionsToolDocumentation:
 
         for func_name in tool_functions:
             func = getattr(tools, func_name)
-            assert inspect.iscoroutinefunction(
-                func
-            ), f"{func_name} should be async function"
+            assert inspect.iscoroutinefunction(func), (
+                f"{func_name} should be async function"
+            )
 
     def test_options_tools_comprehensive_coverage(self):
         """Test that options tools cover comprehensive use cases."""
@@ -634,9 +634,9 @@ class TestMCPOptionsToolDocumentation:
         import app.mcp.options_tools as tools
 
         for func_name, description in expected_operations.items():
-            assert hasattr(
-                tools, func_name
-            ), f"Should have {func_name} for: {description}"
+            assert hasattr(tools, func_name), (
+                f"Should have {func_name} for: {description}"
+            )
             func = getattr(tools, func_name)
             assert callable(func), f"{func_name} should be callable"
 

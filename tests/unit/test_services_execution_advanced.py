@@ -11,7 +11,6 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 
 from app.models.quotes import Quote
 from app.schemas.orders import (
@@ -23,13 +22,13 @@ from app.schemas.orders import (
 )
 from app.schemas.positions import Portfolio, Position
 from app.services.estimators import SlippageEstimator
+from app.services.market_impact import MarketImpactCalculator
 from app.services.order_execution import OrderExecutionResult, OrderFillSimulator
 from app.services.order_execution_engine import OrderExecutionEngine
 from app.services.order_lifecycle import OrderStateMachine
 from app.services.order_queue import (
     OrderQueue as ExecutionQueue,
 )
-from app.services.market_impact import MarketImpactCalculator
 
 
 class MockQuoteService:

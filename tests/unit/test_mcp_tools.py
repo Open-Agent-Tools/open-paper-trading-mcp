@@ -12,25 +12,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.mcp.tools import (
-    CalculateGreeksArgs,
-    CancelOrderArgs,
-    CreateMultiLegOrderArgs,
-    CreateOrderArgs,
-    FindTradableOptionsArgs,
-    GetExpirationDatesArgs,
-    GetOptionMarketDataArgs,
-    GetOptionsChainArgs,
-    GetOrderArgs,
-    GetPositionArgs,
-    GetStrategyAnalysisArgs,
-    SimulateExpirationArgs,
     calculate_option_greeks,
-    cancel_order,
     create_buy_order,
     create_multi_leg_order,
     create_sell_order,
     find_tradable_options,
-    get_all_orders,
     get_all_positions,
     get_expiration_dates,
     get_mcp_trading_service,
@@ -40,7 +26,6 @@ from app.mcp.tools import (
     get_portfolio,
     get_portfolio_summary,
     get_position,
-    get_stock_quote,
     get_strategy_analysis,
     set_mcp_trading_service,
     simulate_option_expiration,
@@ -107,48 +92,6 @@ class TestMCPToolsSetup:
 
 class TestMCPStockQuote:
     """Tests for stock quote functions."""
-
-    @pytest.mark.asyncio
-    async def test_get_stock_quote_success(self, mock_mcp_trading_service):
-        """Test successful stock quote retrieval."""
-        # Arrange
-        symbol = "AAPL"
-        mock_quote = MagicMock()
-        mock_quote.symbol = symbol
-        mock_quote.price = 150.0
-        mock_quote.change = 5.0
-        mock_quote.change_percent = 3.33
-        mock_quote.volume = 1000
-        mock_quote.last_updated = datetime.now()
-
-        mock_mcp_trading_service.get_quote.return_value = mock_quote
-
-        # Act
-        result = await get_stock_quote(GetQuoteArgs(symbol=symbol))
-        result_dict = json.loads(result)
-
-        # Assert
-        mock_mcp_trading_service.get_quote.assert_called_once_with(symbol)
-        assert result_dict["symbol"] == symbol
-        assert result_dict["price"] == 150.0
-        assert result_dict["change"] == 5.0
-        assert result_dict["change_percent"] == 3.33
-        assert result_dict["volume"] == 1000
-        assert "last_updated" in result_dict
-
-    @pytest.mark.asyncio
-    async def test_get_stock_quote_error(self, mock_mcp_trading_service):
-        """Test error handling in stock quote retrieval."""
-        # Arrange
-        symbol = "INVALID"
-        mock_mcp_trading_service.get_quote.side_effect = Exception("Symbol not found")
-
-        # Act
-        result = await get_stock_quote(GetQuoteArgs(symbol=symbol))
-
-        # Assert
-        mock_mcp_trading_service.get_quote.assert_called_once_with(symbol)
-        assert "Error getting quote" in result
 
 
 class TestMCPOrderManagement:

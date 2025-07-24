@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
-from pydantic import ValidationError as PydanticValidationError
 
 from app.core.config import Settings, settings
 from app.core.exceptions import (
@@ -24,28 +23,32 @@ class TestSettings:
     def test_default_values(self):
         """Test default configuration values."""
         # Use explicit environment clearing for this test
-        with patch.dict(os.environ, {
-            "DATABASE_URL": "postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db",
-            "SECRET_KEY": "your-secret-key-change-this-in-production",
-            "ENVIRONMENT": "development",
-            "DEBUG": "True",
-            "LOG_LEVEL": "INFO",
-            "MCP_SERVER_PORT": "2081",
-            "MCP_SERVER_HOST": "localhost",
-            "QUOTE_ADAPTER_TYPE": "test",
-            "TEST_SCENARIO": "default",
-            "TEST_DATE": "2017-03-24",
-            "ROBINHOOD_USERNAME": "",
-            "ROBINHOOD_PASSWORD": "",
-            "ROBINHOOD_TOKEN_PATH": "/app/.tokens"
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "DATABASE_URL": "postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db",
+                "SECRET_KEY": "your-secret-key-change-this-in-production",
+                "ENVIRONMENT": "development",
+                "DEBUG": "True",
+                "LOG_LEVEL": "INFO",
+                "MCP_SERVER_PORT": "2081",
+                "MCP_SERVER_HOST": "localhost",
+                "QUOTE_ADAPTER_TYPE": "test",
+                "TEST_SCENARIO": "default",
+                "TEST_DATE": "2017-03-24",
+                "ROBINHOOD_USERNAME": "",
+                "ROBINHOOD_PASSWORD": "",
+                "ROBINHOOD_TOKEN_PATH": "/app/.tokens",
+            },
+            clear=True,
+        ):
             default_settings = Settings()
-            
+
             assert default_settings.PROJECT_NAME == "Open Paper Trading MCP"
             assert default_settings.API_V1_STR == "/api/v1"
             assert default_settings.BACKEND_CORS_ORIGINS == [
                 "http://localhost:3000",
-                "http://localhost:2080"
+                "http://localhost:2080",
             ]
             assert default_settings.REDIS_URL == "redis://localhost:6379"
             assert default_settings.ACCESS_TOKEN_EXPIRE_MINUTES == 30
@@ -62,17 +65,25 @@ class TestSettings:
     def test_default_database_url_from_code(self):
         """Test default database URL directly from os.getenv default."""
         # This tests the actual logic in config.py which uses os.getenv with a default
-        with patch('os.getenv') as mock_getenv:
-            mock_getenv.side_effect = lambda key, default=None: default if key == "DATABASE_URL" else os.getenv(key, default)
+        with patch("os.getenv") as mock_getenv:
+            mock_getenv.side_effect = lambda key, default=None: (
+                default if key == "DATABASE_URL" else os.getenv(key, default)
+            )
             test_settings = Settings()
-            expected_url = "postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db"
-            assert test_settings.DATABASE_URL == expected_url
+            expected_url = (
+                "postgresql+asyncpg://trading_user:trading_password@db:5432/trading_db"
+            )
+            assert expected_url == test_settings.DATABASE_URL
 
-    @patch.dict(os.environ, {"DATABASE_URL": "postgresql://custom:db@host:5433/custom_db"})
+    @patch.dict(
+        os.environ, {"DATABASE_URL": "postgresql://custom:db@host:5433/custom_db"}
+    )
     def test_custom_database_url(self):
         """Test custom database URL from environment."""
         test_settings = Settings()
-        assert test_settings.DATABASE_URL == "postgresql://custom:db@host:5433/custom_db"
+        assert (
+            test_settings.DATABASE_URL == "postgresql://custom:db@host:5433/custom_db"
+        )
 
     @patch.dict(os.environ, {"SECRET_KEY": "custom-secret-key"})
     def test_custom_secret_key(self):
@@ -146,11 +157,14 @@ class TestSettings:
         test_settings = Settings()
         assert test_settings.TEST_DATE == "2020-01-01"
 
-    @patch.dict(os.environ, {
-        "ROBINHOOD_USERNAME": "test_user",
-        "ROBINHOOD_PASSWORD": "test_pass",
-        "ROBINHOOD_TOKEN_PATH": "/custom/tokens"
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "ROBINHOOD_USERNAME": "test_user",
+            "ROBINHOOD_PASSWORD": "test_pass",
+            "ROBINHOOD_TOKEN_PATH": "/custom/tokens",
+        },
+    )
     def test_robinhood_credentials(self):
         """Test Robinhood credentials from environment."""
         test_settings = Settings()
@@ -161,22 +175,26 @@ class TestSettings:
     def test_cors_origins_string_parsing(self):
         """Test CORS origins parsing from string."""
         test_settings = Settings()
-        
+
         # Test with string input (comma-separated)
-        result = test_settings.assemble_cors_origins("http://localhost:3000,http://localhost:8080")
+        result = test_settings.assemble_cors_origins(
+            "http://localhost:3000,http://localhost:8080"
+        )
         assert result == ["http://localhost:3000", "http://localhost:8080"]
 
     def test_cors_origins_string_with_spaces(self):
         """Test CORS origins parsing with spaces."""
         test_settings = Settings()
-        
-        result = test_settings.assemble_cors_origins("http://localhost:3000, http://localhost:8080")
+
+        result = test_settings.assemble_cors_origins(
+            "http://localhost:3000, http://localhost:8080"
+        )
         assert result == ["http://localhost:3000", "http://localhost:8080"]
 
     def test_cors_origins_list_passthrough(self):
         """Test CORS origins when already a list."""
         test_settings = Settings()
-        
+
         input_list = ["http://localhost:3000", "http://localhost:8080"]
         result = test_settings.assemble_cors_origins(input_list)
         assert result == input_list
@@ -184,7 +202,7 @@ class TestSettings:
     def test_cors_origins_json_array_string(self):
         """Test CORS origins with JSON array string."""
         test_settings = Settings()
-        
+
         # JSON array strings should pass through unchanged
         json_string = '["http://localhost:3000", "http://localhost:8080"]'
         result = test_settings.assemble_cors_origins(json_string)
@@ -193,7 +211,7 @@ class TestSettings:
     def test_cors_origins_invalid_type(self):
         """Test CORS origins with invalid type raises ValueError."""
         test_settings = Settings()
-        
+
         with pytest.raises(ValueError):
             test_settings.assemble_cors_origins(123)
 
@@ -204,27 +222,33 @@ class TestSettings:
         assert settings.API_V1_STR == "/api/v1"
         assert isinstance(settings.BACKEND_CORS_ORIGINS, list)
 
-    @pytest.mark.parametrize("env_value,expected", [
-        ("development", "development"),
-        ("production", "production"),
-        ("testing", "testing"),
-        ("", ""),
-    ])
+    @pytest.mark.parametrize(
+        "env_value,expected",
+        [
+            ("development", "development"),
+            ("production", "production"),
+            ("testing", "testing"),
+            ("", ""),
+        ],
+    )
     def test_environment_values(self, env_value, expected):
         """Test various environment values."""
         with patch.dict(os.environ, {"ENVIRONMENT": env_value}):
             test_settings = Settings()
-            assert test_settings.ENVIRONMENT == expected
+            assert expected == test_settings.ENVIRONMENT
 
-    @pytest.mark.parametrize("debug_value,expected", [
-        ("true", True),
-        ("True", True),
-        ("TRUE", True),
-        ("false", False),
-        ("False", False),
-        ("FALSE", False),
-        ("0", False),
-    ])
+    @pytest.mark.parametrize(
+        "debug_value,expected",
+        [
+            ("true", True),
+            ("True", True),
+            ("TRUE", True),
+            ("false", False),
+            ("False", False),
+            ("FALSE", False),
+            ("0", False),
+        ],
+    )
     def test_debug_boolean_parsing(self, debug_value, expected):
         """Test DEBUG boolean parsing with various values."""
         with patch.dict(os.environ, {"DEBUG": debug_value}):
@@ -246,7 +270,7 @@ class TestSettings:
     def test_model_config_attributes(self):
         """Test model configuration attributes."""
         test_settings = Settings()
-        
+
         # Test that model_config is properly set
         config = test_settings.model_config
         assert config.get("env_file") == ".env"
@@ -264,7 +288,7 @@ class TestCustomException:
     def test_custom_exception_basic_creation(self):
         """Test basic CustomException creation."""
         exc = CustomException(status_code=500, detail="Test error")
-        
+
         assert exc.status_code == 500
         assert exc.detail == "Test error"
         assert exc.headers is None
@@ -273,7 +297,7 @@ class TestCustomException:
         """Test CustomException with headers."""
         headers = {"X-Custom": "value"}
         exc = CustomException(status_code=400, detail="Bad request", headers=headers)
-        
+
         assert exc.status_code == 400
         assert exc.detail == "Bad request"
         assert exc.headers == headers
@@ -283,7 +307,7 @@ class TestCustomException:
         # FastAPI HTTPException automatically sets detail for status codes
         # Test that we can override this by explicitly setting None
         exc = CustomException(status_code=500, detail=None)
-        
+
         assert exc.status_code == 500
         # HTTPException will set a default message even with detail=None
         # So we test that it behaves as expected with this constraint
@@ -294,7 +318,7 @@ class TestCustomException:
         """Test CustomException with complex detail object."""
         detail = {"error": "validation_failed", "fields": ["name", "email"]}
         exc = CustomException(status_code=422, detail=detail)
-        
+
         assert exc.status_code == 422
         assert exc.detail == detail
 
@@ -309,14 +333,14 @@ class TestValidationError:
     def test_validation_error_default(self):
         """Test ValidationError with default message."""
         exc = ValidationError()
-        
+
         assert exc.status_code == 422
         assert exc.detail == "Validation error"
 
     def test_validation_error_custom_detail(self):
         """Test ValidationError with custom detail."""
         exc = ValidationError(detail="Invalid input format")
-        
+
         assert exc.status_code == 422
         assert exc.detail == "Invalid input format"
 
@@ -336,14 +360,14 @@ class TestNotFoundError:
     def test_not_found_error_default(self):
         """Test NotFoundError with default message."""
         exc = NotFoundError()
-        
+
         assert exc.status_code == 404
         assert exc.detail == "Resource not found"
 
     def test_not_found_error_custom_detail(self):
         """Test NotFoundError with custom detail."""
         exc = NotFoundError(detail="User not found")
-        
+
         assert exc.status_code == 404
         assert exc.detail == "User not found"
 
@@ -358,14 +382,14 @@ class TestUnauthorizedError:
     def test_unauthorized_error_default(self):
         """Test UnauthorizedError with default message."""
         exc = UnauthorizedError()
-        
+
         assert exc.status_code == 401
         assert exc.detail == "Unauthorized"
 
     def test_unauthorized_error_custom_detail(self):
         """Test UnauthorizedError with custom detail."""
         exc = UnauthorizedError(detail="Invalid token")
-        
+
         assert exc.status_code == 401
         assert exc.detail == "Invalid token"
 
@@ -380,14 +404,14 @@ class TestForbiddenError:
     def test_forbidden_error_default(self):
         """Test ForbiddenError with default message."""
         exc = ForbiddenError()
-        
+
         assert exc.status_code == 403
         assert exc.detail == "Forbidden"
 
     def test_forbidden_error_custom_detail(self):
         """Test ForbiddenError with custom detail."""
         exc = ForbiddenError(detail="Access denied")
-        
+
         assert exc.status_code == 403
         assert exc.detail == "Access denied"
 
@@ -402,14 +426,14 @@ class TestConflictError:
     def test_conflict_error_default(self):
         """Test ConflictError with default message."""
         exc = ConflictError()
-        
+
         assert exc.status_code == 409
         assert exc.detail == "Conflict"
 
     def test_conflict_error_custom_detail(self):
         """Test ConflictError with custom detail."""
         exc = ConflictError(detail="Resource already exists")
-        
+
         assert exc.status_code == 409
         assert exc.detail == "Resource already exists"
 
@@ -421,7 +445,7 @@ class TestExceptionRaising:
         """Test raising and catching ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
             raise ValidationError("Test validation error")
-        
+
         assert exc_info.value.status_code == 422
         assert exc_info.value.detail == "Test validation error"
 
@@ -429,7 +453,7 @@ class TestExceptionRaising:
         """Test raising and catching NotFoundError."""
         with pytest.raises(NotFoundError) as exc_info:
             raise NotFoundError("Test not found error")
-        
+
         assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Test not found error"
 
@@ -437,7 +461,7 @@ class TestExceptionRaising:
         """Test catching custom exceptions as HTTPException."""
         with pytest.raises(HTTPException) as exc_info:
             raise UnauthorizedError("Test unauthorized")
-        
+
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail == "Test unauthorized"
 
@@ -445,18 +469,23 @@ class TestExceptionRaising:
         """Test catching custom exceptions as CustomException."""
         with pytest.raises(CustomException) as exc_info:
             raise ForbiddenError("Test forbidden")
-        
+
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail == "Test forbidden"
 
-    @pytest.mark.parametrize("exception_class,expected_status,default_message", [
-        (ValidationError, 422, "Validation error"),
-        (NotFoundError, 404, "Resource not found"),
-        (UnauthorizedError, 401, "Unauthorized"),
-        (ForbiddenError, 403, "Forbidden"),
-        (ConflictError, 409, "Conflict"),
-    ])
-    def test_exception_defaults(self, exception_class, expected_status, default_message):
+    @pytest.mark.parametrize(
+        "exception_class,expected_status,default_message",
+        [
+            (ValidationError, 422, "Validation error"),
+            (NotFoundError, 404, "Resource not found"),
+            (UnauthorizedError, 401, "Unauthorized"),
+            (ForbiddenError, 403, "Forbidden"),
+            (ConflictError, 409, "Conflict"),
+        ],
+    )
+    def test_exception_defaults(
+        self, exception_class, expected_status, default_message
+    ):
         """Test default values for all exception classes."""
         exc = exception_class()
         assert exc.status_code == expected_status
@@ -472,7 +501,7 @@ class TestIntegrationScenarios:
         test_settings = Settings()
         assert test_settings.ENVIRONMENT == "production"
         assert test_settings.DEBUG is False
-        
+
         # Exceptions should work the same regardless of config
         exc = ValidationError("Production validation error")
         assert exc.status_code == 422
@@ -481,12 +510,12 @@ class TestIntegrationScenarios:
     def test_exception_serialization(self):
         """Test that exceptions can be properly serialized for API responses."""
         exc = NotFoundError("Resource not found")
-        
+
         # Test that the exception has the required attributes for FastAPI
-        assert hasattr(exc, 'status_code')
-        assert hasattr(exc, 'detail')
-        assert hasattr(exc, 'headers')
-        
+        assert hasattr(exc, "status_code")
+        assert hasattr(exc, "detail")
+        assert hasattr(exc, "headers")
+
         # Test values
         assert exc.status_code == 404
         assert exc.detail == "Resource not found"

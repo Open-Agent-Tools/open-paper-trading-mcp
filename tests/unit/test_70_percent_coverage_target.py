@@ -443,9 +443,9 @@ class TestServices:
         for method_name in async_methods:
             if hasattr(service, method_name):
                 method = getattr(service, method_name)
-                assert inspect.iscoroutinefunction(
-                    method
-                ), f"{method_name} should be async"
+                assert inspect.iscoroutinefunction(method), (
+                    f"{method_name} should be async"
+                )
 
     def test_trading_service_database_session(self):
         """Test TradingService database session access."""

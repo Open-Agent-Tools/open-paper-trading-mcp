@@ -2,24 +2,25 @@
 Comprehensive tests for base adapter classes and registry.
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any
+from unittest.mock import Mock
+
+import pytest
 
 from app.adapters.base import (
+    AccountAdapter,
     AdapterConfig,
     AdapterRegistry,
-    adapter_registry,
-    get_adapter_registry,
-    AccountAdapter,
     MarketAdapter,
     QuoteAdapter,
+    adapter_registry,
+    get_adapter_registry,
 )
-from app.models.assets import Asset, Stock, Option
-from app.models.quotes import Quote, OptionsChain
+from app.models.assets import Asset, Stock
+from app.models.quotes import OptionsChain, Quote
 from app.schemas.accounts import Account
-from app.schemas.orders import Order, OrderStatus, OrderType, OrderCondition
+from app.schemas.orders import Order, OrderCondition, OrderStatus, OrderType
 
 
 class TestAdapterConfig:

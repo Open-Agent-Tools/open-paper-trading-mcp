@@ -15,7 +15,6 @@ import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.exc import (
     DatabaseError,

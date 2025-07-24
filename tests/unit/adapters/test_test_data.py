@@ -2,16 +2,17 @@
 Comprehensive tests for test data adapter functionality.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
 
-from app.adapters.test_data import DevDataQuoteAdapter, TestDataError, get_test_adapter
+import pytest
+
 from app.adapters.base import AdapterConfig
-from app.models.assets import Stock, Option, asset_factory
-from app.models.quotes import Quote, OptionQuote, OptionsChain
-from app.models.database.trading import DevStockQuote, DevOptionQuote, DevScenario
+from app.adapters.test_data import DevDataQuoteAdapter, TestDataError, get_test_adapter
+from app.models.assets import Option, Stock
+from app.models.database.trading import DevOptionQuote, DevScenario, DevStockQuote
+from app.models.quotes import OptionQuote, OptionsChain, Quote
 
 
 class TestDevDataQuoteAdapter:
@@ -135,9 +136,7 @@ class TestDevDataQuoteAdapter:
         with patch("app.adapters.test_data.get_sync_session") as mock_session:
             mock_db = MagicMock()
             mock_session.return_value.__enter__.return_value = mock_db
-            mock_db.query.return_value.filter.return_value.distinct.return_value.all.return_value = (
-                mock_dates
-            )
+            mock_db.query.return_value.filter.return_value.distinct.return_value.all.return_value = mock_dates
 
             dates = adapter.get_available_dates()
 
@@ -249,34 +248,38 @@ class TestDevDataQuoteAdapter:
         with patch("app.adapters.test_data.asset_factory") as mock_factory:
             mock_factory.return_value = option
 
-            with patch.object(
-                adapter, "_get_option_quote_from_db", return_value=sample_option_quote
+            with (
+                patch.object(
+                    adapter,
+                    "_get_option_quote_from_db",
+                    return_value=sample_option_quote,
+                ),
+                patch.object(adapter, "_cached_stock_quote") as mock_stock_quote,
             ):
-                with patch.object(adapter, "_cached_stock_quote") as mock_stock_quote:
-                    # Mock underlying stock quote
-                    underlying_quote = Quote(
-                        asset=underlying,
-                        quote_date=datetime.now(),
-                        price=150.0,
-                        bid=149.50,
-                        ask=150.50,
-                        bid_size=100,
-                        ask_size=100,
-                        volume=1000000,
-                    )
-                    mock_stock_quote.return_value = underlying_quote
+                # Mock underlying stock quote
+                underlying_quote = Quote(
+                    asset=underlying,
+                    quote_date=datetime.now(),
+                    price=150.0,
+                    bid=149.50,
+                    ask=150.50,
+                    bid_size=100,
+                    ask_size=100,
+                    volume=1000000,
+                )
+                mock_stock_quote.return_value = underlying_quote
 
-                    quote = adapter._cached_option_quote(
-                        "AAPL170324C00150000", date(2017, 3, 24), "default"
-                    )
+                quote = adapter._cached_option_quote(
+                    "AAPL170324C00150000", date(2017, 3, 24), "default"
+                )
 
-                    assert quote is not None
-                    assert isinstance(quote, OptionQuote)
-                    assert quote.asset is option
-                    assert quote.bid == 2.25
-                    assert quote.ask == 2.75
-                    assert quote.price == 2.50
-                    assert quote.volume == 500
+                assert quote is not None
+                assert isinstance(quote, OptionQuote)
+                assert quote.asset is option
+                assert quote.bid == 2.25
+                assert quote.ask == 2.75
+                assert quote.price == 2.50
+                assert quote.volume == 500
 
     def test_cached_option_quote_with_greeks(self, adapter, sample_option_quote):
         """Test option quote with Greeks calculation."""
@@ -300,37 +303,37 @@ class TestDevDataQuoteAdapter:
                     "rho": 0.08,
                 }
 
-                with patch.object(
-                    adapter,
-                    "_get_option_quote_from_db",
-                    return_value=sample_option_quote,
+                with (
+                    patch.object(
+                        adapter,
+                        "_get_option_quote_from_db",
+                        return_value=sample_option_quote,
+                    ),
+                    patch.object(adapter, "_cached_stock_quote") as mock_stock_quote,
                 ):
-                    with patch.object(
-                        adapter, "_cached_stock_quote"
-                    ) as mock_stock_quote:
-                        # Mock underlying stock quote
-                        underlying_quote = Quote(
-                            asset=underlying,
-                            quote_date=datetime.now(),
-                            price=150.0,
-                            bid=149.50,
-                            ask=150.50,
-                            bid_size=100,
-                            ask_size=100,
-                            volume=1000000,
-                        )
-                        mock_stock_quote.return_value = underlying_quote
+                    # Mock underlying stock quote
+                    underlying_quote = Quote(
+                        asset=underlying,
+                        quote_date=datetime.now(),
+                        price=150.0,
+                        bid=149.50,
+                        ask=150.50,
+                        bid_size=100,
+                        ask_size=100,
+                        volume=1000000,
+                    )
+                    mock_stock_quote.return_value = underlying_quote
 
-                        quote = adapter._cached_option_quote(
-                            "AAPL170324C00150000", date(2017, 3, 24), "default"
-                        )
+                    quote = adapter._cached_option_quote(
+                        "AAPL170324C00150000", date(2017, 3, 24), "default"
+                    )
 
-                        assert quote is not None
-                        assert quote.delta == 0.5
-                        assert quote.gamma == 0.02
-                        assert quote.theta == -0.05
-                        assert quote.vega == 0.15
-                        assert quote.rho == 0.08
+                    assert quote is not None
+                    assert quote.delta == 0.5
+                    assert quote.gamma == 0.02
+                    assert quote.theta == -0.05
+                    assert quote.vega == 0.15
+                    assert quote.rho == 0.08
 
     @pytest.mark.asyncio
     async def test_get_quote_stock(self, adapter):

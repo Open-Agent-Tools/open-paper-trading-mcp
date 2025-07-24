@@ -978,7 +978,7 @@ class TestMarketDataEndpoints:
         ):
             async with AsyncClient(app=client.app, base_url="http://test") as ac:
                 # First 3 requests should succeed
-                for i in range(3):
+                for _i in range(3):
                     response = await ac.get("/api/v1/market-data/price/AAPL")
                     assert response.status_code == status.HTTP_200_OK
 

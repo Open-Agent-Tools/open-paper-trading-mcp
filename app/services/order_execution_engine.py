@@ -469,8 +469,8 @@ class OrderExecutionEngine:
                         OrderStatus.FILLED
                     )  # Or could add TRIGGERED status
                     current_time = datetime.utcnow()
-                    db_order.triggered_at = current_time
-                    db_order.filled_at = current_time
+                    db_order.triggered_at = current_time  # type: ignore[assignment]
+                    db_order.filled_at = current_time  # type: ignore[assignment]
 
                     await db.commit()
                     logger.info(f"Updated order {order_id} status to triggered")

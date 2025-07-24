@@ -48,13 +48,7 @@ build-backend = "setuptools.build_meta"
 include = ["app*"]
 exclude = ["tests*", "reference_code*", "examples*"]
 
-[tool.pytest.ini_options]
-pythonpath = [".", "app"]
-asyncio_mode = "auto"
-norecursedirs = "reference_code"
-markers = [
-    "asyncio"
-]
+# Pytest configuration moved to pytest.ini to avoid conflicts
 
 [tool.mypy]
 python_version = "3.11"

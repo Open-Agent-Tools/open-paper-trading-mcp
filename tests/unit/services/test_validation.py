@@ -12,15 +12,15 @@ Tests cover:
 - Error handling and edge cases
 """
 
-import pytest
-from unittest.mock import Mock, patch
 from datetime import date, timedelta
-from decimal import Decimal
+from unittest.mock import patch
 
-from app.services.validation import AccountValidator, ValidationError
-from app.schemas.positions import Position
+import pytest
+
+from app.models.assets import Call, Put, Stock
 from app.schemas.orders import MultiLegOrder, OrderLeg, OrderType
-from app.models.assets import Stock, Option, Call, Put
+from app.schemas.positions import Position
+from app.services.validation import AccountValidator, ValidationError
 
 
 @pytest.fixture
@@ -981,7 +981,6 @@ class TestErrorHandlingAndEdgeCases:
     ):
         """Test that validation methods can handle concurrent calls."""
         import threading
-        import time
 
         results = []
         errors = []

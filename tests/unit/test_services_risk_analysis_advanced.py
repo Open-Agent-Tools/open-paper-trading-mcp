@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 
 from app.models.quotes import Quote
 from app.schemas.orders import OrderCreate, OrderType

@@ -15,7 +15,6 @@ Tests cover:
 - Performance and optimization scenarios
 """
 
-import math
 from unittest.mock import patch
 
 import numpy as np
@@ -241,8 +240,6 @@ class TestPositionSizingCalculator:
         """Test Kelly Criterion mathematical calculation."""
         # Test Kelly formula: f* = (p * b - q) / b
         p = 0.60  # 60% win rate
-        q = 0.40  # 40% loss rate
-        b = 2.0  # 2:1 win/loss ratio
 
         calculator.parameters.win_rate = p
         calculator.parameters.average_win = 2.0
@@ -537,7 +534,7 @@ class TestPositionSizingCalculator:
         assert "TSLA" in results
 
         # Each result should be valid
-        for symbol, result in results.items():
+        for _symbol, result in results.items():
             assert isinstance(result, PositionSizeResult)
             assert result.recommended_shares >= 0
             assert result.position_value >= 0
@@ -575,7 +572,7 @@ class TestPositionSizingCalculator:
         ]
 
         for risk_tolerance, expected_strategy in zip(
-            risk_tolerances, expected_strategies
+            risk_tolerances, expected_strategies, strict=False
         ):
             with patch.object(calculator, "calculate_position_size") as mock_calc:
                 mock_calc.return_value = PositionSizeResult(
@@ -901,7 +898,7 @@ class TestPositionSizingPerformance:
         # Should calculate all strategies efficiently
         assert len(results) >= 5  # Should have multiple strategies
 
-        for strategy, result in results.items():
+        for _strategy, result in results.items():
             assert isinstance(result, PositionSizeResult)
             assert result.recommended_shares >= 0
 

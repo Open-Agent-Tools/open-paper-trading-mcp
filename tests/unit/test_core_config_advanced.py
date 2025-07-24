@@ -345,9 +345,9 @@ class TestConfigurationEdgeCases:
         for pattern in true_patterns:
             with patch.dict(os.environ, {"DEBUG": pattern}, clear=False):
                 test_settings = Settings()
-                assert (
-                    test_settings.DEBUG is True
-                ), f"Pattern '{pattern}' should be True"
+                assert test_settings.DEBUG is True, (
+                    f"Pattern '{pattern}' should be True"
+                )
 
     def test_configuration_validation_patterns(self):
         """Test configuration validation patterns."""

@@ -25,9 +25,9 @@ from app.services.order_queue import (
     BatchConfig,
     OrderQueue,
     ProcessingStatus,
+    QueuedOrder,
     QueueMetrics,
     QueuePriority,
-    QueuedOrder,
     get_order_queue,
     initialize_order_queue,
 )
@@ -684,7 +684,6 @@ class TestOrderQueue:
         await order_queue.start()
 
         # Create orders with different priorities
-        orders = []
         priorities = [
             QueuePriority.LOW,
             QueuePriority.URGENT,

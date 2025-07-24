@@ -6,27 +6,21 @@ and connection pooling with proper mocking and isolation.
 """
 
 import os
-import pytest
-from collections.abc import AsyncGenerator, Generator
-from contextlib import contextmanager, asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from sqlalchemy import create_engine, Engine
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import Session, sessionmaker
+import pytest
+from sqlalchemy import Engine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import Session
 
 # Import the module under test
 import app.storage.database as database_module
 from app.storage.database import (
-    AsyncSessionLocal,
-    SessionLocal,
-    async_engine,
     get_async_db,
     get_async_session,
     get_sync_session,
     init_db,
-    sync_engine,
 )
 
 
@@ -39,7 +33,13 @@ class TestDatabaseConfiguration:
         assert database_module.database_url is not None
         assert isinstance(database_module.database_url, str)
 
-    @patch.dict(os.environ, {"TESTING": "true", "TEST_DATABASE_URL": "postgresql://test_user:test_pass@localhost/test_db"})
+    @patch.dict(
+        os.environ,
+        {
+            "TESTING": "true",
+            "TEST_DATABASE_URL": "postgresql://test_user:test_pass@localhost/test_db",
+        },
+    )
     def test_test_database_url_override(self):
         """Test that TEST_DATABASE_URL overrides default when TESTING=true."""
         # Test the environment variable logic directly
@@ -104,14 +104,14 @@ class TestSynchronousSessionManagement:
         """Test successful sync session creation and cleanup."""
         mock_session = MagicMock(spec=Session)
         mock_session_local.return_value = mock_session
-        
+
         with get_sync_session() as session:
             assert session == mock_session
             # Session should not be committed yet
             mock_session.commit.assert_not_called()
             mock_session.rollback.assert_not_called()
             mock_session.close.assert_not_called()
-        
+
         # After context manager exits, session should be committed and closed
         mock_session.commit.assert_called_once()
         mock_session.close.assert_called_once()
@@ -122,12 +122,11 @@ class TestSynchronousSessionManagement:
         """Test sync session exception handling and rollback."""
         mock_session = MagicMock(spec=Session)
         mock_session_local.return_value = mock_session
-        
-        with pytest.raises(ValueError):
-            with get_sync_session() as session:
-                assert session == mock_session
-                raise ValueError("Test exception")
-        
+
+        with pytest.raises(ValueError), get_sync_session() as session:
+            assert session == mock_session
+            raise ValueError("Test exception")
+
         # After exception, session should be rolled back and closed
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
@@ -139,11 +138,10 @@ class TestSynchronousSessionManagement:
         mock_session = MagicMock(spec=Session)
         mock_session_local.return_value = mock_session
         mock_session.commit.side_effect = SQLAlchemyError("Database error")
-        
-        with pytest.raises(SQLAlchemyError):
-            with get_sync_session() as session:
-                pass  # Exception will be raised on commit
-        
+
+        with pytest.raises(SQLAlchemyError), get_sync_session():
+            pass  # Exception will be raised on commit
+
         # Should still attempt rollback and close
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
@@ -154,15 +152,15 @@ class TestSynchronousSessionManagement:
         mock_session = MagicMock(spec=Session)
         mock_session_local.return_value = mock_session
         mock_session.close.side_effect = Exception("Close error")
-        
+
         # Should not raise exception even if close fails during normal operation
         try:
-            with get_sync_session() as session:
+            with get_sync_session():
                 pass
         except Exception:
             # If close() raises an exception, it should be suppressed
             pass
-        
+
         mock_session.commit.assert_called_once()
         mock_session.close.assert_called_once()
 
@@ -203,30 +201,30 @@ class TestAsynchronousSessionManagement:
     async def test_get_async_session_yields_session(self, mock_async_session_local):
         """Test that get_async_session yields a session."""
         mock_session = AsyncMock(spec=AsyncSession)
-        
+
         # Configure the mock context manager
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__.return_value = mock_session
         mock_context_manager.__aexit__.return_value = None
         mock_async_session_local.return_value = mock_context_manager
-        
+
         # Test the async generator
         async_gen = get_async_session()
         session = await async_gen.__anext__()
-        
+
         assert session == mock_session
 
     @pytest.mark.asyncio
     @patch("app.storage.database.AsyncSessionLocal")
     async def test_get_async_session_exception_handling(self, mock_async_session_local):
         """Test async session exception handling."""
-        mock_session = AsyncMock(spec=AsyncSession)
-        
+        AsyncMock(spec=AsyncSession)
+
         # Configure mock to raise exception
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__.side_effect = SQLAlchemyError("Async DB error")
         mock_async_session_local.return_value = mock_context_manager
-        
+
         with pytest.raises(SQLAlchemyError):
             async_gen = get_async_session()
             await async_gen.__anext__()
@@ -248,16 +246,16 @@ class TestDatabaseInitialization:
         mock_conn = AsyncMock()
         mock_async_engine.begin.return_value.__aenter__.return_value = mock_conn
         mock_async_engine.begin.return_value.__aexit__.return_value = None
-        
+
         # Mock Base.metadata.create_all
         mock_create_all = MagicMock()
         mock_base.metadata.create_all = mock_create_all
-        
+
         await init_db()
-        
+
         # Verify begin was called on the engine
         mock_async_engine.begin.assert_called_once()
-        
+
         # Verify run_sync was called with create_all
         mock_conn.run_sync.assert_called_once_with(mock_create_all)
 
@@ -268,7 +266,7 @@ class TestDatabaseInitialization:
         """Test database initialization with connection error."""
         # Mock connection error
         mock_async_engine.begin.side_effect = SQLAlchemyError("Connection failed")
-        
+
         with pytest.raises(SQLAlchemyError):
             await init_db()
 
@@ -281,9 +279,9 @@ class TestDatabaseInitialization:
         mock_conn = AsyncMock()
         mock_async_engine.begin.return_value.__aenter__.return_value = mock_conn
         mock_async_engine.begin.return_value.__aexit__.return_value = None
-        
+
         mock_conn.run_sync.side_effect = SQLAlchemyError("Table creation failed")
-        
+
         with pytest.raises(SQLAlchemyError):
             await init_db()
 
@@ -295,7 +293,7 @@ class TestDatabaseInitialization:
             mock_conn = AsyncMock()
             mock_engine.begin.return_value.__aenter__.return_value = mock_conn
             mock_engine.begin.return_value.__aexit__.return_value = None
-            
+
             with patch("app.models.database.base.Base") as mock_base:
                 await init_db()
                 # The import should happen when the function is called
@@ -309,7 +307,7 @@ class TestModuleExports:
         """Test that __all__ contains all required exports."""
         expected_exports = [
             "AsyncSessionLocal",
-            "SessionLocal", 
+            "SessionLocal",
             "async_engine",
             "get_async_db",
             "get_async_session",
@@ -317,7 +315,7 @@ class TestModuleExports:
             "init_db",
             "sync_engine",
         ]
-        
+
         assert database_module.__all__ == expected_exports
 
     def test_all_exported_items_exist(self):
@@ -368,15 +366,15 @@ class TestErrorHandling:
         """Test sync session handles multiple exceptions gracefully."""
         mock_session = MagicMock(spec=Session)
         mock_session_local.return_value = mock_session
-        
+
         # Mock rollback to fail, but close to succeed
         mock_session.rollback.side_effect = Exception("Rollback failed")
-        
+
         # The original exception should be raised, not the rollback exception
         with pytest.raises(ValueError, match="Original exception"):
-            with get_sync_session() as session:
+            with get_sync_session():
                 raise ValueError("Original exception")
-        
+
         # Should still attempt both rollback and close
         mock_session.rollback.assert_called_once()
         mock_session.close.assert_called_once()
@@ -386,19 +384,19 @@ class TestErrorHandling:
     async def test_async_session_generator_cleanup(self, mock_async_session_local):
         """Test async session generator cleanup on early termination."""
         mock_session = AsyncMock(spec=AsyncSession)
-        
+
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__.return_value = mock_session
         mock_context_manager.__aexit__.return_value = None
         mock_async_session_local.return_value = mock_context_manager
-        
+
         # Start the generator but don't consume it fully
         async_gen = get_async_session()
         await async_gen.__anext__()
-        
+
         # Clean up the generator
         await async_gen.aclose()
-        
+
         # Context manager should have been properly exited
         mock_context_manager.__aexit__.assert_called_once()
 
@@ -407,9 +405,10 @@ class TestErrorHandling:
         # This should be handled by the configuration, but test defensive programming
         with patch("app.storage.database.settings") as mock_settings:
             mock_settings.DATABASE_URL = None
-            
+
             # Should not crash when reloading module
             import importlib
+
             try:
                 importlib.reload(database_module)
             except Exception as e:
@@ -422,8 +421,7 @@ class TestRealDatabaseIntegration:
     """Integration tests with real database connections (when available)."""
 
     @pytest.mark.skipif(
-        os.getenv("TEST_DATABASE_URL") is None,
-        reason="TEST_DATABASE_URL not set"
+        os.getenv("TEST_DATABASE_URL") is None, reason="TEST_DATABASE_URL not set"
     )
     def test_real_sync_session_connection(self):
         """Test real sync session can connect to test database."""
@@ -436,8 +434,7 @@ class TestRealDatabaseIntegration:
             pytest.skip(f"Database connection failed: {e}")
 
     @pytest.mark.skipif(
-        os.getenv("TEST_DATABASE_URL") is None,
-        reason="TEST_DATABASE_URL not set"
+        os.getenv("TEST_DATABASE_URL") is None, reason="TEST_DATABASE_URL not set"
     )
     @pytest.mark.asyncio
     async def test_real_async_session_connection(self):
@@ -452,8 +449,7 @@ class TestRealDatabaseIntegration:
             pytest.skip(f"Async database connection failed: {e}")
 
     @pytest.mark.skipif(
-        os.getenv("TEST_DATABASE_URL") is None,
-        reason="TEST_DATABASE_URL not set"
+        os.getenv("TEST_DATABASE_URL") is None, reason="TEST_DATABASE_URL not set"
     )
     @pytest.mark.asyncio
     async def test_real_init_db(self):
@@ -496,6 +492,4 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: Integration tests requiring database connection"
     )
-    config.addinivalue_line(
-        "markers", "slow: Slow running tests"
-    )
+    config.addinivalue_line("markers", "slow: Slow running tests")

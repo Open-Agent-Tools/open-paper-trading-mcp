@@ -118,13 +118,15 @@ async def get_options_chain(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid date format: {e!s}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid date format: {e!s}"
+        ) from e
     except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error retrieving options chain: {e!s}"
-        )
+        ) from e
 
 
 @router.get("/{symbol}/expirations", response_model=dict[str, Any])
@@ -150,11 +152,11 @@ async def get_expiration_dates(
         }
 
     except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error retrieving expiration dates: {e!s}"
-        )
+        ) from e
 
 
 # Multi-leg Order Endpoints
@@ -176,11 +178,11 @@ async def create_multi_leg_order(
         return order
 
     except (ValidationError, ValueError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error creating multi-leg order: {e!s}"
-        )
+        ) from e
 
 
 # Greeks Calculation Endpoints
@@ -206,9 +208,11 @@ async def calculate_option_greeks(
         return GreeksResponse(**greeks_data)
 
     except (NotFoundError, ValueError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calculating Greeks: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Error calculating Greeks: {e!s}"
+        ) from e
 
 
 # Strategy Analysis Endpoints
@@ -241,7 +245,7 @@ async def find_tradable_options_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error finding tradable options: {e!s}"
-        )
+        ) from e
 
 
 @router.get("/market-data/{option_id}", response_model=dict[str, Any])
@@ -266,4 +270,4 @@ async def get_option_market_data_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error getting option market data: {e!s}"
-        )
+        ) from e

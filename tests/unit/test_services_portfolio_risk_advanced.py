@@ -11,7 +11,6 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-import pytest_asyncio
 
 from app.schemas.positions import Portfolio, Position
 from app.services.portfolio_risk_metrics import (

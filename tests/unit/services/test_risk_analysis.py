@@ -18,14 +18,13 @@ Tests cover:
 """
 
 from datetime import date, timedelta
-from decimal import Decimal
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
 
-from app.models.assets import Call, Put, Stock
+from app.models.assets import Call, Stock
 from app.models.quotes import Quote
-from app.schemas.orders import Order, OrderType, OrderStatus
+from app.schemas.orders import Order, OrderStatus, OrderType
 from app.schemas.positions import Portfolio, Position
 from app.services.risk_analysis import (
     PortfolioImpact,

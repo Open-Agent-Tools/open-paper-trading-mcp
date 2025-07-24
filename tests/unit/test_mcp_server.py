@@ -30,16 +30,6 @@ class TestMCPServer:
         # We can also check if the MCP instance has the expected name
         assert mcp.name == "Open Paper Trading MCP"
 
-    @patch("app.mcp.tools.get_stock_quote")
-    def test_get_stock_quote_registered(self, mock_get_stock_quote):
-        """Test that get_stock_quote is registered as a tool."""
-        # This is a bit of an indirect test since we can't easily check if a function
-        # is registered with FastMCP. Instead, we're checking that the function exists
-        # and is imported in the server module.
-        from app.mcp.server import get_stock_quote
-
-        assert get_stock_quote is not None
-
     @patch("app.mcp.tools.create_buy_order")
     def test_create_buy_order_registered(self, mock_create_buy_order):
         """Test that create_buy_order is registered as a tool."""

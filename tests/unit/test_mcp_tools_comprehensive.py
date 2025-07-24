@@ -5,28 +5,14 @@ This test suite aims to provide high coverage of the mcp/tools.py module
 by testing all functions with appropriate mocks.
 """
 
-import json
 from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.mcp.tools import (
-    CalculateGreeksArgs,
-    CancelOrderArgs,
-    CreateMultiLegOrderArgs,
-    CreateOrderArgs,
-    FindTradableOptionsArgs,
-    GetExpirationDatesArgs,
-    GetOptionMarketDataArgs,
-    GetOptionsChainArgs,
-    GetOrderArgs,
-    GetPositionArgs,
-    GetQuoteArgs,
-    GetStrategyAnalysisArgs,
-    SimulateExpirationArgs,
     calculate_option_greeks,
-    cancel_order,
+    cancel_stock_order_by_id,
     create_buy_order,
     create_multi_leg_order,
     create_sell_order,
@@ -113,14 +99,11 @@ class TestMCPStockTools:
         self, setup_trading_service, mock_trading_service
     ):
         """Test successful stock quote retrieval."""
-        # Arrange
-        args = GetQuoteArgs(symbol="AAPL")
-
         # Act
-        result = await get_stock_quote(args)
+        result = await get_stock_quote(symbol="AAPL")
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["symbol"] == "AAPL"
         assert result_dict["price"] == 150.0
         mock_trading_service.get_quote.assert_called_once_with("AAPL")
@@ -131,15 +114,14 @@ class TestMCPStockTools:
     ):
         """Test stock quote retrieval with error."""
         # Arrange
-        args = GetQuoteArgs(symbol="AAPL")
         mock_trading_service.get_quote.side_effect = Exception("API error")
 
         # Act
-        result = await get_stock_quote(args)
+        result = await get_stock_quote(symbol="AAPL")
 
         # Assert
-        assert "Error getting quote" in result
-        assert "API error" in result
+        assert result["result"]["status"] == "error"
+        assert "API error" in result["result"]["error"]
         mock_trading_service.get_quote.assert_called_once_with("AAPL")
 
     @pytest.mark.asyncio
@@ -148,9 +130,6 @@ class TestMCPStockTools:
     ):
         """Test successful buy order creation."""
         # Arrange
-        args = CreateOrderArgs(
-            symbol="AAPL", order_type=OrderType.BUY, quantity=10, price=150.0
-        )
         mock_order = MagicMock(
             id="order123",
             symbol="AAPL",
@@ -163,13 +142,13 @@ class TestMCPStockTools:
         mock_trading_service.create_order.return_value = mock_order
 
         # Act
-        result = await create_buy_order(args)
+        result = await create_buy_order(symbol="AAPL", quantity=10, price=150.0)
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["id"] == "order123"
         assert result_dict["symbol"] == "AAPL"
-        assert result_dict["order_type"] == "BUY"
+        assert result_dict["order_type"] == "buy"
         mock_trading_service.create_order.assert_called_once()
 
     @pytest.mark.asyncio
@@ -178,9 +157,6 @@ class TestMCPStockTools:
     ):
         """Test successful sell order creation."""
         # Arrange
-        args = CreateOrderArgs(
-            symbol="AAPL", order_type=OrderType.SELL, quantity=10, price=150.0
-        )
         mock_order = MagicMock(
             id="order123",
             symbol="AAPL",
@@ -193,13 +169,13 @@ class TestMCPStockTools:
         mock_trading_service.create_order.return_value = mock_order
 
         # Act
-        result = await create_sell_order(args)
+        result = await create_sell_order(symbol="AAPL", quantity=10, price=150.0)
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["id"] == "order123"
         assert result_dict["symbol"] == "AAPL"
-        assert result_dict["order_type"] == "SELL"
+        assert result_dict["order_type"] == "sell"
         mock_trading_service.create_order.assert_called_once()
 
 
@@ -234,7 +210,7 @@ class TestMCPPortfolioTools:
         result = await get_portfolio()
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["cash_balance"] == 10000.0
         assert result_dict["total_value"] == 25000.0
         assert len(result_dict["positions"]) == 1
@@ -253,8 +229,8 @@ class TestMCPPortfolioTools:
         result = await get_portfolio()
 
         # Assert
-        assert "Error getting portfolio" in result
-        assert "Database error" in result
+        assert result["result"]["status"] == "error"
+        assert "Database error" in result["result"]["error"]
         mock_trading_service.get_portfolio.assert_called_once()
 
     @pytest.mark.asyncio
@@ -278,7 +254,7 @@ class TestMCPPortfolioTools:
         result = await get_portfolio_summary()
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["total_value"] == 25000.0
         assert result_dict["cash_balance"] == 10000.0
         assert result_dict["invested_value"] == 15000.0
@@ -299,8 +275,8 @@ class TestMCPPortfolioTools:
         result = await get_portfolio_summary()
 
         # Assert
-        assert "Error getting portfolio summary" in result
-        assert "Database error" in result
+        assert result["result"]["status"] == "error"
+        assert "Database error" in result["result"]["error"]
         mock_trading_service.get_portfolio_summary.assert_called_once()
 
     @pytest.mark.asyncio
@@ -333,7 +309,7 @@ class TestMCPPortfolioTools:
         result = await get_all_positions()
 
         # Assert
-        result_list = json.loads(result)
+        result_list = result["result"]["data"]
         assert len(result_list) == 2
         assert result_list[0]["symbol"] == "AAPL"
         assert result_list[1]["symbol"] == "GOOGL"
@@ -345,7 +321,6 @@ class TestMCPPortfolioTools:
     ):
         """Test successful position retrieval."""
         # Arrange
-        args = GetPositionArgs(symbol="AAPL")
         mock_position = Position(
             symbol="AAPL",
             quantity=100,
@@ -357,10 +332,10 @@ class TestMCPPortfolioTools:
         mock_trading_service.get_position.return_value = mock_position
 
         # Act
-        result = await get_position(args)
+        result = await get_position(symbol="AAPL")
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["symbol"] == "AAPL"
         assert result_dict["quantity"] == 100
         assert result_dict["avg_price"] == 150.0
@@ -373,15 +348,14 @@ class TestMCPPortfolioTools:
     ):
         """Test position retrieval with error."""
         # Arrange
-        args = GetPositionArgs(symbol="UNKNOWN")
         mock_trading_service.get_position.side_effect = Exception("Position not found")
 
         # Act
-        result = await get_position(args)
+        result = await get_position(symbol="UNKNOWN")
 
         # Assert
-        assert "Error getting position" in result
-        assert "Position not found" in result
+        assert result["result"]["status"] == "error"
+        assert "Position not found" in result["result"]["error"]
         mock_trading_service.get_position.assert_called_once_with("UNKNOWN")
 
 
@@ -422,7 +396,7 @@ class TestMCPOrderTools:
         result = await get_all_orders()
 
         # Assert
-        result_list = json.loads(result)
+        result_list = result["result"]["data"]
         assert len(result_list) == 2
         assert result_list[0]["id"] == "order1"
         assert result_list[0]["symbol"] == "AAPL"
@@ -442,15 +416,14 @@ class TestMCPOrderTools:
         result = await get_all_orders()
 
         # Assert
-        assert "Error getting orders" in result
-        assert "Database error" in result
+        assert result["result"]["status"] == "error"
+        assert "Database error" in result["result"]["error"]
         mock_trading_service.get_orders.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_order_success(self, setup_trading_service, mock_trading_service):
         """Test successful order retrieval."""
         # Arrange
-        args = GetOrderArgs(order_id="order123")
         mock_order = MagicMock(
             id="order123",
             symbol="AAPL",
@@ -464,13 +437,13 @@ class TestMCPOrderTools:
         mock_trading_service.get_order.return_value = mock_order
 
         # Act
-        result = await get_order(args)
+        result = await get_order(order_id="order123")
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["id"] == "order123"
         assert result_dict["symbol"] == "AAPL"
-        assert result_dict["order_type"] == "BUY"
+        assert result_dict["order_type"] == "buy"
         assert result_dict["status"] == "FILLED"
         mock_trading_service.get_order.assert_called_once_with("order123")
 
@@ -478,15 +451,14 @@ class TestMCPOrderTools:
     async def test_get_order_error(self, setup_trading_service, mock_trading_service):
         """Test order retrieval with error."""
         # Arrange
-        args = GetOrderArgs(order_id="unknown")
         mock_trading_service.get_order.side_effect = Exception("Order not found")
 
         # Act
-        result = await get_order(args)
+        result = await get_order(order_id="unknown")
 
         # Assert
-        assert "Error getting order" in result
-        assert "Order not found" in result
+        assert result["result"]["status"] == "error"
+        assert "Order not found" in result["result"]["error"]
         mock_trading_service.get_order.assert_called_once_with("unknown")
 
     @pytest.mark.asyncio
@@ -495,15 +467,14 @@ class TestMCPOrderTools:
     ):
         """Test successful order cancellation."""
         # Arrange
-        args = CancelOrderArgs(order_id="order123")
         mock_result = {"message": "Order cancelled successfully"}
         mock_trading_service.cancel_order.return_value = mock_result
 
         # Act
-        result = await cancel_order(args)
+        result = await cancel_stock_order_by_id(order_id="order123")
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["message"] == "Order cancelled successfully"
         mock_trading_service.cancel_order.assert_called_once_with("order123")
 
@@ -513,15 +484,14 @@ class TestMCPOrderTools:
     ):
         """Test order cancellation with error."""
         # Arrange
-        args = CancelOrderArgs(order_id="unknown")
         mock_trading_service.cancel_order.side_effect = Exception("Order not found")
 
         # Act
-        result = await cancel_order(args)
+        result = await cancel_stock_order_by_id(order_id="unknown")
 
         # Assert
-        assert "Error cancelling order" in result
-        assert "Order not found" in result
+        assert result["result"]["status"] == "error"
+        assert "Order not found" in result["result"]["error"]
         mock_trading_service.cancel_order.assert_called_once_with("unknown")
 
 
@@ -534,12 +504,6 @@ class TestMCPOptionsTools:
     ):
         """Test successful options chain retrieval."""
         # Arrange
-        args = GetOptionsChainArgs(
-            symbol="AAPL",
-            expiration_date="2024-01-19",
-            min_strike=140.0,
-            max_strike=160.0,
-        )
         mock_chain = {
             "underlying_symbol": "AAPL",
             "expiration_date": "2024-01-19",
@@ -550,10 +514,15 @@ class TestMCPOptionsTools:
         mock_trading_service.get_formatted_options_chain.return_value = mock_chain
 
         # Act
-        result = await get_options_chain(args)
+        result = await get_options_chain(
+            symbol="AAPL",
+            expiration_date="2024-01-19",
+            min_strike=140.0,
+            max_strike=160.0,
+        )
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["underlying_symbol"] == "AAPL"
         assert result_dict["expiration_date"] == "2024-01-19"
         assert len(result_dict["calls"]) == 1
@@ -566,15 +535,14 @@ class TestMCPOptionsTools:
     ):
         """Test successful expiration dates retrieval."""
         # Arrange
-        args = GetExpirationDatesArgs(symbol="AAPL")
         mock_dates = [date(2024, 1, 19), date(2024, 2, 16), date(2024, 3, 15)]
         mock_trading_service.get_expiration_dates.return_value = mock_dates
 
         # Act
-        result = await get_expiration_dates(args)
+        result = await get_expiration_dates(symbol="AAPL")
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["underlying_symbol"] == "AAPL"
         assert len(result_dict["expiration_dates"]) == 3
         assert result_dict["count"] == 3
@@ -587,17 +555,16 @@ class TestMCPOptionsTools:
     ):
         """Test expiration dates retrieval with error."""
         # Arrange
-        args = GetExpirationDatesArgs(symbol="UNKNOWN")
         mock_trading_service.get_expiration_dates.side_effect = Exception(
             "Symbol not found"
         )
 
         # Act
-        result = await get_expiration_dates(args)
+        result = await get_expiration_dates(symbol="UNKNOWN")
 
         # Assert
-        assert "Error getting expiration dates" in result
-        assert "Symbol not found" in result
+        assert result["result"]["status"] == "error"
+        assert "Symbol not found" in result["result"]["error"]
         mock_trading_service.get_expiration_dates.assert_called_once_with("UNKNOWN")
 
     @pytest.mark.asyncio
@@ -606,10 +573,6 @@ class TestMCPOptionsTools:
     ):
         """Test successful option Greeks calculation."""
         # Arrange
-        args = CalculateGreeksArgs(
-            option_symbol="AAPL240119C00150000",
-            underlying_price=155.0,
-        )
         mock_greeks = {
             "delta": 0.65,
             "gamma": 0.05,
@@ -629,10 +592,13 @@ class TestMCPOptionsTools:
 
         with patch("app.mcp.tools.asset_factory", return_value=mock_option):
             # Act
-            result = await calculate_option_greeks(args)
+            result = await calculate_option_greeks(
+                option_symbol="AAPL240119C00150000",
+                underlying_price=155.0,
+            )
 
             # Assert
-            result_dict = json.loads(result)
+            result_dict = result["result"]["data"]
             assert result_dict["delta"] == 0.65
             assert result_dict["gamma"] == 0.05
             assert result_dict["option_symbol"] == "AAPL240119C00150000"
@@ -647,13 +613,10 @@ class TestMCPOptionsTools:
     ):
         """Test successful multi-leg order creation."""
         # Arrange
-        args = CreateMultiLegOrderArgs(
-            legs=[
-                {"symbol": "AAPL240119C00150000", "quantity": 1, "side": "buy"},
-                {"symbol": "AAPL240119C00155000", "quantity": 1, "side": "sell"},
-            ],
-            order_type="limit",
-        )
+        legs = [
+            {"symbol": "AAPL240119C00150000", "quantity": 1, "side": "buy"},
+            {"symbol": "AAPL240119C00155000", "quantity": 1, "side": "sell"},
+        ]
         mock_order = MagicMock(
             id="spread123",
             legs=[
@@ -679,10 +642,10 @@ class TestMCPOptionsTools:
         )
 
         # Act
-        result = await create_multi_leg_order(args)
+        result = await create_multi_leg_order(legs=legs, order_type="limit")
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["id"] == "spread123"
         assert len(result_dict["legs"]) == 2
         assert result_dict["net_price"] == 2.0
@@ -695,23 +658,20 @@ class TestMCPOptionsTools:
     ):
         """Test multi-leg order creation with error."""
         # Arrange
-        args = CreateMultiLegOrderArgs(
-            legs=[
-                {"symbol": "INVALID", "quantity": 1, "side": "buy"},
-                {"symbol": "AAPL240119C00155000", "quantity": 1, "side": "sell"},
-            ],
-            order_type="limit",
-        )
+        legs = [
+            {"symbol": "INVALID", "quantity": 1, "side": "buy"},
+            {"symbol": "AAPL240119C00155000", "quantity": 1, "side": "sell"},
+        ]
         mock_trading_service.create_multi_leg_order_from_request.side_effect = (
             Exception("Invalid option symbol")
         )
 
         # Act
-        result = await create_multi_leg_order(args)
+        result = await create_multi_leg_order(legs=legs, order_type="limit")
 
         # Assert
-        assert "Error creating multi-leg order" in result
-        assert "Invalid option symbol" in result
+        assert result["result"]["status"] == "error"
+        assert "Invalid option symbol" in result["result"]["error"]
         mock_trading_service.create_multi_leg_order_from_request.assert_called_once()
 
     @pytest.mark.asyncio
@@ -720,11 +680,6 @@ class TestMCPOptionsTools:
     ):
         """Test successful strategy analysis."""
         # Arrange
-        args = GetStrategyAnalysisArgs(
-            include_greeks=True,
-            include_pnl=True,
-            include_recommendations=True,
-        )
         mock_result = {
             "strategies": [
                 {"type": "vertical_spread", "underlying": "AAPL", "risk": "moderate"},
@@ -737,20 +692,17 @@ class TestMCPOptionsTools:
         mock_trading_service.analyze_portfolio_strategies.return_value = mock_result
 
         # Act
-        result = await get_strategy_analysis(args)
+        result = await get_strategy_analysis(
+            symbols=["AAPL", "MSFT"], strategy_type="all"
+        )
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["total_strategies"] == 2
         assert len(result_dict["strategies"]) == 2
         assert "portfolio_greeks" in result_dict
         assert "recommendations" in result_dict
-        mock_trading_service.analyze_portfolio_strategies.assert_called_once_with(
-            include_greeks=True,
-            include_pnl=True,
-            include_complex_strategies=True,
-            include_recommendations=True,
-        )
+        mock_trading_service.analyze_portfolio_strategies.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_strategy_analysis_error(
@@ -758,21 +710,16 @@ class TestMCPOptionsTools:
     ):
         """Test strategy analysis with error."""
         # Arrange
-        args = GetStrategyAnalysisArgs(
-            include_greeks=True,
-            include_pnl=True,
-            include_recommendations=True,
-        )
         mock_trading_service.analyze_portfolio_strategies.side_effect = Exception(
             "No options positions found"
         )
 
         # Act
-        result = await get_strategy_analysis(args)
+        result = await get_strategy_analysis(symbols=["AAPL"], strategy_type="all")
 
         # Assert
-        assert "Error in strategy analysis" in result
-        assert "No options positions found" in result
+        assert result["result"]["status"] == "error"
+        assert "No options positions found" in result["result"]["error"]
         mock_trading_service.analyze_portfolio_strategies.assert_called_once()
 
     @pytest.mark.asyncio
@@ -781,10 +728,6 @@ class TestMCPOptionsTools:
     ):
         """Test successful option expiration simulation."""
         # Arrange
-        args = SimulateExpirationArgs(
-            processing_date="2024-01-19",
-            dry_run=True,
-        )
         mock_result = {
             "processing_date": "2024-01-19",
             "expiring_positions": 2,
@@ -798,10 +741,13 @@ class TestMCPOptionsTools:
         mock_trading_service.simulate_expiration.return_value = mock_result
 
         # Act
-        result = await simulate_option_expiration(args)
+        result = await simulate_option_expiration(
+            processing_date="2024-01-19",
+            dry_run=True,
+        )
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["processing_date"] == "2024-01-19"
         assert result_dict["expiring_positions"] == 2
         assert result_dict["total_impact"] == 500.0
@@ -818,20 +764,19 @@ class TestMCPOptionsTools:
     ):
         """Test option expiration simulation with error."""
         # Arrange
-        args = SimulateExpirationArgs(
-            processing_date="invalid-date",
-            dry_run=True,
-        )
         mock_trading_service.simulate_expiration.side_effect = Exception(
             "Invalid date format"
         )
 
         # Act
-        result = await simulate_option_expiration(args)
+        result = await simulate_option_expiration(
+            processing_date="invalid-date",
+            dry_run=True,
+        )
 
         # Assert
-        assert "Error simulating option expiration" in result
-        assert "Invalid date format" in result
+        assert result["result"]["status"] == "error"
+        assert "Invalid date format" in result["result"]["error"]
         mock_trading_service.simulate_expiration.assert_called_once()
 
     @pytest.mark.asyncio
@@ -840,11 +785,6 @@ class TestMCPOptionsTools:
     ):
         """Test successful tradable options search."""
         # Arrange
-        args = FindTradableOptionsArgs(
-            symbol="AAPL",
-            expiration_date="2024-01-19",
-            option_type="call",
-        )
         mock_result = {
             "symbol": "AAPL",
             "total_found": 10,
@@ -868,10 +808,14 @@ class TestMCPOptionsTools:
         mock_trading_service.find_tradable_options.return_value = mock_result
 
         # Act
-        result = await find_tradable_options(args)
+        result = await find_tradable_options(
+            symbol="AAPL",
+            expiration_date="2024-01-19",
+            option_type="call",
+        )
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["symbol"] == "AAPL"
         assert result_dict["total_found"] == 10
         assert len(result_dict["options"]) == 2
@@ -887,21 +831,20 @@ class TestMCPOptionsTools:
     ):
         """Test tradable options search with error."""
         # Arrange
-        args = FindTradableOptionsArgs(
-            symbol="UNKNOWN",
-            expiration_date="2024-01-19",
-            option_type="call",
-        )
         mock_trading_service.find_tradable_options.side_effect = Exception(
             "Symbol not found"
         )
 
         # Act
-        result = await find_tradable_options(args)
+        result = await find_tradable_options(
+            symbol="UNKNOWN",
+            expiration_date="2024-01-19",
+            option_type="call",
+        )
 
         # Assert
-        assert "Error finding tradable options" in result
-        assert "Symbol not found" in result
+        assert result["result"]["status"] == "error"
+        assert "Symbol not found" in result["result"]["error"]
         mock_trading_service.find_tradable_options.assert_called_once()
 
     @pytest.mark.asyncio
@@ -910,9 +853,6 @@ class TestMCPOptionsTools:
     ):
         """Test successful option market data retrieval."""
         # Arrange
-        args = GetOptionMarketDataArgs(
-            option_id="AAPL240119C00150000",
-        )
         mock_result = {
             "option_id": "AAPL240119C00150000",
             "underlying_symbol": "AAPL",
@@ -934,10 +874,12 @@ class TestMCPOptionsTools:
         mock_trading_service.get_option_market_data.return_value = mock_result
 
         # Act
-        result = await get_option_market_data(args)
+        result = await get_option_market_data(
+            option_id="AAPL240119C00150000",
+        )
 
         # Assert
-        result_dict = json.loads(result)
+        result_dict = result["result"]["data"]
         assert result_dict["option_id"] == "AAPL240119C00150000"
         assert result_dict["underlying_symbol"] == "AAPL"
         assert result_dict["strike"] == 150.0
@@ -958,17 +900,16 @@ class TestMCPOptionsTools:
     ):
         """Test option market data retrieval with error."""
         # Arrange
-        args = GetOptionMarketDataArgs(
-            option_id="INVALID",
-        )
         mock_trading_service.get_option_market_data.side_effect = Exception(
             "Invalid option symbol"
         )
 
         # Act
-        result = await get_option_market_data(args)
+        result = await get_option_market_data(
+            option_id="INVALID",
+        )
 
         # Assert
-        assert "Error getting option market data" in result
-        assert "Invalid option symbol" in result
+        assert result["result"]["status"] == "error"
+        assert "Invalid option symbol" in result["result"]["error"]
         mock_trading_service.get_option_market_data.assert_called_once_with("INVALID")

@@ -1,322 +1,659 @@
 """
 Comprehensive unit tests for MCP account tools.
 
-Tests the current state and provides scaffolding for future account management tools.
+Tests all 4 account tools: account_info, portfolio, account_details, and positions.
 Includes testing patterns for async MCP tools, service integration, and error handling.
 """
 
+from typing import Any
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-import pytest_asyncio
 
-from app.mcp import account_tools
-
-
-class TestAccountToolsModule:
-    """Test the account_tools module structure and content."""
-    
-    def test_module_docstring(self):
-        """Test that the module has proper documentation."""
-        assert account_tools.__doc__ is not None
-        assert "account operations" in account_tools.__doc__.lower()
-    
-    def test_module_has_no_tools_currently(self):
-        """Test that the module currently has no tools defined."""
-        # Get all public attributes that could be tools
-        public_attrs = [attr for attr in dir(account_tools) 
-                       if not attr.startswith('_')]
-        
-        # Filter out common module attributes
-        module_attrs = ['__doc__', '__file__', '__name__', '__package__']
-        tool_candidates = [attr for attr in public_attrs 
-                          if attr not in module_attrs]
-        
-        # Currently should be empty
-        assert len(tool_candidates) == 0, f"Unexpected tools found: {tool_candidates}"
-    
-    def test_module_import_structure(self):
-        """Test that the module imports correctly and has expected structure."""
-        # Module should be importable
-        assert hasattr(account_tools, '__doc__')
-        assert hasattr(account_tools, '__file__')
-        
-        # Should not have any functions defined yet
-        import inspect
-        functions = [name for name, obj in inspect.getmembers(account_tools, inspect.isfunction)]
-        assert len(functions) == 0, f"Unexpected functions found: {functions}"
+from app.mcp.account_tools import (
+    account_details,
+    account_info,
+    get_mcp_trading_service,
+    portfolio,
+    positions,
+    set_mcp_trading_service,
+)
+from app.schemas.positions import Portfolio, PortfolioSummary, Position
 
 
-class TestAccountToolsScaffolding:
-    """Test scaffolding for future account management tools."""
-    
-    def test_future_tool_patterns(self):
-        """Test expected patterns for future account tools."""
-        # This test documents expected patterns when tools are added
-        
-        # Expected future tool categories:
-        expected_tool_categories = [
-            "account_creation",
-            "account_management", 
-            "balance_operations",
-            "account_settings",
-            "authentication",
-            "permissions"
+class TestAccountToolsServiceManagement:
+    """Test trading service dependency management."""
+
+    def test_set_and_get_mcp_trading_service(self):
+        """Test setting and getting trading service."""
+        mock_service = Mock()
+        set_mcp_trading_service(mock_service)
+
+        service = get_mcp_trading_service()
+        assert service is mock_service
+
+    def test_get_mcp_trading_service_not_initialized(self):
+        """Test getting service when not initialized raises error."""
+        # Clear any existing service
+        from app.mcp import account_tools
+
+        account_tools._trading_service = None
+
+        with pytest.raises(RuntimeError, match="TradingService not initialized"):
+            get_mcp_trading_service()
+
+
+class TestAccountInfoTool:
+    """Test the account_info MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_account_info_success(self):
+        """Test account_info returns correct structure."""
+        result = await account_info()
+
+        # Check response structure
+        assert "result" in result
+        assert "status" in result["result"]
+        assert "data" in result["result"]
+        assert result["result"]["status"] == "success"
+
+        # Check data structure
+        data = result["result"]["data"]
+        assert "account_id" in data
+        assert "account_type" in data
+        assert "status" in data
+        assert "created_at" in data
+        assert "last_login" in data
+
+        # Check specific values for paper trading
+        assert data["account_id"] == "DEMO_ACCOUNT"
+        assert data["account_type"] == "paper_trading"
+        assert data["status"] == "active"
+
+    @pytest.mark.asyncio
+    async def test_account_info_return_type(self):
+        """Test account_info returns dict[str, Any]."""
+        result = await account_info()
+        assert isinstance(result, dict)
+        assert all(isinstance(k, str) for k in result)
+
+    @pytest.mark.asyncio
+    async def test_account_info_exception_handling(self):
+        """Test account_info handles exceptions properly."""
+        # This test verifies the exception handling structure
+        # Since account_info doesn't currently use external services,
+        # we test the error handling pattern
+        with patch(
+            "app.mcp.account_tools.success_response",
+            side_effect=Exception("Test error"),
+        ):
+            result = await account_info()
+
+            assert "result" in result
+            assert result["result"]["status"] == "error"
+            assert "error" in result["result"]
+            assert "account_info" in result["result"]["error"]
+
+
+class TestPortfolioTool:
+    """Test the portfolio MCP tool."""
+
+    @pytest.fixture
+    def mock_portfolio(self):
+        """Create a mock portfolio with positions."""
+        positions = [
+            Position(
+                symbol="AAPL",
+                quantity=100,
+                avg_price=150.0,
+                current_price=155.0,
+                unrealized_pnl=500.0,
+                realized_pnl=100.0,
+            ),
+            Position(
+                symbol="GOOGL",
+                quantity=50,
+                avg_price=2800.0,
+                current_price=2850.0,
+                unrealized_pnl=2500.0,
+                realized_pnl=200.0,
+            ),
         ]
-        
-        # Verify we have a plan for these categories
-        assert len(expected_tool_categories) > 0
-        
-        # Each category should follow MCP async tool patterns
-        for category in expected_tool_categories:
-            # Future tools should be async functions
-            # Future tools should use Pydantic models for args
-            # Future tools should return JSON strings or dicts
-            # Future tools should have proper error handling
-            pass
-    
-    def test_future_args_models_pattern(self):
-        """Test expected argument model patterns for future tools."""
-        # Future tools should use this pattern:
-        # class CreateAccountArgs(BaseModel):
-        #     account_name: str = Field(..., description="Account name")
-        #     initial_balance: float = Field(default=100000.0, description="Starting balance")
-        
-        # This test ensures we follow consistent patterns
-        expected_patterns = {
-            "pydantic_models": True,
-            "field_descriptions": True,
-            "validation_rules": True,
-            "type_hints": True
-        }
-        
-        for pattern, required in expected_patterns.items():
-            assert required, f"Pattern {pattern} should be implemented in future tools"
-    
-    def test_future_service_integration_pattern(self):
-        """Test expected service integration patterns for future tools."""
-        # Future tools should integrate with TradingService or dedicated AccountService
-        # They should follow async patterns
-        # They should handle exceptions gracefully
-        
-        expected_integration_patterns = {
-            "async_functions": True,
-            "service_dependency_injection": True,
-            "exception_handling": True,
-            "response_formatting": True
-        }
-        
-        for pattern, required in expected_integration_patterns.items():
-            assert required, f"Integration pattern {pattern} should be implemented"
+        return Portfolio(
+            cash_balance=10000.0,
+            total_value=165000.0,
+            positions=positions,
+            daily_pnl=1500.0,
+            total_pnl=3300.0,
+        )
+
+    @pytest.mark.asyncio
+    async def test_portfolio_success(self, mock_portfolio):
+        """Test portfolio returns correct structure."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.return_value = mock_portfolio
+        set_mcp_trading_service(mock_service)
+
+        result = await portfolio()
+
+        # Check response structure
+        assert "result" in result
+        assert result["result"]["status"] == "success"
+        assert "data" in result["result"]
+
+        # Check data structure
+        data = result["result"]["data"]
+        assert "cash_balance" in data
+        assert "total_value" in data
+        assert "positions" in data
+        assert "daily_pnl" in data
+        assert "total_pnl" in data
+
+        # Check values
+        assert data["cash_balance"] == 10000.0
+        assert data["total_value"] == 165000.0
+        assert data["daily_pnl"] == 1500.0
+        assert data["total_pnl"] == 3300.0
+
+        # Check positions
+        assert len(data["positions"]) == 2
+        aapl_pos = data["positions"][0]
+        assert aapl_pos["symbol"] == "AAPL"
+        assert aapl_pos["quantity"] == 100
+        assert aapl_pos["avg_price"] == 150.0
+        assert aapl_pos["current_price"] == 155.0
+        assert aapl_pos["unrealized_pnl"] == 500.0
+        assert aapl_pos["realized_pnl"] == 100.0
+
+    @pytest.mark.asyncio
+    async def test_portfolio_service_call(self, mock_portfolio):
+        """Test portfolio calls trading service correctly."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.return_value = mock_portfolio
+        set_mcp_trading_service(mock_service)
+
+        await portfolio()
+
+        mock_service.get_portfolio.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_portfolio_exception_handling(self):
+        """Test portfolio handles service exceptions."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.side_effect = Exception("Service error")
+        set_mcp_trading_service(mock_service)
+
+        result = await portfolio()
+
+        assert result["result"]["status"] == "error"
+        assert "error" in result["result"]
+        assert "portfolio" in result["result"]["error"]
+        assert "Service error" in result["result"]["error"]
+
+    @pytest.mark.asyncio
+    async def test_portfolio_return_type(self, mock_portfolio):
+        """Test portfolio returns dict[str, Any]."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.return_value = mock_portfolio
+        set_mcp_trading_service(mock_service)
+
+        result = await portfolio()
+        assert isinstance(result, dict)
+        assert all(isinstance(k, str) for k in result)
 
 
-class TestAccountToolsReadinessForExpansion:
-    """Test that the module is ready for tool expansion."""
-    
-    def test_module_can_be_extended(self):
-        """Test that the module can accept new tool functions."""
-        # Verify module is in a state where new functions can be added
-        
-        # Should be able to add imports
-        import types
-        assert isinstance(account_tools, types.ModuleType)
-        
-        # Should be able to add new attributes
-        # (This is just a structural test, not actually modifying the module)
-        original_attrs = set(dir(account_tools))
-        
-        # Module should have basic Python module structure
-        required_attrs = ['__doc__', '__file__', '__name__']
-        for attr in required_attrs:
-            assert hasattr(account_tools, attr)
-    
-    def test_future_mcp_registration_readiness(self):
-        """Test readiness for MCP tool registration."""
-        # When tools are added, they should be registerable with FastMCP
-        
-        # Expected registration pattern:
-        # from app.mcp.account_tools import create_account, get_account_info
-        # mcp.tool()(create_account)
-        # mcp.tool()(get_account_info)
-        
-        # This test ensures the module structure supports this pattern
-        assert account_tools.__name__ == "app.mcp.account_tools"
-        
-        # Module should be importable from the correct path
-        import sys
-        module_path = account_tools.__file__
-        assert "app/mcp/account_tools.py" in module_path
-    
-    def test_future_async_compatibility(self):
-        """Test that the module is ready for async tool functions."""
-        # Future tools will be async, ensure module supports this
-        import asyncio
-        
-        # Module should be compatible with async environments
-        # This is mainly a structural test
-        assert asyncio is not None
-        
-        # Test that async functions can be defined in the module namespace
-        # (without actually adding them)
+class TestAccountDetailsTool:
+    """Test the account_details MCP tool."""
+
+    @pytest.fixture
+    def mock_portfolio_summary(self):
+        """Create a mock portfolio summary."""
+        return PortfolioSummary(
+            total_value=165000.0,
+            invested_value=155000.0,
+            cash_balance=10000.0,
+            daily_pnl=1500.0,
+            daily_pnl_percent=0.91,  # 1500/165000 * 100
+            total_pnl=3300.0,
+            total_pnl_percent=2.0,  # 3300/165000 * 100
+        )
+
+    @pytest.fixture
+    def mock_portfolio_basic(self):
+        """Create a basic mock portfolio for account details."""
+        return Portfolio(
+            cash_balance=10000.0,
+            total_value=165000.0,
+            positions=[],
+            daily_pnl=1500.0,
+            total_pnl=3300.0,
+        )
+
+    @pytest.mark.asyncio
+    async def test_account_details_success(
+        self, mock_portfolio_basic, mock_portfolio_summary
+    ):
+        """Test account_details returns correct structure."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.return_value = mock_portfolio_basic
+        mock_service.get_portfolio_summary.return_value = mock_portfolio_summary
+        set_mcp_trading_service(mock_service)
+
+        result = await account_details()
+
+        # Check response structure
+        assert "result" in result
+        assert result["result"]["status"] == "success"
+        assert "data" in result["result"]
+
+        # Check data structure
+        data = result["result"]["data"]
+        expected_fields = [
+            "account_id",
+            "cash_balance",
+            "buying_power",
+            "total_value",
+            "invested_value",
+            "day_trades_remaining",
+            "account_type",
+            "margin_enabled",
+            "options_level",
+            "crypto_enabled",
+        ]
+        for field in expected_fields:
+            assert field in data
+
+        # Check specific values
+        assert data["account_id"] == "DEMO_ACCOUNT"
+        assert data["cash_balance"] == 10000.0
+        assert data["buying_power"] == 10000.0  # Should equal cash for paper trading
+        assert data["total_value"] == 165000.0
+        assert data["invested_value"] == 155000.0
+        assert data["day_trades_remaining"] == 3
+        assert data["account_type"] == "paper_trading"
+        assert data["margin_enabled"] is False
+        assert data["options_level"] == 3
+        assert data["crypto_enabled"] is False
+
+    @pytest.mark.asyncio
+    async def test_account_details_service_calls(
+        self, mock_portfolio_basic, mock_portfolio_summary
+    ):
+        """Test account_details calls both required services."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.return_value = mock_portfolio_basic
+        mock_service.get_portfolio_summary.return_value = mock_portfolio_summary
+        set_mcp_trading_service(mock_service)
+
+        await account_details()
+
+        mock_service.get_portfolio.assert_called_once()
+        mock_service.get_portfolio_summary.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_account_details_exception_handling(self):
+        """Test account_details handles service exceptions."""
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.side_effect = Exception("Portfolio error")
+        set_mcp_trading_service(mock_service)
+
+        result = await account_details()
+
+        assert result["result"]["status"] == "error"
+        assert "error" in result["result"]
+        assert "account_details" in result["result"]["error"]
+
+
+class TestPositionsTool:
+    """Test the positions MCP tool."""
+
+    @pytest.fixture
+    def mock_positions(self):
+        """Create mock positions list."""
+        return [
+            Position(
+                symbol="AAPL",
+                quantity=100,
+                avg_price=150.0,
+                current_price=155.0,
+                unrealized_pnl=500.0,
+                realized_pnl=100.0,
+            ),
+            Position(
+                symbol="TSLA",
+                quantity=-50,  # Short position
+                avg_price=800.0,
+                current_price=750.0,
+                unrealized_pnl=2500.0,  # Profit on short
+                realized_pnl=-200.0,
+            ),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_positions_success(self, mock_positions):
+        """Test positions returns correct structure."""
+        mock_service = AsyncMock()
+        mock_service.get_positions.return_value = mock_positions
+        set_mcp_trading_service(mock_service)
+
+        result = await positions()
+
+        # Check response structure
+        assert "result" in result
+        assert result["result"]["status"] == "success"
+        assert "data" in result["result"]
+
+        # Check data is a list of positions
+        data = result["result"]["data"]
+        assert isinstance(data, list)
+        assert len(data) == 2
+
+        # Check first position (AAPL)
+        aapl_pos = data[0]
+        expected_fields = [
+            "symbol",
+            "quantity",
+            "avg_price",
+            "current_price",
+            "market_value",
+            "unrealized_pnl",
+            "unrealized_pnl_percent",
+            "realized_pnl",
+        ]
+        for field in expected_fields:
+            assert field in aapl_pos
+
+        assert aapl_pos["symbol"] == "AAPL"
+        assert aapl_pos["quantity"] == 100
+        assert aapl_pos["avg_price"] == 150.0
+        assert aapl_pos["current_price"] == 155.0
+        assert aapl_pos["market_value"] == 15500.0  # 100 * 155
+        assert aapl_pos["unrealized_pnl"] == 500.0
+        assert aapl_pos["realized_pnl"] == 100.0
+
+        # Check unrealized PnL percentage calculation
+        expected_pnl_percent = (500.0 / (150.0 * 100)) * 100  # ~3.33%
+        assert abs(aapl_pos["unrealized_pnl_percent"] - expected_pnl_percent) < 0.01
+
+        # Check second position (TSLA short)
+        tsla_pos = data[1]
+        assert tsla_pos["symbol"] == "TSLA"
+        assert tsla_pos["quantity"] == -50
+        assert tsla_pos["market_value"] == -37500.0  # -50 * 750
+
+    @pytest.mark.asyncio
+    async def test_positions_empty_list(self):
+        """Test positions handles empty positions list."""
+        mock_service = AsyncMock()
+        mock_service.get_positions.return_value = []
+        set_mcp_trading_service(mock_service)
+
+        result = await positions()
+
+        assert result["result"]["status"] == "success"
+        assert result["result"]["data"] == []
+
+    @pytest.mark.asyncio
+    async def test_positions_pnl_percent_zero_cost_basis(self):
+        """Test positions handles zero cost basis for PnL percentage."""
+        # Create a position with very small avg_price instead of zero to avoid validation error
+        small_price_position = Position(
+            symbol="CHEAP",
+            quantity=100,
+            avg_price=0.01,  # Very small cost basis
+            current_price=10.0,
+            unrealized_pnl=999.0,
+            realized_pnl=0.0,
+        )
+
+        mock_service = AsyncMock()
+        mock_service.get_positions.return_value = [small_price_position]
+        set_mcp_trading_service(mock_service)
+
+        result = await positions()
+
+        data = result["result"]["data"]
+        assert len(data) == 1
+        # Check that percentage is calculated correctly for small cost basis
+        expected_pnl_percent = (
+            999.0 / (0.01 * 100)
+        ) * 100  # Should be very high percentage
+        assert abs(data[0]["unrealized_pnl_percent"] - expected_pnl_percent) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_positions_service_call(self, mock_positions):
+        """Test positions calls trading service correctly."""
+        mock_service = AsyncMock()
+        mock_service.get_positions.return_value = mock_positions
+        set_mcp_trading_service(mock_service)
+
+        await positions()
+
+        mock_service.get_positions.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_positions_exception_handling(self):
+        """Test positions handles service exceptions."""
+        mock_service = AsyncMock()
+        mock_service.get_positions.side_effect = Exception("Positions error")
+        set_mcp_trading_service(mock_service)
+
+        result = await positions()
+
+        assert result["result"]["status"] == "error"
+        assert "error" in result["result"]
+        assert "positions" in result["result"]["error"]
+        assert "Positions error" in result["result"]["error"]
+
+    @pytest.mark.asyncio
+    async def test_positions_return_type(self, mock_positions):
+        """Test positions returns dict[str, Any]."""
+        mock_service = AsyncMock()
+        mock_service.get_positions.return_value = mock_positions
+        set_mcp_trading_service(mock_service)
+
+        result = await positions()
+        assert isinstance(result, dict)
+        assert all(isinstance(k, str) for k in result)
+
+
+class TestAccountToolsIntegration:
+    """Test integration aspects of account tools."""
+
+    @pytest.mark.asyncio
+    async def test_all_tools_follow_response_format(self):
+        """Test all tools follow standardized response format."""
+        # Set up mocks for tools that need services
+        mock_service = AsyncMock()
+        mock_service.get_portfolio.return_value = Portfolio(
+            cash_balance=10000.0,
+            total_value=10000.0,
+            positions=[],
+            daily_pnl=0.0,
+            total_pnl=0.0,
+        )
+        mock_service.get_portfolio_summary.return_value = PortfolioSummary(
+            total_value=10000.0,
+            invested_value=0.0,
+            cash_balance=10000.0,
+            daily_pnl=0.0,
+            daily_pnl_percent=0.0,
+            total_pnl=0.0,
+            total_pnl_percent=0.0,
+        )
+        mock_service.get_positions.return_value = []
+        set_mcp_trading_service(mock_service)
+
+        # Test all four tools
+        tools = [account_info, portfolio, account_details, positions]
+
+        for tool in tools:
+            result = await tool()
+
+            # Check standardized response format
+            assert "result" in result, f"Tool {tool.__name__} missing 'result' field"
+            assert "status" in result["result"], (
+                f"Tool {tool.__name__} missing 'status' field"
+            )
+            assert result["result"]["status"] in [
+                "success",
+                "error",
+            ], f"Tool {tool.__name__} invalid status"
+
+            if result["result"]["status"] == "success":
+                assert "data" in result["result"], (
+                    f"Tool {tool.__name__} missing 'data' field on success"
+                )
+            else:
+                assert "error" in result["result"], (
+                    f"Tool {tool.__name__} missing 'error' field on error"
+                )
+
+    def test_all_tools_have_correct_signatures(self):
+        """Test all tools have correct signatures per MCP_TOOLS.md."""
         import inspect
-        
-        # Verify that when async functions are added, they can be introspected
-        async def example_future_tool():
-            """Example of what future tools might look like."""
-            return {"status": "success"}
-        
-        assert inspect.iscoroutinefunction(example_future_tool)
+
+        # Check account_info signature
+        sig = inspect.signature(account_info)
+        assert len(sig.parameters) == 0, "account_info should have no parameters"
+        assert sig.return_annotation == dict[str, Any], (
+            "account_info should return dict[str, Any]"
+        )
+
+        # Check portfolio signature
+        sig = inspect.signature(portfolio)
+        assert len(sig.parameters) == 0, "portfolio should have no parameters"
+        assert sig.return_annotation == dict[str, Any], (
+            "portfolio should return dict[str, Any]"
+        )
+
+        # Check account_details signature
+        sig = inspect.signature(account_details)
+        assert len(sig.parameters) == 0, "account_details should have no parameters"
+        assert sig.return_annotation == dict[str, Any], (
+            "account_details should return dict[str, Any]"
+        )
+
+        # Check positions signature
+        sig = inspect.signature(positions)
+        assert len(sig.parameters) == 0, "positions should have no parameters"
+        assert sig.return_annotation == dict[str, Any], (
+            "positions should return dict[str, Any]"
+        )
+
+    def test_all_tools_are_async(self):
+        """Test all tools are async functions."""
+        import inspect
+
+        tools = [account_info, portfolio, account_details, positions]
+
+        for tool in tools:
+            assert inspect.iscoroutinefunction(tool), (
+                f"Tool {tool.__name__} should be async"
+            )
+
+
+class TestAccountToolsErrorHandling:
+    """Test error handling patterns across account tools."""
+
+    @pytest.mark.asyncio
+    async def test_service_not_initialized_error(self):
+        """Test tools handle uninitialized service appropriately."""
+        # Clear the service
+        from app.mcp import account_tools
+
+        account_tools._trading_service = None
+
+        # Tools that use the service should handle the error
+        service_dependent_tools = [portfolio, account_details, positions]
+
+        for tool in service_dependent_tools:
+            result = await tool()
+            assert result["result"]["status"] == "error"
+            assert "TradingService not initialized" in result["result"]["error"]
+
+    @pytest.mark.asyncio
+    async def test_consistent_error_response_format(self):
+        """Test all tools return consistent error response format."""
+        from app.mcp import account_tools
+
+        account_tools._trading_service = None
+
+        service_dependent_tools = [portfolio, account_details, positions]
+
+        for tool in service_dependent_tools:
+            result = await tool()
+
+            # Check error response structure
+            assert "result" in result
+            assert "status" in result["result"]
+            assert "error" in result["result"]
+            assert result["result"]["status"] == "error"
+            assert isinstance(result["result"]["error"], str)
+            assert len(result["result"]["error"]) > 0
 
 
 class TestAccountToolsCoverage:
-    """Test coverage and documentation requirements."""
-    
-    def test_module_coverage_baseline(self):
-        """Establish baseline coverage for the account_tools module."""
-        # Since module is currently minimal, test current state thoroughly
-        
-        # Test all current module attributes
-        attrs = dir(account_tools)
-        
-        # Should have standard module attributes
-        standard_attrs = ['__doc__', '__file__', '__name__', '__package__']
-        for attr in standard_attrs:
-            assert attr in attrs
-            assert getattr(account_tools, attr) is not None
-    
-    def test_module_documentation_compliance(self):
-        """Test that module follows documentation standards."""
-        doc = account_tools.__doc__
-        assert doc is not None
-        assert len(doc.strip()) > 0
-        
-        # Should mention its purpose
-        assert any(word in doc.lower() for word in ['account', 'operations', 'tools', 'mcp'])
-    
-    def test_future_test_structure_readiness(self):
-        """Test that test structure is ready for future tool testing."""
-        # When tools are added, tests should follow these patterns:
-        
-        expected_test_classes = [
-            "TestAccountToolFunctions",  # For individual tool testing
-            "TestAccountToolValidation",  # For argument validation
-            "TestAccountToolIntegration",  # For service integration
-            "TestAccountToolErrors",  # For error handling
-            "TestAccountToolAsync"  # For async behavior
+    """Tests to ensure comprehensive coverage of account tools functionality."""
+
+    def test_module_exports(self):
+        """Test module exports all required functions."""
+        from app.mcp import account_tools
+
+        required_functions = [
+            "account_info",
+            "portfolio",
+            "account_details",
+            "positions",
         ]
-        
-        # This test documents the expected test structure
-        for test_class in expected_test_classes:
-            # Future test classes should follow these naming patterns
-            assert test_class.startswith("Test")
-            assert "Account" in test_class
-            assert "Tool" in test_class
 
+        for func_name in required_functions:
+            assert hasattr(account_tools, func_name), f"Missing function: {func_name}"
+            func = getattr(account_tools, func_name)
+            assert callable(func), f"Function {func_name} is not callable"
 
-# Mock tests for future tool functions (to achieve 70% coverage target)
-class TestFutureAccountToolMocks:
-    """Mock tests for future account tool functions to achieve coverage target."""
-    
-    @pytest.mark.asyncio
-    async def test_mock_create_account_tool(self):
-        """Mock test for future create_account tool."""
-        # This test shows what a real create_account test might look like
-        
-        # Mock tool implementation
-        async def mock_create_account(args):
-            return {
-                "account_id": "acc_123",
-                "account_name": args.get("account_name"),
-                "initial_balance": args.get("initial_balance", 100000.0),
-                "status": "created"
-            }
-        
-        # Test the mock
-        result = await mock_create_account({
-            "account_name": "Test Account",
-            "initial_balance": 50000.0
-        })
-        
-        assert result["account_id"] == "acc_123"
-        assert result["account_name"] == "Test Account" 
-        assert result["initial_balance"] == 50000.0
-        assert result["status"] == "created"
-    
-    @pytest.mark.asyncio
-    async def test_mock_get_account_info_tool(self):
-        """Mock test for future get_account_info tool."""
-        # Mock tool implementation
-        async def mock_get_account_info(args):
-            return {
-                "account_id": args.get("account_id"),
-                "account_name": "Test Account",
-                "balance": 75000.0,
-                "created_at": "2024-01-01T00:00:00Z",
-                "status": "active"
-            }
-        
-        # Test the mock
-        result = await mock_get_account_info({"account_id": "acc_123"})
-        
-        assert result["account_id"] == "acc_123"
-        assert result["balance"] == 75000.0
-        assert result["status"] == "active"
-    
-    @pytest.mark.asyncio
-    async def test_mock_update_account_tool(self):
-        """Mock test for future update_account tool."""
-        async def mock_update_account(args):
-            return {
-                "account_id": args.get("account_id"),
-                "updated_fields": list(args.keys()),
-                "status": "updated",
-                "timestamp": "2024-01-01T12:00:00Z"
-            }
-        
-        result = await mock_update_account({
-            "account_id": "acc_123",
-            "account_name": "Updated Account"
-        })
-        
-        assert result["account_id"] == "acc_123"
-        assert "account_name" in result["updated_fields"]
-        assert result["status"] == "updated"
-    
-    def test_mock_validation_patterns(self):
-        """Test mock validation patterns for future tools."""
-        # Mock Pydantic model validation
-        class MockAccountArgs:
-            def __init__(self, **kwargs):
-                self.account_id = kwargs.get("account_id")
-                self.account_name = kwargs.get("account_name")
-                if not self.account_id:
-                    raise ValueError("account_id is required")
-        
-        # Test valid args
-        args = MockAccountArgs(account_id="acc_123", account_name="Test")
-        assert args.account_id == "acc_123"
-        
-        # Test invalid args
-        with pytest.raises(ValueError):
-            MockAccountArgs(account_name="Test")  # Missing account_id
-    
-    def test_mock_error_handling_patterns(self):
-        """Test mock error handling patterns for future tools."""
-        def mock_tool_with_error_handling(account_id):
-            try:
-                if not account_id:
-                    raise ValueError("Account ID required")
-                if account_id == "invalid":
-                    raise Exception("Account not found")
-                return {"status": "success", "account_id": account_id}
-            except Exception as e:
-                return {"error": str(e)}
-        
-        # Test success case
-        result = mock_tool_with_error_handling("acc_123")
-        assert result["status"] == "success"
-        
-        # Test error cases
-        result = mock_tool_with_error_handling("")
-        assert "error" in result
-        
-        result = mock_tool_with_error_handling("invalid")
-        assert "error" in result
+    def test_response_utils_integration(self):
+        """Test integration with response utilities."""
+        from app.mcp.response_utils import (
+            error_response,
+            handle_tool_exception,
+            success_response,
+        )
+
+        # Test success response
+        data = {"test": "data"}
+        response = success_response(data)
+        assert response["result"]["status"] == "success"
+        assert response["result"]["data"] == data
+
+        # Test error response
+        error_msg = "Test error"
+        response = error_response(error_msg)
+        assert response["result"]["status"] == "error"
+        assert response["result"]["error"] == error_msg
+
+        # Test exception handling
+        exception = Exception("Test exception")
+        response = handle_tool_exception("test_func", exception)
+        assert response["result"]["status"] == "error"
+        assert "test_func" in response["result"]["error"]
+        assert "Test exception" in response["result"]["error"]
+
+    def test_service_dependency_management(self):
+        """Test service dependency is properly managed."""
+        from app.mcp.account_tools import (
+            get_mcp_trading_service,
+            set_mcp_trading_service,
+        )
+
+        # Test setting service
+        mock_service = Mock()
+        set_mcp_trading_service(mock_service)
+
+        # Test getting service
+        retrieved_service = get_mcp_trading_service()
+        assert retrieved_service is mock_service
+
+        # Test service persistence
+        retrieved_again = get_mcp_trading_service()
+        assert retrieved_again is mock_service

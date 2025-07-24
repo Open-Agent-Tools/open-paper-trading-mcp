@@ -15,31 +15,33 @@ Tests cover:
 - Schema converter integration
 """
 
-import pytest
 from datetime import date, datetime, timedelta
-from decimal import Decimal
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from uuid import uuid4
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from app.adapters.base import QuoteAdapter
 from app.core.exceptions import NotFoundError
-from app.models.assets import Stock, Call, Put, Option
-from app.models.quotes import Quote, OptionQuote, OptionsChain
+from app.models.assets import Call, Put, Stock
 from app.models.database.trading import (
     Account as DBAccount,
+)
+from app.models.database.trading import (
     Order as DBOrder,
+)
+from app.models.database.trading import (
     Position as DBPosition,
 )
+from app.models.quotes import OptionQuote, OptionsChain, Quote
 from app.schemas.orders import (
     Order,
     OrderCreate,
     OrderStatus,
     OrderType,
-    OrderCondition,
 )
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.schemas.trading import StockQuote
 from app.services.trading_service import TradingService
-from app.adapters.base import QuoteAdapter
 
 
 @pytest.fixture
@@ -280,29 +282,37 @@ class TestAsyncDatabaseOperations:
             sample_db_account
         )
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
-        ):
-            with patch.object(
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            patch.object(
                 trading_service, "_ensure_account_exists", new_callable=AsyncMock
-            ):
-                account = await trading_service._get_account()
+            ),
+        ):
+            account = await trading_service._get_account()
 
-                assert account == sample_db_account
+            assert account == sample_db_account
 
     @pytest.mark.asyncio
     async def test_get_account_not_found(self, trading_service, mock_async_session):
         """Test account not found error."""
         mock_async_session.execute.return_value.scalar_one_or_none.return_value = None
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
-        ):
-            with patch.object(
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            patch.object(
                 trading_service, "_ensure_account_exists", new_callable=AsyncMock
-            ):
-                with pytest.raises(NotFoundError, match="Account for owner"):
-                    await trading_service._get_account()
+            ),
+            pytest.raises(NotFoundError, match="Account for owner"),
+        ):
+            await trading_service._get_account()
 
 
 class TestAccountOperations:
@@ -403,38 +413,44 @@ class TestOrderOperations:
                 created_at=datetime.now(),
             )
 
-            with patch.object(
-                trading_service,
-                "_get_async_db_session",
-                return_value=mock_async_session,
-            ):
-                with patch.object(
+            with (
+                patch.object(
+                    trading_service,
+                    "_get_async_db_session",
+                    return_value=mock_async_session,
+                ),
+                patch.object(
                     trading_service.order_converter,
                     "to_schema",
                     return_value=mock_order,
-                ):
-                    result = await trading_service.create_order(sample_order_create)
+                ),
+            ):
+                result = await trading_service.create_order(sample_order_create)
 
-                    assert isinstance(result, Order)
-                    assert result.symbol == "AAPL"
-                    assert result.order_type == OrderType.BUY
-                    assert result.quantity == 100
+                assert isinstance(result, Order)
+                assert result.symbol == "AAPL"
+                assert result.order_type == OrderType.BUY
+                assert result.quantity == 100
 
-                    # Verify database operations
-                    mock_async_session.add.assert_called()
-                    mock_async_session.commit.assert_called()
-                    mock_async_session.refresh.assert_called()
+                # Verify database operations
+                mock_async_session.add.assert_called()
+                mock_async_session.commit.assert_called()
+                mock_async_session.refresh.assert_called()
 
     @pytest.mark.asyncio
     async def test_create_order_invalid_symbol(
         self, trading_service, sample_order_create
     ):
         """Test order creation with invalid symbol."""
-        with patch.object(
-            trading_service, "get_quote", side_effect=NotFoundError("Symbol not found")
+        with (
+            patch.object(
+                trading_service,
+                "get_quote",
+                side_effect=NotFoundError("Symbol not found"),
+            ),
+            pytest.raises(NotFoundError),
         ):
-            with pytest.raises(NotFoundError):
-                await trading_service.create_order(sample_order_create)
+            await trading_service.create_order(sample_order_create)
 
     @pytest.mark.asyncio
     async def test_get_orders_success(
@@ -443,9 +459,7 @@ class TestOrderOperations:
         """Test getting all orders."""
         # Mock database response
         mock_orders = [Mock(spec=DBOrder), Mock(spec=DBOrder)]
-        mock_async_session.execute.return_value.scalars.return_value.all.return_value = (
-            mock_orders
-        )
+        mock_async_session.execute.return_value.scalars.return_value.all.return_value = mock_orders
         mock_async_session.execute.return_value.scalar_one_or_none.return_value = (
             sample_db_account
         )
@@ -470,18 +484,22 @@ class TestOrderOperations:
             ),
         ]
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
-        ):
-            with patch.object(
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            patch.object(
                 trading_service.order_converter,
                 "to_schema",
                 side_effect=mock_converted_orders,
-            ):
-                orders = await trading_service.get_orders()
+            ),
+        ):
+            orders = await trading_service.get_orders()
 
-                assert len(orders) == 2
-                assert all(isinstance(order, Order) for order in orders)
+            assert len(orders) == 2
+            assert all(isinstance(order, Order) for order in orders)
 
     @pytest.mark.asyncio
     async def test_get_order_success(
@@ -502,18 +520,22 @@ class TestOrderOperations:
             created_at=datetime.now(),
         )
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
-        ):
-            with patch.object(
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            patch.object(
                 trading_service.order_converter,
                 "to_schema",
                 return_value=mock_converted_order,
-            ):
-                order = await trading_service.get_order("test-order-id")
+            ),
+        ):
+            order = await trading_service.get_order("test-order-id")
 
-                assert isinstance(order, Order)
-                assert order.id == "test-order-id"
+            assert isinstance(order, Order)
+            assert order.id == "test-order-id"
 
     @pytest.mark.asyncio
     async def test_get_order_not_found(
@@ -525,11 +547,15 @@ class TestOrderOperations:
             None,
         ]
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            pytest.raises(NotFoundError, match="Order .* not found"),
         ):
-            with pytest.raises(NotFoundError, match="Order .* not found"):
-                await trading_service.get_order("non-existent")
+            await trading_service.get_order("non-existent")
 
     @pytest.mark.asyncio
     async def test_cancel_order_success(
@@ -561,11 +587,15 @@ class TestOrderOperations:
             None,
         ]
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            pytest.raises(NotFoundError, match="Order .* not found"),
         ):
-            with pytest.raises(NotFoundError, match="Order .* not found"):
-                await trading_service.cancel_order("non-existent")
+            await trading_service.cancel_order("non-existent")
 
 
 class TestPortfolioOperations:
@@ -585,9 +615,7 @@ class TestPortfolioOperations:
         mock_async_session.execute.return_value.scalar_one_or_none.return_value = (
             sample_db_account
         )
-        mock_async_session.execute.return_value.scalars.return_value.all.return_value = (
-            mock_positions
-        )
+        mock_async_session.execute.return_value.scalars.return_value.all.return_value = mock_positions
 
         # Mock quotes
         sample_quotes = {
@@ -629,23 +657,27 @@ class TestPortfolioOperations:
             ),
         ]
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
-        ):
-            with patch.object(
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            patch.object(
                 trading_service, "get_quote", side_effect=lambda sym: sample_quotes[sym]
-            ):
-                with patch.object(
-                    trading_service.position_converter,
-                    "to_schema",
-                    side_effect=mock_converted_positions,
-                ):
-                    portfolio = await trading_service.get_portfolio()
+            ),
+            patch.object(
+                trading_service.position_converter,
+                "to_schema",
+                side_effect=mock_converted_positions,
+            ),
+        ):
+            portfolio = await trading_service.get_portfolio()
 
-                    assert isinstance(portfolio, Portfolio)
-                    assert portfolio.cash_balance == 10000.0
-                    assert len(portfolio.positions) == 2
-                    assert portfolio.total_value > 0
+            assert isinstance(portfolio, Portfolio)
+            assert portfolio.cash_balance == 10000.0
+            assert len(portfolio.positions) == 2
+            assert portfolio.total_value > 0
 
     @pytest.mark.asyncio
     async def test_get_portfolio_with_quote_errors(
@@ -663,9 +695,7 @@ class TestPortfolioOperations:
         mock_async_session.execute.return_value.scalar_one_or_none.return_value = (
             sample_db_account
         )
-        mock_async_session.execute.return_value.scalars.return_value.all.return_value = (
-            mock_positions
-        )
+        mock_async_session.execute.return_value.scalars.return_value.all.return_value = mock_positions
 
         # Mock quote that succeeds for AAPL but fails for INVALID
         def mock_get_quote(symbol):
@@ -690,20 +720,24 @@ class TestPortfolioOperations:
             unrealized_pnl=500.00,
         )
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            patch.object(trading_service, "get_quote", side_effect=mock_get_quote),
         ):
-            with patch.object(trading_service, "get_quote", side_effect=mock_get_quote):
-                with patch.object(
-                    trading_service.position_converter,
-                    "to_schema",
-                    return_value=mock_position,
-                ):
-                    portfolio = await trading_service.get_portfolio()
+            with patch.object(
+                trading_service.position_converter,
+                "to_schema",
+                return_value=mock_position,
+            ):
+                portfolio = await trading_service.get_portfolio()
 
-                    # Should only include positions with valid quotes
-                    assert len(portfolio.positions) == 1
-                    assert portfolio.positions[0].symbol == "AAPL"
+                # Should only include positions with valid quotes
+                assert len(portfolio.positions) == 1
+                assert portfolio.positions[0].symbol == "AAPL"
 
     @pytest.mark.asyncio
     async def test_get_portfolio_summary(self, trading_service):
@@ -801,11 +835,11 @@ class TestPortfolioOperations:
             total_pnl=0.0,
         )
 
-        with patch.object(
-            trading_service, "get_portfolio", return_value=mock_portfolio
+        with (
+            patch.object(trading_service, "get_portfolio", return_value=mock_portfolio),
+            pytest.raises(NotFoundError, match="Position for symbol .* not found"),
         ):
-            with pytest.raises(NotFoundError, match="Position for symbol .* not found"):
-                await trading_service.get_position("AAPL")
+            await trading_service.get_position("AAPL")
 
 
 class TestOptionsOperations:
@@ -1043,11 +1077,15 @@ class TestValidationAndErrorHandling:
         """Test database error handling."""
         mock_async_session.execute.side_effect = Exception("Database error")
 
-        with patch.object(
-            trading_service, "_get_async_db_session", return_value=mock_async_session
+        with (
+            patch.object(
+                trading_service,
+                "_get_async_db_session",
+                return_value=mock_async_session,
+            ),
+            pytest.raises(Exception),
         ):
-            with pytest.raises(Exception):
-                await trading_service.get_account_balance()
+            await trading_service.get_account_balance()
 
     def test_test_data_methods(self, trading_service):
         """Test test data utility methods."""
@@ -1160,20 +1198,22 @@ class TestMarketDataMethods:
     @pytest.mark.asyncio
     async def test_get_stock_price_success(self, trading_service, sample_stock_quote):
         """Test getting stock price."""
-        with patch.object(
-            trading_service, "get_enhanced_quote", return_value=sample_stock_quote
-        ):
-            with patch(
+        with (
+            patch.object(
+                trading_service, "get_enhanced_quote", return_value=sample_stock_quote
+            ),
+            patch(
                 "app.services.trading_service.asset_factory",
                 return_value=Stock(symbol="AAPL"),
-            ):
-                result = await trading_service.get_stock_price("AAPL")
+            ),
+        ):
+            result = await trading_service.get_stock_price("AAPL")
 
-                assert "symbol" in result
-                assert "price" in result
-                assert "change" in result
-                assert result["symbol"] == "AAPL"
-                assert result["price"] == 150.00
+            assert "symbol" in result
+            assert "price" in result
+            assert "change" in result
+            assert result["symbol"] == "AAPL"
+            assert result["price"] == 150.00
 
     @pytest.mark.asyncio
     async def test_get_stock_price_invalid_symbol(self, trading_service):
@@ -1208,18 +1248,20 @@ class TestMarketDataMethods:
         # Adapter doesn't have get_stock_info method
         del trading_service.quote_adapter.get_stock_info
 
-        with patch.object(
-            trading_service, "get_enhanced_quote", return_value=sample_stock_quote
-        ):
-            with patch(
+        with (
+            patch.object(
+                trading_service, "get_enhanced_quote", return_value=sample_stock_quote
+            ),
+            patch(
                 "app.services.trading_service.asset_factory",
                 return_value=Stock(symbol="AAPL"),
-            ):
-                result = await trading_service.get_stock_info("AAPL")
+            ),
+        ):
+            result = await trading_service.get_stock_info("AAPL")
 
-                assert "symbol" in result
-                assert "company_name" in result
-                assert result["symbol"] == "AAPL"
+            assert "symbol" in result
+            assert "company_name" in result
+            assert result["symbol"] == "AAPL"
 
 
 class TestExpirationSimulation:
@@ -1287,43 +1329,41 @@ class TestExpirationSimulation:
             ),
         }
 
-        with patch.object(
-            trading_service, "get_portfolio", return_value=mock_portfolio
-        ):
-            with patch.object(
+        with (
+            patch.object(trading_service, "get_portfolio", return_value=mock_portfolio),
+            patch.object(
                 trading_service,
                 "get_enhanced_quote",
                 side_effect=lambda sym: option_quotes[sym],
-            ):
-                with patch(
-                    "app.services.trading_service.asset_factory"
-                ) as mock_factory:
+            ),
+            patch("app.services.trading_service.asset_factory") as mock_factory,
+        ):
 
-                    def asset_side_effect(symbol):
-                        if "C150" in symbol:
-                            return Call(
-                                underlying=Stock(symbol="AAPL"),
-                                strike=150.0,
-                                expiration_date=date.today(),
-                            )
-                        elif "P140" in symbol:
-                            return Put(
-                                underlying=Stock(symbol="AAPL"),
-                                strike=140.0,
-                                expiration_date=date.today(),
-                            )
-                        else:
-                            return Stock(symbol=symbol)
+            def asset_side_effect(symbol):
+                if "C150" in symbol:
+                    return Call(
+                        underlying=Stock(symbol="AAPL"),
+                        strike=150.0,
+                        expiration_date=date.today(),
+                    )
+                elif "P140" in symbol:
+                    return Put(
+                        underlying=Stock(symbol="AAPL"),
+                        strike=140.0,
+                        expiration_date=date.today(),
+                    )
+                else:
+                    return Stock(symbol=symbol)
 
-                    mock_factory.side_effect = asset_side_effect
+            mock_factory.side_effect = asset_side_effect
 
-                    result = await trading_service.simulate_expiration()
+            result = await trading_service.simulate_expiration()
 
-                    assert "processing_date" in result
-                    assert "expiring_positions" in result
-                    assert "expiring_options" in result
-                    assert "total_impact" in result
-                    assert isinstance(result["expiring_options"], list)
+            assert "processing_date" in result
+            assert "expiring_positions" in result
+            assert "expiring_options" in result
+            assert "total_impact" in result
+            assert isinstance(result["expiring_options"], list)
 
     @pytest.mark.asyncio
     async def test_simulate_expiration_no_options(self, trading_service):

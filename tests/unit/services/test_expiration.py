@@ -19,14 +19,13 @@ Tests cover:
 - Edge cases and corner scenarios
 """
 
-import copy
 from datetime import date, timedelta
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from app.adapters.base import QuoteAdapter
-from app.models.assets import Call, Option, Put, Stock
+from app.models.assets import Call, Put, Stock
 from app.models.quotes import Quote
 from app.schemas.positions import Position
 from app.services.expiration import ExpirationResult, OptionsExpirationEngine
@@ -1149,7 +1148,7 @@ class TestFullAccountExpiration:
         """Test expiration processing with default processing date."""
         account = {"cash_balance": 10000.0, "positions": []}
 
-        result = await expiration_engine.process_account_expirations(
+        await expiration_engine.process_account_expirations(
             account,
             mock_quote_adapter,  # No processing_date
         )

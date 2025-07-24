@@ -13,15 +13,12 @@ with focus on:
 
 import json
 import os
-import pytest
 import tempfile
-import uuid
 from datetime import datetime
-from pathlib import Path
-from typing import Any
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+import pytest
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.adapters.accounts import (
@@ -31,7 +28,6 @@ from app.adapters.accounts import (
 )
 from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
-from app.storage.database import get_sync_session
 
 
 class TestDatabaseAccountAdapterIntegration:
@@ -220,16 +216,17 @@ class TestDatabaseAccountAdapterIntegration:
                 adapter.put_account(sample_account)
 
             # Test integrity error during put
-            mock_db.commit.side_effect = IntegrityError("Constraint violation", None, None)
+            mock_db.commit.side_effect = IntegrityError(
+                "Constraint violation", None, None
+            )
 
             with pytest.raises(IntegrityError):
                 adapter.put_account(sample_account)
 
-    @pytest.mark.integration 
+    @pytest.mark.integration
     def test_concurrent_account_operations(self, adapter):
         """Test concurrent operations on accounts."""
         import threading
-        import time
 
         results = []
         errors = []
@@ -254,7 +251,7 @@ class TestDatabaseAccountAdapterIntegration:
                     results.append(f"thread-{thread_id}-account")
 
             except Exception as e:
-                errors.append(f"Thread {thread_id}: {str(e)}")
+                errors.append(f"Thread {thread_id}: {e!s}")
 
         # Create multiple threads
         threads = []
@@ -375,13 +372,15 @@ class TestLocalFileSystemAccountAdapterIntegration:
     def test_adapter_initialization(self, temp_dir):
         """Test adapter initialization creates directory."""
         adapter_path = os.path.join(temp_dir, "test_accounts")
-        adapter = LocalFileSystemAccountAdapter(root_path=adapter_path)
+        LocalFileSystemAccountAdapter(root_path=adapter_path)
 
         assert os.path.exists(adapter_path)
         assert os.path.isdir(adapter_path)
 
     @pytest.mark.integration
-    def test_put_and_get_account_file_integration(self, adapter, sample_account, temp_dir):
+    def test_put_and_get_account_file_integration(
+        self, adapter, sample_account, temp_dir
+    ):
         """Test complete put/get cycle with file system integration."""
         # Put account
         adapter.put_account(sample_account)
@@ -391,7 +390,7 @@ class TestLocalFileSystemAccountAdapterIntegration:
         assert os.path.exists(expected_file)
 
         # Verify file content
-        with open(expected_file, 'r') as f:
+        with open(expected_file) as f:
             file_data = json.load(f)
 
         assert file_data["id"] == sample_account.id
@@ -431,7 +430,7 @@ class TestLocalFileSystemAccountAdapterIntegration:
 
         # Verify file was updated
         expected_file = os.path.join(temp_dir, "update-test.json")
-        with open(expected_file, 'r') as f:
+        with open(expected_file) as f:
             file_data = json.load(f)
 
         assert file_data["cash_balance"] == 2000.0
@@ -448,7 +447,7 @@ class TestLocalFileSystemAccountAdapterIntegration:
         """Test handling corrupted account file."""
         # Create corrupted file
         corrupted_file = os.path.join(temp_dir, "corrupted-account.json")
-        with open(corrupted_file, 'w') as f:
+        with open(corrupted_file, "w") as f:
             f.write("invalid json content {{{")
 
         # Should return None for corrupted file
@@ -473,7 +472,7 @@ class TestLocalFileSystemAccountAdapterIntegration:
 
         # Create non-JSON file (should be ignored)
         non_json_file = os.path.join(temp_dir, "not-an-account.txt")
-        with open(non_json_file, 'w') as f:
+        with open(non_json_file, "w") as f:
             f.write("This is not a JSON file")
 
         account_ids = adapter.get_account_ids()
@@ -566,7 +565,7 @@ class TestLocalFileSystemAccountAdapterIntegration:
                     results.append(thread_id)
 
             except Exception as e:
-                errors.append(f"Thread {thread_id}: {str(e)}")
+                errors.append(f"Thread {thread_id}: {e!s}")
 
         # Create threads
         threads = []
@@ -629,7 +628,7 @@ class TestLocalFileSystemAccountAdapterIntegration:
 
         # Simulate file corruption by writing invalid JSON
         account_file = os.path.join(temp_dir, "recovery-test.json")
-        with open(account_file, 'w') as f:
+        with open(account_file, "w") as f:
             f.write("corrupted data")
 
         # Should handle gracefully
@@ -660,9 +659,7 @@ class TestAccountFactory:
     def test_account_factory_custom_parameters(self):
         """Test account factory with custom parameters."""
         account = account_factory(
-            name="Custom Account",
-            owner="custom_user",
-            cash=50000.0
+            name="Custom Account", owner="custom_user", cash=50000.0
         )
 
         assert account.name == "Custom Account"
@@ -747,6 +744,7 @@ class TestAccountAdapterPerformance:
             mock_db.query.return_value.filter.return_value.first.return_value = None
 
             import time
+
             start_time = time.time()
 
             # Perform bulk operations
@@ -772,6 +770,7 @@ class TestAccountAdapterPerformance:
         adapter = LocalFileSystemAccountAdapter(root_path=str(tmp_path))
 
         import time
+
         start_time = time.time()
 
         # Perform bulk operations

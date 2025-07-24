@@ -14,7 +14,6 @@ from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -91,9 +90,9 @@ class TestDatabaseInitialization:
                         "SELECT 1 FROM information_schema.tables WHERE table_name = :table"
                     ).bindparam(table=dep_table)
                 )
-                assert (
-                    result.fetchone() is not None
-                ), f"Dependency table {dep_table} missing for {table_name}"
+                assert result.fetchone() is not None, (
+                    f"Dependency table {dep_table} missing for {table_name}"
+                )
 
     @pytest.mark.asyncio
     async def test_database_schema_validation(self, async_db_session: AsyncSession):
@@ -166,9 +165,9 @@ class TestDatabaseInitialization:
 
             # Verify all expected columns exist
             for expected_col in expected_columns:
-                assert (
-                    expected_col in actual_columns
-                ), f"Column {expected_col} missing from {table_name}"
+                assert expected_col in actual_columns, (
+                    f"Column {expected_col} missing from {table_name}"
+                )
 
 
 class TestSchemaEvolution:
@@ -199,9 +198,9 @@ class TestSchemaEvolution:
             )
             row = result.fetchone()
             assert row is not None, f"Column {column_name} not found in {table_name}"
-            assert (
-                row.data_type == expected_type
-            ), f"Column {table_name}.{column_name} has type {row.data_type}, expected {expected_type}"
+            assert row.data_type == expected_type, (
+                f"Column {table_name}.{column_name} has type {row.data_type}, expected {expected_type}"
+            )
 
     @pytest.mark.asyncio
     async def test_foreign_key_constraints_exist(self, async_db_session: AsyncSession):
@@ -238,9 +237,9 @@ class TestSchemaEvolution:
                 )
             )
             count = result.scalar()
-            assert (
-                count > 0
-            ), f"Foreign key constraint missing: {child_table}.{child_col} -> {parent_table}.{parent_col}"
+            assert count > 0, (
+                f"Foreign key constraint missing: {child_table}.{child_col} -> {parent_table}.{parent_col}"
+            )
 
     @pytest.mark.asyncio
     async def test_primary_key_constraints_exist(self, async_db_session: AsyncSession):
@@ -258,9 +257,9 @@ class TestSchemaEvolution:
                 ).bindparam(table=table_name)
             )
             count = result.scalar()
-            assert (
-                count == 1
-            ), f"Primary key constraint missing or duplicated for {table_name}"
+            assert count == 1, (
+                f"Primary key constraint missing or duplicated for {table_name}"
+            )
 
     @pytest.mark.asyncio
     async def test_not_null_constraints_on_critical_fields(
@@ -293,9 +292,9 @@ class TestSchemaEvolution:
             )
             row = result.fetchone()
             assert row is not None, f"Column {table_name}.{column_name} not found"
-            assert (
-                row.is_nullable == "NO"
-            ), f"Critical field {table_name}.{column_name} allows NULL"
+            assert row.is_nullable == "NO", (
+                f"Critical field {table_name}.{column_name} allows NULL"
+            )
 
 
 class TestIndexOptimization:
@@ -367,9 +366,9 @@ class TestIndexOptimization:
             constraint_count = result2.scalar()
 
             # Should have either an explicit index or a constraint that creates an index
-            assert (
-                index_count + constraint_count
-            ) > 0, f"No index found for {table_name}.{column_name}"
+            assert (index_count + constraint_count) > 0, (
+                f"No index found for {table_name}.{column_name}"
+            )
 
     @pytest.mark.asyncio
     async def test_symbol_columns_have_indexes_for_queries(
@@ -425,12 +424,12 @@ class TestIndexOptimization:
                 ).bindparam(table=table_name, column=column_name)
             )
             row = result.fetchone()
-            assert (
-                row is not None
-            ), f"Timestamp column {table_name}.{column_name} not found"
-            assert (
-                "timestamp" in row.data_type.lower()
-            ), f"Column {table_name}.{column_name} is not a timestamp type"
+            assert row is not None, (
+                f"Timestamp column {table_name}.{column_name} not found"
+            )
+            assert "timestamp" in row.data_type.lower(), (
+                f"Column {table_name}.{column_name} is not a timestamp type"
+            )
 
 
 class TestDataIntegrity:
@@ -596,9 +595,9 @@ class TestDataIntegrity:
                 )
             )
             stored_value = result.scalar()
-            assert (
-                stored_value == expected_value
-            ), f"Decimal precision lost: expected {expected_value}, got {stored_value}"
+            assert stored_value == expected_value, (
+                f"Decimal precision lost: expected {expected_value}, got {stored_value}"
+            )
 
 
 class TestMigrationSimulation:
@@ -630,9 +629,9 @@ class TestMigrationSimulation:
         # For testing, we just verify the current structure is sound
         essential_columns = ["id", "user_id", "name", "balance", "buying_power"]
         for col in essential_columns:
-            assert (
-                col in initial_columns
-            ), f"Essential column {col} missing from accounts table"
+            assert col in initial_columns, (
+                f"Essential column {col} missing from accounts table"
+            )
 
     @pytest.mark.asyncio
     async def test_index_creation_impact_simulation(
@@ -722,6 +721,6 @@ class TestMigrationSimulation:
 
         assert len(stored_values) == len(edge_values)
         for stored, expected in zip(stored_values, edge_values, strict=False):
-            assert (
-                stored == expected
-            ), f"Edge value {expected} not stored correctly: got {stored}"
+            assert stored == expected, (
+                f"Edge value {expected} not stored correctly: got {stored}"
+            )

@@ -872,7 +872,7 @@ class TestRiskCalculatorUtilities:
         risk_calculator._update_return_history(sample_historical_data)
 
         # Should have calculated returns for each symbol
-        for symbol in sample_historical_data.keys():
+        for symbol in sample_historical_data:
             assert symbol in risk_calculator.return_history
             returns = risk_calculator.return_history[symbol]
             assert len(returns) == len(sample_historical_data[symbol]) - 1
@@ -1002,3 +1002,310 @@ class TestEdgeCasesAndErrorHandling:
 
         risk_summary = risk_calculator.calculate_portfolio_risk(negative_portfolio)
         assert isinstance(risk_summary, PortfolioRiskSummary)
+
+
+class TestStubClasses:
+    """Test stub classes for future implementation."""
+
+    def test_drawdown_analysis_stub(self):
+        """Test DrawdownAnalysis stub class exists."""
+        from app.services.portfolio_risk_metrics import DrawdownAnalysis
+
+        # Should be able to instantiate the stub
+        drawdown = DrawdownAnalysis()
+        assert isinstance(drawdown, DrawdownAnalysis)
+
+    def test_performance_attribution_stub(self):
+        """Test PerformanceAttribution stub class exists."""
+        from app.services.portfolio_risk_metrics import PerformanceAttribution
+
+        # Should be able to instantiate the stub
+        perf_attr = PerformanceAttribution()
+        assert isinstance(perf_attr, PerformanceAttribution)
+
+    def test_portfolio_risk_analyzer_stub(self):
+        """Test PortfolioRiskAnalyzer stub class exists."""
+        from app.services.portfolio_risk_metrics import PortfolioRiskAnalyzer
+
+        # Should be able to instantiate the stub
+        risk_analyzer = PortfolioRiskAnalyzer()
+        assert isinstance(risk_analyzer, PortfolioRiskAnalyzer)
+
+    def test_risk_decomposition_stub(self):
+        """Test RiskDecomposition stub class exists."""
+        from app.services.portfolio_risk_metrics import RiskDecomposition
+
+        # Should be able to instantiate the stub
+        risk_decomp = RiskDecomposition()
+        assert isinstance(risk_decomp, RiskDecomposition)
+
+
+class TestAdvancedRiskMetrics:
+    """Test advanced risk metrics and calculations."""
+
+    def test_correlation_matrix_advanced_scenarios(self, risk_calculator):
+        """Test correlation matrix with advanced scenarios."""
+        symbols = ["AAPL", "GOOGL", "TSLA", "SPY"]
+
+        # Test with limited data
+        limited_data = {
+            "AAPL": [150.0, 151.0, 149.0],
+            "GOOGL": [2800.0, 2805.0, 2795.0],
+            # Missing TSLA and SPY
+        }
+
+        correlation_matrix = risk_calculator.calculate_correlation_matrix(
+            symbols, limited_data
+        )
+
+        assert correlation_matrix.shape == (4, 4)
+        # Should handle missing symbols gracefully
+
+    def test_var_calculation_edge_cases(self, risk_calculator, sample_portfolio):
+        """Test VaR calculation edge cases."""
+        # Test with single data point (should fallback to parametric)
+        single_point_data = {
+            "AAPL": [150.0],
+            "GOOGL": [2800.0],
+            "MSFT": [280.0],
+        }
+
+        var_result = risk_calculator._calculate_var(
+            sample_portfolio, 0.95, single_point_data
+        )
+
+        assert var_result.method == "parametric"
+
+    def test_stress_test_empty_scenarios(self, risk_calculator, sample_portfolio):
+        """Test stress testing with empty scenarios."""
+        empty_stress = risk_calculator._stress_test_scenario(
+            sample_portfolio, "Empty Scenario", {}
+        )
+
+        assert empty_stress.scenario_name == "Empty Scenario"
+        assert empty_stress.portfolio_return == 0.0
+
+    def test_concentration_metrics_edge_cases(self, risk_calculator):
+        """Test concentration metrics with edge cases."""
+        # Portfolio with all zero-price positions
+        positions = [
+            Position(symbol="ZERO1", quantity=100, current_price=0.0, market_value=0.0),
+            Position(symbol="ZERO2", quantity=50, current_price=0.0, market_value=0.0),
+        ]
+
+        portfolio = Portfolio(
+            cash_balance=10000.00,
+            total_value=10000.00,
+            positions=positions,
+            daily_pnl=0.00,
+            total_pnl=0.00,
+        )
+
+        concentration_metrics = risk_calculator._calculate_concentration_metrics(
+            portfolio
+        )
+
+        # Should handle zero-value positions
+        assert isinstance(concentration_metrics, dict)
+
+    def test_risk_budget_no_historical_data(self, risk_calculator, sample_portfolio):
+        """Test risk budget calculation without historical data."""
+        risk_budget = risk_calculator._calculate_risk_budget(sample_portfolio, None)
+
+        assert isinstance(risk_budget, RiskBudgetAllocation)
+        assert len(risk_budget.position_risk_contributions) == len(
+            sample_portfolio.positions
+        )
+
+    def test_update_return_history_empty_data(self, risk_calculator):
+        """Test updating return history with empty data."""
+        empty_data = {"AAPL": [], "GOOGL": []}
+
+        risk_calculator._update_return_history(empty_data)
+
+        # Should handle empty data without errors
+        assert isinstance(risk_calculator.return_history, dict)
+
+    def test_portfolio_returns_mismatched_data_lengths(
+        self, risk_calculator, sample_portfolio
+    ):
+        """Test portfolio returns calculation with mismatched data lengths."""
+        mismatched_data = {
+            "AAPL": [150.0, 151.0, 149.0, 152.0],  # 4 points
+            "GOOGL": [2800.0, 2810.0],  # 2 points
+            "MSFT": [280.0, 282.0, 281.0],  # 3 points
+        }
+
+        returns = risk_calculator._calculate_portfolio_returns(
+            sample_portfolio, mismatched_data
+        )
+
+        # Should use minimum length (2 points = 1 return)
+        assert len(returns) == 1
+
+    def test_sector_exposure_unknown_symbols(self, risk_calculator):
+        """Test sector exposure with unknown symbols."""
+        positions = [
+            Position(
+                symbol="UNKNOWN1", quantity=100, current_price=50.0, market_value=5000.0
+            ),
+            Position(
+                symbol="UNKNOWN2", quantity=200, current_price=25.0, market_value=5000.0
+            ),
+        ]
+
+        portfolio = Portfolio(
+            cash_balance=10000.00,
+            total_value=20000.00,
+            positions=positions,
+            daily_pnl=0.00,
+            total_pnl=0.00,
+        )
+
+        exposure_metrics = risk_calculator._calculate_exposure_metrics(portfolio)
+
+        # Should map unknown symbols to "Unknown" sector
+        assert "Unknown" in exposure_metrics.sector_exposures
+        assert exposure_metrics.sector_exposures["Unknown"] == 10000.0
+
+    def test_stress_test_scenario_position_filtering(self, risk_calculator):
+        """Test stress test scenario with position filtering."""
+        positions = [
+            Position(
+                symbol="AAPL", quantity=100, current_price=150.0, market_value=15000.0
+            ),
+            Position(
+                symbol="BONDS",
+                quantity=1000,
+                current_price=100.0,
+                market_value=100000.0,
+            ),
+        ]
+
+        portfolio = Portfolio(
+            cash_balance=15000.00,
+            total_value=130000.00,
+            positions=positions,
+            daily_pnl=0.00,
+            total_pnl=0.00,
+        )
+
+        # Test scenario that only affects specific assets
+        tech_only_stress = risk_calculator._stress_test_scenario(
+            portfolio, "Tech Only", {"Technology": -0.20}
+        )
+
+        # Only AAPL should be affected (if it's mapped to Technology)
+        assert "AAPL" in tech_only_stress.position_impacts
+        assert "BONDS" in tech_only_stress.position_impacts
+
+        # BONDS impact should be 0 (not in Technology sector)
+        assert tech_only_stress.position_impacts["BONDS"] == 0.0
+
+    def test_var_calculation_all_zero_returns(self, risk_calculator, sample_portfolio):
+        """Test VaR calculation with all zero returns."""
+        zero_returns_data = {
+            "AAPL": [150.0, 150.0, 150.0, 150.0],  # No change
+            "GOOGL": [2800.0, 2800.0, 2800.0, 2800.0],  # No change
+            "MSFT": [280.0, 280.0, 280.0, 280.0],  # No change
+        }
+
+        var_result = risk_calculator._calculate_var(
+            sample_portfolio, 0.95, zero_returns_data
+        )
+
+        # VaR should be zero for zero volatility
+        assert var_result.var_amount == 0.0
+        assert var_result.var_percent == 0.0
+
+    def test_leverage_calculation_negative_cash(self, risk_calculator):
+        """Test leverage calculation with negative cash balance."""
+        positions = [
+            Position(
+                symbol="AAPL", quantity=100, current_price=150.0, market_value=15000.0
+            )
+        ]
+
+        portfolio = Portfolio(
+            cash_balance=-5000.00,  # Negative cash (margin)
+            total_value=10000.00,
+            positions=positions,
+            daily_pnl=0.00,
+            total_pnl=0.00,
+        )
+
+        exposure_metrics = risk_calculator._calculate_exposure_metrics(portfolio)
+
+        # Should handle negative cash appropriately
+        assert exposure_metrics.leverage_ratio < 0
+
+    def test_risk_alerts_with_mixed_conditions(self, risk_calculator):
+        """Test risk alerts with multiple conditions triggering."""
+        # Create portfolio that triggers multiple alerts
+        positions = [
+            Position(
+                symbol="AAPL",
+                quantity=2000,  # Large position (high concentration)
+                current_price=150.0,
+                market_value=300000.0,
+            ),
+            Position(
+                symbol="TSLA",
+                quantity=-500,  # Large short position
+                current_price=800.0,
+                market_value=-400000.0,
+            ),
+        ]
+
+        portfolio = Portfolio(
+            cash_balance=50000.00,  # Low cash relative to positions (high leverage)
+            total_value=-50000.00,  # Negative total value
+            positions=positions,
+            daily_pnl=0.00,
+            total_pnl=0.00,
+        )
+
+        exposure_metrics = risk_calculator._calculate_exposure_metrics(portfolio)
+
+        # Create high VaR results
+        var_results = {
+            0.95: VaRResult(
+                confidence_level=0.95,
+                time_horizon=1,
+                var_amount=100000.0,  # Very high VaR
+                var_percent=2.0,  # 200% of portfolio
+                expected_shortfall=150000.0,
+                method="historical",
+            )
+        }
+
+        alerts = risk_calculator._generate_risk_alerts(
+            portfolio, exposure_metrics, var_results
+        )
+
+        # Should generate multiple alerts
+        assert len(alerts) > 1
+
+        # Check for specific alert types
+        alert_text = " ".join(alerts).lower()
+        assert (
+            "concentration" in alert_text
+            or "leverage" in alert_text
+            or "var" in alert_text
+        )
+
+    def test_position_var_with_very_short_history(self, risk_calculator):
+        """Test position VaR with very short price history."""
+        position = Position(
+            symbol="AAPL", quantity=100, current_price=150.0, market_value=15000.0
+        )
+
+        # Very short history (just 2 points)
+        short_history = [149.0, 151.0]
+
+        var_result = risk_calculator.calculate_position_var(
+            position, confidence_level=0.95, historical_prices=short_history
+        )
+
+        assert isinstance(var_result, VaRResult)
+        assert var_result.method == "historical"

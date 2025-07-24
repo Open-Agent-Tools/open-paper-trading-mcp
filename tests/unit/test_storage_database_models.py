@@ -68,7 +68,9 @@ class TestDatabaseModelValidation:
 
         # Verify account was created
         result = await async_db_session.execute(
-            text("SELECT * FROM accounts WHERE id = :id").bindparams(id="test-account-1")
+            text("SELECT * FROM accounts WHERE id = :id").bindparams(
+                id="test-account-1"
+            )
         )
         row = result.fetchone()
         assert row is not None

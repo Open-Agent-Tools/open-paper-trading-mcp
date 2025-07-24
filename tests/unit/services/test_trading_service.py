@@ -618,13 +618,11 @@ class TestTradingServicePortfolioManagement:
             total_pnl=0.00,
         )
 
-        with patch.object(
-            trading_service, "get_portfolio", return_value=mock_portfolio
+        with (
+            patch.object(trading_service, "get_portfolio", return_value=mock_portfolio),
+            pytest.raises(NotFoundError, match="Position for symbol AAPL not found"),
         ):
-            with pytest.raises(
-                NotFoundError, match="Position for symbol AAPL not found"
-            ):
-                await trading_service.get_position("AAPL")
+            await trading_service.get_position("AAPL")
 
 
 class TestTradingServiceOptionsFeatures:
@@ -692,18 +690,20 @@ class TestTradingServiceOptionsFeatures:
             quote_date=datetime.now(),
         )
 
-        with patch.object(
-            trading_service, "get_enhanced_quote", return_value=option_quote
+        with (
+            patch.object(
+                trading_service, "get_enhanced_quote", return_value=option_quote
+            ),
+            pytest.raises(ValueError, match="Insufficient pricing data"),
         ):
-            with pytest.raises(ValueError, match="Insufficient pricing data"):
-                await trading_service.calculate_greeks("AAPL240119C150")
+            await trading_service.calculate_greeks("AAPL240119C150")
 
     @pytest.mark.asyncio
     async def test_get_option_greeks_response_success(
         self, trading_service, sample_option_quote
     ):
         """Test successful option Greeks response generation."""
-        underlying_quote = Quote(
+        Quote(
             asset=Stock(symbol="AAPL"),
             price=150.00,
             bid=149.95,

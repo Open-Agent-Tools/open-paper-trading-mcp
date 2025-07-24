@@ -16,7 +16,6 @@ from datetime import UTC
 from unittest.mock import AsyncMock, patch
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import DisconnectionError
@@ -266,9 +265,9 @@ class TestPerformanceCharacteristics:
         avg_time_per_session = total_time / session_count
 
         # Session creation should be reasonably fast (< 100ms per session)
-        assert (
-            avg_time_per_session < 0.1
-        ), f"Session creation too slow: {avg_time_per_session}s"
+        assert avg_time_per_session < 0.1, (
+            f"Session creation too slow: {avg_time_per_session}s"
+        )
 
     @pytest.mark.asyncio
     async def test_concurrent_session_performance(self):
@@ -339,9 +338,9 @@ class TestPerformanceCharacteristics:
         transaction_time = end_time - start_time
 
         # Batch insert should be reasonably fast
-        assert (
-            transaction_time < 2.0
-        ), f"Batch transaction too slow: {transaction_time}s"
+        assert transaction_time < 2.0, (
+            f"Batch transaction too slow: {transaction_time}s"
+        )
 
     @pytest.mark.asyncio
     async def test_query_performance_with_indexes(self):

@@ -830,7 +830,6 @@ class TestOrderExecutionEngineIntegration:
     async def test_error_recovery_in_monitoring_loop(self, execution_engine):
         """Test error recovery in monitoring loop."""
         # Mock monitoring loop to simulate errors
-        original_check = execution_engine._check_trigger_conditions
         call_count = 0
 
         async def mock_check():

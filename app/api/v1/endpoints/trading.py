@@ -95,7 +95,7 @@ async def get_enhanced_quote(
         return result
 
     except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.post("/order/multi-leg")
@@ -108,4 +108,4 @@ async def create_multi_leg_order_basic(
     try:
         return await service.create_multi_leg_order(order)
     except (NotFoundError, ValidationError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

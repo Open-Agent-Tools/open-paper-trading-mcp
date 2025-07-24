@@ -8,16 +8,9 @@ and properly handle responses and errors.
 import pytest
 
 from app.mcp.market_data_tools import (
-    GetPriceHistoryArgs,
-    GetStockInfoArgs,
-    GetStockNewsArgs,
-    GetStockPriceArgs,
-    SearchStocksArgs,
     get_price_history,
     get_stock_info,
-    get_stock_news,
     get_stock_price,
-    get_top_movers,
     search_stocks,
 )
 
@@ -43,7 +36,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_stock_price.return_value = mock_result
 
         # Act
-        result = await get_stock_price(GetStockPriceArgs(symbol=symbol))
+        result = await get_stock_price(symbol=symbol)
 
         # Assert
         mock_trading_service.get_stock_price.assert_called_once_with(
@@ -61,7 +54,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_stock_price.side_effect = Exception("Symbol not found")
 
         # Act
-        result = await get_stock_price(GetStockPriceArgs(symbol=symbol))
+        result = await get_stock_price(symbol=symbol)
 
         # Assert
         mock_trading_service.get_stock_price.assert_called_once_with(
@@ -89,7 +82,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_stock_info.return_value = mock_result
 
         # Act
-        result = await get_stock_info(GetStockInfoArgs(symbol=symbol))
+        result = await get_stock_info(symbol=symbol)
 
         # Assert
         mock_trading_service.get_stock_info.assert_called_once_with(
@@ -107,7 +100,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_stock_info.side_effect = Exception("Symbol not found")
 
         # Act
-        result = await get_stock_info(GetStockInfoArgs(symbol=symbol))
+        result = await get_stock_info(symbol=symbol)
 
         # Assert
         mock_trading_service.get_stock_info.assert_called_once_with(
@@ -157,9 +150,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_price_history.return_value = mock_result
 
         # Act
-        result = await get_price_history(
-            GetPriceHistoryArgs(symbol=symbol, period=period)
-        )
+        result = await get_price_history(symbol=symbol, period=period)
 
         # Assert
         mock_trading_service.get_price_history.assert_called_once_with(
@@ -181,9 +172,7 @@ class TestMCPMarketDataTools:
         )
 
         # Act
-        result = await get_price_history(
-            GetPriceHistoryArgs(symbol=symbol, period=period)
-        )
+        result = await get_price_history(symbol=symbol, period=period)
 
         # Assert
         mock_trading_service.get_price_history.assert_called_once_with(
@@ -220,7 +209,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_stock_news.return_value = mock_result
 
         # Act
-        result = await get_stock_news(GetStockNewsArgs(symbol=symbol))
+        result = await get_stock_news(symbol=symbol)
 
         # Assert
         mock_trading_service.get_stock_news.assert_called_once_with(
@@ -238,7 +227,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.get_stock_news.side_effect = Exception("Symbol not found")
 
         # Act
-        result = await get_stock_news(GetStockNewsArgs(symbol=symbol))
+        result = await get_stock_news(symbol=symbol)
 
         # Assert
         mock_trading_service.get_stock_news.assert_called_once_with(
@@ -320,7 +309,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.search_stocks.return_value = mock_result
 
         # Act
-        result = await search_stocks(SearchStocksArgs(query=query))
+        result = await search_stocks(query=query)
 
         # Assert
         mock_trading_service.search_stocks.assert_called_once_with(query.strip())
@@ -336,7 +325,7 @@ class TestMCPMarketDataTools:
         mock_trading_service.search_stocks.side_effect = Exception("Invalid query")
 
         # Act
-        result = await search_stocks(SearchStocksArgs(query=query))
+        result = await search_stocks(query=query)
 
         # Assert
         mock_trading_service.search_stocks.assert_called_once_with(query.strip())

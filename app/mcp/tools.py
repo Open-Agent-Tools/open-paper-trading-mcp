@@ -1,9 +1,11 @@
-import json
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
-
+from app.mcp.response_utils import (
+    error_response,
+    handle_tool_exception,
+    success_response,
+)
 from app.models.assets import Option, asset_factory
 from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
@@ -25,149 +27,379 @@ def get_mcp_trading_service() -> TradingService:
     return _trading_service
 
 
-class GetQuoteArgs(BaseModel):
-    symbol: str = Field(
-        ..., description="Stock symbol to get quote for (e.g., AAPL, GOOGL)"
-    )
+# Direct function parameters replace Pydantic models per MCP_TOOLS.md spec
 
 
-class CreateOrderArgs(BaseModel):
-    symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
-    order_type: OrderType = Field(..., description="Order type: buy or sell")
-    quantity: int = Field(..., gt=0, description="Number of shares to trade")
-    price: float = Field(..., gt=0, description="Price per share")
-
-
-class GetOrderArgs(BaseModel):
-    order_id: str = Field(..., description="Order ID to retrieve")
-
-
-class CancelOrderArgs(BaseModel):
-    order_id: str = Field(..., description="Order ID to cancel")
-
-
-class GetPositionArgs(BaseModel):
-    symbol: str = Field(..., description="Stock symbol to get position for")
-
-
-async def create_buy_order(args: CreateOrderArgs) -> str:
-    """Create a buy order for a stock."""
+async def get_stock_quote(symbol: str) -> dict[str, Any]:
+    """Get a stock quote."""
     try:
+        quote_data = await get_mcp_trading_service().get_stock_price(symbol)
+        if "error" in quote_data:
+            return error_response(quote_data["error"])
+
+        data = {
+            "symbol": quote_data.get("symbol"),
+            "price": quote_data.get("price"),
+            "change": quote_data.get("change"),
+            "change_percent": quote_data.get("change_percent"),
+            "volume": quote_data.get("volume"),
+            "ask_price": quote_data.get("ask_price"),
+            "bid_price": quote_data.get("bid_price"),
+        }
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("get_stock_quote", e)
+
+
+async def create_buy_order(symbol: str, quantity: int, price: float) -> dict[str, Any]:
+    """Create a buy order for a stock (limit order)."""
+    try:
+        # Validate inputs
+        if not symbol or not symbol.strip():
+            raise ValueError("Symbol cannot be empty")
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+        if price <= 0:
+            raise ValueError("Price must be positive")
+
+        symbol = symbol.strip().upper()
+
         order_data = OrderCreate(
-            symbol=args.symbol,
+            symbol=symbol,
             order_type=OrderType.BUY,
-            quantity=args.quantity,
-            price=args.price,
-            condition=OrderCondition.MARKET,
+            quantity=quantity,
+            price=price,
+            condition=OrderCondition.LIMIT,  # Changed to LIMIT since price is specified
         )
         order = await get_mcp_trading_service().create_order(order_data)
-        return json.dumps(
-            {
-                "id": order.id,
-                "symbol": order.symbol,
-                "order_type": order.order_type,
-                "quantity": order.quantity,
-                "price": order.price,
-                "status": order.status,
-                "created_at": (
-                    order.created_at.isoformat() if order.created_at else None
-                ),
-            },
-            indent=2,
-        )
+        data = {
+            "id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
+            "price": order.price,
+            "total_cost": price * quantity,
+            "status": order.status,
+            "created_at": (order.created_at.isoformat() if order.created_at else None),
+            "message": f"Buy limit order for {quantity} shares of {symbol} at ${price:.2f} per share",
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error creating buy order: {e!s}"
+        return handle_tool_exception("create_buy_order", e)
 
 
-async def create_sell_order(args: CreateOrderArgs) -> str:
-    """Create a sell order for a stock."""
+async def create_sell_order(symbol: str, quantity: int, price: float) -> dict[str, Any]:
+    """Create a sell order for a stock (limit order)."""
     try:
+        # Validate inputs
+        if not symbol or not symbol.strip():
+            raise ValueError("Symbol cannot be empty")
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+        if price <= 0:
+            raise ValueError("Price must be positive")
+
+        symbol = symbol.strip().upper()
+
         order_data = OrderCreate(
-            symbol=args.symbol,
+            symbol=symbol,
             order_type=OrderType.SELL,
-            quantity=args.quantity,
-            price=args.price,
-            condition=OrderCondition.MARKET,
+            quantity=quantity,
+            price=price,
+            condition=OrderCondition.LIMIT,  # Changed to LIMIT since price is specified
         )
         order = await get_mcp_trading_service().create_order(order_data)
-        return json.dumps(
-            {
-                "id": order.id,
-                "symbol": order.symbol,
-                "order_type": order.order_type,
-                "quantity": order.quantity,
-                "price": order.price,
-                "status": order.status,
-                "created_at": (
-                    order.created_at.isoformat() if order.created_at else None
-                ),
-            },
-            indent=2,
-        )
+        data = {
+            "id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
+            "price": order.price,
+            "total_proceeds": price * quantity,
+            "status": order.status,
+            "created_at": (order.created_at.isoformat() if order.created_at else None),
+            "message": f"Sell limit order for {quantity} shares of {symbol} at ${price:.2f} per share",
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error creating sell order: {e!s}"
+        return handle_tool_exception("create_sell_order", e)
 
 
-async def get_all_orders() -> str:
-    """Get all trading orders."""
+async def stock_orders() -> dict[str, Any]:
+    """Get all stock trading orders."""
     try:
         orders = await get_mcp_trading_service().get_orders()
-        orders_data = []
+        stock_orders_data = []
         for order in orders:
-            orders_data.append(
-                {
-                    "id": order.id,
-                    "symbol": order.symbol,
-                    "order_type": order.order_type,
-                    "quantity": order.quantity,
-                    "price": order.price,
-                    "status": order.status,
-                    "created_at": (
-                        order.created_at.isoformat() if order.created_at else None
-                    ),
-                    "filled_at": (
-                        order.filled_at.isoformat() if order.filled_at else None
-                    ),
-                }
-            )
-        return json.dumps(orders_data, indent=2)
+            # Filter for stock orders by checking if the symbol is a stock
+            # Stock symbols are typically shorter and don't contain option patterns
+            asset = asset_factory(order.symbol)
+            if asset and asset.asset_type == "stock":
+                stock_orders_data.append(
+                    {
+                        "id": order.id,
+                        "symbol": order.symbol,
+                        "order_type": order.order_type,
+                        "quantity": order.quantity,
+                        "price": order.price,
+                        "status": order.status,
+                        "created_at": (
+                            order.created_at.isoformat() if order.created_at else None
+                        ),
+                        "filled_at": (
+                            order.filled_at.isoformat() if order.filled_at else None
+                        ),
+                    }
+                )
+        data = {
+            "stock_orders": stock_orders_data,
+            "count": len(stock_orders_data),
+            "order_types": ["stock"],
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error getting orders: {e!s}"
+        return handle_tool_exception("stock_orders", e)
 
 
-async def get_order(args: GetOrderArgs) -> str:
+async def options_orders() -> dict[str, Any]:
+    """Get all options trading orders."""
+    try:
+        orders = await get_mcp_trading_service().get_orders()
+        option_orders_data = []
+        for order in orders:
+            # Filter for option orders by checking if the symbol is an option
+            asset = asset_factory(order.symbol)
+            if asset and isinstance(asset, Option):
+                option_orders_data.append(
+                    {
+                        "id": order.id,
+                        "symbol": order.symbol,
+                        "underlying_symbol": (
+                            asset.underlying.symbol if asset.underlying else None
+                        ),
+                        "option_type": asset.option_type,
+                        "strike": asset.strike,
+                        "expiration_date": (
+                            asset.expiration_date.isoformat()
+                            if asset.expiration_date
+                            else None
+                        ),
+                        "order_type": order.order_type,
+                        "quantity": order.quantity,
+                        "price": order.price,
+                        "status": order.status,
+                        "created_at": (
+                            order.created_at.isoformat() if order.created_at else None
+                        ),
+                        "filled_at": (
+                            order.filled_at.isoformat() if order.filled_at else None
+                        ),
+                    }
+                )
+        data = {
+            "option_orders": option_orders_data,
+            "count": len(option_orders_data),
+            "order_types": ["option"],
+        }
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("options_orders", e)
+
+
+async def open_stock_orders() -> dict[str, Any]:
+    """Get all open stock trading orders (pending, triggered, partially filled)."""
+    try:
+        orders = await get_mcp_trading_service().get_orders()
+        open_stock_orders_data = []
+        open_statuses = ["pending", "triggered", "partially_filled"]
+
+        for order in orders:
+            # Filter for stock orders that are open
+            asset = asset_factory(order.symbol)
+            if (
+                asset
+                and asset.asset_type == "stock"
+                and order.status.lower() in open_statuses
+            ):
+                open_stock_orders_data.append(
+                    {
+                        "id": order.id,
+                        "symbol": order.symbol,
+                        "order_type": order.order_type,
+                        "quantity": order.quantity,
+                        "price": order.price,
+                        "status": order.status,
+                        "created_at": (
+                            order.created_at.isoformat() if order.created_at else None
+                        ),
+                    }
+                )
+        data = {
+            "open_stock_orders": open_stock_orders_data,
+            "count": len(open_stock_orders_data),
+            "order_types": ["stock"],
+            "statuses_included": open_statuses,
+        }
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("open_stock_orders", e)
+
+
+async def open_option_orders() -> dict[str, Any]:
+    """Get all open option trading orders (pending, triggered, partially filled)."""
+    try:
+        orders = await get_mcp_trading_service().get_orders()
+        open_option_orders_data = []
+        open_statuses = ["pending", "triggered", "partially_filled"]
+
+        for order in orders:
+            # Filter for option orders that are open
+            asset = asset_factory(order.symbol)
+            if (
+                asset
+                and isinstance(asset, Option)
+                and order.status.lower() in open_statuses
+            ):
+                open_option_orders_data.append(
+                    {
+                        "id": order.id,
+                        "symbol": order.symbol,
+                        "underlying_symbol": (
+                            asset.underlying.symbol if asset.underlying else None
+                        ),
+                        "option_type": asset.option_type,
+                        "strike": asset.strike,
+                        "expiration_date": (
+                            asset.expiration_date.isoformat()
+                            if asset.expiration_date
+                            else None
+                        ),
+                        "order_type": order.order_type,
+                        "quantity": order.quantity,
+                        "price": order.price,
+                        "status": order.status,
+                        "created_at": (
+                            order.created_at.isoformat() if order.created_at else None
+                        ),
+                    }
+                )
+        data = {
+            "open_option_orders": open_option_orders_data,
+            "count": len(open_option_orders_data),
+            "order_types": ["option"],
+            "statuses_included": open_statuses,
+        }
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("open_option_orders", e)
+
+
+async def get_order(order_id: str) -> dict[str, Any]:
     """Get a specific order by ID."""
     try:
-        order = await get_mcp_trading_service().get_order(args.order_id)
-        return json.dumps(
-            {
-                "id": order.id,
-                "symbol": order.symbol,
-                "order_type": order.order_type,
-                "quantity": order.quantity,
-                "price": order.price,
-                "status": order.status,
-                "created_at": (
-                    order.created_at.isoformat() if order.created_at else None
-                ),
-                "filled_at": order.filled_at.isoformat() if order.filled_at else None,
-            },
-            indent=2,
-        )
+        order = await get_mcp_trading_service().get_order(order_id)
+        data = {
+            "id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
+            "price": order.price,
+            "status": order.status,
+            "created_at": (order.created_at.isoformat() if order.created_at else None),
+            "filled_at": order.filled_at.isoformat() if order.filled_at else None,
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error getting order: {e!s}"
+        return handle_tool_exception("get_order", e)
 
 
-async def cancel_order(args: CancelOrderArgs) -> str:
-    """Cancel a specific order."""
+async def cancel_stock_order_by_id(order_id: str) -> dict[str, Any]:
+    """Cancel a specific stock order by ID."""
     try:
-        result = await get_mcp_trading_service().cancel_order(args.order_id)
-        return json.dumps(result, indent=2)
+        # First check if order exists and is a stock order
+        order = await get_mcp_trading_service().get_order(order_id)
+
+        # Determine if it's a stock order
+        asset = asset_factory(order.symbol)
+        if asset is None:
+            return error_response(
+                f"Could not determine asset type for symbol: {order.symbol}"
+            )
+        if hasattr(asset, "asset_type") and asset.asset_type != "stock":
+            return error_response(
+                f"Order {order_id} is not a stock order (symbol: {order.symbol})"
+            )
+
+        # Cancel the order
+        result = await get_mcp_trading_service().cancel_order(order_id)
+
+        data = {
+            "message": "Stock order cancelled successfully",
+            "order_id": order_id,
+            "symbol": order.symbol,
+            "details": result,
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error cancelling order: {e!s}"
+        return handle_tool_exception("cancel_stock_order_by_id", e)
 
 
-async def get_portfolio() -> str:
+async def cancel_option_order_by_id(order_id: str) -> dict[str, Any]:
+    """Cancel a specific option order by ID."""
+    try:
+        # First check if order exists and is an option order
+        order = await get_mcp_trading_service().get_order(order_id)
+
+        # Determine if it's an option order
+        asset = asset_factory(order.symbol)
+        if not isinstance(asset, Option):
+            return error_response(
+                f"Order {order_id} is not an option order (symbol: {order.symbol})"
+            )
+
+        # Cancel the order
+        result = await get_mcp_trading_service().cancel_order(order_id)
+
+        data = {
+            "message": "Option order cancelled successfully",
+            "order_id": order_id,
+            "symbol": order.symbol,
+            "option_details": {
+                "underlying": asset.underlying.symbol if asset.underlying else None,
+                "strike": asset.strike,
+                "expiration_date": (
+                    asset.expiration_date.isoformat() if asset.expiration_date else None
+                ),
+                "option_type": asset.option_type,
+            },
+            "details": result,
+        }
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("cancel_option_order_by_id", e)
+
+
+async def cancel_all_stock_orders_tool() -> dict[str, Any]:
+    """Cancel all pending and triggered stock orders."""
+    try:
+        result = await get_mcp_trading_service().cancel_all_stock_orders()
+        data = {"message": "Stock order cancellation completed", "result": result}
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("cancel_all_stock_orders_tool", e)
+
+
+async def cancel_all_option_orders_tool() -> dict[str, Any]:
+    """Cancel all pending and triggered option orders."""
+    try:
+        result = await get_mcp_trading_service().cancel_all_option_orders()
+        data = {"message": "Option order cancellation completed", "result": result}
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("cancel_all_option_orders_tool", e)
+
+
+async def portfolio() -> dict[str, Any]:
     """Get complete portfolio information."""
     try:
         portfolio = await get_mcp_trading_service().get_portfolio()
@@ -184,41 +416,47 @@ async def get_portfolio() -> str:
                 }
             )
 
-        return json.dumps(
-            {
-                "cash_balance": portfolio.cash_balance,
-                "total_value": portfolio.total_value,
-                "positions": positions_data,
-                "daily_pnl": portfolio.daily_pnl,
-                "total_pnl": portfolio.total_pnl,
-            },
-            indent=2,
-        )
+        data = {
+            "cash_balance": portfolio.cash_balance,
+            "total_value": portfolio.total_value,
+            "positions": positions_data,
+            "daily_pnl": portfolio.daily_pnl,
+            "total_pnl": portfolio.total_pnl,
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error getting portfolio: {e!s}"
+        return handle_tool_exception("portfolio", e)
 
 
-async def get_portfolio_summary() -> str:
+async def get_portfolio() -> dict[str, Any]:
+    """Get complete portfolio information (deprecated - use portfolio() instead)."""
+    return await portfolio()
+
+
+async def account_details() -> dict[str, Any]:
     """Get portfolio summary with key metrics."""
     try:
         summary = await get_mcp_trading_service().get_portfolio_summary()
-        return json.dumps(
-            {
-                "total_value": summary.total_value,
-                "cash_balance": summary.cash_balance,
-                "invested_value": summary.invested_value,
-                "daily_pnl": summary.daily_pnl,
-                "daily_pnl_percent": summary.daily_pnl_percent,
-                "total_pnl": summary.total_pnl,
-                "total_pnl_percent": summary.total_pnl_percent,
-            },
-            indent=2,
-        )
+        data = {
+            "total_value": summary.total_value,
+            "cash_balance": summary.cash_balance,
+            "invested_value": summary.invested_value,
+            "daily_pnl": summary.daily_pnl,
+            "daily_pnl_percent": summary.daily_pnl_percent,
+            "total_pnl": summary.total_pnl,
+            "total_pnl_percent": summary.total_pnl_percent,
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error getting portfolio summary: {e!s}"
+        return handle_tool_exception("account_details", e)
 
 
-async def get_all_positions() -> str:
+async def get_portfolio_summary() -> dict[str, Any]:
+    """Get portfolio summary with key metrics (deprecated - use account_details() instead)."""
+    return await account_details()
+
+
+async def positions() -> dict[str, Any]:
     """Get all portfolio positions."""
     try:
         positions = await get_mcp_trading_service().get_positions()
@@ -234,117 +472,91 @@ async def get_all_positions() -> str:
                     "realized_pnl": pos.realized_pnl,
                 }
             )
-        return json.dumps(positions_data, indent=2)
+        return success_response(positions_data)
     except Exception as e:
-        return f"Error getting positions: {e!s}"
+        return handle_tool_exception("positions", e)
 
 
-async def get_position(args: GetPositionArgs) -> str:
+async def get_all_positions() -> dict[str, Any]:
+    """Get all portfolio positions (deprecated - use positions() instead)."""
+    return await positions()
+
+
+async def get_position(symbol: str) -> dict[str, Any]:
     """Get a specific position by symbol."""
     try:
-        position = await get_mcp_trading_service().get_position(args.symbol)
-        return json.dumps(
-            {
-                "symbol": position.symbol,
-                "quantity": position.quantity,
-                "avg_price": position.avg_price,
-                "current_price": position.current_price,
-                "unrealized_pnl": position.unrealized_pnl,
-                "realized_pnl": position.realized_pnl,
-            },
-            indent=2,
-        )
+        position = await get_mcp_trading_service().get_position(symbol)
+        data = {
+            "symbol": position.symbol,
+            "quantity": position.quantity,
+            "avg_price": position.avg_price,
+            "current_price": position.current_price,
+            "unrealized_pnl": position.unrealized_pnl,
+            "realized_pnl": position.realized_pnl,
+        }
+        return success_response(data)
     except Exception as e:
-        return f"Error getting position: {e!s}"
+        return handle_tool_exception("get_position", e)
 
 
 # ============================================================================
 # PHASE 4: OPTIONS-SPECIFIC MCP TOOLS
 # ============================================================================
 
-
-class GetOptionsChainArgs(BaseModel):
-    symbol: str = Field(..., description="Underlying symbol (e.g., AAPL)")
-    expiration_date: str | None = Field(
-        None, description="Expiration date (YYYY-MM-DD), None for all"
-    )
-    min_strike: float | None = Field(None, description="Minimum strike price filter")
-    max_strike: float | None = Field(None, description="Maximum strike price filter")
+# Options-specific functions now use direct parameters
 
 
-class GetExpirationDatesArgs(BaseModel):
-    symbol: str = Field(..., description="Underlying symbol (e.g., AAPL)")
-
-
-class CreateMultiLegOrderArgs(BaseModel):
-    legs: list[dict[str, Any]] = Field(
-        ..., description="Order legs with symbol, quantity, order_type, price"
-    )
-    order_type: str = Field("limit", description="Order type (limit, market)")
-
-
-class CalculateGreeksArgs(BaseModel):
-    option_symbol: str = Field(
-        ..., description="Option symbol (e.g., AAPL240119C00195000)"
-    )
-    underlying_price: float | None = Field(
-        None, description="Underlying price override"
-    )
-
-
-class SimulateExpirationArgs(BaseModel):
-    processing_date: str | None = Field(
-        None, description="Expiration processing date (YYYY-MM-DD)"
-    )
-    dry_run: bool = Field(True, description="Dry run mode (don't modify account)")
-
-
-async def get_options_chain(args: GetOptionsChainArgs) -> str:
+async def get_options_chain(
+    symbol: str,
+    expiration_date: str | None = None,
+    min_strike: float | None = None,
+    max_strike: float | None = None,
+) -> dict[str, Any]:
     """Get options chain for an underlying symbol with filtering capabilities."""
     try:
         # Parse expiration date if provided
         expiration = None
-        if args.expiration_date:
-            expiration = datetime.strptime(args.expiration_date, "%Y-%m-%d").date()
+        if expiration_date:
+            expiration = datetime.strptime(expiration_date, "%Y-%m-%d").date()
 
         # Get options chain
         chain_data = await get_mcp_trading_service().get_formatted_options_chain(
-            args.symbol,
+            symbol,
             expiration_date=expiration,
-            min_strike=args.min_strike,
-            max_strike=args.max_strike,
+            min_strike=min_strike,
+            max_strike=max_strike,
         )
 
-        return json.dumps(chain_data, indent=2)
+        return success_response(chain_data)
 
     except Exception as e:
-        return f"Error getting options chain: {e!s}"
+        return handle_tool_exception("get_options_chain", e)
 
 
-async def get_expiration_dates(args: GetExpirationDatesArgs) -> str:
+async def get_expiration_dates(symbol: str) -> dict[str, Any]:
     """Get available expiration dates for an underlying symbol."""
     try:
-        dates = get_mcp_trading_service().get_expiration_dates(args.symbol)
+        dates = get_mcp_trading_service().get_expiration_dates(symbol)
         dates_data = [d.isoformat() for d in dates]
 
-        return json.dumps(
-            {
-                "underlying_symbol": args.symbol,
-                "expiration_dates": dates_data,
-                "count": len(dates_data),
-            },
-            indent=2,
-        )
+        data = {
+            "underlying_symbol": symbol,
+            "expiration_dates": dates_data,
+            "count": len(dates_data),
+        }
+        return success_response(data)
 
     except Exception as e:
-        return f"Error getting expiration dates: {e!s}"
+        return handle_tool_exception("get_expiration_dates", e)
 
 
-async def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
+async def create_multi_leg_order(
+    legs: list[dict[str, Any]], order_type: str = "limit"
+) -> dict[str, Any]:
     """Create a multi-leg options order (spreads, straddles, etc.)."""
     try:
         order = await get_mcp_trading_service().create_multi_leg_order_from_request(
-            args.legs, args.order_type
+            legs, order_type
         )
 
         # Convert legs for response
@@ -359,37 +571,35 @@ async def create_multi_leg_order(args: CreateMultiLegOrderArgs) -> str:
                 }
             )
 
-        return json.dumps(
-            {
-                "id": order.id,
-                "legs": legs_data,
-                "net_price": order.net_price,
-                "status": order.status,
-                "created_at": (
-                    order.created_at.isoformat() if order.created_at else None
-                ),
-            },
-            indent=2,
-        )
+        data = {
+            "id": order.id,
+            "legs": legs_data,
+            "net_price": order.net_price,
+            "status": order.status,
+            "created_at": (order.created_at.isoformat() if order.created_at else None),
+        }
+        return success_response(data)
 
     except Exception as e:
-        return f"Error creating multi-leg order: {e!s}"
+        return handle_tool_exception("create_multi_leg_order", e)
 
 
-async def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
+async def calculate_option_greeks(
+    option_symbol: str, underlying_price: float | None = None
+) -> dict[str, Any]:
     """Calculate Greeks for an option symbol."""
     try:
         greeks = await get_mcp_trading_service().calculate_greeks(
-            args.option_symbol, underlying_price=args.underlying_price
+            option_symbol, underlying_price=underlying_price
         )
 
         # Add option details
-        asset = asset_factory(args.option_symbol)
+        asset = asset_factory(option_symbol)
         result: dict[str, Any] = dict(greeks)  # Copy the greeks dict
         if isinstance(asset, Option):
             result.update(
                 {
-                    "option_symbol": args.option_symbol,
+                    "option_symbol": option_symbol,
                     "underlying_symbol": asset.underlying.symbol,
                     "strike": asset.strike,
                     "expiration_date": asset.expiration_date.isoformat(),
@@ -398,38 +608,33 @@ async def calculate_option_greeks(args: CalculateGreeksArgs) -> str:
                 }
             )
 
-        return json.dumps(result, indent=2)
+        return success_response(result)
 
     except Exception as e:
-        return f"Error calculating Greeks: {e!s}"
+        return handle_tool_exception("calculate_option_greeks", e)
 
 
-async def simulate_option_expiration(args: SimulateExpirationArgs) -> str:
+async def simulate_option_expiration(
+    processing_date: str | None = None, dry_run: bool = True
+) -> dict[str, Any]:
     """Simulate option expiration processing for current portfolio."""
     try:
         result = await get_mcp_trading_service().simulate_expiration(
-            processing_date=args.processing_date,
-            dry_run=args.dry_run,
+            processing_date=processing_date,
+            dry_run=dry_run,
         )
-        return json.dumps(result, indent=2)
+        return success_response(result)
 
     except Exception as e:
-        return f"Error simulating option expiration: {e!s}"
+        return handle_tool_exception("simulate_option_expiration", e)
 
 
-class FindTradableOptionsArgs(BaseModel):
-    symbol: str = Field(..., description="Stock symbol (e.g., AAPL, GOOGL)")
-    expiration_date: str | None = Field(
-        None, description="Expiration date in YYYY-MM-DD format"
-    )
-    option_type: str | None = Field(None, description="Option type: 'call' or 'put'")
+# Additional functions with direct parameters
 
 
-class GetOptionMarketDataArgs(BaseModel):
-    option_id: str = Field(..., description="Option symbol or ID")
-
-
-async def find_tradable_options(args: FindTradableOptionsArgs) -> str:
+async def find_tradable_options(
+    symbol: str, expiration_date: str | None = None, option_type: str | None = None
+) -> dict[str, Any]:
     """
     Find tradable options for a symbol with optional filtering.
 
@@ -438,14 +643,14 @@ async def find_tradable_options(args: FindTradableOptionsArgs) -> str:
     """
     try:
         result = await get_mcp_trading_service().find_tradable_options(
-            args.symbol, args.expiration_date, args.option_type
+            symbol, expiration_date, option_type
         )
-        return json.dumps(result, indent=2)
+        return success_response(result)
     except Exception as e:
-        return f"Error finding tradable options: {e!s}"
+        return handle_tool_exception("find_tradable_options", e)
 
 
-async def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
+async def get_option_market_data(option_id: str) -> dict[str, Any]:
     """
     Get market data for a specific option contract.
 
@@ -453,7 +658,25 @@ async def get_option_market_data(args: GetOptionMarketDataArgs) -> str:
     pricing, and volume information.
     """
     try:
-        result = await get_mcp_trading_service().get_option_market_data(args.option_id)
-        return json.dumps(result, indent=2)
+        result = await get_mcp_trading_service().get_option_market_data(option_id)
+        return success_response(result)
     except Exception as e:
-        return f"Error getting option market data: {e!s}"
+        return handle_tool_exception("get_option_market_data", e)
+
+
+async def get_strategy_analysis(
+    symbols: list[str], strategy_type: str | None = None
+) -> dict[str, Any]:
+    """Analyze trading strategies for given symbols."""
+    try:
+        # This would interface with strategy analysis service
+        # For now, return a placeholder response
+        data = {
+            "symbols": symbols,
+            "strategy_type": strategy_type,
+            "analysis": "Strategy analysis functionality not yet implemented",
+            "recommendation": "Hold",
+        }
+        return success_response(data)
+    except Exception as e:
+        return handle_tool_exception("get_strategy_analysis", e)

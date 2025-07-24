@@ -14,22 +14,22 @@ Tests cover:
 - Stop loss, stop limit, and trailing stop orders
 """
 
-import pytest
 import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from decimal import Decimal
+from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
 
-from app.schemas.orders import Order, OrderStatus, OrderType, OrderCondition
+import pytest
+
+from app.models.assets import Stock
 from app.models.database.trading import Order as DBOrder
+from app.models.quotes import Quote
+from app.schemas.orders import Order, OrderStatus, OrderType
 from app.services.order_execution_engine import (
     OrderExecutionEngine,
-    TriggerCondition,
     OrderExecutionError,
+    TriggerCondition,
 )
 from app.services.trading_service import TradingService
-from app.models.quotes import Quote
-from app.models.assets import Stock
 
 
 @pytest.fixture
@@ -124,18 +124,20 @@ class TestEngineLifecycleManagement:
     @pytest.mark.asyncio
     async def test_start_engine(self, execution_engine):
         """Test starting the execution engine."""
-        with patch.object(
-            execution_engine, "_load_pending_orders", new_callable=AsyncMock
+        with (
+            patch.object(
+                execution_engine, "_load_pending_orders", new_callable=AsyncMock
+            ),
+            patch("asyncio.create_task") as mock_create_task,
         ):
-            with patch("asyncio.create_task") as mock_create_task:
-                mock_task = Mock()
-                mock_create_task.return_value = mock_task
+            mock_task = Mock()
+            mock_create_task.return_value = mock_task
 
-                await execution_engine.start()
+            await execution_engine.start()
 
-                assert execution_engine.is_running is True
-                assert execution_engine.monitoring_task == mock_task
-                mock_create_task.assert_called_once()
+            assert execution_engine.is_running is True
+            assert execution_engine.monitoring_task == mock_task
+            mock_create_task.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_start_engine_already_running(self, execution_engine):
@@ -644,51 +646,53 @@ class TestOrderProcessing:
             created_at=datetime.now(),
         )
 
-        with patch.object(
-            execution_engine, "_load_order_by_id", return_value=mock_order
-        ):
-            with patch(
+        with (
+            patch.object(
+                execution_engine, "_load_order_by_id", return_value=mock_order
+            ),
+            patch(
                 "app.services.order_execution_engine.order_converter"
-            ) as mock_converter:
-                mock_converted_order = Order(
-                    id="converted-order",
-                    symbol="AAPL",
-                    order_type=OrderType.SELL,
-                    quantity=100,
-                    price=144.00,
-                    status=OrderStatus.PENDING,
-                    created_at=datetime.now(),
-                )
-                mock_converter.convert_stop_loss_to_market.return_value = (
-                    mock_converted_order
-                )
+            ) as mock_converter,
+        ):
+            mock_converted_order = Order(
+                id="converted-order",
+                symbol="AAPL",
+                order_type=OrderType.SELL,
+                quantity=100,
+                price=144.00,
+                status=OrderStatus.PENDING,
+                created_at=datetime.now(),
+            )
+            mock_converter.convert_stop_loss_to_market.return_value = (
+                mock_converted_order
+            )
 
-                with patch.object(
+            with (
+                patch.object(
                     execution_engine,
                     "_update_order_triggered_status",
                     new_callable=AsyncMock,
-                ):
-                    with patch.object(
-                        execution_engine,
-                        "_execute_converted_order",
-                        new_callable=AsyncMock,
-                    ):
-                        await execution_engine._process_triggered_order(
-                            condition, 144.00
-                        )
+                ),
+                patch.object(
+                    execution_engine,
+                    "_execute_converted_order",
+                    new_callable=AsyncMock,
+                ),
+            ):
+                await execution_engine._process_triggered_order(condition, 144.00)
 
-                        # Verify conversion was called
-                        mock_converter.convert_stop_loss_to_market.assert_called_once_with(
-                            mock_order, 144.00
-                        )
+                # Verify conversion was called
+                mock_converter.convert_stop_loss_to_market.assert_called_once_with(
+                    mock_order, 144.00
+                )
 
-                        # Verify order was executed
-                        execution_engine._execute_converted_order.assert_called_once_with(
-                            mock_converted_order
-                        )
+                # Verify order was executed
+                execution_engine._execute_converted_order.assert_called_once_with(
+                    mock_converted_order
+                )
 
-                        # Verify metrics updated
-                        assert execution_engine.orders_triggered == 1
+                # Verify metrics updated
+                assert execution_engine.orders_triggered == 1
 
     @pytest.mark.asyncio
     async def test_process_triggered_order_stop_limit(self, execution_engine):
@@ -712,29 +716,31 @@ class TestOrderProcessing:
             created_at=datetime.now(),
         )
 
-        with patch.object(
-            execution_engine, "_load_order_by_id", return_value=mock_order
-        ):
-            with patch(
+        with (
+            patch.object(
+                execution_engine, "_load_order_by_id", return_value=mock_order
+            ),
+            patch(
                 "app.services.order_execution_engine.order_converter"
-            ) as mock_converter:
-                mock_converter.convert_stop_limit_to_limit.return_value = mock_order
+            ) as mock_converter,
+        ):
+            mock_converter.convert_stop_limit_to_limit.return_value = mock_order
 
-                with patch.object(
+            with (
+                patch.object(
                     execution_engine,
                     "_update_order_triggered_status",
                     new_callable=AsyncMock,
-                ):
-                    with patch.object(
-                        execution_engine,
-                        "_execute_converted_order",
-                        new_callable=AsyncMock,
-                    ):
-                        await execution_engine._process_triggered_order(
-                            condition, 144.00
-                        )
+                ),
+                patch.object(
+                    execution_engine,
+                    "_execute_converted_order",
+                    new_callable=AsyncMock,
+                ),
+            ):
+                await execution_engine._process_triggered_order(condition, 144.00)
 
-                        mock_converter.convert_stop_limit_to_limit.assert_called_once()
+                mock_converter.convert_stop_limit_to_limit.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_process_triggered_order_trailing_stop(self, execution_engine):
@@ -757,29 +763,31 @@ class TestOrderProcessing:
             created_at=datetime.now(),
         )
 
-        with patch.object(
-            execution_engine, "_load_order_by_id", return_value=mock_order
-        ):
-            with patch(
+        with (
+            patch.object(
+                execution_engine, "_load_order_by_id", return_value=mock_order
+            ),
+            patch(
                 "app.services.order_execution_engine.order_converter"
-            ) as mock_converter:
-                mock_converter.convert_trailing_stop_to_market.return_value = mock_order
+            ) as mock_converter,
+        ):
+            mock_converter.convert_trailing_stop_to_market.return_value = mock_order
 
-                with patch.object(
+            with (
+                patch.object(
                     execution_engine,
                     "_update_order_triggered_status",
                     new_callable=AsyncMock,
-                ):
-                    with patch.object(
-                        execution_engine,
-                        "_execute_converted_order",
-                        new_callable=AsyncMock,
-                    ):
-                        await execution_engine._process_triggered_order(
-                            condition, 144.00
-                        )
+                ),
+                patch.object(
+                    execution_engine,
+                    "_execute_converted_order",
+                    new_callable=AsyncMock,
+                ),
+            ):
+                await execution_engine._process_triggered_order(condition, 144.00)
 
-                        mock_converter.convert_trailing_stop_to_market.assert_called_once()
+                mock_converter.convert_trailing_stop_to_market.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_process_triggered_order_no_original(self, execution_engine):
@@ -820,21 +828,23 @@ class TestOrderProcessing:
             created_at=datetime.now(),
         )
 
-        with patch.object(
-            execution_engine, "_load_order_by_id", return_value=mock_order
-        ):
-            with patch(
+        with (
+            patch.object(
+                execution_engine, "_load_order_by_id", return_value=mock_order
+            ),
+            patch(
                 "app.services.order_execution_engine.order_converter"
-            ) as mock_converter:
-                mock_converter.convert_stop_loss_to_market.side_effect = Exception(
-                    "Conversion error"
-                )
+            ) as mock_converter,
+        ):
+            mock_converter.convert_stop_loss_to_market.side_effect = Exception(
+                "Conversion error"
+            )
 
-                # Should not raise exception but log error
-                await execution_engine._process_triggered_order(condition, 144.00)
+            # Should not raise exception but log error
+            await execution_engine._process_triggered_order(condition, 144.00)
 
-                # Metrics should not be updated
-                assert execution_engine.orders_triggered == 0
+            # Metrics should not be updated
+            assert execution_engine.orders_triggered == 0
 
 
 class TestDatabaseIntegration:

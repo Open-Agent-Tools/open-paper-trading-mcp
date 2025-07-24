@@ -192,7 +192,7 @@ class MockDataFactory:
         elif data_type == "info":
             defaults = {
                 "name": f"{symbol} Inc.",
-                "sector": "Technology", 
+                "sector": "Technology",
                 "industry": "Consumer Electronics",
                 "pe_ratio": 28.5,
                 "dividend_yield": 0.0055,
@@ -211,7 +211,7 @@ class MockDataFactory:
                 "articles": [
                     {
                         "title": f"{symbol} Reports Strong Earnings",
-                        "url": "https://example.com/news/1", 
+                        "url": "https://example.com/news/1",
                         "published_at": "2023-06-15T14:30:00Z",
                         "source": "MarketWatch",
                     }
@@ -598,7 +598,7 @@ def api_test_utils():
 
 # Custom pytest markers for API tests - these would be defined in pytest.ini or pyproject.toml
 # pytest.mark.auth = pytest.mark.auth
-# pytest.mark.health = pytest.mark.health 
+# pytest.mark.health = pytest.mark.health
 # pytest.mark.portfolio = pytest.mark.portfolio
 # pytest.mark.trading = pytest.mark.trading
 # pytest.mark.market_data = pytest.mark.market_data

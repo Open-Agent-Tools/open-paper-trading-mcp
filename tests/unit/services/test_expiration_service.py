@@ -15,14 +15,14 @@ Tests cover:
 import copy
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.adapters.base import QuoteAdapter
-from app.models.assets import Call, Option, Put, Stock, asset_factory
-from app.schemas.positions import Position
+from app.models.assets import Call, Put, Stock
 from app.models.quotes import Quote
+from app.schemas.positions import Position
 from app.services.expiration import ExpirationResult, OptionsExpirationEngine
 
 
