@@ -157,9 +157,8 @@ class OptionsExpirationEngine:
 
             # Check if it's an option
             asset = asset_factory(symbol)
-            if isinstance(asset, Option):
-                if asset.expiration_date <= processing_date:
-                    expired.append(position)
+            if isinstance(asset, Option) and asset.expiration_date <= processing_date:
+                expired.append(position)
 
         return expired
 

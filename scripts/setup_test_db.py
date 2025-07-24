@@ -14,10 +14,10 @@ from pathlib import Path
 app_dir = Path(__file__).parent.parent / "app"
 sys.path.insert(0, str(app_dir.parent))
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text  # noqa: E402
+from sqlalchemy.ext.asyncio import create_async_engine  # noqa: E402
 
-from app.models.database.base import Base
+from app.models.database.base import Base  # noqa: E402
 
 
 async def setup_test_database():

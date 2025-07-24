@@ -342,8 +342,7 @@ class TestPriorityOneIntegration:
 
         # Test that we can call these methods without errors
         # (they may not complete due to missing database, but should not crash)
-        try:
+        import contextlib
+        
+        with contextlib.suppress(AttributeError, TypeError):
             await engine.add_trigger_order(None)  # Should handle gracefully
-        except (AttributeError, TypeError):
-            # Expected - this will fail due to None order, which is correct behavior
-            pass

@@ -17,6 +17,6 @@ async def get_all_accounts(
     Retrieve all accounts.
     """
     from app.adapters.accounts import DatabaseAccountAdapter
-    
+
     adapter = DatabaseAccountAdapter()
     return await adapter.get_all_accounts()

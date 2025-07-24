@@ -456,11 +456,11 @@ class TestPerformanceOptimization:
         result = await async_db_session.execute(
             text("SELECT * FROM accounts WHERE owner = 'perf_user_050'")
         )
-        account = result.fetchone()
+        account_row = result.fetchone()
 
         owner_lookup_time = performance_monitor.end_timing("owner_lookup")
 
-        assert account is not None
+        assert account_row is not None
         assert owner_lookup_time < 0.1  # Should be fast with index
 
         # Test range query performance
@@ -476,7 +476,7 @@ class TestPerformanceOptimization:
 
         range_query_time = performance_monitor.end_timing("balance_range")
 
-        assert count > 0
+        assert count is not None and count > 0
         assert range_query_time < 0.2  # Range queries should be reasonable
 
     @pytest.mark.asyncio
@@ -538,7 +538,7 @@ class TestPerformanceOptimization:
             pool_recycle=300,
         )
 
-        SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession)
+        session_local = async_sessionmaker(bind=engine, class_=AsyncSession)
 
         async def perform_db_operation(operation_id: int) -> float:
             """Perform a database operation and measure time."""
@@ -546,7 +546,7 @@ class TestPerformanceOptimization:
 
             start = time.time()
 
-            async with SessionLocal() as session:
+            async with session_local() as session:
                 # Simple operation to test connection efficiency
                 result = await session.execute(
                     text("SELECT CAST(:id AS INTEGER)"), {"id": operation_id}

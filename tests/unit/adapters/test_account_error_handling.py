@@ -140,7 +140,7 @@ class TestDatabaseAccountAdapterErrors:
             # Mock add and commit to raise IntegrityError
             mock_db.add = MagicMock()
             mock_db.commit = AsyncMock(
-                side_effect=IntegrityError("Duplicate key", None, None)
+                side_effect=IntegrityError("Duplicate key", {}, None)
             )
 
             with pytest.raises(IntegrityError):

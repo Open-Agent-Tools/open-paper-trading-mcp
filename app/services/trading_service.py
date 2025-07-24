@@ -110,7 +110,7 @@ class TradingService:
 
         async for session in get_async_session():
             return session
-        
+
         # This should never be reached, but mypy requires it
         raise RuntimeError("Unable to obtain database session")
 

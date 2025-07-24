@@ -635,7 +635,7 @@ class TestCancelAllOptionOrders:
         option_orders = []
 
         # Options with C/P in symbol
-        for i in range(2):
+        for _i in range(2):
             order = DBOrder(
                 id=str(uuid.uuid4()),
                 account_id=account.id,

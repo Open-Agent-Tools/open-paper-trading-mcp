@@ -13,9 +13,10 @@ from pathlib import Path
 
 # Add the app directory to the Python path
 app_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(app_dir))
+if str(app_dir) not in sys.path:
+    sys.path.insert(0, str(app_dir))
 
-from app.services.database_indexes import DatabaseIndexManager
+from app.services.database_indexes import DatabaseIndexManager  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

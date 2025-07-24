@@ -706,10 +706,9 @@ class TestAccountAdapterCreateTransactionHandling:
             # Mock db_session.commit to raise an error
             with patch.object(
                 db_session, "commit", side_effect=Exception("Database error")
-            ):
+            ), pytest.raises(Exception, match="Database error"):
                 # Verify exception is propagated
-                with pytest.raises(Exception, match="Database error"):
-                    await adapter.put_account(account)
+                await adapter.put_account(account)
 
                 # Test passed - exception was properly propagated
 

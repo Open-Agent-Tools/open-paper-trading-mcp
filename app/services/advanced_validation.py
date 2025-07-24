@@ -385,25 +385,24 @@ class AdvancedOrderValidator:
             )
 
         # Warn about deep ITM/OTM options
-        if strike_distance > 0.2:  # More than 20% from ATM
-            if underlying_price is not None:
-                moneyness = (
-                    "ITM" if option.get_intrinsic_value(underlying_price) > 0 else "OTM"
+        if strike_distance > 0.2 and underlying_price is not None:  # More than 20% from ATM
+            moneyness = (
+                "ITM" if option.get_intrinsic_value(underlying_price) > 0 else "OTM"
+            )
+            result.messages.append(
+                ValidationMessage(
+                    rule=ValidationRule.OPTIONS,
+                    severity=ValidationSeverity.INFO,
+                    code="DEEP_MONEYNESS",
+                    message=f"Deep {moneyness} option - {strike_distance:.1%} from ATM",
+                    details={
+                        "symbol": option.symbol,
+                        "moneyness": moneyness,
+                        "distance_percent": strike_distance,
+                    },
+                    suggested_action=None,
                 )
-                result.messages.append(
-                    ValidationMessage(
-                        rule=ValidationRule.OPTIONS,
-                        severity=ValidationSeverity.INFO,
-                        code="DEEP_MONEYNESS",
-                        message=f"Deep {moneyness} option - {strike_distance:.1%} from ATM",
-                        details={
-                            "symbol": option.symbol,
-                            "moneyness": moneyness,
-                            "distance_percent": strike_distance,
-                        },
-                        suggested_action=None,
-                    )
-                )
+            )
 
     # def _validate_greeks_limits(
     #     self,
@@ -476,22 +475,21 @@ class AdvancedOrderValidator:
         """Validate regulatory compliance rules."""
 
         # Pattern Day Trader rules
-        if account_limits.is_pdt and account_limits.day_trades_used >= 3:
-            # Check if this would be a day trade
-            if self._is_potential_day_trade(order, account_data):
-                result.messages.append(
-                    ValidationMessage(
-                        rule=ValidationRule.COMPLIANCE,
-                        severity=ValidationSeverity.ERROR,
-                        code="PDT_LIMIT_EXCEEDED",
-                        message="Pattern Day Trader limit exceeded - cannot place day trade",
-                        details={
-                            "day_trades_used": account_limits.day_trades_used,
-                            "pdt_status": account_limits.is_pdt,
-                        },
-                        suggested_action="Wait until next trading day or avoid day trading",
-                    )
+        if (account_limits.is_pdt and account_limits.day_trades_used >= 3 and 
+            self._is_potential_day_trade(order, account_data)):
+            result.messages.append(
+                ValidationMessage(
+                    rule=ValidationRule.COMPLIANCE,
+                    severity=ValidationSeverity.ERROR,
+                    code="PDT_LIMIT_EXCEEDED",
+                    message="Pattern Day Trader limit exceeded - cannot place day trade",
+                    details={
+                        "day_trades_used": account_limits.day_trades_used,
+                        "pdt_status": account_limits.is_pdt,
+                    },
+                    suggested_action="Wait until next trading day or avoid day trading",
                 )
+            )
 
         # Options trading level validation
         if self._is_options_order(order):
@@ -599,9 +597,8 @@ class AdvancedOrderValidator:
             return
 
         # Check volume
-        if hasattr(quote, "volume") and quote.volume is not None:
-            if quote.volume < 10:
-                result.messages.append(
+        if hasattr(quote, "volume") and quote.volume is not None and quote.volume < 10:
+            result.messages.append(
                     ValidationMessage(
                         rule=ValidationRule.LIQUIDITY,
                         severity=ValidationSeverity.WARNING,
@@ -613,9 +610,9 @@ class AdvancedOrderValidator:
                 )
 
         # Check open interest
-        if hasattr(quote, "open_interest") and quote.open_interest is not None:
-            if quote.open_interest < 50:
-                result.messages.append(
+        if (hasattr(quote, "open_interest") and quote.open_interest is not None and 
+            quote.open_interest < 50):
+            result.messages.append(
                     ValidationMessage(
                         rule=ValidationRule.LIQUIDITY,
                         severity=ValidationSeverity.INFO,

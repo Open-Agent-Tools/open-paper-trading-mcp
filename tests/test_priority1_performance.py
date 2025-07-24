@@ -212,7 +212,7 @@ class TestPriority1Performance:
 
         # Create many orders
         orders = []
-        for i in range(1000):
+        for _i in range(1000):
             order = OrderCreate(
                 symbol="AAPL",
                 order_type=OrderType.BUY,

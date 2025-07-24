@@ -147,8 +147,8 @@ class TestGetAccountIdsEmptyDatabase:
 
         # Ensure no accounts exist (cleanup handled by fixtures)
         stmt = select(DBAccount)
-        result = await db_session.execute(stmt)
-        existing_accounts = result.scalars().all()
+        db_result = await db_session.execute(stmt)
+        existing_accounts = db_result.scalars().all()
         assert len(existing_accounts) == 0
 
         with patch("app.adapters.accounts.get_async_session") as mock_get_session:

@@ -413,10 +413,7 @@ class OptionsEstimator(PriceEstimator):
 
         # Options are priced in increments (usually $0.05 or $0.10)
         # Round to nearest nickel for options under $3, dime for options over $3
-        if price < 3.0:
-            price = round(price * 20) / 20  # Round to nearest $0.05
-        else:
-            price = round(price * 10) / 10  # Round to nearest $0.10
+        price = round(price * 20) / 20 if price < 3.0 else round(price * 10) / 10
 
         return price
 
@@ -448,11 +445,11 @@ class RandomWalkEstimator(PriceEstimator):
         # Get base price from midpoint estimator
         try:
             base_price = MidpointEstimator().estimate(quote, quantity)
-        except ValueError:
+        except ValueError as err:
             if quote.price is not None and quote.price > 0:
                 base_price = quote.price
             else:
-                raise ValueError("Cannot determine base price for random walk")
+                raise ValueError("Cannot determine base price for random walk") from err
 
         # Add random component
         # Assume trading day is 6.5 hours, so intraday volatility is reduced
