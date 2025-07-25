@@ -899,9 +899,7 @@ class TestTradingServiceExpirationSimulation:
                 if pos["symbol"] == "AAPL240315P00120000"
             )
             error_position = next(
-                pos
-                for pos in expiring_options
-                if pos["symbol"] == "ERROR15C00150000"
+                pos for pos in expiring_options if pos["symbol"] == "ERROR15C00150000"
             )
 
             # Verify call position

@@ -57,7 +57,7 @@ class TestTradingServiceOptionsDiscovery:
                 ask=3.2,
             ),
         ]
-        
+
         mock_puts = [
             OptionQuote(
                 quote_date=datetime.now(),
@@ -73,7 +73,7 @@ class TestTradingServiceOptionsDiscovery:
                 ask=2.2,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="AAPL",
             expiration_date=date(2024, 3, 15),
@@ -156,7 +156,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=1.0,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="AAPL",
             expiration_date=date(2024, 3, 15),
@@ -213,7 +213,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=5.0,
             ),
         ]
-        
+
         mock_puts = [
             OptionQuote(
                 quote_date=datetime.now(),
@@ -227,7 +227,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=8.0,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="SPY",
             expiration_date=date(2024, 3, 15),
@@ -270,7 +270,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=15.0,
             ),
         ]
-        
+
         mock_puts = [
             OptionQuote(
                 quote_date=datetime.now(),
@@ -295,7 +295,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=8.0,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="TSLA",
             expiration_date=date(2024, 3, 15),
@@ -360,7 +360,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=4.0,
             ),
         ]
-        
+
         mock_puts = [
             OptionQuote(
                 quote_date=datetime.now(),
@@ -385,7 +385,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=9.0,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="QQQ",
             expiration_date=date(2024, 3, 15),
@@ -437,7 +437,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=7.0,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="AAPL",
             expiration_date=date(2024, 3, 15),  # Will be first option's expiration
@@ -510,7 +510,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=5.0,
             )
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="AAPL",
             expiration_date=date(2024, 3, 15),
@@ -564,10 +564,13 @@ class TestTradingServiceOptionsDiscovery:
     ):
         """Test get_market_hours fallback when adapter lacks extended functionality."""
         # Mock hasattr to return False to trigger fallback
-        with patch("builtins.hasattr", return_value=False), patch.object(
-            trading_service_test_data.quote_adapter,
-            "is_market_open",
-            return_value=True,
+        with (
+            patch("builtins.hasattr", return_value=False),
+            patch.object(
+                trading_service_test_data.quote_adapter,
+                "is_market_open",
+                return_value=True,
+            ),
         ):
             result = await trading_service_test_data.get_market_hours()
 
@@ -673,7 +676,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=5.0,
             )
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="VALIDATION",
             expiration_date=date(2024, 3, 15),
@@ -744,7 +747,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=99.0,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="EDGE",
             expiration_date=date(2024, 3, 15),
@@ -796,7 +799,7 @@ class TestTradingServiceOptionsDiscovery:
                 price=0.01,
             ),
         ]
-        
+
         mock_chain = OptionsChain(
             underlying_symbol="HIGH",
             expiration_date=date(2024, 3, 15),

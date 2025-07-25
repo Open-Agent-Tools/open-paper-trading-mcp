@@ -34,22 +34,21 @@ def run_tests() -> None:
 
 
 def format_code() -> None:
-    """Format code with black and isort"""
+    """Format code with ruff"""
     print("Formatting code...")
-    os.system("uv run black app tests")
-    os.system("uv run isort app tests")
+    os.system("uv run ruff format .")
 
 
 def lint_code() -> None:
-    """Lint code with flake8"""
+    """Lint code with ruff"""
     print("Linting code...")
-    os.system("uv run flake8 app tests")
+    os.system("uv run ruff check . --fix")
 
 
 def type_check() -> None:
     """Type check with mypy"""
     print("Type checking...")
-    os.system("uv run mypy app")
+    os.system("uv run mypy .")
 
 
 def run_all_checks() -> None:
@@ -64,12 +63,12 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python scripts/dev.py <command>")
         print("Commands:")
-        print("  server    - Start development server")
-        print("  test      - Run tests")
-        print("  format    - Format code")
-        print("  lint      - Lint code")
-        print("  typecheck - Type check code")
-        print("  check     - Run all checks")
+        print("  server    - Start development server (FastAPI + MCP)")
+        print("  test      - Run tests (uv run pytest -v)")
+        print("  format    - Format code (uv run ruff format .)")
+        print("  lint      - Lint code (uv run ruff check . --fix)")
+        print("  typecheck - Type check code (uv run mypy .)")
+        print("  check     - Run all checks (format + lint + typecheck + tests)")
         return
 
     command = sys.argv[1]

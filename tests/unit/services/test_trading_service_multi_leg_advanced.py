@@ -60,12 +60,14 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify the mock order data was passed correctly
             mock_create.assert_called_once()
-            mock_order_data = mock_create.call_args[0][0]  # First positional argument (MockOrderData)
+            mock_order_data = mock_create.call_args[0][
+                0
+            ]  # First positional argument (MockOrderData)
 
             # Verify the MockOrderData structure
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 2
-            
+
             # Check first leg
             leg1 = mock_order_data.legs[0]
             assert leg1.symbol == "AAPL240315C00150000"
@@ -118,15 +120,15 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify structured legs for market order
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 2
-            
+
             # Check each leg individually with correct order type based on side
             leg1 = mock_order_data.legs[0]
             assert leg1.side == "buy"
             assert leg1.order_type == OrderType.BUY
             assert leg1.price is None
-            
+
             leg2 = mock_order_data.legs[1]
             assert leg2.side == "sell"
             assert leg2.order_type == OrderType.SELL
@@ -171,7 +173,7 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify all 4 legs were structured correctly
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 4
 
             # Verify each leg has correct structure
@@ -179,7 +181,9 @@ class TestTradingServiceMultiLegAdvanced:
                 assert leg.symbol == legs[i]["symbol"]
                 assert leg.quantity == legs[i]["quantity"]
                 assert leg.side == legs[i]["side"]
-                expected_order_type = OrderType.SELL if legs[i]["side"] == "sell" else OrderType.BUY
+                expected_order_type = (
+                    OrderType.SELL if legs[i]["side"] == "sell" else OrderType.BUY
+                )
                 assert leg.order_type == expected_order_type
                 assert leg.price == 3.75
 
@@ -215,9 +219,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify single leg was structured correctly
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 1
-            
+
             leg1 = mock_order_data.legs[0]
             assert leg1.symbol == "AAPL240315C00150000"
             assert leg1.quantity == 5
@@ -256,7 +260,7 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify empty legs were passed
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 0
 
     @pytest.mark.asyncio
@@ -294,9 +298,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify different quantities were preserved
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 3
-            
+
             assert mock_order_data.legs[0].quantity == 10
             assert mock_order_data.legs[1].quantity == 5
             assert mock_order_data.legs[2].quantity == 3
@@ -352,9 +356,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify invalid order type was passed through (validation in create_multi_leg_order)
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 1
-            
+
             leg1 = mock_order_data.legs[0]
             # Invalid order types should be handled by the system, likely converted to BUY
             assert leg1.order_type == OrderType.BUY
@@ -398,9 +402,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify zero price was structured correctly
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 2
-            
+
             for leg in mock_order_data.legs:
                 assert leg.price == 0.00
 
@@ -441,9 +445,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify negative price was handled correctly
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 2
-            
+
             for leg in mock_order_data.legs:
                 assert leg.price == -2.25
 
@@ -482,9 +486,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify large quantities were preserved
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 2
-            
+
             assert mock_order_data.legs[0].quantity == 1000
             assert mock_order_data.legs[1].quantity == 1000
 
@@ -541,9 +545,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify leg order was preserved
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 4
-            
+
             assert mock_order_data.legs[0].symbol == "FIRST240315C00150000"
             assert mock_order_data.legs[1].symbol == "SECOND240315C00160000"
             assert mock_order_data.legs[2].symbol == "THIRD240315C00170000"
@@ -585,9 +589,9 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify all sides were preserved correctly
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 4
-            
+
             assert mock_order_data.legs[0].side == "buy"
             assert mock_order_data.legs[0].order_type == OrderType.BUY
             assert mock_order_data.legs[1].side == "sell"
@@ -628,17 +632,17 @@ class TestTradingServiceMultiLegAdvanced:
 
             # Verify complete structured leg format
             mock_order_data = mock_create.call_args[0][0]
-            assert hasattr(mock_order_data, 'legs')
+            assert hasattr(mock_order_data, "legs")
             assert len(mock_order_data.legs) == 1
-            
+
             structured_leg = mock_order_data.legs[0]
 
             # Check all required fields are present
-            assert hasattr(structured_leg, 'symbol')
-            assert hasattr(structured_leg, 'quantity')
-            assert hasattr(structured_leg, 'side')
-            assert hasattr(structured_leg, 'order_type')
-            assert hasattr(structured_leg, 'price')
+            assert hasattr(structured_leg, "symbol")
+            assert hasattr(structured_leg, "quantity")
+            assert hasattr(structured_leg, "side")
+            assert hasattr(structured_leg, "order_type")
+            assert hasattr(structured_leg, "price")
 
             # Verify values are correct
             assert structured_leg.symbol == "TEST240315C00100000"

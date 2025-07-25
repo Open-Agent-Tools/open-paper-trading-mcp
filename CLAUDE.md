@@ -18,9 +18,9 @@ python scripts/dev.py <command>
 # Available commands:
 python scripts/dev.py server     # Start development server (FastAPI + MCP)
 python scripts/dev.py test       # Run all tests (uv run pytest -v)
-python scripts/dev.py format     # Format code (black + isort)
-python scripts/dev.py lint       # Lint code (flake8)
-python scripts/dev.py typecheck  # Type check (mypy app)
+python scripts/dev.py format     # Format code (uv run ruff format .)
+python scripts/dev.py lint       # Lint code (uv run ruff check . --fix)
+python scripts/dev.py typecheck  # Type check (uv run mypy .)
 python scripts/dev.py check      # Run all checks (format + lint + typecheck + tests)
 ```
 
