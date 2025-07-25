@@ -42,12 +42,6 @@ from app.mcp.advanced_order_tools import (
     create_twap_order,
     create_vwap_order,
 )
-from app.mcp.risk_management_tools import (
-    calculate_drawdown,
-    calculate_position_sizing,
-    check_risk_limits,
-    get_margin_requirements,
-)
 from app.mcp.core_tools import (
     health_check,
     market_hours,
@@ -78,6 +72,12 @@ from app.mcp.portfolio_analytics_tools import (
     calculate_var,
     get_portfolio_correlation,
     get_risk_metrics,
+)
+from app.mcp.risk_management_tools import (
+    calculate_drawdown,
+    calculate_position_sizing,
+    check_risk_limits,
+    get_margin_requirements,
 )
 from app.mcp.tools import (
     calculate_option_greeks,
@@ -116,7 +116,7 @@ from app.mcp.trading_tools import (
 )
 
 # Create the unified MCP instance
-mcp = FastMCP("Open Paper Trading MCP")
+mcp: FastMCP = FastMCP("Open Paper Trading MCP")
 
 # =============================================================================
 # CORE SYSTEM TOOLS

@@ -281,7 +281,7 @@ class OrderCreate(BaseModel):
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
-    
+
     # Advanced order trigger fields
     stop_price: float | None = Field(None, description="Stop price for stop orders")
     trail_percent: float | None = Field(

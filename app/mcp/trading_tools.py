@@ -206,10 +206,10 @@ async def buy_stock_stop_loss(
     """
     try:
         from app.core.dependencies import get_trading_service
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
         service = get_trading_service()
-        
+
         # Create stop loss buy order
         order_data = OrderCreate(
             symbol=symbol,
@@ -219,19 +219,21 @@ async def buy_stock_stop_loss(
             condition=OrderCondition.STOP,
             stop_price=stop_price,
         )
-        
+
         order = await service.create_order(order_data)
-        
-        return success_response({
-            "order_id": order.id,
-            "symbol": order.symbol,
-            "order_type": order.order_type,
-            "quantity": order.quantity,
-            "stop_price": stop_price,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Stop loss buy order created for {quantity} shares of {symbol} at stop price ${stop_price:.2f}",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "symbol": order.symbol,
+                "order_type": order.order_type,
+                "quantity": order.quantity,
+                "stop_price": stop_price,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Stop loss buy order created for {quantity} shares of {symbol} at stop price ${stop_price:.2f}",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("buy_stock_stop_loss", e)
 
@@ -244,10 +246,10 @@ async def sell_stock_stop_loss(
     """
     try:
         from app.core.dependencies import get_trading_service
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
         service = get_trading_service()
-        
+
         # Create stop loss sell order
         order_data = OrderCreate(
             symbol=symbol,
@@ -257,19 +259,21 @@ async def sell_stock_stop_loss(
             condition=OrderCondition.STOP,
             stop_price=stop_price,
         )
-        
+
         order = await service.create_order(order_data)
-        
-        return success_response({
-            "order_id": order.id,
-            "symbol": order.symbol,
-            "order_type": order.order_type,
-            "quantity": order.quantity,
-            "stop_price": stop_price,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Stop loss sell order created for {quantity} shares of {symbol} at stop price ${stop_price:.2f}",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "symbol": order.symbol,
+                "order_type": order.order_type,
+                "quantity": order.quantity,
+                "stop_price": stop_price,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Stop loss sell order created for {quantity} shares of {symbol} at stop price ${stop_price:.2f}",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("sell_stock_stop_loss", e)
 
@@ -282,10 +286,10 @@ async def buy_stock_trailing_stop(
     """
     try:
         from app.core.dependencies import get_trading_service
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
         service = get_trading_service()
-        
+
         # Create trailing stop buy order
         order_data = OrderCreate(
             symbol=symbol,
@@ -295,19 +299,21 @@ async def buy_stock_trailing_stop(
             condition=OrderCondition.STOP,
             trail_amount=trail_amount,
         )
-        
+
         order = await service.create_order(order_data)
-        
-        return success_response({
-            "order_id": order.id,
-            "symbol": order.symbol,
-            "order_type": order.order_type,
-            "quantity": order.quantity,
-            "trail_amount": trail_amount,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Trailing stop buy order created for {quantity} shares of {symbol} with trail amount ${trail_amount:.2f}",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "symbol": order.symbol,
+                "order_type": order.order_type,
+                "quantity": order.quantity,
+                "trail_amount": trail_amount,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Trailing stop buy order created for {quantity} shares of {symbol} with trail amount ${trail_amount:.2f}",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("buy_stock_trailing_stop", e)
 
@@ -320,10 +326,10 @@ async def sell_stock_trailing_stop(
     """
     try:
         from app.core.dependencies import get_trading_service
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
         service = get_trading_service()
-        
+
         # Create trailing stop sell order
         order_data = OrderCreate(
             symbol=symbol,
@@ -333,19 +339,21 @@ async def sell_stock_trailing_stop(
             condition=OrderCondition.STOP,
             trail_amount=trail_amount,
         )
-        
+
         order = await service.create_order(order_data)
-        
-        return success_response({
-            "order_id": order.id,
-            "symbol": order.symbol,
-            "order_type": order.order_type,
-            "quantity": order.quantity,
-            "trail_amount": trail_amount,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Trailing stop sell order created for {quantity} shares of {symbol} with trail amount ${trail_amount:.2f}",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "symbol": order.symbol,
+                "order_type": order.order_type,
+                "quantity": order.quantity,
+                "trail_amount": trail_amount,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Trailing stop sell order created for {quantity} shares of {symbol} with trail amount ${trail_amount:.2f}",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("sell_stock_trailing_stop", e)
 
@@ -363,15 +371,17 @@ async def buy_option_limit(
     """
     try:
         from app.core.dependencies import get_trading_service
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
         service = get_trading_service()
-        
+
         # Validate that instrument_id looks like an option symbol
         # Option symbols are typically in format: AAPL240119C00195000
-        if len(instrument_id) < 10 or not any(c in instrument_id for c in ['C', 'P']):
-            raise ValueError(f"Invalid option instrument_id format: {instrument_id}. Expected option symbol format like 'AAPL240119C00195000'")
-        
+        if len(instrument_id) < 10 or not any(c in instrument_id for c in ["C", "P"]):
+            raise ValueError(
+                f"Invalid option instrument_id format: {instrument_id}. Expected option symbol format like 'AAPL240119C00195000'"
+            )
+
         # Use instrument_id as option symbol (they should be equivalent in this system)
         order_data = OrderCreate(
             symbol=instrument_id,
@@ -380,19 +390,21 @@ async def buy_option_limit(
             price=limit_price,
             condition=OrderCondition.LIMIT,
         )
-        
+
         order = await service.create_order(order_data)
-        
-        return success_response({
-            "order_id": order.id,
-            "instrument_id": instrument_id,
-            "order_type": order.order_type,
-            "quantity": order.quantity,
-            "limit_price": limit_price,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Option buy limit order created for {quantity} contracts of {instrument_id} at ${limit_price:.2f}",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "instrument_id": instrument_id,
+                "order_type": order.order_type,
+                "quantity": order.quantity,
+                "limit_price": limit_price,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Option buy limit order created for {quantity} contracts of {instrument_id} at ${limit_price:.2f}",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("buy_option_limit", e)
 
@@ -405,14 +417,16 @@ async def sell_option_limit(
     """
     try:
         from app.core.dependencies import get_trading_service
-        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
         service = get_trading_service()
-        
+
         # Validate that instrument_id looks like an option symbol
-        if len(instrument_id) < 10 or not any(c in instrument_id for c in ['C', 'P']):
-            raise ValueError(f"Invalid option instrument_id format: {instrument_id}. Expected option symbol format like 'AAPL240119P00195000'")
-        
+        if len(instrument_id) < 10 or not any(c in instrument_id for c in ["C", "P"]):
+            raise ValueError(
+                f"Invalid option instrument_id format: {instrument_id}. Expected option symbol format like 'AAPL240119P00195000'"
+            )
+
         # Use instrument_id as option symbol (they should be equivalent in this system)
         order_data = OrderCreate(
             symbol=instrument_id,
@@ -421,19 +435,21 @@ async def sell_option_limit(
             price=limit_price,
             condition=OrderCondition.LIMIT,
         )
-        
+
         order = await service.create_order(order_data)
-        
-        return success_response({
-            "order_id": order.id,
-            "instrument_id": instrument_id,
-            "order_type": order.order_type,
-            "quantity": order.quantity,
-            "limit_price": limit_price,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Option sell limit order created for {quantity} contracts of {instrument_id} at ${limit_price:.2f}",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "instrument_id": instrument_id,
+                "order_type": order.order_type,
+                "quantity": order.quantity,
+                "limit_price": limit_price,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Option sell limit order created for {quantity} contracts of {instrument_id} at ${limit_price:.2f}",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("sell_option_limit", e)
 
@@ -451,12 +467,17 @@ async def option_credit_spread(
         from app.core.dependencies import get_trading_service
 
         service = get_trading_service()
-        
+
         # Validate instrument IDs are option symbols
-        for inst_id, name in [(short_instrument_id, "short"), (long_instrument_id, "long")]:
-            if len(inst_id) < 10 or not any(c in inst_id for c in ['C', 'P']):
-                raise ValueError(f"Invalid {name} instrument_id format: {inst_id}. Expected option symbol format like 'AAPL240119C00195000'")
-        
+        for inst_id, name in [
+            (short_instrument_id, "short"),
+            (long_instrument_id, "long"),
+        ]:
+            if len(inst_id) < 10 or not any(c in inst_id for c in ["C", "P"]):
+                raise ValueError(
+                    f"Invalid {name} instrument_id format: {inst_id}. Expected option symbol format like 'AAPL240119C00195000'"
+                )
+
         # Create multi-leg order for credit spread
         legs = [
             {
@@ -467,27 +488,29 @@ async def option_credit_spread(
             {
                 "symbol": long_instrument_id,
                 "quantity": quantity,
-                "side": "buy",   # Long leg - buy to open
+                "side": "buy",  # Long leg - buy to open
             },
         ]
-        
+
         order = await service.create_multi_leg_order_from_request(
             legs=legs,
             order_type="limit",
             net_price=credit_price,
         )
-        
-        return success_response({
-            "order_id": order.id,
-            "strategy_type": "credit_spread",
-            "short_instrument_id": short_instrument_id,
-            "long_instrument_id": long_instrument_id,
-            "quantity": quantity,
-            "credit_price": credit_price,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Credit spread order created: sell {quantity} {short_instrument_id}, buy {quantity} {long_instrument_id} for ${credit_price:.2f} credit",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "strategy_type": "credit_spread",
+                "short_instrument_id": short_instrument_id,
+                "long_instrument_id": long_instrument_id,
+                "quantity": quantity,
+                "credit_price": credit_price,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Credit spread order created: sell {quantity} {short_instrument_id}, buy {quantity} {long_instrument_id} for ${credit_price:.2f} credit",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("option_credit_spread", e)
 
@@ -502,18 +525,23 @@ async def option_debit_spread(
         from app.core.dependencies import get_trading_service
 
         service = get_trading_service()
-        
+
         # Validate instrument IDs are option symbols
-        for inst_id, name in [(short_instrument_id, "short"), (long_instrument_id, "long")]:
-            if len(inst_id) < 10 or not any(c in inst_id for c in ['C', 'P']):
-                raise ValueError(f"Invalid {name} instrument_id format: {inst_id}. Expected option symbol format like 'AAPL240119C00195000'")
-        
+        for inst_id, name in [
+            (short_instrument_id, "short"),
+            (long_instrument_id, "long"),
+        ]:
+            if len(inst_id) < 10 or not any(c in inst_id for c in ["C", "P"]):
+                raise ValueError(
+                    f"Invalid {name} instrument_id format: {inst_id}. Expected option symbol format like 'AAPL240119C00195000'"
+                )
+
         # Create multi-leg order for debit spread
         legs = [
             {
                 "symbol": long_instrument_id,
                 "quantity": quantity,
-                "side": "buy",   # Long leg - buy to open
+                "side": "buy",  # Long leg - buy to open
             },
             {
                 "symbol": short_instrument_id,
@@ -521,24 +549,26 @@ async def option_debit_spread(
                 "side": "sell",  # Short leg - sell to open
             },
         ]
-        
+
         order = await service.create_multi_leg_order_from_request(
             legs=legs,
             order_type="limit",
             net_price=debit_price,
         )
-        
-        return success_response({
-            "order_id": order.id,
-            "strategy_type": "debit_spread",
-            "short_instrument_id": short_instrument_id,
-            "long_instrument_id": long_instrument_id,
-            "quantity": quantity,
-            "debit_price": debit_price,
-            "status": order.status,
-            "created_at": order.created_at,
-            "message": f"Debit spread order created: buy {quantity} {long_instrument_id}, sell {quantity} {short_instrument_id} for ${debit_price:.2f} debit",
-        })
+
+        return success_response(
+            {
+                "order_id": order.id,
+                "strategy_type": "debit_spread",
+                "short_instrument_id": short_instrument_id,
+                "long_instrument_id": long_instrument_id,
+                "quantity": quantity,
+                "debit_price": debit_price,
+                "status": order.status,
+                "created_at": order.created_at,
+                "message": f"Debit spread order created: buy {quantity} {long_instrument_id}, sell {quantity} {short_instrument_id} for ${debit_price:.2f} debit",
+            }
+        )
     except Exception as e:
         return handle_tool_exception("option_debit_spread", e)
 

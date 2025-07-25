@@ -338,6 +338,9 @@ def sample_order_data() -> dict[str, Any]:
             quantity=100,
             price=None,  # Market order
             condition=OrderCondition.MARKET,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         ),
         "sell_limit": OrderCreate(
             symbol="AAPL",
@@ -345,6 +348,9 @@ def sample_order_data() -> dict[str, Any]:
             quantity=50,
             price=160.0,
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         ),
         "buy_limit": OrderCreate(
             symbol="GOOGL",
@@ -352,6 +358,9 @@ def sample_order_data() -> dict[str, Any]:
             quantity=10,
             price=2700.0,
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         ),
     }
 

@@ -97,7 +97,7 @@ async def check_mcp_status() -> dict[str, Any]:
                     "server_name": status_data.get("server_name"),
                     "tools_count": status_data.get("tools_count", 0),
                     "fastmcp_version": status_data.get("fastmcp_version"),
-                    "endpoints": status_data.get("endpoints", {})
+                    "endpoints": status_data.get("endpoints", {}),
                 }
             else:
                 return {
@@ -125,11 +125,11 @@ async def check_mcp_readiness() -> dict[str, Any]:
                     "service": "MCP Readiness",
                     "status": "ready" if ready_data.get("ready") else "not_ready",
                     "tools_loaded": ready_data.get("tools_loaded", False),
-                    "tools_count": ready_data.get("tools_count", 0)
+                    "tools_count": ready_data.get("tools_count", 0),
                 }
             else:
                 return {
-                    "service": "MCP Readiness", 
+                    "service": "MCP Readiness",
                     "status": "not_ready",
                     "status_code": response.status_code,
                     "response": response.text,

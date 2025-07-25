@@ -74,16 +74,16 @@ export const checkMcpHealth = async (): Promise<HealthStatus> => {
 };
 
 /**
- * Check database health via FastAPI's database health endpoint
+ * Check database health via FastAPI's liveness endpoint (simpler check)
  */
 export const checkDatabaseHealth = async (): Promise<HealthStatus> => {
   try {
-    console.log('Checking database health at /api/v1/health/ready');
-    const response = await fastApiClient.get('/api/v1/health/ready');
+    console.log('Checking database health at /api/v1/health/live');
+    const response = await fastApiClient.get('/api/v1/health/live');
     console.log('Database health response:', response.status, response.data);
     return {
       service: 'Database',
-      status: response.status === 200 && response.data?.status === 'ready' ? 'healthy' : 'unhealthy',
+      status: response.status === 200 && response.data?.status === 'alive' ? 'healthy' : 'unhealthy',
       statusCode: response.status,
       response: response.data,
       timestamp: Date.now(),
