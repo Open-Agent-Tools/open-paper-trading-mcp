@@ -3,6 +3,7 @@ Options Greeks calculation service using Black-Scholes model.
 
 Pure Python implementation adapted from reference implementation, with improvements for numerical stability.
 """
+# ruff: noqa: N803, N806  # Allow single-letter variable names for mathematical formulas
 
 import math
 from typing import TYPE_CHECKING

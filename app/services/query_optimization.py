@@ -351,7 +351,7 @@ class OptimizedOrderQueries:
         Uses primary key lookups for efficiency.
         """
         # Use SQLAlchemy update syntax for proper enum handling
-        update_values = {"status": new_status}
+        update_values: dict[str, Any] = {"status": new_status}
         if filled_at:
             update_values["filled_at"] = filled_at
 

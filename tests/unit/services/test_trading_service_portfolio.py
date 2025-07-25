@@ -173,7 +173,7 @@ class TestGetPortfolio:
         mock_position_converter = AsyncMock()
 
         def mock_to_schema(db_pos, current_price):
-            for db_position, price, pnl in db_positions:
+            for db_position, _price, pnl in db_positions:
                 if db_position.symbol == db_pos.symbol:
                     return Position(
                         symbol=db_pos.symbol,
@@ -384,7 +384,7 @@ class TestGetPortfolio:
         mock_position_converter = AsyncMock()
 
         def mock_to_schema(db_pos, current_price):
-            for db_position, price, pnl in positions_data:
+            for db_position, _price, pnl in positions_data:
                 if db_position.symbol == db_pos.symbol:
                     return Position(
                         symbol=db_pos.symbol,

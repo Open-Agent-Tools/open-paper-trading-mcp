@@ -1271,7 +1271,6 @@ class TestGetHighFrequencySymbols:
         result = await queries.get_high_frequency_symbols(hours=24, min_orders=10)
 
         # Should return symbols with >= 10 orders, ordered by count desc
-        expected_symbols = ["AAPL", "MSFT"]  # 15 and 12 orders respectively
         assert len(result) == 2
 
         # Verify ordering (highest count first)

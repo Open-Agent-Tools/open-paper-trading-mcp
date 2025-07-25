@@ -791,7 +791,7 @@ class TestOrderCreationValidationExtended:
         await db_session.commit()
 
         mock_quote_adapter = AsyncMock()
-        service = TradingService(
+        _ = TradingService(
             quote_adapter=mock_quote_adapter,
             account_owner="test_user",
             db_session=db_session,
@@ -1039,7 +1039,7 @@ class TestOrderCreationValidationExtended:
         test_cases = ["aapl", "AAPL", "AaPl", "AAPL"]
         expected_symbol = "AAPL"
 
-        for i, symbol_case in enumerate(test_cases):
+        for _, symbol_case in enumerate(test_cases):
             order_data = OrderCreate(
                 symbol=symbol_case,
                 order_type=OrderType.BUY,
