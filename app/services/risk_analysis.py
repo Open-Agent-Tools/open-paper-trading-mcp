@@ -320,14 +320,16 @@ class RiskAnalyzer:
             for position in portfolio.positions:
                 if position.symbol != order.symbol:
                     pos_asset = asset_factory(position.symbol)
-                    if (isinstance(pos_asset, Option) and 
-                        pos_asset.underlying.symbol == asset.underlying.symbol):
-                            # Related position - calculate concentration impact
-                            related_impact = self._calculate_related_position_impact(
-                                position, order, portfolio
-                            )
-                            if related_impact:
-                                impacts.append(related_impact)
+                    if (
+                        isinstance(pos_asset, Option)
+                        and pos_asset.underlying.symbol == asset.underlying.symbol
+                    ):
+                        # Related position - calculate concentration impact
+                        related_impact = self._calculate_related_position_impact(
+                            position, order, portfolio
+                        )
+                        if related_impact:
+                            impacts.append(related_impact)
 
         return impacts
 

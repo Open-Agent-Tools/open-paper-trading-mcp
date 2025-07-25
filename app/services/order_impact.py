@@ -360,13 +360,14 @@ class OrderImpactService:
         # Find modified positions
         for before_pos in before_positions:
             for after_pos in after_positions:
-                if (before_pos.symbol == after_pos.symbol and 
-                    before_pos.quantity != after_pos.quantity):
+                if (
+                    before_pos.symbol == after_pos.symbol
+                    and before_pos.quantity != after_pos.quantity
+                ):
                     changes["modified_positions"].append(
                         {
                             "symbol": before_pos.symbol,
-                            "quantity_change": after_pos.quantity
-                            - before_pos.quantity,
+                            "quantity_change": after_pos.quantity - before_pos.quantity,
                             "before_quantity": before_pos.quantity,
                             "after_quantity": after_pos.quantity,
                         }

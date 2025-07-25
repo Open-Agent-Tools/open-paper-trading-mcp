@@ -381,7 +381,9 @@ class OrderQueue:
 
                 # Re-queue after delay
                 self._background_tasks.add(
-                    task := asyncio.create_task(self._requeue_after_delay(queued_order, delay))
+                    task := asyncio.create_task(
+                        self._requeue_after_delay(queued_order, delay)
+                    )
                 )
                 task.add_done_callback(self._background_tasks.discard)
             else:
@@ -515,7 +517,9 @@ class OrderQueue:
 
                     # Process in background task
                     self._background_tasks.add(
-                        task := asyncio.create_task(self._process_order(queued_order, -1))
+                        task := asyncio.create_task(
+                            self._process_order(queued_order, -1)
+                        )
                     )
                     task.add_done_callback(self._background_tasks.discard)
                     return True

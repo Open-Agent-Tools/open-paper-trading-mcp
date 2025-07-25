@@ -1310,8 +1310,10 @@ class TestQuoteIntegration:
         service = TradingService(account_owner="test_user", db_session=db_session)
 
         # Mock asset_factory to return None (invalid symbol)
-        with (patch("app.services.trading_service.asset_factory", return_value=None),
-              pytest.raises(NotFoundError) as exc_info):
+        with (
+            patch("app.services.trading_service.asset_factory", return_value=None),
+            pytest.raises(NotFoundError) as exc_info,
+        ):
             await service.get_enhanced_quote("INVALID_FORMAT")
 
         assert "Invalid symbol: INVALID_FORMAT" in str(exc_info.value)

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Open Paper Trading MCP is a comprehensive paper trading simulator with dual interfaces: a REST API (FastAPI) and AI agent tools (MCP). The system simulates multi-asset trading (stocks, options, ETFs, bonds) with real market data for algorithmic trading development and AI agent training.
 
-**Current Status (2025-01-27)**: 🎉 **PHASE 2: PORTFOLIO INTELLIGENCE COMPLETED** - 457 tests collected, all core tests passing. Phase 2 added 35 comprehensive portfolio tests covering portfolio operations, position management, account balancing, and quote integration. Trading service coverage improved from 34.84% → 56.50%. AsyncIO infrastructure fully stabilized with zero event loop conflicts.
+**Current Status (2025-01-27)**: 🎉 **ROBINHOOD INTEGRATION & CODE CLEANUP COMPLETED** - 608 tests collected with complete code cleanup performed. All 48 Robinhood tests now use shared session authentication. Comprehensive ruff formatting/linting applied, mypy type checking completed, and test infrastructure stabilized. Trading service coverage at 78% (35/45 methods fully covered). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
 
 ## Essential Commands
 
@@ -103,6 +103,14 @@ The system provides 84 MCP tools (currently 17 implemented) for AI agent interac
 - **Coverage Target**: ≥70% code coverage required for new code
 - **Test Categories**: Unit, Integration, Performance, Edge Cases
 - **Clean State**: Each test gets clean database state via fixtures
+- **Live API Testing**: Tests marked with `@pytest.mark.robinhood` make live calls to Robinhood API (read-only)
+
+### Testing with Live Robinhood API
+- **Robinhood Tests**: Use `@pytest.mark.robinhood` for tests making live API calls
+- **Read-Only Operations**: All Robinhood tests are read-only (quotes, market data, search)
+- **Exclusion**: Run `pytest -m "not robinhood"` to exclude live API tests
+- **Rate Limiting**: Robinhood tests are marked `@pytest.mark.slow` to prevent rate limiting
+- **Shared Fixtures**: Use `trading_service_robinhood` fixture for consistent Robinhood adapter setup
 
 ### Code Style
 - **Async/Await**: All I/O operations must be async

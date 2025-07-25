@@ -357,12 +357,18 @@ class OrderConverter:
         requirements = self.get_conversion_requirements(order.order_type)
 
         # Check required fields
-        if (order.order_type in [OrderType.STOP_LOSS, OrderType.STOP_LIMIT] and 
-            requirements.get("stop_price") and order.stop_price is None):
+        if (
+            order.order_type in [OrderType.STOP_LOSS, OrderType.STOP_LIMIT]
+            and requirements.get("stop_price")
+            and order.stop_price is None
+        ):
             raise OrderConversionError(f"{order.order_type} requires stop_price")
 
-        if (order.order_type == OrderType.STOP_LIMIT and 
-            requirements.get("price") and order.price is None):
+        if (
+            order.order_type == OrderType.STOP_LIMIT
+            and requirements.get("price")
+            and order.price is None
+        ):
             raise OrderConversionError(f"{order.order_type} requires price")
 
         if order.order_type == OrderType.TRAILING_STOP:

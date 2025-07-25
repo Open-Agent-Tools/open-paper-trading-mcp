@@ -18,6 +18,9 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: Slow running tests")
     config.addinivalue_line("markers", "database: Tests that require database")
     config.addinivalue_line("markers", "live_data: Tests that require live market data")
+    config.addinivalue_line(
+        "markers", "robinhood: Tests that use live Robinhood API calls"
+    )
     config.addinivalue_line("markers", "asyncio: Async test marker")
 
 
@@ -33,6 +36,8 @@ os.environ["TEST_DATABASE_URL"] = (
 os.environ["QUOTE_ADAPTER_TYPE"] = "test"  # Use test data adapter
 
 # Import statements after environment setup (required by ruff E402)
+from datetime import UTC  # noqa: E402
+
 from app.main import app  # noqa: E402
 from app.models.database import trading  # noqa: E402, F401
 from app.models.database.base import Base  # noqa: E402
@@ -467,3 +472,142 @@ def performance_monitor():
 
     monitor = PerformanceMonitor()
     return monitor
+
+
+# Shared Trading Service Fixtures for Stock Market Data Tests
+
+
+@pytest_asyncio.fixture
+async def trading_service_test_data():
+    """Create TradingService with mock test data adapter (read-only)."""
+    from datetime import datetime
+
+    from app.adapters.base import QuoteAdapter
+    from app.services.trading_service import TradingService
+
+    class MockTestQuoteAdapter(QuoteAdapter):
+        """Mock quote adapter with hardcoded test data - no database access."""
+
+        def __init__(self):
+            from app.models.assets import asset_factory
+
+            # Create simple mock quote objects with required attributes
+            class MockQuote:
+                def __init__(self, symbol, price, bid, ask, volume, previous_close):
+                    self.asset = asset_factory(symbol)
+                    self.symbol = symbol
+                    self.price = price
+                    self.bid = bid
+                    self.ask = ask
+                    self.volume = volume
+                    self.previous_close = previous_close
+                    self.quote_date = datetime.now(UTC)
+
+            self.test_quotes = {
+                "AAPL": MockQuote("AAPL", 150.25, 150.20, 150.30, 1000000, 148.50),
+                "MSFT": MockQuote("MSFT", 380.00, 379.95, 380.05, 800000, 378.25),
+                "GOOGL": MockQuote("GOOGL", 2750.00, 2749.00, 2751.00, 500000, 2720.00),
+                "TSLA": MockQuote("TSLA", 250.00, 249.95, 250.05, 2000000, 245.00),
+            }
+
+        async def get_quote(self, asset):
+            """Return mock quote data."""
+            # Extract symbol from Asset object
+            if hasattr(asset, "symbol"):
+                symbol = asset.symbol
+            elif hasattr(asset, "__str__"):
+                symbol = str(asset)
+            else:
+                symbol = str(asset)
+
+            return self.test_quotes.get(symbol.upper())
+
+        async def get_quotes(self, assets):
+            """Return multiple mock quotes."""
+            return {asset: await self.get_quote(asset) for asset in assets}
+
+        async def get_chain(self, underlying, expiration_date=None):
+            return []
+
+        async def get_options_chain(self, underlying, expiration_date=None):
+            return None
+
+        async def is_market_open(self):
+            return True
+
+        async def get_market_hours(self):
+            return {"market_open": True}
+
+        def get_sample_data_info(self):
+            return {"provider": "mock", "symbols": list(self.test_quotes.keys())}
+
+        def get_expiration_dates(self, underlying):
+            return []
+
+        def get_test_scenarios(self):
+            return {"default": "Mock test data"}
+
+        def set_date(self, date):
+            pass
+
+        def get_available_symbols(self):
+            return list(self.test_quotes.keys())
+
+    adapter = MockTestQuoteAdapter()
+    return TradingService(quote_adapter=adapter)
+
+
+@pytest_asyncio.fixture(scope="session")
+async def robinhood_session():
+    """Create authenticated Robinhood session for live tests (session-scoped)."""
+    import asyncio
+    import os
+
+    from dotenv import load_dotenv
+
+    from app.auth.session_manager import get_session_manager
+    from app.core.logging import logger
+
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Load credentials from .env
+    username = os.getenv("ROBINHOOD_USERNAME")
+    password = os.getenv("ROBINHOOD_PASSWORD")
+
+    if not username or not password:
+        pytest.skip("Robinhood credentials not available in .env")
+
+    # Get the session manager and set credentials
+    session_manager = get_session_manager()
+    session_manager.set_credentials(username, password)
+
+    try:
+        # Authenticate once for the entire test session
+        authenticated = await session_manager.ensure_authenticated()
+        if not authenticated:
+            pytest.skip("Failed to authenticate with Robinhood")
+
+        logger.info("Robinhood session authenticated successfully")
+        yield session_manager
+
+    finally:
+        # Cleanup: logout to avoid leaving sessions open
+        try:
+            import robin_stocks.robinhood as rh
+
+            await asyncio.get_event_loop().run_in_executor(None, rh.logout)
+            logger.info("Robinhood session logged out")
+        except Exception as e:
+            logger.warning(f"Error during logout: {e}")
+
+
+@pytest_asyncio.fixture
+async def trading_service_robinhood(robinhood_session):
+    """Create TradingService with authenticated Robinhood adapter for live tests."""
+    from app.adapters.robinhood import RobinhoodAdapter
+    from app.services.trading_service import TradingService
+
+    # Create adapter that will use the already authenticated session
+    adapter = RobinhoodAdapter()
+    return TradingService(quote_adapter=adapter)

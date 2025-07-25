@@ -316,8 +316,9 @@ class ComplexOrderValidator:
             if leg1.quantity > 0 and leg2.quantity < 0:  # Long stock, short call
                 if asset2.option_type == "call":
                     return StrategyType.COVERED_CALL
-            elif (leg1.quantity > 0 and leg2.quantity > 0 and 
-                  asset2.option_type == "put"):  # Long stock, long put
+            elif (
+                leg1.quantity > 0 and leg2.quantity > 0 and asset2.option_type == "put"
+            ):  # Long stock, long put
                 return StrategyType.PROTECTIVE_PUT
 
         # Both options
@@ -435,12 +436,16 @@ class ComplexOrderValidator:
             if isinstance(leg.asset, Option) and leg.asset.option_type == "call"
         ]
 
-        if (len(put_legs) == 2 and len(call_legs) == 2 and
+        if (
+            len(put_legs) == 2
+            and len(call_legs) == 2
+            and
             # Check quantities: sell inner, buy outer
             put_legs[0].quantity > 0
             and put_legs[1].quantity < 0
             and call_legs[0].quantity < 0
-            and call_legs[1].quantity > 0):
+            and call_legs[1].quantity > 0
+        ):
             return StrategyType.IRON_CONDOR
 
         # Check for iron butterfly
@@ -645,17 +650,21 @@ class ComplexOrderValidator:
 
         # Options exercise/assignment risk
         for leg in order.legs:
-            if (isinstance(leg.asset, Option) and leg.quantity < 0 and
+            if (
+                isinstance(leg.asset, Option)
+                and leg.quantity < 0
+                and
                 # Short option - check for assignment risk
-                leg.asset.expiration_date == date.today()):
-                    issues.append(
-                        ValidationIssue(
-                            severity="error",
-                            code="EXPIRATION_DAY_SHORT",
-                            message="Cannot sell options on expiration day",
-                            leg_index=order.legs.index(leg),
-                        )
+                leg.asset.expiration_date == date.today()
+            ):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="EXPIRATION_DAY_SHORT",
+                        message="Cannot sell options on expiration day",
+                        leg_index=order.legs.index(leg),
                     )
+                )
 
         return issues
 
@@ -834,19 +843,22 @@ class ComplexOrderValidator:
                             # Bear put spread
                             breakevens.append(leg1.asset.strike - net_credit)
 
-        elif (strategy_type == StrategyType.STRADDLE and
-              # Two breakeven points
-              len(order.legs) == 2):
-                leg1_asset = order.legs[0].asset
-                if isinstance(leg1_asset, Option) and leg1_asset.strike is not None:
-                    strike = leg1_asset.strike
-                    total_premium = 0.0
-                    for leg in order.legs:
-                        if leg.price:
-                            total_premium += abs(leg.price)
+        elif (
+            strategy_type == StrategyType.STRADDLE
+            and
+            # Two breakeven points
+            len(order.legs) == 2
+        ):
+            leg1_asset = order.legs[0].asset
+            if isinstance(leg1_asset, Option) and leg1_asset.strike is not None:
+                strike = leg1_asset.strike
+                total_premium = 0.0
+                for leg in order.legs:
+                    if leg.price:
+                        total_premium += abs(leg.price)
 
-                    breakevens.append(strike - total_premium)
-                    breakevens.append(strike + total_premium)
+                breakevens.append(strike - total_premium)
+                breakevens.append(strike + total_premium)
 
         return breakevens
 

@@ -241,4 +241,25 @@ async def test_database_operation(self, db_session: AsyncSession):
 - **Success Rate Improvement**: 29% → 70% (130% improvement)
 - **Database Session Consistency**: ✅ Implemented across all core functions
 - **Test Pattern Standardization**: ✅ Unified mocking patterns established
+- **Live API Testing**: ✅ Robinhood tests integrated with `@pytest.mark.robinhood` marker
+
+### Live API Testing with Robinhood
+The test suite includes integration tests that make live, read-only calls to the Robinhood API:
+
+```bash
+# Run all tests including live Robinhood calls
+uv run pytest
+
+# Exclude live Robinhood API tests (faster, no external dependencies)
+uv run pytest -m "not robinhood"
+
+# Run only Robinhood integration tests
+uv run pytest -m "robinhood"
+```
+
+**Robinhood Test Features:**
+- **Read-only operations**: Stock quotes, market data, company information, search
+- **Rate limiting protection**: All marked as `@pytest.mark.slow`
+- **Real data validation**: Verifies actual API responses and data formats
+- **Shared fixtures**: Consistent setup via `trading_service_robinhood` fixture
 

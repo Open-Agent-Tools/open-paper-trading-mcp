@@ -6,7 +6,7 @@ import asyncio
 import random
 import time
 from collections.abc import Callable
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from functools import wraps
 from typing import Any, TypeVar
 
@@ -152,7 +152,7 @@ class RobinhoodAdapter(QuoteAdapter):
         except Exception as e:
             duration = time.time() - start_time
             self._error_count += 1
-            self._last_error_time = datetime.now()
+            self._last_error_time = datetime.now(UTC)
             self._last_error_message = str(e)
 
             logger.error(
@@ -180,14 +180,16 @@ class RobinhoodAdapter(QuoteAdapter):
             if fundamentals and fundamentals[0]:
                 fund_data = fundamentals[0]
                 volume = (
-                    int(fund_data.get("volume", 0)) if fund_data.get("volume") else None
+                    int(float(fund_data.get("volume", 0)))
+                    if fund_data.get("volume")
+                    else None
                 )
             else:
                 volume = None
 
             return Quote(
                 asset=asset,
-                quote_date=datetime.now(),
+                quote_date=datetime.now(UTC),
                 price=price,
                 bid=price - 0.01,  # Approximation
                 ask=price + 0.01,  # Approximation
@@ -241,18 +243,18 @@ class RobinhoodAdapter(QuoteAdapter):
 
             return OptionQuote(
                 asset=asset,
-                quote_date=datetime.now(),
+                quote_date=datetime.now(UTC),
                 price=price,
                 bid=bid,
                 ask=ask,
                 underlying_price=underlying_price,
                 volume=(
-                    int(market_data.get("volume", 0))
+                    int(float(market_data.get("volume", 0)))
                     if market_data.get("volume")
                     else None
                 ),
                 open_interest=(
-                    int(market_data.get("open_interest", 0))
+                    int(float(market_data.get("open_interest", 0)))
                     if market_data.get("open_interest")
                     else None
                 ),
@@ -390,7 +392,7 @@ class RobinhoodAdapter(QuoteAdapter):
             underlying_price=underlying_price,
             calls=calls,
             puts=puts,
-            quote_time=datetime.now(),
+            quote_time=datetime.now(UTC),
         )
 
     def _create_option_asset(
@@ -429,7 +431,7 @@ class RobinhoodAdapter(QuoteAdapter):
             if not await self._ensure_authenticated():
                 return False
 
-            market_hours = rh.markets.get_market_hours("XNYS", datetime.now().date())
+            market_hours = rh.markets.get_market_hours("XNYS", datetime.now(UTC).date())
             if not market_hours:
                 return False
 
@@ -446,7 +448,7 @@ class RobinhoodAdapter(QuoteAdapter):
             if not await self._ensure_authenticated():
                 return {}
 
-            market_hours = rh.markets.get_market_hours("XNYS", datetime.now().date())
+            market_hours = rh.markets.get_market_hours("XNYS", datetime.now(UTC).date())
             return market_hours or {}
 
         except Exception as e:
@@ -522,7 +524,7 @@ class RobinhoodAdapter(QuoteAdapter):
                     "high": float(data_point.get("high_price", 0)),
                     "low": float(data_point.get("low_price", 0)),
                     "close": float(data_point.get("close_price", 0)),
-                    "volume": int(data_point.get("volume", 0)),
+                    "volume": int(float(data_point.get("volume", 0))),
                 }
                 for data_point in historical_data
                 if data_point and data_point.get("close_price")
@@ -561,7 +563,7 @@ class RobinhoodAdapter(QuoteAdapter):
                     "tradeable": item.get("tradeable", False),
                 }
                 for item in search_results
-                if item.get("symbol")
+                if item and item.get("symbol")
             ]
 
             return {
@@ -571,7 +573,7 @@ class RobinhoodAdapter(QuoteAdapter):
 
         except Exception as e:
             logger.error(f"Error searching for stocks with query {query}: {e}")
-            return {"error": str(e)}
+            return {"query": query, "error": str(e), "results": []}
 
     def get_sample_data_info(self) -> dict[str, Any]:
         """Get information about sample data."""

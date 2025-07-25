@@ -161,8 +161,9 @@ class ImportChecker:
                 return
 
             # Check if the imported name exists in the module
-            if (import_name != "*" and 
-                not self._name_exists_in_module(module_name, import_name)):
+            if import_name != "*" and not self._name_exists_in_module(
+                module_name, import_name
+            ):
                 self.errors.append(
                     f"{line_info}: Import error - '{import_name}' not found in module '{module_name}'"
                 )
@@ -257,12 +258,17 @@ class ImportChecker:
     ) -> None:
         """Check for common schema/model confusion patterns."""
         # Pattern 1: Importing from schemas when it should be models
-        if ("schemas" in module_name and import_name in [
-            "Order",
-            "Position",
-            "Account",
-            "Transaction",
-        ] and "database" not in module_name):  # Database models are OK
+        if (
+            "schemas" in module_name
+            and import_name
+            in [
+                "Order",
+                "Position",
+                "Account",
+                "Transaction",
+            ]
+            and "database" not in module_name
+        ):  # Database models are OK
             self.warnings.append(
                 f"{line_info}: Possible confusion - importing '{import_name}' from schemas (should it be from models?)"
             )
@@ -274,12 +280,17 @@ class ImportChecker:
             )
 
         # Pattern 3: SQLAlchemy models imported from wrong location
-        if ("models.database" not in module_name and import_name in [
-            "Base",
-            "Column",  
-            "Integer",
-            "String",
-        ] and "sqlalchemy" not in module_name):
+        if (
+            "models.database" not in module_name
+            and import_name
+            in [
+                "Base",
+                "Column",
+                "Integer",
+                "String",
+            ]
+            and "sqlalchemy" not in module_name
+        ):
             self.warnings.append(
                 f"{line_info}: Database model '{import_name}' should be imported from models.database or sqlalchemy"
             )
