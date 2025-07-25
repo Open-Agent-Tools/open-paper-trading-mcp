@@ -11,7 +11,6 @@ from typing import Any
 from app.mcp.base import get_trading_service
 from app.mcp.response_utils import handle_tool_exception, success_response
 
-
 # NOTE: list_tools is provided automatically by FastMCP and does not need to be implemented manually
 
 

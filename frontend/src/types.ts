@@ -22,3 +22,19 @@ export interface Order extends NewOrder {
     id: string;
     status: 'PENDING' | 'FILLED' | 'CANCELLED';
 }
+
+export interface HealthStatus {
+  service: string;
+  status: 'healthy' | 'unhealthy' | 'error' | 'unknown';
+  statusCode?: number;
+  response?: any;
+  error?: string;
+  timestamp?: number;
+}
+
+export interface SystemHealth {
+  fastapi: HealthStatus;
+  mcp: HealthStatus;
+  database: HealthStatus;
+  overall: 'healthy' | 'degraded' | 'down';
+}

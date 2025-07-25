@@ -34,10 +34,10 @@ async def check_fastapi_health() -> dict[str, Any]:
 
 
 async def check_mcp_http_health() -> dict[str, Any]:
-    """Check MCP HTTP server health."""
+    """Check MCP HTTP server health using FastMCP health endpoint."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:8001/health", timeout=5.0)
+            response = await client.get("http://localhost:2081/health", timeout=5.0)
             return {
                 "service": "MCP HTTP",
                 "status": "healthy" if response.status_code == 200 else "unhealthy",
@@ -58,7 +58,7 @@ async def check_mcp_tools() -> dict[str, Any]:
     """Check MCP tools listing."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:8001/tools", timeout=10.0)
+            response = await client.get("http://localhost:2081/tools", timeout=10.0)
             if response.status_code == 200:
                 tools_data = response.json()
                 return {
@@ -84,6 +84,64 @@ async def check_mcp_tools() -> dict[str, Any]:
         }
 
 
+async def check_mcp_status() -> dict[str, Any]:
+    """Check MCP server detailed status endpoint."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:2081/status", timeout=5.0)
+            if response.status_code == 200:
+                status_data = response.json()
+                return {
+                    "service": "MCP Status",
+                    "status": "healthy",
+                    "server_name": status_data.get("server_name"),
+                    "tools_count": status_data.get("tools_count", 0),
+                    "fastmcp_version": status_data.get("fastmcp_version"),
+                    "endpoints": status_data.get("endpoints", {})
+                }
+            else:
+                return {
+                    "service": "MCP Status",
+                    "status": "unhealthy",
+                    "status_code": response.status_code,
+                    "response": response.text,
+                }
+    except Exception as e:
+        return {
+            "service": "MCP Status",
+            "status": "error",
+            "error": str(e),
+        }
+
+
+async def check_mcp_readiness() -> dict[str, Any]:
+    """Check MCP server readiness probe."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:2081/ready", timeout=5.0)
+            if response.status_code == 200:
+                ready_data = response.json()
+                return {
+                    "service": "MCP Readiness",
+                    "status": "ready" if ready_data.get("ready") else "not_ready",
+                    "tools_loaded": ready_data.get("tools_loaded", False),
+                    "tools_count": ready_data.get("tools_count", 0)
+                }
+            else:
+                return {
+                    "service": "MCP Readiness", 
+                    "status": "not_ready",
+                    "status_code": response.status_code,
+                    "response": response.text,
+                }
+    except Exception as e:
+        return {
+            "service": "MCP Readiness",
+            "status": "error",
+            "error": str(e),
+        }
+
+
 async def test_mcp_jsonrpc() -> dict[str, Any]:
     """Test MCP JSON-RPC endpoint."""
     try:
@@ -101,7 +159,7 @@ async def test_mcp_jsonrpc() -> dict[str, Any]:
             }
 
             response = await client.post(
-                "http://localhost:8001/mcp",
+                "http://localhost:2081/mcp",
                 json=init_request,
                 timeout=10.0,
                 headers={"Content-Type": "application/json"},
@@ -138,6 +196,8 @@ async def main() -> None:
     checks = [
         check_fastapi_health(),
         check_mcp_http_health(),
+        check_mcp_status(),
+        check_mcp_readiness(),
         check_mcp_tools(),
         test_mcp_jsonrpc(),
     ]
@@ -161,13 +221,20 @@ async def main() -> None:
         service = result.get("service", "Unknown")
         status = result.get("status", "unknown")
 
-        if status == "healthy":
+        if status in ["healthy", "ready"]:
             print(f"✅ {service}: {status}")
-            if "tool_count" in result:
-                print(f"   📊 Tools: {result['tool_count']}")
+            if "tool_count" in result or "tools_count" in result:
+                count = result.get("tool_count", result.get("tools_count", 0))
+                print(f"   📊 Tools: {count}")
                 if result.get("tools"):
                     print(f"   🔧 Sample tools: {', '.join(result['tools'][:5])}")
-        elif status == "unhealthy":
+            if "server_name" in result:
+                print(f"   🏷️  Server: {result['server_name']}")
+            if "fastmcp_version" in result:
+                print(f"   📦 FastMCP: {result['fastmcp_version']}")
+            if "tools_loaded" in result:
+                print(f"   🔧 Tools loaded: {result['tools_loaded']}")
+        elif status in ["unhealthy", "not_ready"]:
             print(f"⚠️  {service}: {status}")
             if "status_code" in result:
                 print(f"   📄 Status code: {result['status_code']}")

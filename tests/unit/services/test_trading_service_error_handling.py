@@ -72,46 +72,71 @@ class TestTradingServiceErrorHandling:
             except Exception as e:
                 # Exception is acceptable for invalid input - check for various error indicators
                 error_str = str(e).lower()
-                assert any(word in error_str for word in ["invalid", "error", "not found", "404"])
+                assert any(
+                    word in error_str
+                    for word in ["invalid", "error", "not found", "404"]
+                )
 
     @pytest.mark.asyncio
     async def test_malformed_order_data_handling(self, trading_service_test_data):
         """Test handling of malformed order data."""
-        malformed_orders = [
-            # Missing required fields
-            OrderCreate(
-                symbol="AAPL",
-                quantity=0,  # Invalid quantity
-                order_type=OrderType.MARKET,
-                side="buy",
-            ),
-            # Negative quantity
-            OrderCreate(
-                symbol="AAPL", quantity=-10, order_type=OrderType.MARKET, side="buy"
-            ),
-            # Invalid side
-            OrderCreate(
-                symbol="AAPL",
-                quantity=100,
-                order_type=OrderType.MARKET,
-                side="invalid_side",
-            ),
+        from pydantic import ValidationError
+
+        # Test cases that will fail at Pydantic validation level
+        invalid_data_sets = [
+            {
+                "symbol": "AAPL",
+                "quantity": 0,
+                "order_type": OrderType.BUY,
+                "side": "buy",
+            },  # Zero quantity
+            {
+                "symbol": "AAPL",
+                "quantity": -10,
+                "order_type": OrderType.BUY,
+                "side": "buy",
+            },  # Negative quantity
         ]
 
-        for order_data in malformed_orders:
+        for invalid_data in invalid_data_sets:
             try:
+                # This should raise ValidationError at Pydantic level
+                order_data = OrderCreate(**invalid_data)
                 result = await trading_service_test_data.create_order(order_data)
-                # If no exception, should have error in result
-                if hasattr(result, "status") and result.status:
-                    # Order was created but might be rejected
-                    pass
-                else:
-                    # Should have error indication
-                    assert hasattr(result, "id") or "error" in str(result)
-            except (InputValidationError, ValueError, Exception) as e:
-                # Expected validation errors - check for various error indicators
+                # If we get here, should have error indication
+                assert hasattr(result, "id") or "error" in str(result)
+            except ValidationError as e:
+                # Expected Pydantic validation error
                 error_str = str(e).lower()
-                assert any(word in error_str for word in ["invalid", "quantity", "side", "error", "validation"])
+                assert any(
+                    word in error_str
+                    for word in ["greater_than", "quantity", "validation"]
+                )
+            except (InputValidationError, ValueError, Exception) as e:
+                # Other expected validation errors
+                error_str = str(e).lower()
+                assert any(
+                    word in error_str
+                    for word in ["invalid", "quantity", "side", "error", "validation"]
+                )
+
+        # Test invalid side (this should pass Pydantic but fail at service level)
+        try:
+            order_data = OrderCreate(
+                symbol="AAPL",
+                quantity=100,
+                order_type=OrderType.BUY,
+                side="invalid_side",
+            )
+            result = await trading_service_test_data.create_order(order_data)
+            # Should have error indication
+            assert hasattr(result, "id") or "error" in str(result)
+        except (InputValidationError, ValueError, Exception) as e:
+            # Expected validation errors
+            error_str = str(e).lower()
+            assert any(
+                word in error_str for word in ["invalid", "side", "error", "validation"]
+            )
 
     @pytest.mark.asyncio
     async def test_boundary_value_order_quantities(self, trading_service_test_data):
@@ -126,7 +151,7 @@ class TestTradingServiceErrorHandling:
             order_data = OrderCreate(
                 symbol="AAPL",
                 quantity=quantity,
-                order_type=OrderType.MARKET,
+                order_type=OrderType.BUY,
                 side="buy",
             )
 
@@ -138,7 +163,10 @@ class TestTradingServiceErrorHandling:
                 # For fractional quantities, might not be supported
                 error_str = str(e).lower()
                 if quantity == 0.1:
-                    assert any(word in error_str for word in ["fractional", "decimal", "invalid", "error"])
+                    assert any(
+                        word in error_str
+                        for word in ["fractional", "decimal", "invalid", "error"]
+                    )
                 else:
                     # Any error is acceptable for boundary testing
                     assert "error" in error_str or len(error_str) > 0
@@ -150,7 +178,9 @@ class TestTradingServiceErrorHandling:
         try:
             with (
                 patch.object(
-                    trading_service_test_data, "_get_portfolio_positions", return_value=[]
+                    trading_service_test_data,
+                    "_get_portfolio_positions",
+                    return_value=[],
                 ),
                 patch.object(
                     trading_service_test_data, "get_account_balance", return_value=0.0
@@ -356,7 +386,7 @@ class TestTradingServiceErrorHandling:
                 order_data = OrderCreate(
                     symbol="AAPL",
                     quantity=test_value,  # Different types
-                    order_type=OrderType.MARKET,
+                    order_type=OrderType.BUY,
                     side="buy",
                 )
                 result = await trading_service_test_data.create_order(order_data)

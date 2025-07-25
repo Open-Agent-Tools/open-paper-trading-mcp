@@ -77,7 +77,7 @@ from app.mcp.trading_tools import (
 )
 
 # Create the unified MCP instance
-mcp: FastMCP[Any] = FastMCP("Open Paper Trading MCP")
+mcp = FastMCP("Open Paper Trading MCP")
 
 # =============================================================================
 # CORE SYSTEM TOOLS

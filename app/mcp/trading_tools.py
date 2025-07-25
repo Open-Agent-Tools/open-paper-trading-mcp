@@ -33,6 +33,10 @@ async def buy_stock_market(symbol: str, quantity: int) -> dict[str, Any]:
     """
     Places a market buy order for a stock.
     Executes immediately at current market price.
+
+    Args:
+        symbol: Stock symbol (e.g., 'AAPL', 'GOOGL')
+        quantity: Number of shares to buy (1-10000)
     """
     try:
         # Validate inputs
@@ -83,6 +87,10 @@ async def sell_stock_market(symbol: str, quantity: int) -> dict[str, Any]:
     """
     Places a market sell order for a stock.
     Executes immediately at current market price.
+
+    Args:
+        symbol: Stock symbol (e.g., 'AAPL', 'GOOGL')
+        quantity: Number of shares to sell (1-10000)
     """
     try:
         # Validate inputs

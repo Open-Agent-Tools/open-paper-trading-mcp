@@ -1,10 +1,8 @@
-import os
-import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
 
-import uvicorn
+# uvicorn import removed - now handled by fastapi_server.py
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -17,12 +15,7 @@ from app.core.config import settings
 from app.core.exceptions import CustomException
 from app.core.logging import setup_logging
 
-# Import the unified MCP server instance
-try:
-    from app.mcp.server import mcp as mcp_instance
-except Exception as e:
-    print(f"Error importing MCP server: {e}")
-    mcp_instance: Any = None
+# Note: MCP server runs separately via mcp_server.py
 
 
 async def initialize_database() -> None:
@@ -297,74 +290,5 @@ async def root() -> dict[str, Any]:
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
-def run_mcp_server() -> None:
-    """Run the MCP server in a separate thread."""
-    if mcp_instance is None:
-        print("MCP server not available (likely in test mode)")
-        return
-
-    print(
-        f"Starting MCP server on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}"
-    )
-    try:
-        mcp_instance.run(
-            host=settings.MCP_SERVER_HOST,
-            port=settings.MCP_SERVER_PORT,
-            transport="sse",
-        )
-    except Exception as e:
-        print(f"Error running MCP server: {e}")
-
-
-def run_mcp_http_server() -> None:
-    """Run the MCP server with HTTP transport for ADK compatibility."""
-    if mcp_instance is None:
-        print("MCP server not available (likely in test mode)")
-        return
-
-    print(
-        f"Starting MCP HTTP server on {settings.MCP_SERVER_HOST}:{settings.MCP_HTTP_PORT}"
-    )
-    try:
-        # Use our custom HTTP transport
-        import asyncio
-
-        from app.mcp.http_transport import run_http_server
-
-        async def start_server():
-            await run_http_server(
-                mcp_instance,
-                host=settings.MCP_SERVER_HOST,
-                port=settings.MCP_HTTP_PORT,
-            )
-
-        asyncio.run(start_server())
-    except Exception as e:
-        print(f"Error running MCP HTTP server: {e}")
-
-
-def main() -> None:
-    """Main entry point to run both servers."""
-    # Start MCP servers in separate threads if available
-    if mcp_instance is not None:
-        # Start SSE MCP server
-        mcp_sse_thread = threading.Thread(target=run_mcp_server, daemon=True)
-        mcp_sse_thread.start()
-
-        # Start HTTP MCP server for ADK compatibility
-        mcp_http_thread = threading.Thread(target=run_mcp_http_server, daemon=True)
-        mcp_http_thread.start()
-    else:
-        print("MCP server not available - running FastAPI only")
-
-    # Run FastAPI server
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=2080,
-        reload=os.getenv("ENVIRONMENT") == "development",
-    )
-
-
-if __name__ == "__main__":
-    main()
+# FastMCP server is run separately via mcp_server.py
+# This file only provides the FastAPI app instance

@@ -176,7 +176,7 @@ def create_http_server(mcp_server: FastMCP) -> FastAPI:
                     if tool is None:
                         raise ValueError(f"Tool '{tool_name}' not found")
 
-                    # Call the tool function directly  
+                    # Call the tool function directly
                     tool_result = await tool(**arguments)
 
                     # Our tools return dict objects, convert to MCP protocol format

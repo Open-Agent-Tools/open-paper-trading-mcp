@@ -20,5 +20,9 @@ COPY . .
 EXPOSE 2080
 EXPOSE 2081
 
-# Define the command to run the app
-CMD ["uv", "run", "python", "app/main.py"]
+# Create a start script to run both servers
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Define the command to run both servers
+CMD ["/start.sh"]

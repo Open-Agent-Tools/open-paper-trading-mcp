@@ -1,5 +1,6 @@
 import React from 'react';
-import { Paper, Typography, Box } from '@mui/material';
+import { Paper } from '@mui/material';
+import SystemHealthIndicator from './SystemHealthIndicator';
 
 const Footer: React.FC = () => {
   return (
@@ -15,9 +16,11 @@ const Footer: React.FC = () => {
         textAlign: 'center',
       }}
     >
-      <Typography variant="body2" color="text.secondary">
-        API Status: <Box component="span" sx={{ color: 'success.main' }}>●</Box> Online | Market: Open
-      </Typography>
+      <SystemHealthIndicator 
+        variant="summary" 
+        showDetails={true}
+        refreshInterval={30000}
+      />
     </Paper>
   );
 };

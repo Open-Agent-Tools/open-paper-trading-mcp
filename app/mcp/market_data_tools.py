@@ -15,6 +15,9 @@ async def get_stock_price(symbol: str) -> dict[str, Any]:
     """
     Get current stock price and basic metrics.
 
+    Args:
+        symbol: Stock symbol (e.g., 'AAPL', 'GOOGL')
+
     This function now routes through TradingService for unified data access.
     """
     symbol = symbol.strip().upper()
@@ -30,6 +33,9 @@ async def get_stock_info(symbol: str) -> dict[str, Any]:
     """
     Get detailed company information and fundamentals for a stock.
 
+    Args:
+        symbol: Stock symbol (e.g., 'AAPL', 'GOOGL')
+
     This function now routes through TradingService for unified data access.
     """
     symbol = symbol.strip().upper()
@@ -44,6 +50,10 @@ async def get_stock_info(symbol: str) -> dict[str, Any]:
 async def get_price_history(symbol: str, period: str = "week") -> dict[str, Any]:
     """
     Get historical price data for a stock.
+
+    Args:
+        symbol: Stock symbol (e.g., 'AAPL', 'GOOGL')
+        period: Time period for historical data (default: 'week')
 
     This function now routes through TradingService for unified data access.
     """
