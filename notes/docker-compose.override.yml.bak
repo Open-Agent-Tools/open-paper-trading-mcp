@@ -1,0 +1,26 @@
+# Development overrides for hot reload
+# This file is automatically loaded by docker-compose
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      # Mount source code for instant changes
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3001:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - FAST_REFRESH=true
+
+  app:
+    volumes:
+      # Enable Python hot reload
+      - .:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
+    environment:
+      - PYTHONUNBUFFERED=1

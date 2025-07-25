@@ -34,6 +34,23 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
     }
   };
 
+  const getServiceStatusColor = (status?: string) => {
+    switch (status) {
+      case 'healthy':
+        return '#006b3c'; // --success from style guide
+      case 'unhealthy':
+        return '#b45309'; // --warning from style guide
+      case 'error':
+        return '#dc3545'; // --error from style guide
+      case 'degraded':
+        return '#b45309'; // --warning from style guide
+      case 'down':
+        return '#dc3545'; // --error from style guide
+      default:
+        return '#6c757d'; // --neutral-dark from style guide
+    }
+  };
+
   const getOverallStatusText = (overall?: string) => {
     switch (overall) {
       case 'healthy':
@@ -47,20 +64,23 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
     }
   };
 
-  const getMarketStatus = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    const day = now.getDay();
-    
-    // Simple market hours check (9:30 AM - 4:00 PM ET, Mon-Fri)
-    // This is a simplified version - in production you'd want more sophisticated logic
-    const isWeekday = day >= 1 && day <= 5;
-    const isMarketHours = hour >= 9 && hour < 16;
-    
-    if (!isWeekday) return 'Closed (Weekend)';
-    if (!isMarketHours) return 'Closed';
-    return 'Open';
+  const getOverallStatusSimple = (status?: string) => {
+    switch (status) {
+      case 'healthy':
+        return 'Online';
+      case 'unhealthy':
+        return 'Offline';
+      case 'error':
+        return 'Offline';
+      case 'degraded':
+        return 'Degraded';
+      case 'down':
+        return 'Offline';
+      default:
+        return 'Unknown';
+    }
   };
+
 
   if (loading && !health) {
     return (
@@ -110,23 +130,15 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
   if (variant === 'summary') {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            API Status:
+            API -
           </Typography>
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: getOverallStatusColor(health.overall),
-            }}
-          />
           <Typography 
             variant="body2" 
-            sx={{ color: getOverallStatusColor(health.overall), fontWeight: 500 }}
+            sx={{ color: getServiceStatusColor(health.fastapi.status), fontWeight: 500 }}
           >
-            {getOverallStatusText(health.overall)}
+            {getOverallStatusSimple(health.fastapi.status)}
           </Typography>
         </Box>
         
@@ -134,9 +146,33 @@ const SystemHealthIndicator: React.FC<SystemHealthIndicatorProps> = ({
           |
         </Typography>
         
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            MCP -
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ color: getServiceStatusColor(health.mcp.status), fontWeight: 500 }}
+          >
+            {getOverallStatusSimple(health.mcp.status)}
+          </Typography>
+        </Box>
+        
         <Typography variant="body2" color="text.secondary">
-          Market: {getMarketStatus()}
+          |
         </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Database -
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ color: getServiceStatusColor(health.database.status), fontWeight: 500 }}
+          >
+            {getOverallStatusSimple(health.database.status)}
+          </Typography>
+        </Box>
 
         {showDetails && (
           <Tooltip

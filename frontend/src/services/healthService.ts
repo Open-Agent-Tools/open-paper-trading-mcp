@@ -17,15 +17,18 @@ const mcpClient = axios.create({
  */
 export const checkFastApiHealth = async (): Promise<HealthStatus> => {
   try {
-    const response = await fastApiClient.get('/');
+    console.log('Checking FastAPI health at /api/v1/health');
+    const response = await fastApiClient.get('/api/v1/health');
+    console.log('FastAPI health response:', response.status, response.data);
     return {
       service: 'FastAPI',
-      status: response.status === 200 ? 'healthy' : 'unhealthy',
+      status: response.status === 200 && response.data?.status === 'ok' ? 'healthy' : 'unhealthy',
       statusCode: response.status,
       response: response.data,
       timestamp: Date.now(),
     };
   } catch (error: any) {
+    console.error('FastAPI health check failed:', error);
     return {
       service: 'FastAPI',
       status: 'error',
@@ -40,15 +43,27 @@ export const checkFastApiHealth = async (): Promise<HealthStatus> => {
  */
 export const checkMcpHealth = async (): Promise<HealthStatus> => {
   try {
+    console.log('Checking MCP health at /health');
     const response = await mcpClient.get('/health');
+    console.log('MCP health response:', response.status, response.data);
     return {
       service: 'MCP',
-      status: response.status === 200 ? 'healthy' : 'unhealthy',
+      status: response.status === 200 && response.data?.status === 'healthy' ? 'healthy' : 'unhealthy',
       statusCode: response.status,
       response: response.data,
       timestamp: Date.now(),
     };
   } catch (error: any) {
+    console.error('MCP health check failed:', error);
+    // MCP server is temporarily disabled due to dependency issues
+    if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+      return {
+        service: 'MCP',
+        status: 'unhealthy',
+        error: 'MCP server temporarily unavailable (dependency issues)',
+        timestamp: Date.now(),
+      };
+    }
     return {
       service: 'MCP',
       status: 'error',
@@ -63,22 +78,21 @@ export const checkMcpHealth = async (): Promise<HealthStatus> => {
  */
 export const checkDatabaseHealth = async (): Promise<HealthStatus> => {
   try {
-    // Try to hit an API endpoint that requires database access
-    const response = await fastApiClient.get('/api/v1/account/info');
+    console.log('Checking database health at /api/v1/health/ready');
+    const response = await fastApiClient.get('/api/v1/health/ready');
+    console.log('Database health response:', response.status, response.data);
     return {
       service: 'Database',
-      status: response.status === 200 ? 'healthy' : 'unhealthy',
+      status: response.status === 200 && response.data?.status === 'ready' ? 'healthy' : 'unhealthy',
       statusCode: response.status,
-      response: { message: 'Database accessible via API' },
+      response: response.data,
       timestamp: Date.now(),
     };
   } catch (error: any) {
-    // If we get a 500, it's likely a database issue
-    // If we get a 404, it might be an endpoint issue, not database
-    const status = error.response?.status === 500 ? 'unhealthy' : 'error';
+    console.error('Database health check failed:', error);
     return {
       service: 'Database',
-      status,
+      status: 'error',
       statusCode: error.response?.status,
       error: error.message || 'Unknown error',
       timestamp: Date.now(),

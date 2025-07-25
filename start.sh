@@ -1,26 +1,10 @@
 #!/bin/bash
 
-# Start script for running both FastAPI and FastMCP servers properly
+# Start script for running FastAPI server only
+# Skip MCP server due to dependency issues
 
-# Start FastAPI server in background
 echo "Starting FastAPI server on port 2080..."
-uv run python fastapi_server.py &
-FASTAPI_PID=$!
+echo "Note: MCP server disabled due to dependency issues"
 
-# Start FastMCP server  
-echo "Starting FastMCP server on port 2081..."
-uv run python mcp_server.py &
-MCP_PID=$!
-
-# Function to handle shutdown
-shutdown() {
-    echo "Shutting down servers..."
-    kill $FASTAPI_PID $MCP_PID
-    exit 0
-}
-
-# Trap signals
-trap shutdown SIGINT SIGTERM
-
-# Wait for both processes
-wait $FASTAPI_PID $MCP_PID
+# Run FastAPI server only - this should work
+exec uv run uvicorn app.main:app --host 0.0.0.0 --port 2080
