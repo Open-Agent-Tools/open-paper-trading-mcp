@@ -290,5 +290,44 @@ async def root() -> dict[str, Any]:
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
-# FastMCP server is run separately via mcp_server.py
-# This file only provides the FastAPI app instance
+# Optional: Support for running both FastAPI and MCP servers
+def run_dual_servers():
+    """Run both FastAPI and MCP servers simultaneously."""
+    import asyncio
+    import multiprocessing
+    import uvicorn
+    from app.mcp.server import mcp
+    
+    def run_fastapi():
+        """Run FastAPI server on port 2080."""
+        uvicorn.run(app, host="0.0.0.0", port=2080, log_level="info")
+    
+    def run_mcp():
+        """Run MCP server on port 2081 with SSE transport."""
+        mcp_app = mcp.sse_app()
+        uvicorn.run(mcp_app, host="0.0.0.0", port=2081, log_level="info")
+    
+    # Start both servers in separate processes
+    fastapi_process = multiprocessing.Process(target=run_fastapi)
+    mcp_process = multiprocessing.Process(target=run_mcp)
+    
+    try:
+        print("Starting FastAPI server on port 2080...")
+        fastapi_process.start()
+        
+        print("Starting MCP server on port 2081...")
+        mcp_process.start()
+        
+        # Wait for both processes
+        fastapi_process.join()
+        mcp_process.join()
+        
+    except KeyboardInterrupt:
+        print("Shutting down servers...")
+        fastapi_process.terminate()
+        mcp_process.terminate()
+        fastapi_process.join()
+        mcp_process.join()
+
+if __name__ == "__main__":
+    run_dual_servers()

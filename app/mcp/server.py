@@ -6,8 +6,10 @@ with the new architecture using direct function parameters and
 standardized dict[str, Any] return types.
 """
 
+import time
 from typing import Any
 
+from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
 
 # Import all tool functions from individual modules
@@ -117,6 +119,7 @@ from app.mcp.trading_tools import (
 
 # Create the unified MCP instance
 mcp: FastMCP = FastMCP("Open Paper Trading MCP")
+
 
 # =============================================================================
 # CORE SYSTEM TOOLS
@@ -299,5 +302,10 @@ mcp.tool()(check_risk_limits)
 mcp.tool()(get_margin_requirements)
 mcp.tool()(calculate_drawdown)
 
+# =============================================================================
+# HEALTH CHECK ENDPOINTS - TODO: Fix custom route implementation
+# =============================================================================
+# Note: Custom routes need further investigation for proper FastMCP integration
+# The MCP server is functional for the main /mcp endpoint
 
 __all__ = ["mcp"]

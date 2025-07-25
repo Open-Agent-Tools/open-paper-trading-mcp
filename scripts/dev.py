@@ -24,7 +24,15 @@ def run_command(cmd: str) -> str | None:
 def start_server() -> None:
     """Start both FastAPI and MCP servers"""
     print("Starting both FastAPI and MCP servers...")
+    print("FastAPI will be available at http://localhost:2080")
+    print("MCP server will be available at http://localhost:2081")
     os.system("uv run python app/main.py")
+
+def start_mcp_only() -> None:
+    """Start only the MCP server for development"""
+    print("Starting MCP server only...")
+    print("MCP server will be available at http://localhost:2081")
+    os.system("uv run python -c \"import uvicorn; from app.mcp.server import mcp; app = mcp.sse_app(); uvicorn.run(app, host='0.0.0.0', port=2081, log_level='info')\"")
 
 
 def run_tests() -> None:
@@ -64,6 +72,7 @@ def main() -> None:
         print("Usage: python scripts/dev.py <command>")
         print("Commands:")
         print("  server    - Start development server (FastAPI + MCP)")
+        print("  mcp       - Start only MCP server on port 2081")
         print("  test      - Run tests (uv run pytest -v)")
         print("  format    - Format code (uv run ruff format .)")
         print("  lint      - Lint code (uv run ruff check . --fix)")
@@ -75,6 +84,8 @@ def main() -> None:
 
     if command == "server":
         start_server()
+    elif command == "mcp":
+        start_mcp_only()
     elif command == "test":
         run_tests()
     elif command == "format":
