@@ -281,6 +281,46 @@ class OrderCreate(BaseModel):
     condition: OrderCondition = Field(
         OrderCondition.MARKET, description="Order condition"
     )
+    
+    # Advanced order trigger fields
+    stop_price: float | None = Field(None, description="Stop price for stop orders")
+    trail_percent: float | None = Field(
+        None, description="Trail percentage for trailing stops"
+    )
+    trail_amount: float | None = Field(
+        None, description="Trail amount for trailing stops"
+    )
+
+    @field_validator("stop_price")
+    @classmethod
+    def validate_stop_price_requirement(
+        cls, v: float | None, info: ValidationInfo
+    ) -> float | None:
+        """Validate stop price is provided for stop orders."""
+        order_type = info.data.get("order_type")
+        if order_type in [OrderType.STOP_LOSS, OrderType.STOP_LIMIT] and v is None:
+            raise ValueError(f"Stop price is required for {order_type} orders")
+        return v
+
+    @field_validator("trail_percent")
+    @classmethod
+    def validate_trail_requirements(
+        cls, v: float | None, info: ValidationInfo
+    ) -> float | None:
+        """Validate trail requirements for trailing stop orders."""
+        order_type = info.data.get("order_type")
+        trail_amount = info.data.get("trail_amount")
+
+        if order_type == OrderType.TRAILING_STOP:
+            if v is None and trail_amount is None:
+                raise ValueError(
+                    "Trailing stop orders require either trail_percent or trail_amount"
+                )
+            if v is not None and trail_amount is not None:
+                raise ValueError(
+                    "Trailing stop orders cannot have both trail_percent and trail_amount"
+                )
+        return v
 
 
 class OrderLegCreate(BaseModel):

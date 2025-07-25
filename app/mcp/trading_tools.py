@@ -205,16 +205,33 @@ async def buy_stock_stop_loss(
     Places a stop loss buy order for a stock.
     """
     try:
-        # This would be implemented with stop loss order logic
-        # For now, return a placeholder response
-        data = {
-            "symbol": symbol.strip().upper(),
-            "order_type": "stop_loss_buy",
-            "quantity": quantity,
+        from app.core.dependencies import get_trading_service
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+
+        service = get_trading_service()
+        
+        # Create stop loss buy order
+        order_data = OrderCreate(
+            symbol=symbol,
+            order_type=OrderType.STOP_LOSS,
+            quantity=quantity,
+            price=None,  # Market order when triggered
+            condition=OrderCondition.STOP,
+            stop_price=stop_price,
+        )
+        
+        order = await service.create_order(order_data)
+        
+        return success_response({
+            "order_id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
             "stop_price": stop_price,
-            "message": "Stop loss buy orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Stop loss buy order created for {quantity} shares of {symbol} at stop price ${stop_price:.2f}",
+        })
     except Exception as e:
         return handle_tool_exception("buy_stock_stop_loss", e)
 
@@ -226,16 +243,33 @@ async def sell_stock_stop_loss(
     Places a stop loss sell order for a stock.
     """
     try:
-        # This would be implemented with stop loss order logic
-        # For now, return a placeholder response
-        data = {
-            "symbol": symbol.strip().upper(),
-            "order_type": "stop_loss_sell",
-            "quantity": quantity,
+        from app.core.dependencies import get_trading_service
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+
+        service = get_trading_service()
+        
+        # Create stop loss sell order
+        order_data = OrderCreate(
+            symbol=symbol,
+            order_type=OrderType.STOP_LOSS,
+            quantity=quantity,
+            price=None,  # Market order when triggered
+            condition=OrderCondition.STOP,
+            stop_price=stop_price,
+        )
+        
+        order = await service.create_order(order_data)
+        
+        return success_response({
+            "order_id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
             "stop_price": stop_price,
-            "message": "Stop loss sell orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Stop loss sell order created for {quantity} shares of {symbol} at stop price ${stop_price:.2f}",
+        })
     except Exception as e:
         return handle_tool_exception("sell_stock_stop_loss", e)
 
@@ -247,16 +281,33 @@ async def buy_stock_trailing_stop(
     Places a trailing stop buy order for a stock.
     """
     try:
-        # This would be implemented with trailing stop order logic
-        # For now, return a placeholder response
-        data = {
-            "symbol": symbol.strip().upper(),
-            "order_type": "trailing_stop_buy",
-            "quantity": quantity,
+        from app.core.dependencies import get_trading_service
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+
+        service = get_trading_service()
+        
+        # Create trailing stop buy order
+        order_data = OrderCreate(
+            symbol=symbol,
+            order_type=OrderType.TRAILING_STOP,
+            quantity=quantity,
+            price=None,  # Market order when triggered
+            condition=OrderCondition.STOP,
+            trail_amount=trail_amount,
+        )
+        
+        order = await service.create_order(order_data)
+        
+        return success_response({
+            "order_id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
             "trail_amount": trail_amount,
-            "message": "Trailing stop buy orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Trailing stop buy order created for {quantity} shares of {symbol} with trail amount ${trail_amount:.2f}",
+        })
     except Exception as e:
         return handle_tool_exception("buy_stock_trailing_stop", e)
 
@@ -268,16 +319,33 @@ async def sell_stock_trailing_stop(
     Places a trailing stop sell order for a stock.
     """
     try:
-        # This would be implemented with trailing stop order logic
-        # For now, return a placeholder response
-        data = {
-            "symbol": symbol.strip().upper(),
-            "order_type": "trailing_stop_sell",
-            "quantity": quantity,
+        from app.core.dependencies import get_trading_service
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+
+        service = get_trading_service()
+        
+        # Create trailing stop sell order
+        order_data = OrderCreate(
+            symbol=symbol,
+            order_type=OrderType.TRAILING_STOP,
+            quantity=quantity,
+            price=None,  # Market order when triggered
+            condition=OrderCondition.STOP,
+            trail_amount=trail_amount,
+        )
+        
+        order = await service.create_order(order_data)
+        
+        return success_response({
+            "order_id": order.id,
+            "symbol": order.symbol,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
             "trail_amount": trail_amount,
-            "message": "Trailing stop sell orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Trailing stop sell order created for {quantity} shares of {symbol} with trail amount ${trail_amount:.2f}",
+        })
     except Exception as e:
         return handle_tool_exception("sell_stock_trailing_stop", e)
 
@@ -294,16 +362,37 @@ async def buy_option_limit(
     Places a limit buy order for an option.
     """
     try:
-        # This would be implemented with options order logic
-        # For now, return a placeholder response
-        data = {
+        from app.core.dependencies import get_trading_service
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+
+        service = get_trading_service()
+        
+        # Validate that instrument_id looks like an option symbol
+        # Option symbols are typically in format: AAPL240119C00195000
+        if len(instrument_id) < 10 or not any(c in instrument_id for c in ['C', 'P']):
+            raise ValueError(f"Invalid option instrument_id format: {instrument_id}. Expected option symbol format like 'AAPL240119C00195000'")
+        
+        # Use instrument_id as option symbol (they should be equivalent in this system)
+        order_data = OrderCreate(
+            symbol=instrument_id,
+            order_type=OrderType.BTO,  # Buy to open for options
+            quantity=quantity,
+            price=limit_price,
+            condition=OrderCondition.LIMIT,
+        )
+        
+        order = await service.create_order(order_data)
+        
+        return success_response({
+            "order_id": order.id,
             "instrument_id": instrument_id,
-            "order_type": "option_limit_buy",
-            "quantity": quantity,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
             "limit_price": limit_price,
-            "message": "Option limit buy orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Option buy limit order created for {quantity} contracts of {instrument_id} at ${limit_price:.2f}",
+        })
     except Exception as e:
         return handle_tool_exception("buy_option_limit", e)
 
@@ -315,16 +404,36 @@ async def sell_option_limit(
     Places a limit sell order for an option.
     """
     try:
-        # This would be implemented with options order logic
-        # For now, return a placeholder response
-        data = {
+        from app.core.dependencies import get_trading_service
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+
+        service = get_trading_service()
+        
+        # Validate that instrument_id looks like an option symbol
+        if len(instrument_id) < 10 or not any(c in instrument_id for c in ['C', 'P']):
+            raise ValueError(f"Invalid option instrument_id format: {instrument_id}. Expected option symbol format like 'AAPL240119P00195000'")
+        
+        # Use instrument_id as option symbol (they should be equivalent in this system)
+        order_data = OrderCreate(
+            symbol=instrument_id,
+            order_type=OrderType.STO,  # Sell to open for options
+            quantity=quantity,
+            price=limit_price,
+            condition=OrderCondition.LIMIT,
+        )
+        
+        order = await service.create_order(order_data)
+        
+        return success_response({
+            "order_id": order.id,
             "instrument_id": instrument_id,
-            "order_type": "option_limit_sell",
-            "quantity": quantity,
+            "order_type": order.order_type,
+            "quantity": order.quantity,
             "limit_price": limit_price,
-            "message": "Option limit sell orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Option sell limit order created for {quantity} contracts of {instrument_id} at ${limit_price:.2f}",
+        })
     except Exception as e:
         return handle_tool_exception("sell_option_limit", e)
 
@@ -339,17 +448,46 @@ async def option_credit_spread(
     Places a credit spread order (sell short option, buy long option).
     """
     try:
-        # This would be implemented with credit spread logic
-        # For now, return a placeholder response
-        data = {
+        from app.core.dependencies import get_trading_service
+
+        service = get_trading_service()
+        
+        # Validate instrument IDs are option symbols
+        for inst_id, name in [(short_instrument_id, "short"), (long_instrument_id, "long")]:
+            if len(inst_id) < 10 or not any(c in inst_id for c in ['C', 'P']):
+                raise ValueError(f"Invalid {name} instrument_id format: {inst_id}. Expected option symbol format like 'AAPL240119C00195000'")
+        
+        # Create multi-leg order for credit spread
+        legs = [
+            {
+                "symbol": short_instrument_id,
+                "quantity": quantity,
+                "side": "sell",  # Short leg - sell to open
+            },
+            {
+                "symbol": long_instrument_id,
+                "quantity": quantity,
+                "side": "buy",   # Long leg - buy to open
+            },
+        ]
+        
+        order = await service.create_multi_leg_order_from_request(
+            legs=legs,
+            order_type="limit",
+            net_price=credit_price,
+        )
+        
+        return success_response({
+            "order_id": order.id,
+            "strategy_type": "credit_spread",
             "short_instrument_id": short_instrument_id,
             "long_instrument_id": long_instrument_id,
-            "order_type": "credit_spread",
             "quantity": quantity,
             "credit_price": credit_price,
-            "message": "Credit spread orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Credit spread order created: sell {quantity} {short_instrument_id}, buy {quantity} {long_instrument_id} for ${credit_price:.2f} credit",
+        })
     except Exception as e:
         return handle_tool_exception("option_credit_spread", e)
 
@@ -361,17 +499,46 @@ async def option_debit_spread(
     Places a debit spread order (buy long option, sell short option).
     """
     try:
-        # This would be implemented with debit spread logic
-        # For now, return a placeholder response
-        data = {
+        from app.core.dependencies import get_trading_service
+
+        service = get_trading_service()
+        
+        # Validate instrument IDs are option symbols
+        for inst_id, name in [(short_instrument_id, "short"), (long_instrument_id, "long")]:
+            if len(inst_id) < 10 or not any(c in inst_id for c in ['C', 'P']):
+                raise ValueError(f"Invalid {name} instrument_id format: {inst_id}. Expected option symbol format like 'AAPL240119C00195000'")
+        
+        # Create multi-leg order for debit spread
+        legs = [
+            {
+                "symbol": long_instrument_id,
+                "quantity": quantity,
+                "side": "buy",   # Long leg - buy to open
+            },
+            {
+                "symbol": short_instrument_id,
+                "quantity": quantity,
+                "side": "sell",  # Short leg - sell to open
+            },
+        ]
+        
+        order = await service.create_multi_leg_order_from_request(
+            legs=legs,
+            order_type="limit",
+            net_price=debit_price,
+        )
+        
+        return success_response({
+            "order_id": order.id,
+            "strategy_type": "debit_spread",
             "short_instrument_id": short_instrument_id,
             "long_instrument_id": long_instrument_id,
-            "order_type": "debit_spread",
             "quantity": quantity,
             "debit_price": debit_price,
-            "message": "Debit spread orders not yet fully implemented",
-        }
-        return success_response(data)
+            "status": order.status,
+            "created_at": order.created_at,
+            "message": f"Debit spread order created: buy {quantity} {long_instrument_id}, sell {quantity} {short_instrument_id} for ${debit_price:.2f} debit",
+        })
     except Exception as e:
         return handle_tool_exception("option_debit_spread", e)
 

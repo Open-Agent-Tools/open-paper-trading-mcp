@@ -226,6 +226,10 @@ class TradingService:
                 order_type=order_data.order_type,
                 quantity=order_data.quantity,
                 price=order_data.price,
+                condition=order_data.condition,
+                stop_price=order_data.stop_price,
+                trail_percent=order_data.trail_percent,
+                trail_amount=order_data.trail_amount,
                 status=OrderStatus.PENDING,
                 created_at=datetime.now(),
             )

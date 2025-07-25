@@ -17,6 +17,37 @@ from app.mcp.account_tools import (
     portfolio,
     positions,
 )
+from app.mcp.advanced_market_data_tools import (
+    get_afterhours_data,
+    get_dividend_calendar,
+    get_earnings_calendar,
+    get_economic_calendar,
+    get_market_movers,
+    get_news_feed,
+    get_premarket_data,
+    get_sector_performance,
+)
+from app.mcp.advanced_options_tools import (
+    analyze_volatility_skew,
+    calculate_max_pain,
+    calculate_option_chain_greeks,
+    get_implied_volatility_surface,
+    get_put_call_ratio,
+    get_unusual_options_activity,
+)
+from app.mcp.advanced_order_tools import (
+    create_bracket_order,
+    create_iceberg_order,
+    create_oco_order,
+    create_twap_order,
+    create_vwap_order,
+)
+from app.mcp.risk_management_tools import (
+    calculate_drawdown,
+    calculate_position_sizing,
+    check_risk_limits,
+    get_margin_requirements,
+)
 from app.mcp.core_tools import (
     health_check,
     market_hours,
@@ -39,6 +70,14 @@ from app.mcp.options_tools import (
     option_historicals,
     option_market_data,
     options_chains,
+)
+from app.mcp.portfolio_analytics_tools import (
+    analyze_sector_allocation,
+    calculate_portfolio_beta,
+    calculate_sharpe_ratio,
+    calculate_var,
+    get_portfolio_correlation,
+    get_risk_metrics,
 )
 from app.mcp.tools import (
     calculate_option_greeks,
@@ -204,6 +243,61 @@ async def stock_price(symbol: str) -> dict[str, Any]:
 async def stock_info(symbol: str) -> dict[str, Any]:
     """Gets detailed company information and fundamentals."""
     return await get_stock_info(symbol)
+
+
+# =============================================================================
+# ADVANCED MARKET DATA TOOLS
+# =============================================================================
+
+mcp.tool()(get_earnings_calendar)
+mcp.tool()(get_dividend_calendar)
+mcp.tool()(get_market_movers)
+mcp.tool()(get_sector_performance)
+mcp.tool()(get_premarket_data)
+mcp.tool()(get_afterhours_data)
+mcp.tool()(get_economic_calendar)
+mcp.tool()(get_news_feed)
+
+# =============================================================================
+# PORTFOLIO ANALYTICS TOOLS
+# =============================================================================
+
+mcp.tool()(calculate_portfolio_beta)
+mcp.tool()(calculate_sharpe_ratio)
+mcp.tool()(calculate_var)
+mcp.tool()(get_portfolio_correlation)
+mcp.tool()(analyze_sector_allocation)
+mcp.tool()(get_risk_metrics)
+
+# =============================================================================
+# ADVANCED OPTIONS TOOLS
+# =============================================================================
+
+mcp.tool()(get_implied_volatility_surface)
+mcp.tool()(calculate_option_chain_greeks)
+mcp.tool()(analyze_volatility_skew)
+mcp.tool()(calculate_max_pain)
+mcp.tool()(get_put_call_ratio)
+mcp.tool()(get_unusual_options_activity)
+
+# =============================================================================
+# ADVANCED ORDER TOOLS
+# =============================================================================
+
+mcp.tool()(create_bracket_order)
+mcp.tool()(create_oco_order)
+mcp.tool()(create_iceberg_order)
+mcp.tool()(create_twap_order)
+mcp.tool()(create_vwap_order)
+
+# =============================================================================
+# RISK MANAGEMENT TOOLS
+# =============================================================================
+
+mcp.tool()(calculate_position_sizing)
+mcp.tool()(check_risk_limits)
+mcp.tool()(get_margin_requirements)
+mcp.tool()(calculate_drawdown)
 
 
 __all__ = ["mcp"]
