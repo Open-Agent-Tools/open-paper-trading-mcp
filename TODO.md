@@ -390,6 +390,36 @@ The primary concerns are **API connectivity issues** that should be investigated
 
 **Recommendation**: ✅ **APPROVE FOR PRODUCTION** after addressing API connectivity and code quality issues.
 
+### ADK Evaluation Infrastructure Setup ✅ **COMPLETED**
+
+**Status**: Successfully replicated eval structure from open-stocks-mcp project
+
+**Files Created**:
+- `tests/evals/__init__.py` - Module initialization
+- `tests/evals/test_config.json` - Evaluation criteria configuration  
+- `tests/evals/list_available_tools_test.json` - Tool listing test case
+- `tests/evals/ADK-testing-evals.md` - Comprehensive testing documentation
+
+**ADK Evaluation Test Results**: ❌ **CONNECTION FAILED**
+- **Issue**: MCP server not accessible via HTTP at expected endpoints
+- **Attempted URLs**: `http://localhost:8001/mcp` (default), `http://localhost:2081/mcp`
+- **Error**: "All connection attempts failed" - httpcore.ConnectError
+- **Root Cause**: MCP server may only be available via stdio or embedded in FastAPI, not as standalone HTTP endpoint
+
+**Expected Tool Count**: 58-84 tools (discrepancy between implemented vs documented)
+- **Currently Implemented**: 58 tools (from core_tools.py)
+- **Documented Goal**: 84 tools (from MCP_TOOLS.md)
+- **Gap**: 26 tools need implementation or documentation update
+
+**Immediate Next Steps**:
+1. **Fix MCP Server HTTP Exposure**: Configure MCP server to accept HTTP connections on port 8001
+2. **Verify Tool Count**: Reconcile discrepancy between implemented (58) vs documented (84) tools
+3. **Complete ADK Evaluation**: Run successful `adk eval` test for tool listing validation
+
+**Testing Infrastructure Ready**: ✅ All files in place for comprehensive ADK evaluation once connectivity is resolved
+
+**Recommendation**: ✅ **APPROVE FOR PRODUCTION** after addressing API connectivity and code quality issues.
+
 ## 📋 FUTURE PHASES (LOWER PRIORITY)
 
 ### Phase 4: Production Readiness & Infrastructure

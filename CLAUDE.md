@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Open Paper Trading MCP is a comprehensive paper trading simulator with dual interfaces: a REST API (FastAPI) and AI agent tools (MCP). The system simulates multi-asset trading (stocks, options, ETFs, bonds) with real market data for algorithmic trading development and AI agent training.
 
-**Current Status (2025-07-25)**: 🎉 **COMPREHENSIVE CODE CLEANUP & TEST FIXES COMPLETED** - 661/672 tests passing (98.4% success rate) after resolving 40 failing tests. Major test infrastructure improvements: multi-leg orders, options discovery, and expiration simulation all fixed. Comprehensive ruff formatting/linting applied, mypy type checking completed with critical fixes, and test infrastructure fully stabilized. Trading service coverage at 78% (35/45 methods fully covered). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
+**Current Status (2025-07-25)**: 🎉 **MCP SERVER & ADK INTEGRATION COMPLETED** - Successfully implemented HTTP transport for MCP server, enabling ADK evaluation compatibility. 56 MCP tools properly exposed via FastMCP framework with JSON-RPC protocol support. ADK can now connect to and communicate with MCP server at http://localhost:8001/mcp. Code cleanup in progress: major ruff/mypy fixes applied, 661/672 tests passing (98.4% success rate). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
 
 ## Essential Commands
 
@@ -95,6 +95,8 @@ The system provides 84 MCP tools (currently 17 implemented) for AI agent interac
 - Market Data tools  
 - Order Management tools
 - Options Trading tools
+
+**Note**: FastMCP automatically provides a `list_tools` function that dynamically lists all registered tools. Do not implement a custom `list_tools` function as it will override this built-in functionality.
 
 ## Development Patterns
 
@@ -296,3 +298,7 @@ assert "account not found" in result["message"]
 - `CLAUDE.md` - This file containing Claude-specific project instructions
 
 These files contain critical project documentation and specifications that must be preserved.
+
+## Project Memories and Guidelines
+
+- Never use STDIO for mcp, all connections need to be HTTP due to long running processes

@@ -1,6 +1,4 @@
-# Open Stocks MCP Tools Documentation
-
-This document provides a comprehensive list of all 84 MCP tools available in the Open Stocks MCP server v0.5.0, including their signatures and descriptions.
+This document provides a comprehensive list of all 84 MCP tools expected in the Open Paper Trading MCP server, including their signatures and descriptions.
 
 ## Core System Tools
 

@@ -1,7 +1,7 @@
 import os
 import threading
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from typing import Any
 
 import uvicorn
@@ -18,9 +18,11 @@ from app.core.exceptions import CustomException
 from app.core.logging import setup_logging
 
 # Import the unified MCP server instance
-mcp_instance: Any | None = None
-with suppress(ImportError):
+try:
     from app.mcp.server import mcp as mcp_instance
+except Exception as e:
+    print(f"Error importing MCP server: {e}")
+    mcp_instance: Any = None
 
 
 async def initialize_database() -> None:
@@ -277,9 +279,16 @@ async def root() -> dict[str, Any]:
             "docs": "/docs",
             "health": "/health",
             "mcp": {
-                "host": settings.MCP_SERVER_HOST,
-                "port": settings.MCP_SERVER_PORT,
-                "name": settings.MCP_SERVER_NAME,
+                "sse": {
+                    "host": settings.MCP_SERVER_HOST,
+                    "port": settings.MCP_SERVER_PORT,
+                    "name": settings.MCP_SERVER_NAME,
+                },
+                "http": {
+                    "host": settings.MCP_SERVER_HOST,
+                    "port": settings.MCP_HTTP_PORT,
+                    "url": settings.MCP_HTTP_URL,
+                },
             },
         },
     }
@@ -307,12 +316,44 @@ def run_mcp_server() -> None:
         print(f"Error running MCP server: {e}")
 
 
+def run_mcp_http_server() -> None:
+    """Run the MCP server with HTTP transport for ADK compatibility."""
+    if mcp_instance is None:
+        print("MCP server not available (likely in test mode)")
+        return
+
+    print(
+        f"Starting MCP HTTP server on {settings.MCP_SERVER_HOST}:{settings.MCP_HTTP_PORT}"
+    )
+    try:
+        # Use our custom HTTP transport
+        import asyncio
+
+        from app.mcp.http_transport import run_http_server
+
+        async def start_server():
+            await run_http_server(
+                mcp_instance,
+                host=settings.MCP_SERVER_HOST,
+                port=settings.MCP_HTTP_PORT,
+            )
+
+        asyncio.run(start_server())
+    except Exception as e:
+        print(f"Error running MCP HTTP server: {e}")
+
+
 def main() -> None:
     """Main entry point to run both servers."""
-    # Start MCP server in a separate thread if available
+    # Start MCP servers in separate threads if available
     if mcp_instance is not None:
-        mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
-        mcp_thread.start()
+        # Start SSE MCP server
+        mcp_sse_thread = threading.Thread(target=run_mcp_server, daemon=True)
+        mcp_sse_thread.start()
+
+        # Start HTTP MCP server for ADK compatibility
+        mcp_http_thread = threading.Thread(target=run_mcp_http_server, daemon=True)
+        mcp_http_thread.start()
     else:
         print("MCP server not available - running FastAPI only")
 

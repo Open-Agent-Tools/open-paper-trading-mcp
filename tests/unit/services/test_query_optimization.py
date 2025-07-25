@@ -1439,8 +1439,8 @@ class TestBulkUpdateOrderStatus:
 
         queries = OptimizedOrderQueries(db_session)
 
-        # Update to FILLED status with filled_at
-        filled_time = datetime.now(UTC)
+        # Update to FILLED status with filled_at  
+        filled_time = datetime.now(UTC).replace(tzinfo=None)
         updated_count = await queries.bulk_update_order_status(
             order_ids, OrderStatus.FILLED, filled_at=filled_time
         )

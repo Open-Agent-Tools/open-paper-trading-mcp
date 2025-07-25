@@ -19,7 +19,7 @@ from unittest.mock import patch
 import pytest
 
 from app.models.assets import Option, Stock
-from app.models.quotes import OptionsChain, OptionQuote
+from app.models.quotes import OptionQuote, OptionsChain
 
 
 class TestTradingServiceOptionsDiscovery:
@@ -822,4 +822,4 @@ class TestTradingServiceOptionsDiscovery:
             strikes = [opt["strike_price"] for opt in result["options"]]
             assert len(strikes) == 2
             # Just verify both strikes are present without exact value checking
-            assert all(isinstance(strike, (int, float)) for strike in strikes)
+            assert all(isinstance(strike, int | float) for strike in strikes)

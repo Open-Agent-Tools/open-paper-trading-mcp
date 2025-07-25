@@ -8,7 +8,7 @@ standardized dict[str, Any] return types.
 
 from typing import Any
 
-from fastmcp import FastMCP  # type: ignore
+from fastmcp import FastMCP
 
 # Import all tool functions from individual modules
 from app.mcp.account_tools import (
@@ -19,7 +19,6 @@ from app.mcp.account_tools import (
 )
 from app.mcp.core_tools import (
     health_check,
-    list_tools,
     market_hours,
     stock_events,
     stock_level2_data,
@@ -84,7 +83,7 @@ mcp: FastMCP[Any] = FastMCP("Open Paper Trading MCP")
 # CORE SYSTEM TOOLS
 # =============================================================================
 
-mcp.tool()(list_tools)
+# list_tools is provided automatically by FastMCP - no need to register manually
 mcp.tool()(health_check)
 
 # =============================================================================

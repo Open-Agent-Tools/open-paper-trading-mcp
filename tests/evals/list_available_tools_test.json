@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "list_available_tools_test_set",
+  "name": "List Available Tools Test",
+  "description": "Test case for listing available MCP tools through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "list_available_tools_test",
+      "conversation": [
+        {
+          "invocation_id": "list-tools-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "List all available tools alphabetically as a bulleted list only.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "• account_details\n• account_info\n• aggregate_option_positions\n• all_option_positions\n• buy_option_limit\n• buy_stock_limit\n• buy_stock_market\n• buy_stock_stop_loss\n• buy_stock_trailing_stop\n• calculate_option_greeks\n• cancel_all_option_orders_tool\n• cancel_all_stock_orders_tool\n• cancel_option_order_by_id\n• cancel_stock_order_by_id\n• create_buy_order\n• create_multi_leg_order\n• create_sell_order\n• find_options\n• find_tradable_options\n• get_expiration_dates\n• get_option_market_data\n• get_options_chain\n• get_order\n• get_position\n• get_price_history\n• get_stock_info\n• get_stock_price\n• get_stock_quote\n• get_strategy_analysis\n• health_check\n• list_tools\n• market_hours\n• open_option_orders\n• open_option_positions\n• open_stock_orders\n• option_credit_spread\n• option_debit_spread\n• option_historicals\n• option_market_data\n• options_chains\n• options_orders\n• portfolio\n• positions\n• price_history\n• search_stocks\n• search_stocks_tool\n• sell_option_limit\n• sell_stock_limit\n• sell_stock_market\n• sell_stock_stop_loss\n• sell_stock_trailing_stop\n• simulate_option_expiration\n• stock_events\n• stock_info\n• stock_level2_data\n• stock_orders\n• stock_price\n• stock_ratings"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "list_tools"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}
