@@ -94,8 +94,6 @@ class TradingService:
         self._db_session = db_session  # Optional injected session
 
         # Service components
-        self.margin_service = None  # Placeholder for margin service
-        self.legs: list[Any] = []  # Placeholder for legs
 
         # Initialize database account
         # Note: This will be called lazily on first async method call

@@ -30,7 +30,7 @@ from app.models.database.trading import Account as DBAccount
 from app.services.performance_benchmarks import PerformanceMonitor
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsNormalOperation:
     """Test normal operation scenarios for get_account_ids()."""
 
@@ -136,7 +136,7 @@ class TestGetAccountIdsNormalOperation:
             assert len(result1) == 3
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsEmptyDatabase:
     """Test behavior when no accounts exist."""
 
@@ -198,7 +198,7 @@ class TestGetAccountIdsEmptyDatabase:
             assert len(result) == 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsDataIntegrity:
     """Test data integrity and consistency."""
 
@@ -313,7 +313,7 @@ class TestGetAccountIdsDataIntegrity:
             assert len(result) == 6
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsDatabaseErrors:
     """Test database error scenarios."""
 
@@ -425,7 +425,7 @@ class TestGetAccountIdsDatabaseErrors:
             assert "Result processing failed" in str(exc_info.value)
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsPerformance:
     """Test performance characteristics and benchmarks."""
 
@@ -567,7 +567,7 @@ class TestGetAccountIdsPerformance:
                 assert len(account_id) > 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsConcurrency:
     """Test concurrent access patterns."""
 
@@ -644,7 +644,7 @@ class TestGetAccountIdsConcurrency:
             assert set(result) == set(initial_ids)
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountIdsEdgeCases:
     """Test edge cases and unusual scenarios."""
 

@@ -43,7 +43,7 @@ from app.schemas.orders import OrderStatus, OrderType
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestCancelAllOptionOrdersEnhanced:
     """Enhanced tests for TradingService.cancel_all_option_orders() function."""
 
@@ -244,7 +244,7 @@ class TestCancelAllOptionOrdersEnhanced:
                 assert order.status == OrderStatus.PENDING
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetOptionsChain:
     """Test TradingService.get_options_chain() function."""
 
@@ -333,7 +333,7 @@ class TestGetOptionsChain:
             await service.get_options_chain("AAPL")
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestCalculateGreeks:
     """Test TradingService.calculate_greeks() function."""
 
@@ -478,7 +478,7 @@ class TestCalculateGreeks:
             await service.calculate_greeks("AAPL240115C00150000")
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestFindTradableOptions:
     """Test TradingService.find_tradable_options() function."""
 
@@ -569,7 +569,7 @@ class TestFindTradableOptions:
         assert "No chain found" in result["error"]
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestOptionsIntegration:
     """Integration tests for options trading functionality."""
 

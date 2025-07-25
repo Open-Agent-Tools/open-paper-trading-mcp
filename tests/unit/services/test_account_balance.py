@@ -31,7 +31,7 @@ from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountBalanceRetrieval:
     """Test basic account balance retrieval functionality."""
 
@@ -128,7 +128,7 @@ class TestAccountBalanceRetrieval:
             assert owner2 in owners
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestBalancePersistence:
     """Test balance persistence across sessions and service restarts."""
 
@@ -182,7 +182,7 @@ class TestBalancePersistence:
             assert updated_balance == new_balance
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountStateConsistency:
     """Test account state consistency during various operations."""
 
@@ -223,7 +223,7 @@ class TestAccountStateConsistency:
             assert is_valid is True
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountInitialization:
     """Test account creation and initialization logic."""
 
@@ -276,7 +276,7 @@ class TestAccountInitialization:
             assert accounts[0].cash_balance == original_balance
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
@@ -339,7 +339,7 @@ class TestErrorHandling:
             assert balance == 0.0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestPerformanceBenchmarks:
     """Test performance benchmarks for balance operations."""
 
@@ -366,7 +366,7 @@ class TestPerformanceBenchmarks:
             )
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestIntegrationWithTrading:
     """Test balance integration with trading operations."""
 

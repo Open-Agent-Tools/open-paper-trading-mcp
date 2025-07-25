@@ -31,7 +31,7 @@ async def mock_database_session_context(mock_session):
         yield mock_session
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountAdapterCreateOperation:
     """Test the CREATE path of DatabaseAccountAdapter.put_account()."""
 
@@ -466,7 +466,7 @@ class TestAccountAdapterCreateOperation:
             assert saved_account is not None
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountAdapterCreateBoundaryConditions:
     """Test boundary conditions and edge cases for account creation."""
 
@@ -638,7 +638,7 @@ class TestAccountAdapterCreateBoundaryConditions:
                 assert abs(saved_account.cash_balance - balance) < 0.000001
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountAdapterCreateTransactionHandling:
     """Test transaction handling during account creation."""
 
@@ -704,9 +704,12 @@ class TestAccountAdapterCreateTransactionHandling:
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Mock db_session.commit to raise an error
-            with patch.object(
-                db_session, "commit", side_effect=Exception("Database error")
-            ), pytest.raises(Exception, match="Database error"):
+            with (
+                patch.object(
+                    db_session, "commit", side_effect=Exception("Database error")
+                ),
+                pytest.raises(Exception, match="Database error"),
+            ):
                 # Verify exception is propagated
                 await adapter.put_account(account)
 

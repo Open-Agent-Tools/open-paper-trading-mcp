@@ -20,7 +20,7 @@ from app.services.order_execution_engine import OrderExecutionEngine
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestPriority1Core:
     """Test Priority 1 core functionality."""
 

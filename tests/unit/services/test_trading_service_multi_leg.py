@@ -39,7 +39,7 @@ from app.schemas.orders import (
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestCreateMultiLegOrder:
     """Test TradingService.create_multi_leg_order() function."""
 
@@ -306,13 +306,14 @@ class TestCreateMultiLegOrder:
         order_data = MockOrderData(legs)
 
         # Mock database session to raise error on commit
-        with patch.object(
-            db_session, "commit", side_effect=Exception("Database error")
-        ), pytest.raises(Exception, match="Database error"):
+        with (
+            patch.object(db_session, "commit", side_effect=Exception("Database error")),
+            pytest.raises(Exception, match="Database error"),
+        ):
             await service.create_multi_leg_order(order_data)
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestCreateMultiLegOrderFromRequest:
     """Test TradingService.create_multi_leg_order_from_request() function."""
 
@@ -509,7 +510,7 @@ class TestCreateMultiLegOrderFromRequest:
         assert db_order is not None
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestMultiLegOrderIntegration:
     """Integration tests for multi-leg order functionality."""
 
@@ -635,7 +636,7 @@ class TestMultiLegOrderIntegration:
                 assert db_order is not None
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestMultiLegOrderValidation:
     """Test multi-leg order validation logic."""
 

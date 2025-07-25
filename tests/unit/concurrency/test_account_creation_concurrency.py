@@ -26,7 +26,7 @@ from app.schemas.accounts import Account
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestAccountCreationConcurrency:
     """Test concurrent account creation scenarios."""
 
@@ -467,7 +467,7 @@ class TestAccountCreationConcurrency:
             print(f"Successful updates: {len(successful_updates)}")
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestConcurrencyPerformanceImpact:
     """Test performance impact of concurrency safety measures."""
 
@@ -578,7 +578,7 @@ class TestConcurrencyPerformanceImpact:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestMemoryVsPersistentAdapterConcurrency:
     """Test concurrency differences between memory and persistent adapters."""
 

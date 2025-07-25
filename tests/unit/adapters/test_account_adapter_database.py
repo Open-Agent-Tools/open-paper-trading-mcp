@@ -18,7 +18,7 @@ from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestDatabaseAccountAdapter:
     """Test the DatabaseAccountAdapter with real database operations."""
 
@@ -308,7 +308,7 @@ class TestDatabaseAccountAdapter:
             assert result is False
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestDatabaseAccountAdapterEdgeCases:
     """Test edge cases and boundary conditions for DatabaseAccountAdapter."""
 

@@ -385,7 +385,9 @@ class AdvancedOrderValidator:
             )
 
         # Warn about deep ITM/OTM options
-        if strike_distance > 0.2 and underlying_price is not None:  # More than 20% from ATM
+        if (
+            strike_distance > 0.2 and underlying_price is not None
+        ):  # More than 20% from ATM
             moneyness = (
                 "ITM" if option.get_intrinsic_value(underlying_price) > 0 else "OTM"
             )
@@ -475,8 +477,11 @@ class AdvancedOrderValidator:
         """Validate regulatory compliance rules."""
 
         # Pattern Day Trader rules
-        if (account_limits.is_pdt and account_limits.day_trades_used >= 3 and 
-            self._is_potential_day_trade(order, account_data)):
+        if (
+            account_limits.is_pdt
+            and account_limits.day_trades_used >= 3
+            and self._is_potential_day_trade(order, account_data)
+        ):
             result.messages.append(
                 ValidationMessage(
                     rule=ValidationRule.COMPLIANCE,
@@ -599,32 +604,35 @@ class AdvancedOrderValidator:
         # Check volume
         if hasattr(quote, "volume") and quote.volume is not None and quote.volume < 10:
             result.messages.append(
-                    ValidationMessage(
-                        rule=ValidationRule.LIQUIDITY,
-                        severity=ValidationSeverity.WARNING,
-                        code="LOW_OPTION_VOLUME",
-                        message=f"Low volume for {symbol}: {quote.volume} contracts",
-                        details={"symbol": symbol, "volume": quote.volume},
-                        suggested_action="Consider more liquid options",
-                    )
+                ValidationMessage(
+                    rule=ValidationRule.LIQUIDITY,
+                    severity=ValidationSeverity.WARNING,
+                    code="LOW_OPTION_VOLUME",
+                    message=f"Low volume for {symbol}: {quote.volume} contracts",
+                    details={"symbol": symbol, "volume": quote.volume},
+                    suggested_action="Consider more liquid options",
                 )
+            )
 
         # Check open interest
-        if (hasattr(quote, "open_interest") and quote.open_interest is not None and 
-            quote.open_interest < 50):
+        if (
+            hasattr(quote, "open_interest")
+            and quote.open_interest is not None
+            and quote.open_interest < 50
+        ):
             result.messages.append(
-                    ValidationMessage(
-                        rule=ValidationRule.LIQUIDITY,
-                        severity=ValidationSeverity.INFO,
-                        code="LOW_OPEN_INTEREST",
-                        message=f"Low open interest for {symbol}: {quote.open_interest} contracts",
-                        details={
-                            "symbol": symbol,
-                            "open_interest": quote.open_interest,
-                        },
-                        suggested_action=None,
-                    )
+                ValidationMessage(
+                    rule=ValidationRule.LIQUIDITY,
+                    severity=ValidationSeverity.INFO,
+                    code="LOW_OPEN_INTEREST",
+                    message=f"Low open interest for {symbol}: {quote.open_interest} contracts",
+                    details={
+                        "symbol": symbol,
+                        "open_interest": quote.open_interest,
+                    },
+                    suggested_action=None,
                 )
+            )
 
     def _calculate_estimated_cost(
         self,

@@ -9,6 +9,18 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+
+def pytest_configure(config):
+    """Configure pytest with custom markers."""
+    config.addinivalue_line("markers", "unit: Unit tests")
+    config.addinivalue_line("markers", "integration: Integration tests")
+    config.addinivalue_line("markers", "performance: Performance tests")
+    config.addinivalue_line("markers", "slow: Slow running tests")
+    config.addinivalue_line("markers", "database: Tests that require database")
+    config.addinivalue_line("markers", "live_data: Tests that require live market data")
+    config.addinivalue_line("markers", "asyncio: Async test marker")
+
+
 # Set testing environment variables BEFORE importing the app
 os.environ["TESTING"] = "True"
 # Use Docker PostgreSQL database for all tests
@@ -20,14 +32,11 @@ os.environ["TEST_DATABASE_URL"] = (
 )
 os.environ["QUOTE_ADAPTER_TYPE"] = "test"  # Use test data adapter
 
-from app.main import app
-
-# Import models to ensure they're registered with Base
-from app.models.database import trading  # noqa: F401
-from app.models.database.base import Base
-
-# Import database utilities but we'll create test-specific engines
-from app.storage.database import get_async_session
+# Import statements after environment setup (required by ruff E402)
+from app.main import app  # noqa: E402
+from app.models.database import trading  # noqa: E402, F401
+from app.models.database.base import Base  # noqa: E402
+from app.storage.database import get_async_session  # noqa: E402
 
 
 # Configure pytest-asyncio explicitly

@@ -23,7 +23,7 @@ from app.models.database.trading import Position as DBPosition
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestTradingServiceAccountCreation:
     """Test suite for TradingService account creation and initialization."""
 
@@ -342,8 +342,6 @@ class TestTradingServiceAccountCreation:
         assert service.account_converter is not None
         assert service.order_converter is not None
         assert service.position_converter is not None
-        assert service.margin_service is None  # Placeholder
-        assert service.legs == []  # Placeholder
 
     # ========================================================================
     # Tests for default balance validation

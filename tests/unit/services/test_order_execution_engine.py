@@ -32,7 +32,7 @@ from app.services.order_execution_engine import OrderExecutionEngine
 from app.services.trading_service import TradingService
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestLoadOrderById:
     """Test OrderExecutionEngine._load_order_by_id() function."""
 
@@ -202,7 +202,7 @@ class TestLoadOrderById:
             assert result is None
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestLoadPendingOrders:
     """Test OrderExecutionEngine._load_pending_orders() function."""
 
@@ -407,7 +407,7 @@ class TestLoadPendingOrders:
             # No orders should be loaded due to error
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestUpdateOrderTriggeredStatus:
     """Test OrderExecutionEngine._update_order_triggered_status() function."""
 
@@ -578,7 +578,7 @@ class TestUpdateOrderTriggeredStatus:
             await engine._update_order_triggered_status(order_id, 100.0)
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestOrderExecutionEngineIntegration:
     """Test integration scenarios for OrderExecutionEngine database functions."""
 

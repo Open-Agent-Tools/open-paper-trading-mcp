@@ -55,7 +55,7 @@ async def create_test_account(db_session: AsyncSession, account_id: str) -> DBAc
     return account
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestOptimizedOrderQueriesInitialization:
     """Test OptimizedOrderQueries class initialization and factory function."""
 
@@ -76,7 +76,7 @@ class TestOptimizedOrderQueriesInitialization:
         assert queries.session == mock_session
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetPendingTriggeredOrders:
     """Test get_pending_triggered_orders method."""
 
@@ -192,7 +192,7 @@ class TestGetPendingTriggeredOrders:
         assert result == []
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetOrdersByStatusAndType:
     """Test get_orders_by_status_and_type method."""
 
@@ -355,7 +355,7 @@ class TestGetOrdersByStatusAndType:
         assert result[2].symbol == "AAPL"  # Oldest
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetOrdersForSymbol:
     """Test get_orders_for_symbol method."""
 
@@ -494,7 +494,7 @@ class TestGetOrdersForSymbol:
         assert result == []
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetAccountOrdersSummary:
     """Test get_account_orders_summary method."""
 
@@ -646,7 +646,7 @@ class TestGetAccountOrdersSummary:
         assert result["total_orders"] == 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetRecentFilledOrders:
     """Test get_recent_filled_orders method."""
 
@@ -810,7 +810,7 @@ class TestGetRecentFilledOrders:
         assert result[2].symbol == "AAPL"  # Oldest (3 hours ago)
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetOrderExecutionMetrics:
     """Test get_order_execution_metrics method."""
 
@@ -911,7 +911,7 @@ class TestGetOrderExecutionMetrics:
         assert result["fill_rates_by_type"] == {}
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetStopLossCandidates:
     """Test get_stop_loss_candidates method."""
 
@@ -1048,7 +1048,7 @@ class TestGetStopLossCandidates:
         assert len(result) == 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetTrailingStopCandidates:
     """Test get_trailing_stop_candidates method."""
 
@@ -1146,7 +1146,7 @@ class TestGetTrailingStopCandidates:
         assert len(result) == 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetOrderQueueDepth:
     """Test get_order_queue_depth method."""
 
@@ -1236,7 +1236,7 @@ class TestGetOrderQueueDepth:
         assert result == {}
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestGetHighFrequencySymbols:
     """Test get_high_frequency_symbols method."""
 
@@ -1365,7 +1365,7 @@ class TestGetHighFrequencySymbols:
         assert result == []
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestBulkUpdateOrderStatus:
     """Test bulk_update_order_status method."""
 
@@ -1478,7 +1478,7 @@ class TestBulkUpdateOrderStatus:
         assert updated_count == 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestCleanupOldCompletedOrders:
     """Test cleanup_old_completed_orders method."""
 
@@ -1558,7 +1558,7 @@ class TestCleanupOldCompletedOrders:
         assert count == 0
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestOptimizedOrderQueriesErrorHandling:
     """Test error handling in OptimizedOrderQueries methods."""
 
@@ -1576,7 +1576,7 @@ class TestOptimizedOrderQueriesErrorHandling:
             await queries.get_pending_triggered_orders()
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestOptimizedOrderQueriesIntegration:
     """Test integration scenarios for OptimizedOrderQueries."""
 

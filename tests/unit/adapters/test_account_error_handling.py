@@ -71,7 +71,7 @@ class TestAccountValidationErrors:
         assert account.cash_balance == 0.01
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestDatabaseAccountAdapterErrors:
     """Test database adapter error handling scenarios."""
 

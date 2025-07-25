@@ -25,7 +25,7 @@ from app.models.database.trading import (
 from app.schemas.orders import OrderCondition, OrderStatus, OrderType
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestDatabaseSchemaIntegrity:
     """Test database schema integrity and constraints."""
 
@@ -252,7 +252,7 @@ class TestDatabaseSchemaIntegrity:
         assert account.updated_at > original_updated_at
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestDataMigrationScenarios:
     """Test data migration and schema evolution scenarios."""
 
@@ -427,7 +427,7 @@ class TestDataMigrationScenarios:
         await async_db_session.rollback()
 
 
-@pytest.mark.db_crud
+@pytest.mark.database
 class TestPerformanceOptimization:
     """Test database performance optimization features."""
 

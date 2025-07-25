@@ -9,8 +9,8 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, func, or_, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, case, func, or_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.database.trading import Order
 from ..schemas.orders import OrderStatus, OrderType
@@ -26,7 +26,7 @@ class OptimizedOrderQueries:
     for common order processing patterns.
     """
 
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
     async def get_pending_triggered_orders(self, limit: int = 1000) -> list[Order]:
@@ -50,7 +50,7 @@ class OptimizedOrderQueries:
             .limit(limit)
         )
 
-        result = self.session.execute(query)
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_orders_by_status_and_type(
@@ -75,7 +75,7 @@ class OptimizedOrderQueries:
             .limit(limit)
         )
 
-        result = self.session.execute(query)
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_orders_for_symbol(
@@ -97,7 +97,7 @@ class OptimizedOrderQueries:
             .limit(limit)
         )
 
-        result = self.session.execute(query)
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_account_orders_summary(
@@ -124,7 +124,7 @@ class OptimizedOrderQueries:
             .group_by(Order.status)
         )
 
-        status_result = self.session.execute(status_query)
+        status_result = await self.session.execute(status_query)
         status_counts = {row.status: row.count for row in status_result}
 
         # Count by type
@@ -134,7 +134,7 @@ class OptimizedOrderQueries:
             .group_by(Order.order_type)
         )
 
-        type_result = self.session.execute(type_query)
+        type_result = await self.session.execute(type_query)
         type_counts = {row.order_type: row.count for row in type_result}
 
         return {
@@ -150,7 +150,7 @@ class OptimizedOrderQueries:
         Get recently filled orders.
         Uses: idx_orders_filled_at
         """
-        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=hours)
 
         query = (
             select(Order)
@@ -161,7 +161,7 @@ class OptimizedOrderQueries:
             .limit(limit)
         )
 
-        result = self.session.execute(query)
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_order_execution_metrics(
@@ -185,7 +185,7 @@ class OptimizedOrderQueries:
             )
         )
 
-        execution_result = self.session.execute(execution_time_query)
+        execution_result = await self.session.execute(execution_time_query)
         avg_execution_time = execution_result.scalar() or 0
 
         # Fill rate by order type
@@ -193,15 +193,15 @@ class OptimizedOrderQueries:
             select(
                 Order.order_type,
                 func.count(Order.id).label("total"),
-                func.sum(
-                    func.case((Order.status == OrderStatus.FILLED, 1), else_=0)
-                ).label("filled"),
+                func.sum(case((Order.status == OrderStatus.FILLED, 1), else_=0)).label(
+                    "filled"
+                ),
             )
             .where(and_(Order.created_at >= start_date, Order.created_at <= end_date))
             .group_by(Order.order_type)
         )
 
-        fill_rate_result = self.session.execute(fill_rate_query)
+        fill_rate_result = await self.session.execute(fill_rate_query)
         fill_rates = {}
 
         for row in fill_rate_result:
@@ -234,7 +234,7 @@ class OptimizedOrderQueries:
             .limit(limit)
         )
 
-        result = self.session.execute(stop_orders_query)
+        result = await self.session.execute(stop_orders_query)
         stop_orders = result.scalars().all()
 
         for order in stop_orders:
@@ -284,7 +284,7 @@ class OptimizedOrderQueries:
             .limit(limit)
         )
 
-        result = self.session.execute(trailing_query)
+        result = await self.session.execute(trailing_query)
         trailing_orders = result.scalars().all()
 
         for order in trailing_orders:
@@ -316,7 +316,7 @@ class OptimizedOrderQueries:
             Order.status, func.count(Order.id).label("count")
         ).group_by(Order.status)
 
-        result = self.session.execute(depth_query)
+        result = await self.session.execute(depth_query)
         return {row[0]: row[1] for row in result}
 
     async def get_high_frequency_symbols(
@@ -326,7 +326,7 @@ class OptimizedOrderQueries:
         Get symbols with high order frequency.
         Uses: idx_orders_symbol_created
         """
-        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=hours)
 
         frequency_query = (
             select(Order.symbol, func.count(Order.id).label("order_count"))
@@ -337,7 +337,7 @@ class OptimizedOrderQueries:
             .limit(50)
         )
 
-        result = self.session.execute(frequency_query)
+        result = await self.session.execute(frequency_query)
         return [(row.symbol, row.order_count) for row in result]
 
     async def bulk_update_order_status(
@@ -350,39 +350,14 @@ class OptimizedOrderQueries:
         Bulk update order status for performance.
         Uses primary key lookups for efficiency.
         """
-        update_values: dict[str, str | datetime | list[str]] = {
-            "status": new_status.value
-        }
-
+        # Use SQLAlchemy update syntax for proper enum handling
+        update_values = {"status": new_status}
         if filled_at:
             update_values["filled_at"] = filled_at
 
-        # Use raw SQL for better performance on bulk updates
-        if filled_at:
-            query = text(
-                """
-                UPDATE orders 
-                SET status = :status, filled_at = :filled_at
-                WHERE id = ANY(:order_ids)
-            """
-            )
-        else:
-            query = text(
-                """
-                UPDATE orders 
-                SET status = :status
-                WHERE id = ANY(:order_ids)
-            """
-            )
+        query = update(Order).where(Order.id.in_(order_ids)).values(**update_values)
 
-        result = self.session.execute(
-            query,
-            {
-                "status": new_status.value,
-                "filled_at": filled_at,
-                "order_ids": order_ids,
-            },
-        )
+        result = await self.session.execute(query)
 
         return int(getattr(result, "rowcount", 0)) if hasattr(result, "rowcount") else 0
 
@@ -393,7 +368,7 @@ class OptimizedOrderQueries:
         Clean up old completed orders to maintain performance.
         Uses: idx_orders_created_status
         """
-        cutoff_date = datetime.now(UTC) - timedelta(days=days_old)
+        cutoff_date = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days_old)
 
         # Count total orders to clean
         count_query = select(func.count(Order.id)).where(
@@ -403,7 +378,7 @@ class OptimizedOrderQueries:
             )
         )
 
-        total_result = self.session.execute(count_query)
+        total_result = await self.session.execute(count_query)
         total_count = total_result.scalar() or 0
 
         logger.info(f"Found {total_count} old orders to archive/cleanup")
@@ -412,6 +387,6 @@ class OptimizedOrderQueries:
         return total_count
 
 
-def get_optimized_order_queries(session: Session) -> OptimizedOrderQueries:
+def get_optimized_order_queries(session: AsyncSession) -> OptimizedOrderQueries:
     """Get optimized order query utilities."""
     return OptimizedOrderQueries(session)

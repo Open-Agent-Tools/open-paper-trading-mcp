@@ -336,8 +336,13 @@ def validate_position_consistency(position: Any) -> bool:
             )
 
     # Validate that avg_price is positive for actual positions
-    if (hasattr(position, "avg_price") and hasattr(position, "quantity") and 
-        position.quantity != 0 and position.avg_price and position.avg_price <= 0):
+    if (
+        hasattr(position, "avg_price")
+        and hasattr(position, "quantity")
+        and position.quantity != 0
+        and position.avg_price
+        and position.avg_price <= 0
+    ):
         raise ValueError("Average price must be positive for non-zero positions")
 
     # Validate option-specific fields consistency
@@ -382,11 +387,13 @@ def validate_portfolio_consistency(portfolio: Any) -> bool:
         expected_total = portfolio.cash_balance
         if portfolio.positions:
             for position in portfolio.positions:
-                if (hasattr(position, "current_price") and hasattr(position, "quantity") and 
-                    position.current_price and position.quantity):
-                    expected_total += position.current_price * abs(
-                        position.quantity
-                    )
+                if (
+                    hasattr(position, "current_price")
+                    and hasattr(position, "quantity")
+                    and position.current_price
+                    and position.quantity
+                ):
+                    expected_total += position.current_price * abs(position.quantity)
 
         if portfolio.total_value and abs(portfolio.total_value - expected_total) > 0.01:
             raise ValueError(
