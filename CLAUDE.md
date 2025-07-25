@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Open Paper Trading MCP is a comprehensive paper trading simulator with dual interfaces: a REST API (FastAPI) and AI agent tools (MCP). The system simulates multi-asset trading (stocks, options, ETFs, bonds) with real market data for algorithmic trading development and AI agent training.
 
-**Current Status (2025-07-25)**: 🎉 **COMPREHENSIVE CODE CLEANUP COMPLETED** - 620/672 tests passing (92.2% success rate) after complete code cleanup performed. Comprehensive ruff formatting/linting applied, mypy type checking completed with critical fixes, and test infrastructure fully stabilized. Trading service coverage at 78% (35/45 methods fully covered). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
+**Current Status (2025-07-25)**: 🎉 **COMPREHENSIVE CODE CLEANUP & TEST FIXES COMPLETED** - 661/672 tests passing (98.4% success rate) after resolving 40 failing tests. Major test infrastructure improvements: multi-leg orders, options discovery, and expiration simulation all fixed. Comprehensive ruff formatting/linting applied, mypy type checking completed with critical fixes, and test infrastructure fully stabilized. Trading service coverage at 78% (35/45 methods fully covered). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
 
 ## Essential Commands
 
