@@ -14,12 +14,13 @@ the TradingService that may not be covered by other test modules:
 Coverage target: Various error handling lines throughout trading_service.py
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
-from datetime import date, datetime
+import contextlib
 from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
-from app.core.exceptions import InputValidationError, NotFoundError
+import pytest
+
+from app.core.exceptions import InputValidationError
 from app.schemas.orders import OrderCreate, OrderType
 from app.schemas.positions import Portfolio, Position
 
@@ -30,9 +31,11 @@ class TestTradingServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_database_session_failure_handling(self, trading_service_test_data):
         """Test handling of database session failures."""
-        with patch.object(trading_service_test_data, '_get_async_db_session') as mock_session:
+        with patch.object(
+            trading_service_test_data, "_get_async_db_session"
+        ) as mock_session:
             mock_session.side_effect = RuntimeError("Database connection failed")
-            
+
             # Test that portfolio retrieval handles database errors gracefully
             with pytest.raises(RuntimeError, match="Database connection failed"):
                 await trading_service_test_data.get_portfolio()
@@ -40,9 +43,11 @@ class TestTradingServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_quote_adapter_failure_fallback(self, trading_service_test_data):
         """Test fallback behavior when quote adapter fails."""
-        with patch.object(trading_service_test_data.quote_adapter, 'get_quote') as mock_get_quote:
+        with patch.object(
+            trading_service_test_data.quote_adapter, "get_quote"
+        ) as mock_get_quote:
             mock_get_quote.side_effect = Exception("Quote service unavailable")
-            
+
             # Test that get_quote handles adapter failures
             with pytest.raises(Exception, match="Quote service unavailable"):
                 await trading_service_test_data.get_quote("AAPL")
@@ -57,7 +62,7 @@ class TestTradingServiceErrorHandling:
             "123INVALID",  # Invalid characters
             None,  # None value
         ]
-        
+
         for symbol in invalid_symbols[:-1]:  # Skip None for now
             try:
                 result = await trading_service_test_data.get_quote(symbol)
@@ -77,34 +82,31 @@ class TestTradingServiceErrorHandling:
                 symbol="AAPL",
                 quantity=0,  # Invalid quantity
                 order_type=OrderType.MARKET,
-                side="buy"
+                side="buy",
             ),
             # Negative quantity
             OrderCreate(
-                symbol="AAPL",
-                quantity=-10,
-                order_type=OrderType.MARKET,
-                side="buy"
+                symbol="AAPL", quantity=-10, order_type=OrderType.MARKET, side="buy"
             ),
             # Invalid side
             OrderCreate(
                 symbol="AAPL",
                 quantity=100,
                 order_type=OrderType.MARKET,
-                side="invalid_side"
-            )
+                side="invalid_side",
+            ),
         ]
-        
+
         for order_data in malformed_orders:
             try:
                 result = await trading_service_test_data.create_order(order_data)
                 # If no exception, should have error in result
-                if hasattr(result, 'status') and result.status:
+                if hasattr(result, "status") and result.status:
                     # Order was created but might be rejected
                     pass
                 else:
                     # Should have error indication
-                    assert hasattr(result, 'id') or "error" in str(result)
+                    assert hasattr(result, "id") or "error" in str(result)
             except (InputValidationError, ValueError) as e:
                 # Expected validation errors
                 assert "Invalid" in str(e) or "quantity" in str(e) or "side" in str(e)
@@ -117,19 +119,19 @@ class TestTradingServiceErrorHandling:
             999999,  # Very large
             0.1,  # Fractional (if supported)
         ]
-        
+
         for quantity in boundary_quantities:
             order_data = OrderCreate(
                 symbol="AAPL",
                 quantity=quantity,
                 order_type=OrderType.MARKET,
-                side="buy"
+                side="buy",
             )
-            
+
             try:
                 result = await trading_service_test_data.create_order(order_data)
                 # Should succeed or have clear validation error
-                assert hasattr(result, 'id') or hasattr(result, 'status')
+                assert hasattr(result, "id") or hasattr(result, "status")
             except Exception as e:
                 # For fractional quantities, might not be supported
                 if quantity == 0.1:
@@ -139,32 +141,31 @@ class TestTradingServiceErrorHandling:
     async def test_portfolio_retrieval_empty_account(self, trading_service_test_data):
         """Test portfolio retrieval for empty account."""
         # Mock empty portfolio scenario
-        empty_portfolio = Portfolio(
-            account_id="empty-account",
-            total_value=Decimal("0.00"),
-            cash_balance=Decimal("0.00"),
-            positions=[]
-        )
-        
-        with patch.object(trading_service_test_data, '_get_portfolio_positions', return_value=[]):
-            with patch.object(trading_service_test_data, 'get_account_balance', return_value=0.0):
-                result = await trading_service_test_data.get_portfolio()
-                
-                assert isinstance(result, Portfolio)
-                assert len(result.positions) == 0
-                assert result.cash_balance >= 0
+        with (
+            patch.object(
+                trading_service_test_data, "_get_portfolio_positions", return_value=[]
+            ),
+            patch.object(
+                trading_service_test_data, "get_account_balance", return_value=0.0
+            ),
+        ):
+            result = await trading_service_test_data.get_portfolio()
+
+            assert isinstance(result, Portfolio)
+            assert len(result.positions) == 0
+            assert result.cash_balance >= 0
 
     @pytest.mark.asyncio
     async def test_account_creation_duplicate_handling(self, trading_service_test_data):
         """Test handling of duplicate account creation attempts."""
         # This tests the _ensure_account_exists method's duplicate handling
-        with patch.object(trading_service_test_data, '_get_async_db_session'):
+        with patch.object(trading_service_test_data, "_get_async_db_session"):
             # First creation should succeed
             await trading_service_test_data._ensure_account_exists()
-            
+
             # Second creation should handle existing account gracefully
             await trading_service_test_data._ensure_account_exists()
-            
+
             # No exception should be raised
 
     @pytest.mark.asyncio
@@ -177,7 +178,7 @@ class TestTradingServiceErrorHandling:
                 average_price=Decimal("150.00"),
                 current_price=Decimal("160.00"),
                 unrealized_pnl=Decimal("0.00"),
-                asset_type="stock"
+                asset_type="stock",
             ),
             Position(
                 symbol="TSLA",
@@ -185,7 +186,7 @@ class TestTradingServiceErrorHandling:
                 average_price=Decimal("0.01"),  # Very low price
                 current_price=Decimal("0.02"),
                 unrealized_pnl=Decimal("0.01"),
-                asset_type="stock"
+                asset_type="stock",
             ),
             Position(
                 symbol="EXPENSIVE",
@@ -193,23 +194,25 @@ class TestTradingServiceErrorHandling:
                 average_price=Decimal("999999.99"),  # Very high price
                 current_price=Decimal("1000000.00"),
                 unrealized_pnl=Decimal("0.01"),
-                asset_type="stock"
-            )
+                asset_type="stock",
+            ),
         ]
-        
+
         portfolio = Portfolio(
             account_id="edge-case-account",
             total_value=Decimal("1000000.00"),
             cash_balance=Decimal("1000.00"),
-            positions=edge_case_positions
+            positions=edge_case_positions,
         )
-        
-        with patch.object(trading_service_test_data, 'get_portfolio', return_value=portfolio):
+
+        with patch.object(
+            trading_service_test_data, "get_portfolio", return_value=portfolio
+        ):
             result = await trading_service_test_data.get_portfolio()
-            
+
             assert isinstance(result, Portfolio)
             assert len(result.positions) == 3
-            
+
             # Verify calculations don't break with edge values
             for position in result.positions:
                 assert isinstance(position.average_price, Decimal)
@@ -225,7 +228,7 @@ class TestTradingServiceErrorHandling:
             "12345",
             "AAPL240315X00150000",  # Invalid option type
         ]
-        
+
         for symbol in invalid_option_symbols:
             try:
                 result = await trading_service_test_data.get_quote(symbol)
@@ -233,7 +236,7 @@ class TestTradingServiceErrorHandling:
                 if isinstance(result, dict):
                     # May return error dict or empty result
                     pass  # Acceptable
-                elif hasattr(result, 'price'):
+                elif hasattr(result, "price"):
                     # Got a quote somehow - also acceptable
                     pass
                 else:
@@ -241,16 +244,22 @@ class TestTradingServiceErrorHandling:
                     assert result is None or "error" in str(result)
             except Exception as e:
                 # Parsing errors are expected
-                assert "symbol" in str(e).lower() or "format" in str(e).lower() or "invalid" in str(e).lower()
+                assert (
+                    "symbol" in str(e).lower()
+                    or "format" in str(e).lower()
+                    or "invalid" in str(e).lower()
+                )
 
     @pytest.mark.asyncio
     async def test_network_timeout_simulation(self, trading_service_test_data):
         """Test handling of network timeouts."""
         import asyncio
-        
-        with patch.object(trading_service_test_data.quote_adapter, 'get_quote') as mock_get_quote:
-            mock_get_quote.side_effect = asyncio.TimeoutError("Network timeout")
-            
+
+        with patch.object(
+            trading_service_test_data.quote_adapter, "get_quote"
+        ) as mock_get_quote:
+            mock_get_quote.side_effect = TimeoutError("Network timeout")
+
             with pytest.raises(asyncio.TimeoutError):
                 await trading_service_test_data.get_quote("AAPL")
 
@@ -259,24 +268,27 @@ class TestTradingServiceErrorHandling:
         """Test edge cases with concurrent access patterns."""
         # Simulate concurrent portfolio access
         import asyncio
-        
+
         async def get_portfolio_concurrent():
             return await trading_service_test_data.get_portfolio()
-        
+
         # Run multiple concurrent requests
         tasks = [get_portfolio_concurrent() for _ in range(5)]
-        
+
         try:
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Should either all succeed or fail gracefully
             for result in results:
                 if isinstance(result, Exception):
                     # Acceptable if it's a controlled failure
-                    assert "database" in str(result).lower() or "concurrent" in str(result).lower()
+                    assert (
+                        "database" in str(result).lower()
+                        or "concurrent" in str(result).lower()
+                    )
                 else:
                     # Should be valid portfolio
-                    assert hasattr(result, 'positions')
+                    assert hasattr(result, "positions")
         except Exception as e:
             # Concurrent access issues are acceptable
             assert "concurrent" in str(e).lower() or "database" in str(e).lower()
@@ -294,20 +306,22 @@ class TestTradingServiceErrorHandling:
                     average_price=Decimal("100.00"),
                     current_price=Decimal("101.00"),
                     unrealized_pnl=Decimal("1.00"),
-                    asset_type="stock"
+                    asset_type="stock",
                 )
             )
-        
+
         large_portfolio = Portfolio(
             account_id="large-account",
             total_value=Decimal("101000.00"),
             cash_balance=Decimal("1000.00"),
-            positions=large_positions
+            positions=large_positions,
         )
-        
-        with patch.object(trading_service_test_data, 'get_portfolio', return_value=large_portfolio):
+
+        with patch.object(
+            trading_service_test_data, "get_portfolio", return_value=large_portfolio
+        ):
             result = await trading_service_test_data.get_portfolio()
-            
+
             assert isinstance(result, Portfolio)
             assert len(result.positions) == 1000
             # Should handle large data set without issues
@@ -321,18 +335,18 @@ class TestTradingServiceErrorHandling:
             (100.0, "float instead of int"),
             (Decimal("100.50"), "decimal type"),
         ]
-        
-        for test_value, description in type_test_cases:
+
+        for test_value, _description in type_test_cases:
             try:
                 order_data = OrderCreate(
                     symbol="AAPL",
                     quantity=test_value,  # Different types
                     order_type=OrderType.MARKET,
-                    side="buy"
+                    side="buy",
                 )
                 result = await trading_service_test_data.create_order(order_data)
                 # Should either succeed with type coercion or fail gracefully
-                assert hasattr(result, 'id') or hasattr(result, 'status')
+                assert hasattr(result, "id") or hasattr(result, "status")
             except (TypeError, ValueError) as e:
                 # Type errors are acceptable
                 assert "type" in str(e).lower() or "invalid" in str(e).lower()
@@ -347,7 +361,7 @@ class TestTradingServiceErrorHandling:
             "AAPL_OLD",  # Underscore
             "ÂPPL",  # Accented characters
         ]
-        
+
         for symbol in special_symbols:
             try:
                 result = await trading_service_test_data.get_quote(symbol)
@@ -356,7 +370,11 @@ class TestTradingServiceErrorHandling:
                     assert "symbol" in result["error"] or "Invalid" in result["error"]
             except Exception as e:
                 # Special character issues are acceptable
-                assert "symbol" in str(e).lower() or "character" in str(e).lower() or "encoding" in str(e).lower()
+                assert (
+                    "symbol" in str(e).lower()
+                    or "character" in str(e).lower()
+                    or "encoding" in str(e).lower()
+                )
 
     @pytest.mark.asyncio
     async def test_date_parsing_edge_cases(self, trading_service_test_data):
@@ -368,13 +386,13 @@ class TestTradingServiceErrorHandling:
             "invalid-date",  # Invalid format
             "",  # Empty string
         ]
-        
+
         for date_str in edge_case_dates:
             try:
                 result = await trading_service_test_data.simulate_expiration(
                     processing_date=date_str if date_str else None
                 )
-                
+
                 if "error" in result:
                     if date_str == "invalid-date" or date_str == "":
                         # Expected to fail
@@ -385,7 +403,7 @@ class TestTradingServiceErrorHandling:
                 else:
                     # Should have valid processing_date in result
                     assert "processing_date" in result
-                    
+
             except Exception as e:
                 # Date parsing errors are expected for invalid dates
                 if date_str in ["invalid-date", ""]:
@@ -396,33 +414,32 @@ class TestTradingServiceErrorHandling:
         """Test prevention of circular dependencies in operations."""
         # Test that operations don't create circular references
         portfolio = await trading_service_test_data.get_portfolio()
-        
+
         # Use portfolio in another operation that might reference back
         if len(portfolio.positions) > 0:
             position = portfolio.positions[0]
             quote_result = await trading_service_test_data.get_quote(position.symbol)
-            
+
             # Should complete without circular reference issues
             assert quote_result is not None or isinstance(quote_result, dict)
 
     @pytest.mark.asyncio
     async def test_resource_cleanup_on_errors(self, trading_service_test_data):
         """Test that resources are properly cleaned up when errors occur."""
-        with patch.object(trading_service_test_data, '_get_async_db_session') as mock_session:
+        with patch.object(
+            trading_service_test_data, "_get_async_db_session"
+        ) as mock_session:
             # Mock a session that raises an error during operation
             mock_db = MagicMock()
             mock_db.close = MagicMock()
             mock_session.return_value.__aenter__.return_value = mock_db
             mock_session.return_value.__aexit__.return_value = None
-            
+
             # Simulate operation that fails
             mock_db.execute.side_effect = RuntimeError("Database error")
-            
-            try:
+
+            with contextlib.suppress(RuntimeError):
                 await trading_service_test_data.get_portfolio()
-            except RuntimeError:
-                # Error is expected
-                pass
-            
+
             # Session cleanup should still happen (tested via context manager)
             assert mock_session.called

@@ -39,10 +39,9 @@ class TestTradingServiceStockInfo:
         assert isinstance(result, dict)
 
         # Should get some kind of response (either extended or fallback)
-        if "error" not in result and result:
+        if "error" not in result and result and "symbol" in result:
             # If we get data, verify basic structure
-            if "symbol" in result:
-                assert result["symbol"] == "AAPL"
+            assert result["symbol"] == "AAPL"
 
     @pytest.mark.slow
     @pytest.mark.robinhood
@@ -174,8 +173,10 @@ class TestTradingServiceStockInfo:
         """Test stock info fallback when no quote data is available."""
         # Force no quote data scenario
         original_get_enhanced_quote = trading_service_test_data.get_enhanced_quote
+
         async def mock_get_enhanced_quote(symbol):
             return None
+
         trading_service_test_data.get_enhanced_quote = mock_get_enhanced_quote
 
         # Remove get_stock_info method to force fallback

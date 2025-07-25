@@ -346,22 +346,28 @@ class TestCalculateGreeks:
         from app.models.assets import asset_factory
 
         option_asset = asset_factory("AAPL240115C00150000")
+        assert option_asset is not None
         option_quote = Quote(
             asset=option_asset,
             quote_date=datetime.now(),
             price=5.50,
             bid=5.45,
             ask=5.55,
+            bid_size=10,
+            ask_size=15,
             volume=1000,
         )
 
         underlying_asset = asset_factory("AAPL")
+        assert underlying_asset is not None
         underlying_quote = Quote(
             asset=underlying_asset,
             quote_date=datetime.now(),
             price=155.00,
             bid=154.95,
             ask=155.05,
+            bid_size=100,
+            ask_size=150,
             volume=50000,
         )
 
@@ -373,26 +379,29 @@ class TestCalculateGreeks:
                 return underlying_quote
             return None
 
-        service.get_enhanced_quote = AsyncMock(side_effect=mock_get_enhanced_quote)
-
-        # Mock greeks calculation
-        expected_greeks = {
-            "delta": 0.6,
-            "gamma": 0.02,
-            "theta": -0.05,
-            "vega": 0.15,
-            "rho": 0.08,
-        }
-
-        # Mock the imported function directly in the trading_service module
-        with patch(
-            "app.services.trading_service.calculate_option_greeks",
-            return_value=expected_greeks,
+        with patch.object(
+            service,
+            "get_enhanced_quote",
+            new=AsyncMock(side_effect=mock_get_enhanced_quote),
         ):
-            result = await service.calculate_greeks("AAPL240115C00150000")
+            # Mock greeks calculation
+            expected_greeks = {
+                "delta": 0.6,
+                "gamma": 0.02,
+                "theta": -0.05,
+                "vega": 0.15,
+                "rho": 0.08,
+            }
 
-        # Verify result
-        assert result == expected_greeks
+            # Mock the imported function directly in the trading_service module
+            with patch(
+                "app.services.trading_service.calculate_option_greeks",
+                return_value=expected_greeks,
+            ):
+                result = await service.calculate_greeks("AAPL240115C00150000")
+
+            # Verify result
+            assert result == expected_greeks
         assert "delta" in result
         assert "gamma" in result
         assert "theta" in result
@@ -409,34 +418,38 @@ class TestCalculateGreeks:
         from app.models.assets import asset_factory
 
         option_asset = asset_factory("TSLA240115P00200000")
+        assert option_asset is not None
         option_quote = Quote(
             asset=option_asset,
             quote_date=datetime.now(),
             price=8.25,
             bid=8.20,
             ask=8.30,
+            bid_size=25,
+            ask_size=30,
             volume=500,
         )
 
-        service.get_enhanced_quote = AsyncMock(return_value=option_quote)
+        with patch.object(
+            service, "get_enhanced_quote", new=AsyncMock(return_value=option_quote)
+        ) as mock_get_enhanced_quote:
+            expected_greeks = {
+                "delta": -0.4,
+                "gamma": 0.015,
+                "theta": -0.08,
+                "vega": 0.12,
+                "rho": -0.06,
+            }
 
-        expected_greeks = {
-            "delta": -0.4,
-            "gamma": 0.015,
-            "theta": -0.08,
-            "vega": 0.12,
-            "rho": -0.06,
-        }
+            with patch(
+                "app.services.trading_service.calculate_option_greeks",
+                return_value=expected_greeks,
+            ):
+                result = await service.calculate_greeks("TSLA240115P00200000", 195.0)
 
-        with patch(
-            "app.services.trading_service.calculate_option_greeks",
-            return_value=expected_greeks,
-        ):
-            result = await service.calculate_greeks("TSLA240115P00200000", 195.0)
-
-        # Verify result and that underlying quote wasn't fetched
-        assert result == expected_greeks
-        service.get_enhanced_quote.assert_called_once_with("TSLA240115P00200000")
+            # Verify result and that underlying quote wasn't fetched
+            assert result == expected_greeks
+            mock_get_enhanced_quote.assert_called_once_with("TSLA240115P00200000")
 
     @pytest.mark.asyncio
     async def test_calculate_greeks_invalid_symbol(self, db_session: AsyncSession):
@@ -461,18 +474,21 @@ class TestCalculateGreeks:
         from app.models.assets import asset_factory
 
         option_asset = asset_factory("AAPL240115C00150000")
+        assert option_asset is not None
         option_quote = Quote(
             asset=option_asset,
             quote_date=datetime.now(),
             price=None,  # Missing price
             bid=5.45,
             ask=5.55,
+            bid_size=10,
+            ask_size=15,
             volume=1000,
         )
 
-        service.get_enhanced_quote = AsyncMock(return_value=option_quote)
-
-        with pytest.raises(
+        with patch.object(
+            service, "get_enhanced_quote", new=AsyncMock(return_value=option_quote)
+        ), pytest.raises(
             ValueError, match="Insufficient pricing data for Greeks calculation"
         ):
             await service.calculate_greeks("AAPL240115C00150000")
@@ -496,19 +512,20 @@ class TestFindTradableOptions:
             puts=[],
         )
 
-        service.get_options_chain = AsyncMock(return_value=mock_chain)
+        with patch.object(
+            service, "get_options_chain", new=AsyncMock(return_value=mock_chain)
+        ) as mock_get_options_chain:
+            result = await service.find_tradable_options("AAPL")
 
-        result = await service.find_tradable_options("AAPL")
+            # Verify result structure
+            assert "symbol" in result
+            assert "filters" in result
+            assert "options" in result
+            assert "total_found" in result
+            assert result["symbol"] == "AAPL"
+            assert result["total_found"] == 0  # Empty calls/puts lists
 
-        # Verify result structure
-        assert "symbol" in result
-        assert "filters" in result
-        assert "options" in result
-        assert "total_found" in result
-        assert result["symbol"] == "AAPL"
-        assert result["total_found"] == 0  # Empty calls/puts lists
-
-        service.get_options_chain.assert_called_once_with("AAPL", None)
+            mock_get_options_chain.assert_called_once_with("AAPL", None)
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_filtered(self, db_session: AsyncSession):
@@ -523,20 +540,21 @@ class TestFindTradableOptions:
             puts=[],
         )
 
-        service.get_options_chain = AsyncMock(return_value=mock_chain)
+        with patch.object(
+            service, "get_options_chain", new=AsyncMock(return_value=mock_chain)
+        ) as mock_get_options_chain:
+            result = await service.find_tradable_options(
+                "TSLA", expiration_date="2024-01-19", option_type="call"
+            )
 
-        result = await service.find_tradable_options(
-            "TSLA", expiration_date="2024-01-19", option_type="call"
-        )
+            # Verify filtering was applied
+            assert result["symbol"] == "TSLA"
+            assert result["filters"]["expiration_date"] == "2024-01-19"
+            assert result["filters"]["option_type"] == "call"
 
-        # Verify filtering was applied
-        assert result["symbol"] == "TSLA"
-        assert result["filters"]["expiration_date"] == "2024-01-19"
-        assert result["filters"]["option_type"] == "call"
-
-        # Verify get_options_chain was called with parsed date
-        expected_date = date(2024, 1, 19)
-        service.get_options_chain.assert_called_once_with("TSLA", expected_date)
+            # Verify get_options_chain was called with parsed date
+            expected_date = date(2024, 1, 19)
+            mock_get_options_chain.assert_called_once_with("TSLA", expected_date)
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_invalid_date(self, db_session: AsyncSession):
@@ -558,15 +576,16 @@ class TestFindTradableOptions:
         """Test finding options when no options chain exists."""
         service = TradingService(account_owner="test_user", db_session=db_session)
 
-        service.get_options_chain = AsyncMock(
-            side_effect=NotFoundError("No chain found")
-        )
+        with patch.object(
+            service,
+            "get_options_chain",
+            new=AsyncMock(side_effect=NotFoundError("No chain found")),
+        ):
+            result = await service.find_tradable_options("INVALID")
 
-        result = await service.find_tradable_options("INVALID")
-
-        # Function catches exceptions and returns error dict instead of raising
-        assert "error" in result
-        assert "No chain found" in result["error"]
+            # Function catches exceptions and returns error dict instead of raising
+            assert "error" in result
+            assert "No chain found" in result["error"]
 
 
 @pytest.mark.database

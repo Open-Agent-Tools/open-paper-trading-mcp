@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import pytest
 
+from app.core.exceptions import NotFoundError, ValidationError
 from app.models.quotes import OptionQuote, Quote
 from app.schemas.trading import StockQuote
 
@@ -42,13 +43,13 @@ class TestTradingServiceQuoteMethods:
     @pytest.mark.asyncio
     async def test_get_quote_invalid_symbol_test_data(self, trading_service_test_data):
         """Test get_quote with invalid symbol."""
-        with pytest.raises(Exception):
+        with pytest.raises((NotFoundError, ValidationError)):
             await trading_service_test_data.get_quote("INVALID_SYMBOL_XYZ")
 
     @pytest.mark.asyncio
     async def test_get_quote_empty_symbol_test_data(self, trading_service_test_data):
         """Test get_quote with empty symbol."""
-        with pytest.raises(Exception):
+        with pytest.raises((NotFoundError, ValidationError, ValueError)):
             await trading_service_test_data.get_quote("")
 
     @pytest.mark.slow
@@ -99,7 +100,7 @@ class TestTradingServiceQuoteMethods:
     @pytest.mark.asyncio
     async def test_get_quote_robinhood_invalid_symbol(self, trading_service_robinhood):
         """Test get_quote with invalid symbol using Robinhood."""
-        with pytest.raises(Exception):
+        with pytest.raises((NotFoundError, ValidationError)):
             await trading_service_robinhood.get_quote("INVALID_SYMBOL_XYZ")
 
     @pytest.mark.asyncio
@@ -211,9 +212,9 @@ class TestTradingServiceQuoteMethods:
         with patch.object(
             trading_service_test_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
-            mock_get_quote.side_effect = Exception("Test exception")
+            mock_get_quote.side_effect = NotFoundError("Test exception")
 
-            with pytest.raises(Exception):
+            with pytest.raises(NotFoundError):
                 await trading_service_test_data.get_enhanced_quote("AAPL")
 
     @pytest.mark.slow

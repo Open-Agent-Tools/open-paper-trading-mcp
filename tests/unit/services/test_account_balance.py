@@ -382,11 +382,14 @@ class TestIntegrationWithTrading:
         from app.models.quotes import Quote
 
         asset = asset_factory("AAPL")
+        assert asset is not None
         mock_quote = Quote(
             asset=asset,
             price=150.0,
             bid=149.5,
             ask=150.5,
+            bid_size=100,
+            ask_size=200,
             quote_date=datetime.now(),
             volume=1000000,
         )

@@ -629,7 +629,7 @@ class TestMultiLegOrderIntegration:
 
         # Verify successful orders were persisted
         for result in results:
-            if not isinstance(result, Exception):
+            if not isinstance(result, Exception) and hasattr(result, 'id'):
                 stmt = select(DBOrder).where(DBOrder.id == result.id)
                 db_result = await db_session.execute(stmt)
                 db_order = db_result.scalar_one_or_none()

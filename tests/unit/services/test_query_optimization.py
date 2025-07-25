@@ -1440,7 +1440,7 @@ class TestBulkUpdateOrderStatus:
         queries = OptimizedOrderQueries(db_session)
 
         # Update to FILLED status with filled_at
-        filled_time = datetime.now(UTC).replace(tzinfo=None)
+        filled_time = datetime.now(UTC)
         updated_count = await queries.bulk_update_order_status(
             order_ids, OrderStatus.FILLED, filled_at=filled_time
         )
@@ -1458,6 +1458,7 @@ class TestBulkUpdateOrderStatus:
             assert order.status == OrderStatus.FILLED
             assert order.filled_at is not None
             # Check that filled_at is close to our timestamp (within 1 second)
+            assert order.filled_at is not None
             assert abs((order.filled_at - filled_time).total_seconds()) < 1.0
 
     @pytest.mark.asyncio

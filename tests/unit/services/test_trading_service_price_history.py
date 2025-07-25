@@ -202,8 +202,10 @@ class TestTradingServicePriceHistory:
         """Test price history fallback when no quote data is available."""
         # Force no quote data scenario
         original_get_enhanced_quote = trading_service_test_data.get_enhanced_quote
+
         async def mock_get_enhanced_quote(symbol):
             return None
+
         trading_service_test_data.get_enhanced_quote = mock_get_enhanced_quote
 
         # Remove get_price_history method to force fallback

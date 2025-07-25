@@ -149,12 +149,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-8.25,
         )
 
-        with patch.object(service, "get_enhanced_quote", return_value=mock_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", return_value=mock_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Validate single position results
         assert result["total_positions"] == 1
@@ -269,12 +271,14 @@ class TestGetPortfolioGreeks:
         async def mock_get_quote(symbol):
             return quote_map[symbol]
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Validate aggregated results
         assert result["total_positions"] == 2
@@ -332,6 +336,9 @@ class TestGetPortfolioGreeks:
             price=155.50,
             bid=155.45,
             ask=155.55,
+            bid_size=100,
+            ask_size=100,
+            volume=10000,
             # No Greeks for stock
         )
 
@@ -375,12 +382,14 @@ class TestGetPortfolioGreeks:
         async def mock_get_quote(symbol):
             return quote_map[symbol]
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Validate mixed portfolio results - both positions have quotes with delta attributes
         assert result["total_positions"] == 2
@@ -457,12 +466,14 @@ class TestGetPortfolioGreeks:
                 rho=0.08,
             )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Validate large portfolio results
         assert result["total_positions"] == 50
@@ -571,12 +582,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-14.85,
         )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Validate all quotes were retrieved
         assert len(quote_calls) == 2
@@ -665,12 +678,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-8.25,
         )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should still process successfully with partial data
         # Note: invalid position may not make it through get_positions() processing
@@ -728,12 +743,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=0.0,
         )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=failing_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=failing_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should handle gracefully with no quotes available
         assert result["total_positions"] == 1
@@ -803,12 +820,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-8.25,
         )
 
-        with patch.object(service, "get_enhanced_quote", return_value=stale_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", return_value=stale_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should still process stale quotes (up to quote adapter to validate freshness)
         assert result["total_positions"] == 1
@@ -901,11 +920,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-6.60,
         )
 
-        with patch.object(
-            service, "get_enhanced_quote", side_effect=mixed_quote_results
-        ), patch(
-            "app.services.strategies.aggregate_portfolio_greeks",
-            return_value=mock_greeks,
+        with (
+            patch.object(
+                service, "get_enhanced_quote", side_effect=mixed_quote_results
+            ),
+            patch(
+                "app.services.strategies.aggregate_portfolio_greeks",
+                return_value=mock_greeks,
+            ),
         ):
             result = await service.get_portfolio_greeks()
 
@@ -1001,12 +1023,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-8.25,
         )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should only count positions with delta attributes - both quotes have delta
         assert result["total_positions"] == 2
@@ -1092,12 +1116,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=-8.25,
         )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should handle invalid symbols gracefully
         # Note: invalid position may not make it through get_positions() processing
@@ -1173,12 +1199,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=0.0,
         )
 
-        with patch.object(service, "get_enhanced_quote", return_value=quote_with_nulls):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", return_value=quote_with_nulls),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should handle null/zero values gracefully
         assert result["total_positions"] == 1
@@ -1239,14 +1267,16 @@ class TestGetPortfolioGreeks:
             rho=0.08,
         )
 
-        with patch.object(service, "get_enhanced_quote", return_value=mock_quote):
+        with (
+            patch.object(service, "get_enhanced_quote", return_value=mock_quote),
             # Mock aggregation function to raise exception
-            with patch(
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 side_effect=ValueError("Aggregation failed"),
-            ):
-                with pytest.raises(ValueError, match="Aggregation failed"):
-                    await service.get_portfolio_greeks()
+            ),
+            pytest.raises(ValueError, match="Aggregation failed"),
+        ):
+            await service.get_portfolio_greeks()
 
     @pytest.mark.asyncio
     async def test_portfolio_with_no_options_positions(self, db_session: AsyncSession):
@@ -1321,12 +1351,14 @@ class TestGetPortfolioGreeks:
             theta_dollars=0.0,
         )
 
-        with patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote):
-            with patch(
+        with (
+            patch.object(service, "get_enhanced_quote", side_effect=mock_get_quote),
+            patch(
                 "app.services.strategies.aggregate_portfolio_greeks",
                 return_value=mock_greeks,
-            ):
-                result = await service.get_portfolio_greeks()
+            ),
+        ):
+            result = await service.get_portfolio_greeks()
 
         # Should handle stocks-only portfolio gracefully
         assert result["total_positions"] == 2

@@ -460,6 +460,7 @@ class TestDatabaseAccountAdapterEdgeCases:
             # Verify updates
             for i in range(10):
                 result = await adapter.get_account(f"rapid-test-{i}")
+                assert result is not None
                 assert result.cash_balance == 2000.0 * i
 
             # Delete all accounts

@@ -43,7 +43,7 @@ class TestTradingServiceThreadSafety:
 
             async def initialize_trading_service(service_id: int) -> dict[str, Any]:
                 """Initialize a TradingService and perform basic operations."""
-                result = {
+                result: dict[str, Any] = {
                     "service_id": service_id,
                     "initialized": False,
                     "account_id": None,
@@ -158,7 +158,9 @@ class TestTradingServiceThreadSafety:
                 result = {
                     "order_id": order_id,
                     "success": False,
-                    "created_order_id": None,
+                    "created_order_id": "",
+                    "symbol": "",
+                    "quantity": 0,
                     "error": None,
                 }
 
@@ -290,8 +292,8 @@ class TestTradingServiceThreadSafety:
                 result = {
                     "access_id": access_id,
                     "success": False,
-                    "portfolio_value": None,
-                    "position_count": None,
+                    "portfolio_value": 0.0,
+                    "position_count": "",  # Can be int or str
                     "error": None,
                 }
 
@@ -301,7 +303,7 @@ class TestTradingServiceThreadSafety:
                         # Get full portfolio
                         portfolio = await service.get_portfolio()
                         result["portfolio_value"] = portfolio.total_value
-                        result["position_count"] = len(portfolio.positions)
+                        result["position_count"] = str(len(portfolio.positions))
                     elif access_id % 3 == 1:
                         # Get portfolio summary
                         summary = await service.get_portfolio_summary()
@@ -310,7 +312,7 @@ class TestTradingServiceThreadSafety:
                     else:
                         # Get individual positions
                         positions = await service.get_positions()
-                        result["position_count"] = len(positions)
+                        result["position_count"] = str(len(positions))
                         result["portfolio_value"] = sum(
                             pos.quantity * (pos.current_price or 0) for pos in positions
                         )
@@ -384,8 +386,9 @@ class TestTradingServiceThreadSafety:
                 result = {
                     "update_id": update_id,
                     "success": False,
-                    "balance_before": None,
-                    "balance_after": None,
+                    "balance_before": 0.0,
+                    "balance_after": 0.0,
+                    "change": 0.0,
                     "error": None,
                 }
 
@@ -462,7 +465,7 @@ class TestTradingServiceThreadSafety:
 
         def thread_trading_operations(thread_id: int) -> None:
             """Perform trading operations in a separate thread."""
-            thread_result = {
+            thread_result: dict[str, Any] = {
                 "thread_id": thread_id,
                 "success": False,
                 "operations_completed": 0,
@@ -596,7 +599,7 @@ class TestRaceConditionScenarios:
                 result = {
                     "service_id": service_id,
                     "success": False,
-                    "account_id": None,
+                    "account_id": "",
                     "error": None,
                 }
 

@@ -413,11 +413,15 @@ class TestTradingServiceOptionsChain:
             if result.get("calls"):
                 # Check that bid <= ask for valid quotes
                 for call in result["calls"]:
-                    if call.get("bid") is not None and call.get("ask") is not None:
-                        if call["bid"] > 0 and call["ask"] > 0:
-                            assert call["bid"] <= call["ask"], (
-                                f"Invalid bid/ask spread: {call}"
-                            )
+                    if (
+                        call.get("bid") is not None
+                        and call.get("ask") is not None
+                        and call["bid"] > 0
+                        and call["ask"] > 0
+                    ):
+                        assert call["bid"] <= call["ask"], (
+                            f"Invalid bid/ask spread: {call}"
+                        )
 
         except Exception as e:
             if "options" in str(e).lower():

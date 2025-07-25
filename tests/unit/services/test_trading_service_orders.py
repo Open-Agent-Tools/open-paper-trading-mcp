@@ -713,7 +713,7 @@ class TestOrderManagementErrorHandling:
 
         # Mock database session to raise error on commit
         with patch.object(
-            db_session, "commit", side_effect=DatabaseError("DB Error", None, None)
+            db_session, "commit", side_effect=DatabaseError("DB Error", None, Exception("DB Error"))
         ):
             order_data = OrderCreate(
                 symbol="AAPL",
@@ -762,15 +762,15 @@ class TestOrderManagementErrorHandling:
             return await service.cancel_order(order_id)
 
         # Should handle concurrent access gracefully
-        get_result, cancel_result = await asyncio.gather(
+        results = await asyncio.gather(
             get_order_task(), cancel_order_task(), return_exceptions=True
         )
+        get_result, cancel_result = results[0], results[1]
 
         # At least one operation should succeed
         success_count = sum(
-            1
+            1 if not isinstance(result, Exception) else 0
             for result in [get_result, cancel_result]
-            if not isinstance(result, Exception)
         )
         assert success_count >= 1
 
@@ -804,6 +804,7 @@ class TestOrderCreationValidationExtended:
                 order_type=OrderType.BUY,
                 quantity=0,  # Invalid: must be > 0
                 price=150.0,
+                condition=OrderCondition.LIMIT,
             )
 
     @pytest.mark.asyncio
@@ -824,6 +825,7 @@ class TestOrderCreationValidationExtended:
                 order_type=OrderType.BUY,
                 quantity=-100,  # Invalid: must be > 0
                 price=150.0,
+                condition=OrderCondition.LIMIT,
             )
 
     @pytest.mark.asyncio
@@ -853,6 +855,7 @@ class TestOrderCreationValidationExtended:
             order_type=OrderType.BUY,
             quantity=100,
             price=-50.0,  # Negative price
+            condition=OrderCondition.LIMIT,
         )
 
         # Should create order (service doesn't validate price range)
@@ -886,6 +889,7 @@ class TestOrderCreationValidationExtended:
             order_type=OrderType.BUY,
             quantity=1000000,  # Very large quantity
             price=1.0,
+            condition=OrderCondition.LIMIT,
         )
 
         result = await service.create_order(order_data)
@@ -918,6 +922,7 @@ class TestOrderCreationValidationExtended:
             order_type=OrderType.BUY,
             quantity=100,
             price=123.456789123456,  # High precision
+            condition=OrderCondition.LIMIT,
         )
 
         result = await service.create_order(order_data)
@@ -963,6 +968,7 @@ class TestOrderCreationValidationExtended:
                 order_type=order_type,
                 quantity=100,
                 price=150.0 + i,
+                condition=OrderCondition.LIMIT,
             )
             result = await service.create_order(order_data)
             results.append(result)
@@ -1045,6 +1051,7 @@ class TestOrderCreationValidationExtended:
                 order_type=OrderType.BUY,
                 quantity=100,
                 price=150.0,
+                condition=OrderCondition.LIMIT,
             )
             result = await service.create_order(order_data)
             # Service should normalize to uppercase

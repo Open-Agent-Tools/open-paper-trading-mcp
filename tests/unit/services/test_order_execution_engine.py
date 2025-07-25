@@ -276,16 +276,15 @@ class TestLoadPendingOrders:
             async def mock_add_order(order):
                 added_orders.append(order)
 
-            engine.add_order = mock_add_order
+            with patch.object(engine, "add_order", new=mock_add_order):
+                # Load pending orders
+                await engine._load_pending_orders()
 
-            # Load pending orders
-            await engine._load_pending_orders()
-
-            # Verify correct orders were loaded
-            assert len(added_orders) == 3  # Only trigger orders
-            loaded_symbols = {order.symbol for order in added_orders}
-            expected_symbols = {"TRIGGER0", "TRIGGER1", "TRIGGER2"}
-            assert loaded_symbols == expected_symbols
+                # Verify correct orders were loaded
+                assert len(added_orders) == 3  # Only trigger orders
+                loaded_symbols = {order.symbol for order in added_orders}
+                expected_symbols = {"TRIGGER0", "TRIGGER1", "TRIGGER2"}
+                assert loaded_symbols == expected_symbols
 
             # Verify order types
             loaded_types = {order.order_type for order in added_orders}
@@ -314,13 +313,12 @@ class TestLoadPendingOrders:
             async def mock_add_order(order):
                 added_orders.append(order)
 
-            engine.add_order = mock_add_order
+            with patch.object(engine, "add_order", new=mock_add_order):
+                # Should complete without error
+                await engine._load_pending_orders()
 
-            # Should complete without error
-            await engine._load_pending_orders()
-
-            # No orders should be added
-            assert len(added_orders) == 0
+                # No orders should be added
+                assert len(added_orders) == 0
 
     @pytest.mark.asyncio
     async def test_load_pending_orders_filter_by_status(self, db_session: AsyncSession):
@@ -372,14 +370,13 @@ class TestLoadPendingOrders:
             async def mock_add_order(order):
                 added_orders.append(order)
 
-            engine.add_order = mock_add_order
+            with patch.object(engine, "add_order", new=mock_add_order):
+                await engine._load_pending_orders()
 
-            await engine._load_pending_orders()
-
-            # Only pending order should be loaded
-            assert len(added_orders) == 1
-            assert added_orders[0].symbol == "STATUS0"
-            assert added_orders[0].status == OrderStatus.PENDING
+                # Only pending order should be loaded
+                assert len(added_orders) == 1
+                assert added_orders[0].symbol == "STATUS0"
+                assert added_orders[0].status == OrderStatus.PENDING
 
     @pytest.mark.asyncio
     async def test_load_pending_orders_database_error(self, db_session: AsyncSession):

@@ -150,19 +150,19 @@ class TestAccountAdapterDeleteCRUD:
 
             # Verify account exists before deletion
             stmt = select(DBAccount).filter(DBAccount.id == account_id)
-            result = await db_session.execute(stmt)
-            assert result.scalar_one_or_none() is not None
+            query_result = await db_session.execute(stmt)
+            assert query_result.scalar_one_or_none() is not None
 
             # Delete the account
-            result = await adapter.delete_account(account_id)
+            delete_result = await adapter.delete_account(account_id)
 
             # Verify deletion was successful
-            assert result is True
+            assert delete_result is True
 
             # Verify account no longer exists in database
             stmt = select(DBAccount).filter(DBAccount.id == account_id)
-            result = await db_session.execute(stmt)
-            assert result.scalar_one_or_none() is None
+            verify_result = await db_session.execute(stmt)
+            assert verify_result.scalar_one_or_none() is None
 
     async def test_delete_nonexistent_account(
         self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
@@ -180,14 +180,14 @@ class TestAccountAdapterDeleteCRUD:
 
             # Verify account doesn't exist
             stmt = select(DBAccount).filter(DBAccount.id == nonexistent_id)
-            result = await db_session.execute(stmt)
-            assert result.scalar_one_or_none() is None
+            query_result = await db_session.execute(stmt)
+            assert query_result.scalar_one_or_none() is None
 
             # Attempt to delete non-existent account
-            result = await adapter.delete_account(nonexistent_id)
+            delete_result = await adapter.delete_account(nonexistent_id)
 
             # Should return False for non-existent account
-            assert result is False
+            assert delete_result is False
 
     async def test_delete_account_with_positions_cascade(
         self,
@@ -208,13 +208,15 @@ class TestAccountAdapterDeleteCRUD:
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Verify account and positions exist before deletion
-            stmt = select(DBAccount).filter(DBAccount.id == account_id)
-            result = await db_session.execute(stmt)
-            assert result.scalar_one_or_none() is not None
+            account_stmt = select(DBAccount).filter(DBAccount.id == account_id)
+            account_result = await db_session.execute(account_stmt)
+            assert account_result.scalar_one_or_none() is not None
 
-            stmt = select(DBPosition).filter(DBPosition.account_id == account_id)
-            result = await db_session.execute(stmt)
-            existing_positions = result.scalars().all()
+            position_stmt = select(DBPosition).filter(
+                DBPosition.account_id == account_id
+            )
+            position_result = await db_session.execute(position_stmt)
+            existing_positions = position_result.scalars().all()
             assert len(existing_positions) == 2
 
             # Delete related positions first (manual cascade since DB doesn't have CASCADE DELETE)
@@ -223,15 +225,15 @@ class TestAccountAdapterDeleteCRUD:
             await db_session.commit()
 
             # Now delete the account should succeed
-            result = await adapter.delete_account(account_id)
+            delete_result = await adapter.delete_account(account_id)
 
             # Deletion should be successful
-            assert result is True
+            assert delete_result is True
 
             # Verify account is deleted
-            stmt = select(DBAccount).filter(DBAccount.id == account_id)
-            result = await db_session.execute(stmt)
-            assert result.scalar_one_or_none() is None
+            verify_stmt = select(DBAccount).filter(DBAccount.id == account_id)
+            verify_result = await db_session.execute(verify_stmt)
+            assert verify_result.scalar_one_or_none() is None
 
     async def test_delete_account_with_all_relations_cascade(
         self,
@@ -264,18 +266,20 @@ class TestAccountAdapterDeleteCRUD:
         # Delete in proper order: transactions -> orders -> positions
 
         # Get actual objects from database to delete them
-        stmt = select(DBTransaction).filter(DBTransaction.account_id == account_id)
-        db_transactions = (await db_session.execute(stmt)).scalars().all()
+        transaction_stmt = select(DBTransaction).filter(
+            DBTransaction.account_id == account_id
+        )
+        db_transactions = (await db_session.execute(transaction_stmt)).scalars().all()
         for transaction in db_transactions:
             await db_session.delete(transaction)
 
-        stmt = select(DBOrder).filter(DBOrder.account_id == account_id)
-        db_orders = (await db_session.execute(stmt)).scalars().all()
+        order_stmt = select(DBOrder).filter(DBOrder.account_id == account_id)
+        db_orders = (await db_session.execute(order_stmt)).scalars().all()
         for order in db_orders:
             await db_session.delete(order)
 
-        stmt = select(DBPosition).filter(DBPosition.account_id == account_id)
-        db_positions = (await db_session.execute(stmt)).scalars().all()
+        position_stmt = select(DBPosition).filter(DBPosition.account_id == account_id)
+        db_positions = (await db_session.execute(position_stmt)).scalars().all()
         for position in db_positions:
             await db_session.delete(position)
 
@@ -289,15 +293,15 @@ class TestAccountAdapterDeleteCRUD:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            result = await adapter.delete_account(account_id)
+            delete_result = await adapter.delete_account(account_id)
 
         # Deletion should be successful
-        assert result is True
+        assert delete_result is True
 
         # Verify account is deleted
-        stmt = select(DBAccount).filter(DBAccount.id == account_id)
-        result = await db_session.execute(stmt)
-        assert result.scalar_one_or_none() is None
+        verify_stmt = select(DBAccount).filter(DBAccount.id == account_id)
+        verify_result = await db_session.execute(verify_stmt)
+        assert verify_result.scalar_one_or_none() is None
 
     async def test_delete_account_transaction_integrity(
         self,
@@ -389,7 +393,7 @@ class TestAccountAdapterDeleteCRUD:
         # Verify initial count
         stmt = select(func.count(DBAccount.id))
         initial_count = (await db_session.execute(stmt)).scalar()
-        assert initial_count >= 3
+        assert initial_count is not None and initial_count >= 3
 
         # Delete one account
         with patch("app.adapters.accounts.get_async_session") as mock_get_session:
@@ -404,13 +408,17 @@ class TestAccountAdapterDeleteCRUD:
 
         # Verify count decreased by 1
         final_count = (await db_session.execute(stmt)).scalar()
-        assert final_count == initial_count - 1
+        assert (
+            final_count is not None
+            and initial_count is not None
+            and final_count == initial_count - 1
+        )
 
         # Verify other accounts still exist
         for account_id in account_ids[1:]:
-            stmt = select(DBAccount).filter(DBAccount.id == account_id)
-            result = await db_session.execute(stmt)
-            assert result.scalar_one_or_none() is not None
+            verify_stmt = select(DBAccount).filter(DBAccount.id == account_id)
+            verify_result = await db_session.execute(verify_stmt)
+            assert verify_result.scalar_one_or_none() is not None
 
     async def test_delete_account_with_empty_string_id(
         self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
@@ -437,8 +445,8 @@ class TestAccountAdapterDeleteCRUD:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            # Method returns False for None ID (doesn't raise exception)
-            result = await adapter.delete_account(None)
+            # Method returns False for empty string ID (doesn't raise exception)
+            result = await adapter.delete_account("")
             assert result is False
 
     async def test_delete_account_idempotent_behavior(

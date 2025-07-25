@@ -1246,6 +1246,7 @@ class TestQuoteIntegration:
             ask=9.0,
             bid_size=10,
             ask_size=10,
+            volume=1000,
             delta=0.65,
             gamma=0.02,
             theta=-0.05,

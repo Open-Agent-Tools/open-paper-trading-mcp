@@ -41,6 +41,8 @@ class TestPriority1Core:
             price=150.0,
             bid=149.95,
             ask=150.05,
+            bid_size=100,
+            ask_size=100,
             volume=1000000,
         )
 
