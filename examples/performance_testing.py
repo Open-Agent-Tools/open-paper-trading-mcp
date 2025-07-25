@@ -646,7 +646,7 @@ class SystemResourceTesting:
             return len(results)
 
         return self.tester.run_benchmark(
-            "Intensive Greeks Calculation (31 strikes × 6 periods)",
+            "Intensive Greeks Calculation (31 strikes x 6 periods)",
             intensive_greeks_calculation,
             iterations=5,
         )

@@ -320,8 +320,8 @@ class RiskAnalyzer:
             for position in portfolio.positions:
                 if position.symbol != order.symbol:
                     pos_asset = asset_factory(position.symbol)
-                    if isinstance(pos_asset, Option):
-                        if pos_asset.underlying.symbol == asset.underlying.symbol:
+                    if (isinstance(pos_asset, Option) and 
+                        pos_asset.underlying.symbol == asset.underlying.symbol):
                             # Related position - calculate concentration impact
                             related_impact = self._calculate_related_position_impact(
                                 position, order, portfolio
@@ -792,12 +792,8 @@ class RiskAnalyzer:
         if extreme_violations:
             return False
 
-        # Block if insufficient funds
-        if portfolio_impact.cash_after < 0:
-            return False
-
-        # Allow with warnings for other cases
-        return True
+        # Block if insufficient funds, allow otherwise
+        return portfolio_impact.cash_after >= 0
 
     def _get_required_options_level(self, order: Order, option: Option) -> int:
         """Get required options trading level for an order."""

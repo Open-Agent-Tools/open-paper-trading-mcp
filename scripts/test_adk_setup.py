@@ -142,7 +142,7 @@ def check_environment() -> bool:
         if var in os.environ:
             print(f"✅ {var} is set")
         else:
-            print(f"ℹ️  {var} is not set (optional, will use defaults)")
+            print(f"i  {var} is not set (optional, will use defaults)")
 
     return all_good
 

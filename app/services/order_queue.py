@@ -131,6 +131,9 @@ class OrderQueue:
         self.order_processors: dict[OrderType, Callable[..., Any]] = {}
         self.completion_callbacks: list[Callable[..., Any]] = []
 
+        # Background task tracking
+        self._background_tasks: set[asyncio.Task] = set()
+
         # Thread safety
         self._queue_lock = asyncio.Lock()
 
@@ -377,7 +380,10 @@ class OrderQueue:
                 )
 
                 # Re-queue after delay
-                asyncio.create_task(self._requeue_after_delay(queued_order, delay))
+                self._background_tasks.add(
+                    task := asyncio.create_task(self._requeue_after_delay(queued_order, delay))
+                )
+                task.add_done_callback(self._background_tasks.discard)
             else:
                 # Max retries exceeded
                 queued_order.status = ProcessingStatus.FAILED
@@ -508,7 +514,10 @@ class OrderQueue:
                     self.metrics.current_queue_depth -= 1
 
                     # Process in background task
-                    asyncio.create_task(self._process_order(queued_order, -1))
+                    self._background_tasks.add(
+                        task := asyncio.create_task(self._process_order(queued_order, -1))
+                    )
+                    task.add_done_callback(self._background_tasks.discard)
                     return True
 
         return False

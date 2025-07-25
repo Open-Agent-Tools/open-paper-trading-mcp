@@ -209,12 +209,12 @@ class ImportVisitor(ast.NodeVisitor):
     def __init__(self):
         self.imports = set()
 
-    def visit_Import(self, node):
+    def visit_Import(self, node):  # noqa: N802
         for alias in node.names:
             self.imports.add(alias.name.split(".")[0])
         self.generic_visit(node)
 
-    def visit_ImportFrom(self, node):
+    def visit_ImportFrom(self, node):  # noqa: N802
         if node.module and node.level == 0:  # only check absolute imports
             self.imports.add(node.module.split(".")[0])
         self.generic_visit(node)

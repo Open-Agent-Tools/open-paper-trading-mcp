@@ -283,7 +283,7 @@ def normalize_strategy_quantities(
 
     # Combine quantities for same strategy types
     normalized = []
-    for key, strategy_group in grouped.items():
+    for _key, strategy_group in grouped.items():
         if not strategy_group:
             continue
 
@@ -396,7 +396,7 @@ def _find_straddles_strangles(strategies: list[BasicStrategy]) -> list[dict[str,
             option_groups[key].append(strategy)
 
     # Look for straddles (same strike) and strangles (different strikes)
-    for key, group in option_groups.items():
+    for _key, group in option_groups.items():
         calls = [s for s in group if cast(Option, s.asset).option_type == "call"]
         puts = [s for s in group if cast(Option, s.asset).option_type == "put"]
 

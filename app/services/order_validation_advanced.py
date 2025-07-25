@@ -316,9 +316,9 @@ class ComplexOrderValidator:
             if leg1.quantity > 0 and leg2.quantity < 0:  # Long stock, short call
                 if asset2.option_type == "call":
                     return StrategyType.COVERED_CALL
-            elif leg1.quantity > 0 and leg2.quantity > 0:  # Long stock, long put
-                if asset2.option_type == "put":
-                    return StrategyType.PROTECTIVE_PUT
+            elif (leg1.quantity > 0 and leg2.quantity > 0 and 
+                  asset2.option_type == "put"):  # Long stock, long put
+                return StrategyType.PROTECTIVE_PUT
 
         # Both options
         if isinstance(asset1, Option) and isinstance(asset2, Option):
@@ -380,9 +380,9 @@ class ComplexOrderValidator:
             leg.quantity
             for leg in sorted(
                 order.legs,
-                key=lambda l: (
-                    l.asset.strike
-                    if isinstance(l.asset, Option) and l.asset.strike is not None
+                key=lambda leg: (
+                    leg.asset.strike
+                    if isinstance(leg.asset, Option) and leg.asset.strike is not None
                     else 0.0
                 ),
             )
@@ -415,9 +415,9 @@ class ComplexOrderValidator:
         # Sort by strike
         sorted_legs = sorted(
             order.legs,
-            key=lambda l: (
-                l.asset.strike
-                if isinstance(l.asset, Option) and l.asset.strike is not None
+            key=lambda leg: (
+                leg.asset.strike
+                if isinstance(leg.asset, Option) and leg.asset.strike is not None
                 else 0.0
             ),
         )
@@ -425,25 +425,23 @@ class ComplexOrderValidator:
         # Check for iron condor pattern
         # Two puts (lower strikes) and two calls (higher strikes)
         put_legs = [
-            l
-            for l in sorted_legs
-            if isinstance(l.asset, Option) and l.asset.option_type == "put"
+            leg
+            for leg in sorted_legs
+            if isinstance(leg.asset, Option) and leg.asset.option_type == "put"
         ]
         call_legs = [
-            l
-            for l in sorted_legs
-            if isinstance(l.asset, Option) and l.asset.option_type == "call"
+            leg
+            for leg in sorted_legs
+            if isinstance(leg.asset, Option) and leg.asset.option_type == "call"
         ]
 
-        if len(put_legs) == 2 and len(call_legs) == 2:
+        if (len(put_legs) == 2 and len(call_legs) == 2 and
             # Check quantities: sell inner, buy outer
-            if (
-                put_legs[0].quantity > 0
-                and put_legs[1].quantity < 0
-                and call_legs[0].quantity < 0
-                and call_legs[1].quantity > 0
-            ):
-                return StrategyType.IRON_CONDOR
+            put_legs[0].quantity > 0
+            and put_legs[1].quantity < 0
+            and call_legs[0].quantity < 0
+            and call_legs[1].quantity > 0):
+            return StrategyType.IRON_CONDOR
 
         # Check for iron butterfly
         strikes = {
@@ -452,9 +450,9 @@ class ComplexOrderValidator:
         if len(strikes) == 3:
             middle_strike = sorted(strikes)[1]
             middle_legs = [
-                l
-                for l in order.legs
-                if isinstance(l.asset, Option) and l.asset.strike == middle_strike
+                leg
+                for leg in order.legs
+                if isinstance(leg.asset, Option) and leg.asset.strike == middle_strike
             ]
 
             if len(middle_legs) == 2:
@@ -647,9 +645,9 @@ class ComplexOrderValidator:
 
         # Options exercise/assignment risk
         for leg in order.legs:
-            if isinstance(leg.asset, Option) and leg.quantity < 0:
+            if (isinstance(leg.asset, Option) and leg.quantity < 0 and
                 # Short option - check for assignment risk
-                if leg.asset.expiration_date == date.today():
+                leg.asset.expiration_date == date.today()):
                     issues.append(
                         ValidationIssue(
                             severity="error",
@@ -745,9 +743,9 @@ class ComplexOrderValidator:
         # Sort legs by strike
         sorted_legs = sorted(
             order.legs,
-            key=lambda l: (
-                l.asset.strike
-                if isinstance(l.asset, Option) and l.asset.strike is not None
+            key=lambda leg: (
+                leg.asset.strike
+                if isinstance(leg.asset, Option) and leg.asset.strike is not None
                 else 0.0
             ),
         )
@@ -836,9 +834,9 @@ class ComplexOrderValidator:
                             # Bear put spread
                             breakevens.append(leg1.asset.strike - net_credit)
 
-        elif strategy_type == StrategyType.STRADDLE:
-            # Two breakeven points
-            if len(order.legs) == 2:
+        elif (strategy_type == StrategyType.STRADDLE and
+              # Two breakeven points
+              len(order.legs) == 2):
                 leg1_asset = order.legs[0].asset
                 if isinstance(leg1_asset, Option) and leg1_asset.strike is not None:
                     strike = leg1_asset.strike

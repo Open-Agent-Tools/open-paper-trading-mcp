@@ -183,7 +183,8 @@ class MemoryEfficientOrderTracker:
         if self.config.enable_callbacks:
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._notify_callbacks(snapshot))
+                _ = loop.create_task(self._notify_callbacks(snapshot))  # noqa: RUF006
+                # Don't store task references here as this is a notification call
             except RuntimeError:
                 # No event loop running, skip async notifications
                 # This can happen during testing or synchronous usage

@@ -378,26 +378,23 @@ class OrderNotificationManager:
         conditions = rule.conditions
 
         # Symbol filter
-        if "symbols" in conditions:
-            if lifecycle_state.order.symbol not in conditions["symbols"]:
-                return False
+        if ("symbols" in conditions and 
+            lifecycle_state.order.symbol not in conditions["symbols"]):
+            return False
 
         # Order type filter
-        if "order_types" in conditions:
-            if lifecycle_state.order.order_type not in conditions["order_types"]:
-                return False
+        if ("order_types" in conditions and 
+            lifecycle_state.order.order_type not in conditions["order_types"]):
+            return False
 
         # Minimum quantity filter
-        if "min_quantity" in conditions:
-            if abs(lifecycle_state.order.quantity) < conditions["min_quantity"]:
-                return False
+        if ("min_quantity" in conditions and 
+            abs(lifecycle_state.order.quantity) < conditions["min_quantity"]):
+            return False
 
         # Status filter
-        if "statuses" in conditions:
-            if lifecycle_state.current_status not in conditions["statuses"]:
-                return False
-
-        return True
+        return not ("statuses" in conditions and 
+                   lifecycle_state.current_status not in conditions["statuses"])
 
     def _create_notification(
         self,

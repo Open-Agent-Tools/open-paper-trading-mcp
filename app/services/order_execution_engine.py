@@ -202,7 +202,7 @@ class OrderExecutionEngine:
             order_converter.validate_order_for_conversion(order)
         except Exception as e:
             logger.error(f"Order {order.id} failed validation: {e}")
-            raise OrderExecutionError(f"Invalid order for monitoring: {e}")
+            raise OrderExecutionError(f"Invalid order for monitoring: {e}") from e
 
         with self._lock:
             # Create trigger condition

@@ -17,6 +17,7 @@ if str(app_dir) not in sys.path:
     sys.path.insert(0, str(app_dir))
 
 from app.services.database_indexes import DatabaseIndexManager  # noqa: E402
+from app.storage.database import sync_engine  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -31,7 +32,7 @@ async def main():
 
     try:
         # Get database engine
-        engine = get_engine()
+        engine = sync_engine
 
         # Initialize index manager
         index_manager = DatabaseIndexManager(engine)
