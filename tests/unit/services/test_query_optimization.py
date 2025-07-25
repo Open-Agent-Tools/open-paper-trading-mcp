@@ -1459,7 +1459,8 @@ class TestBulkUpdateOrderStatus:
             assert order.filled_at is not None
             # Check that filled_at is close to our timestamp (within 1 second)
             assert order.filled_at is not None
-            assert abs((order.filled_at - filled_time).total_seconds()) < 1.0
+            time_diff = order.filled_at - filled_time
+            assert abs(time_diff.total_seconds()) < 1.0
 
     @pytest.mark.asyncio
     async def test_bulk_update_order_status_nonexistent_orders(

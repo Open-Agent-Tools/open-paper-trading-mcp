@@ -713,7 +713,9 @@ class TestOrderManagementErrorHandling:
 
         # Mock database session to raise error on commit
         with patch.object(
-            db_session, "commit", side_effect=DatabaseError("DB Error", None, Exception("DB Error"))
+            db_session,
+            "commit",
+            side_effect=DatabaseError("DB Error", None, Exception("DB Error")),
         ):
             order_data = OrderCreate(
                 symbol="AAPL",

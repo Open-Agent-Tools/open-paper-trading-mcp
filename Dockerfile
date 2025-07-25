@@ -21,4 +21,4 @@ EXPOSE 2080
 EXPOSE 2081
 
 # Define the command to run the app
-CMD ["python", "app/main.py"]
+CMD ["uv", "run", "python", "app/main.py"]

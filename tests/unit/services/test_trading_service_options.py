@@ -486,10 +486,13 @@ class TestCalculateGreeks:
             volume=1000,
         )
 
-        with patch.object(
-            service, "get_enhanced_quote", new=AsyncMock(return_value=option_quote)
-        ), pytest.raises(
-            ValueError, match="Insufficient pricing data for Greeks calculation"
+        with (
+            patch.object(
+                service, "get_enhanced_quote", new=AsyncMock(return_value=option_quote)
+            ),
+            pytest.raises(
+                ValueError, match="Insufficient pricing data for Greeks calculation"
+            ),
         ):
             await service.calculate_greeks("AAPL240115C00150000")
 

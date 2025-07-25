@@ -32,17 +32,17 @@ class TestTradingServiceExpirationSimulation:
         """Test basic successful expiration simulation in dry run mode."""
         # Mock portfolio with expiring option
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
                     symbol="AAPL240315C00150000",  # AAPL Call expiring 2024-03-15, strike 150
                     quantity=2,
-                    average_price=Decimal("5.50"),
+                    avg_price=Decimal("5.50"),
                     current_price=Decimal("6.00"),
                     unrealized_pnl=Decimal("100.00"),
-                    asset_type="option",
                 )
             ],
         )
@@ -52,7 +52,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315C00150000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="CALL",
+                option_type="call",
                 strike=150.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -112,7 +112,7 @@ class TestTradingServiceExpirationSimulation:
             assert expiring_option["symbol"] == "AAPL240315C00150000"
             assert expiring_option["underlying_symbol"] == "AAPL"
             assert expiring_option["strike"] == 150.0
-            assert expiring_option["option_type"] == "CALL"
+            assert expiring_option["option_type"] == "call"
             assert expiring_option["quantity"] == 2
             assert expiring_option["underlying_price"] == 155.00
             assert expiring_option["intrinsic_value"] == 5.0  # 155 - 150
@@ -127,17 +127,17 @@ class TestTradingServiceExpirationSimulation:
     async def test_simulate_expiration_call_option_itm(self, trading_service_test_data):
         """Test expiration simulation for in-the-money call option."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
                     symbol="TSLA240315C00200000",  # TSLA Call, strike 200
                     quantity=1,
-                    average_price=Decimal("10.00"),
+                    avg_price=Decimal("10.00"),
                     current_price=Decimal("15.00"),
                     unrealized_pnl=Decimal("500.00"),
-                    asset_type="option",
                 )
             ],
         )
@@ -146,7 +146,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="TSLA240315C00200000",
                 underlying=Stock(symbol="TSLA"),
-                option_type="CALL",
+                option_type="call",
                 strike=200.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -202,17 +202,17 @@ class TestTradingServiceExpirationSimulation:
     async def test_simulate_expiration_put_option_itm(self, trading_service_test_data):
         """Test expiration simulation for in-the-money put option."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
                     symbol="SPY240315P00400000",  # SPY Put, strike 400
                     quantity=3,
-                    average_price=Decimal("8.00"),
+                    avg_price=Decimal("8.00"),
                     current_price=Decimal("12.00"),
                     unrealized_pnl=Decimal("1200.00"),
-                    asset_type="option",
                 )
             ],
         )
@@ -221,7 +221,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="SPY240315P00400000",
                 underlying=Stock(symbol="SPY"),
-                option_type="PUT",
+                option_type="put",
                 strike=400.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -279,25 +279,24 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test expiration simulation for out-of-the-money options (expire worthless)."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
                     symbol="AAPL240315C00200000",  # AAPL Call, strike 200 (OTM)
                     quantity=1,
-                    average_price=Decimal("2.00"),
+                    avg_price=Decimal("2.00"),
                     current_price=Decimal("0.10"),
                     unrealized_pnl=Decimal("-190.00"),
-                    asset_type="option",
                 ),
                 Position(
                     symbol="AAPL240315P00100000",  # AAPL Put, strike 100 (OTM)
                     quantity=2,
-                    average_price=Decimal("1.50"),
+                    avg_price=Decimal("1.50"),
                     current_price=Decimal("0.05"),
                     unrealized_pnl=Decimal("-290.00"),
-                    asset_type="option",
                 ),
             ],
         )
@@ -306,7 +305,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315C00200000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="CALL",
+                option_type="call",
                 strike=200.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -323,7 +322,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315P00100000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="PUT",
+                option_type="put",
                 strike=100.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -383,36 +382,34 @@ class TestTradingServiceExpirationSimulation:
     async def test_simulate_expiration_mixed_portfolio(self, trading_service_test_data):
         """Test expiration simulation with mixed portfolio (expiring and non-expiring positions)."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("20000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 # Expiring option (ITM)
                 Position(
                     symbol="AAPL240315C00150000",
                     quantity=2,
-                    average_price=Decimal("5.00"),
+                    avg_price=Decimal("5.00"),
                     current_price=Decimal("8.00"),
                     unrealized_pnl=Decimal("600.00"),
-                    asset_type="option",
                 ),
                 # Non-expiring option (different date)
                 Position(
                     symbol="AAPL240415C00160000",  # Expires April 15
                     quantity=1,
-                    average_price=Decimal("6.00"),
+                    avg_price=Decimal("6.00"),
                     current_price=Decimal("7.00"),
                     unrealized_pnl=Decimal("100.00"),
-                    asset_type="option",
                 ),
                 # Stock position
                 Position(
                     symbol="AAPL",
                     quantity=100,
-                    average_price=Decimal("150.00"),
+                    avg_price=Decimal("150.00"),
                     current_price=Decimal("160.00"),
                     unrealized_pnl=Decimal("1000.00"),
-                    asset_type="stock",
                 ),
             ],
         )
@@ -422,7 +419,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315C00150000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="CALL",
+                option_type="call",
                 strike=150.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -499,9 +496,10 @@ class TestTradingServiceExpirationSimulation:
         today = datetime.now().date()
 
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[],
         )
 
@@ -519,9 +517,10 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test simulate_expiration in live processing mode (dry_run=False)."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[],
         )
 
@@ -542,17 +541,17 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test expiration simulation handles quote retrieval errors gracefully."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
-                    symbol="INVALID240315C00150000",
+                    symbol="TEST240315C00150000",
                     quantity=1,
-                    average_price=Decimal("5.00"),
+                    avg_price=Decimal("5.00"),
                     current_price=Decimal("6.00"),
                     unrealized_pnl=Decimal("100.00"),
-                    asset_type="option",
                 )
             ],
         )
@@ -585,17 +584,17 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test expiration simulation handles position parsing errors gracefully."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
-                    symbol="INVALID_SYMBOL_FORMAT",
+                    symbol="INVALID_FORMAT",
                     quantity=1,
-                    average_price=Decimal("5.00"),
+                    avg_price=Decimal("5.00"),
                     current_price=Decimal("6.00"),
                     unrealized_pnl=Decimal("100.00"),
-                    asset_type="option",
                 )
             ],
         )
@@ -643,9 +642,10 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test expiration simulation with invalid date format."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[],
         )
 
@@ -665,17 +665,17 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test expiration simulation for at-the-money options (intrinsic value = 0)."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("5000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 Position(
                     symbol="AAPL240315C00150000",  # Strike = underlying price
                     quantity=1,
-                    average_price=Decimal("5.00"),
+                    avg_price=Decimal("5.00"),
                     current_price=Decimal("2.00"),
                     unrealized_pnl=Decimal("-300.00"),
-                    asset_type="option",
                 )
             ],
         )
@@ -684,7 +684,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315C00150000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="CALL",
+                option_type="call",
                 strike=150.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -740,9 +740,10 @@ class TestTradingServiceExpirationSimulation:
     async def test_simulate_expiration_empty_portfolio(self, trading_service_test_data):
         """Test expiration simulation with empty portfolio."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("10000.00"),
             cash_balance=Decimal("10000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[],
         )
 
@@ -769,36 +770,34 @@ class TestTradingServiceExpirationSimulation:
     ):
         """Test comprehensive validation of expiration simulation summary data."""
         mock_portfolio = Portfolio(
-            account_id="test-account",
             total_value=Decimal("30000.00"),
             cash_balance=Decimal("10000.00"),
+            daily_pnl=Decimal("0.00"),
+            total_pnl=Decimal("0.00"),
             positions=[
                 # ITM Call (will exercise)
                 Position(
                     symbol="AAPL240315C00140000",
                     quantity=2,
-                    average_price=Decimal("8.00"),
+                    avg_price=Decimal("8.00"),
                     current_price=Decimal("12.00"),
                     unrealized_pnl=Decimal("800.00"),
-                    asset_type="option",
                 ),
                 # OTM Put (expire worthless)
                 Position(
                     symbol="AAPL240315P00120000",
                     quantity=1,
-                    average_price=Decimal("3.00"),
+                    avg_price=Decimal("3.00"),
                     current_price=Decimal("0.50"),
                     unrealized_pnl=Decimal("-250.00"),
-                    asset_type="option",
                 ),
                 # Quote error position
                 Position(
-                    symbol="ERROR240315C00150000",
+                    symbol="ERROR15C00150000",
                     quantity=1,
-                    average_price=Decimal("5.00"),
+                    avg_price=Decimal("5.00"),
                     current_price=Decimal("6.00"),
                     unrealized_pnl=Decimal("100.00"),
-                    asset_type="option",
                 ),
             ],
         )
@@ -807,7 +806,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315C00140000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="CALL",
+                option_type="call",
                 strike=140.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -824,7 +823,7 @@ class TestTradingServiceExpirationSimulation:
             asset=Option(
                 symbol="AAPL240315P00120000",
                 underlying=Stock(symbol="AAPL"),
-                option_type="PUT",
+                option_type="put",
                 strike=120.0,
                 expiration_date=date(2024, 3, 15),
             ),
@@ -864,7 +863,7 @@ class TestTradingServiceExpirationSimulation:
                     return mock_put_quote
                 elif symbol == "AAPL":
                     return mock_stock_quote
-                elif symbol == "ERROR240315C00150000":
+                elif symbol == "ERROR15C00150000":
                     raise Exception("Quote error")
                 return None
 
@@ -902,7 +901,7 @@ class TestTradingServiceExpirationSimulation:
             error_position = next(
                 pos
                 for pos in expiring_options
-                if pos["symbol"] == "ERROR240315C00150000"
+                if pos["symbol"] == "ERROR15C00150000"
             )
 
             # Verify call position

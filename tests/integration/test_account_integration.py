@@ -394,7 +394,8 @@ class TestAccountIntegration:
             for case in valid_edge_cases:
                 cash_value = case["cash"]
                 account = account_factory(
-                    owner=str(case["owner"]), cash=float(cash_value) if cash_value is not None else 0.0
+                    owner=str(case["owner"]),
+                    cash=float(cash_value) if cash_value is not None else 0.0,
                 )
                 await adapter.put_account(account)
                 edge_accounts.append(account)
@@ -409,7 +410,8 @@ class TestAccountIntegration:
                 try:
                     cash_value = case["cash"]
                     account = account_factory(
-                        owner=str(case["owner"]), cash=float(cash_value) if cash_value is not None else 0.0
+                        owner=str(case["owner"]),
+                        cash=float(cash_value) if cash_value is not None else 0.0,
                     )
                     # If we get here, validation didn't work as expected
                     raise AssertionError(
