@@ -562,6 +562,24 @@ async def trading_service_test_data():
         def get_available_symbols(self):
             return list(self.test_quotes.keys())
 
+        async def search_stocks(self, query):
+            """Mock search_stocks method."""
+            # Simple mock implementation that matches symbols containing query
+            query_upper = query.upper()
+            results = []
+            for symbol in self.test_quotes.keys():
+                if query_upper in symbol:
+                    results.append({
+                        "symbol": symbol,
+                        "name": f"{symbol} Company",
+                        "tradeable": True,
+                    })
+            return {
+                "query": query,
+                "results": results,
+                "total_count": len(results)
+            }
+
         async def get_price_history(self, symbol, period="1year", interval="1day"):
             """Mock price history method."""
             return {

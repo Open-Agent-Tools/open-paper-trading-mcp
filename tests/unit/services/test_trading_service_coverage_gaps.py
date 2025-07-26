@@ -175,7 +175,11 @@ class TestTradingServiceCoverageGaps:
             result = await trading_service_test_data.search_stocks("AAPL")
 
             assert isinstance(result, dict)
-            assert result == {}
+            assert result == {
+                "query": "AAPL",
+                "results": [],
+                "total_count": 0
+            }
 
     @pytest.mark.asyncio
     async def test_get_stock_info_adapter_returns_none(self, trading_service_test_data):
