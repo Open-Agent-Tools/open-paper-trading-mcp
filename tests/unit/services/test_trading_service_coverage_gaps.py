@@ -63,9 +63,9 @@ class TestTradingServiceCoverageGaps:
         """Test no quote data error in get_price_history fallback (lines 966-967)."""
 
         # Mock the specific hasattr call in the trading service to return False
-        with patch('app.services.trading_service.hasattr') as mock_hasattr:
+        with patch("app.services.trading_service.hasattr") as mock_hasattr:
             mock_hasattr.return_value = False
-            
+
             # Mock get_enhanced_quote to return None (no quote data)
             with patch.object(
                 trading_service_test_data, "get_enhanced_quote"
@@ -175,11 +175,7 @@ class TestTradingServiceCoverageGaps:
             result = await trading_service_test_data.search_stocks("AAPL")
 
             assert isinstance(result, dict)
-            assert result == {
-                "query": "AAPL",
-                "results": [],
-                "total_count": 0
-            }
+            assert result == {"query": "AAPL", "results": [], "total_count": 0}
 
     @pytest.mark.asyncio
     async def test_get_stock_info_adapter_returns_none(self, trading_service_test_data):
@@ -244,12 +240,14 @@ class TestTradingServiceCoverageGaps:
         original_method = getattr(
             trading_service_test_data.quote_adapter, "get_price_history", None
         )
-        
+
         # Temporarily replace get_price_history with a method that raises AttributeError
         async def raise_attribute_error(*args, **kwargs):
             raise AttributeError("get_price_history method not available")
-        
-        trading_service_test_data.quote_adapter.get_price_history = raise_attribute_error
+
+        trading_service_test_data.quote_adapter.get_price_history = (
+            raise_attribute_error
+        )
 
         try:
             # Mock a quote without volume attribute
@@ -299,7 +297,9 @@ class TestTradingServiceCoverageGaps:
             return account
 
         # This should trigger the NotFoundError on line 178
-        with pytest.raises((NotFoundError, Exception)):  # More specific exception handling
+        with pytest.raises(
+            (NotFoundError, Exception)
+        ):  # More specific exception handling
             await trading_service_test_data._execute_with_session(_operation)
 
     @pytest.mark.asyncio
@@ -363,7 +363,16 @@ class TestTradingServiceCoverageGaps:
             error_str = str(e).lower()
             assert any(
                 word in error_str
-                for word in ["validation", "limit", "quantity", "error", "runtime", "task", "future", "loop"]
+                for word in [
+                    "validation",
+                    "limit",
+                    "quantity",
+                    "error",
+                    "runtime",
+                    "task",
+                    "future",
+                    "loop",
+                ]
             )
 
     @pytest.mark.asyncio

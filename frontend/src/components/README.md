@@ -39,7 +39,7 @@ Comprehensive health monitoring dashboard for admin/debug views.
 ### healthService.ts
 Core service that checks health of all system components:
 - **FastAPI** (port 2080) - Main REST API server
-- **MCP** (port 2081) - Model Context Protocol server
+- **MCP** (port 2080/mcp) - Model Context Protocol server
 - **Database** - Via FastAPI database-dependent endpoints
 
 ### useHealthMonitor.ts

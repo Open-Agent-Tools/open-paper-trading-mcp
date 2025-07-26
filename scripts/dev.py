@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -32,17 +33,20 @@ def run_command(cmd: str) -> str | None:
 
 
 def start_server() -> None:
-    """Start both FastAPI and MCP servers"""
-    print("Starting both FastAPI and MCP servers...")
+    """Start integrated FastAPI + MCP server"""
+    print("Starting integrated FastAPI + MCP server...")
     print("FastAPI will be available at http://localhost:2080")
-    print("MCP server will be available at http://localhost:2081")
+    print("MCP server will be available at http://localhost:2080/mcp")
     os.system("uv run python app/main.py")
 
+
 def start_mcp_only() -> None:
-    """Start only the MCP server for development"""
-    print("Starting MCP server only...")
-    print("MCP server will be available at http://localhost:2081")
-    os.system("uv run python -c \"import uvicorn; from app.mcp.server import mcp; app = mcp.sse_app(); uvicorn.run(app, host='0.0.0.0', port=2081, log_level='info')\"")
+    """Start integrated server (MCP is now part of FastAPI)"""
+    print("Note: MCP is now integrated into FastAPI server.")
+    print("Starting integrated FastAPI + MCP server...")
+    print("FastAPI will be available at http://localhost:2080")
+    print("MCP server will be available at http://localhost:2080/mcp")
+    os.system("uv run python app/main.py")
 
 
 def run_tests() -> None:
@@ -82,7 +86,7 @@ def main() -> None:
         print("Usage: python scripts/dev.py <command>")
         print("Commands:")
         print("  server    - Start development server (FastAPI + MCP)")
-        print("  mcp       - Start only MCP server on port 2081")
+        print("  mcp       - Start integrated server (same as 'server')")
         print("  test      - Run tests (uv run pytest -v)")
         print("  format    - Format code (uv run ruff format .)")
         print("  lint      - Lint code (uv run ruff check . --fix)")

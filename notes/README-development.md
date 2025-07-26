@@ -43,7 +43,7 @@ chmod +x scripts/dev-start.sh
 ### Backend (Python/FastAPI)
 - **Before**: Container restart required for code changes
 - **After**: Code changes detected automatically via volume mounting
-- **Ports**: http://localhost:2080 (FastAPI), http://localhost:2081 (MCP)
+- **Ports**: http://localhost:2080 (FastAPI + MCP)
 - **Features**:
   - Python auto-reload on file changes
   - No need to restart containers
@@ -93,7 +93,7 @@ app:
 3. **View your changes**:
    - Frontend: http://localhost:3001
    - Backend API: http://localhost:2080
-   - MCP Server: http://localhost:2081
+   - MCP Server: http://localhost:2080/mcp
 
 4. **No more rebuilds needed!** 🎉
 

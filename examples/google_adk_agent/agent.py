@@ -38,7 +38,7 @@ def create_agent() -> Agent:
     """
 
     # Use HTTP transport - server must be running separately
-    http_url = os.environ.get("MCP_HTTP_URL", "http://localhost:2081/mcp")
+    http_url = os.environ.get("MCP_HTTP_URL", "http://localhost:2080/mcp")
     agent_tools = [
         MCPToolset(
             connection_params=StreamableHTTPConnectionParams(

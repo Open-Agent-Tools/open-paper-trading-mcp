@@ -8,7 +8,7 @@ const fastApiClient = axios.create({
 });
 
 const mcpClient = axios.create({
-  baseURL: 'http://localhost:2081',
+  baseURL: 'http://localhost:2080',
   timeout: 5000,
 });
 
@@ -39,12 +39,12 @@ export const checkFastApiHealth = async (): Promise<HealthStatus> => {
 };
 
 /**
- * Check MCP server health using the /health endpoint
+ * Check MCP server health using the /mcp/health endpoint
  */
 export const checkMcpHealth = async (): Promise<HealthStatus> => {
   try {
-    console.log('Checking MCP health at /health');
-    const response = await mcpClient.get('/health');
+    console.log('Checking MCP health at /mcp/health');
+    const response = await mcpClient.get('/mcp/health');
     console.log('MCP health response:', response.status, response.data);
     return {
       service: 'MCP',
@@ -105,7 +105,7 @@ export const checkDatabaseHealth = async (): Promise<HealthStatus> => {
  */
 export const checkMcpStatus = async (): Promise<HealthStatus> => {
   try {
-    const response = await mcpClient.get('/status');
+    const response = await mcpClient.get('/mcp/status');
     const isHealthy = response.status === 200 && 
                      response.data?.status === 'operational' &&
                      (response.data?.tools_count || 0) > 0;
@@ -132,7 +132,7 @@ export const checkMcpStatus = async (): Promise<HealthStatus> => {
  */
 export const checkMcpReadiness = async (): Promise<HealthStatus> => {
   try {
-    const response = await mcpClient.get('/ready');
+    const response = await mcpClient.get('/mcp/ready');
     const isReady = response.status === 200 && response.data?.ready === true;
     
     return {

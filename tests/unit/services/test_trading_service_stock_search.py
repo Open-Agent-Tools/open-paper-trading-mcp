@@ -224,7 +224,6 @@ class TestTradingServiceStockSearch:
             assert isinstance(result, dict)
             assert result["query"] == query
 
-
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio

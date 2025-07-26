@@ -31,9 +31,8 @@ COPY . .
 # Remove any .venv that might have been copied and recreate fresh
 RUN rm -rf .venv && uv sync --no-dev
 
-# Expose the ports the app runs on
+# Expose the port the app runs on
 EXPOSE 2080
-EXPOSE 2081
 
 # Create a start script to run both servers
 COPY start.sh /start.sh

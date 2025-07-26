@@ -9,8 +9,9 @@ This module covers the get_price_history method which provides:
 Coverage target: Lines 953-989 (get_price_history method)
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 
 class TestTradingServicePriceHistory:
@@ -33,7 +34,7 @@ class TestTradingServicePriceHistory:
 
             # Check for either data_points or prices
             assert "data_points" in result or "prices" in result
-            
+
             assert result["symbol"] == "AAPL"
             price_data = result.get("data_points", result.get("prices", []))
             assert isinstance(price_data, list)
@@ -139,23 +140,23 @@ class TestTradingServicePriceHistory:
     ):
         """Test price history fallback when adapter lacks extended functionality."""
         # Force test of fallback by mocking hasattr to return False
-        with patch('app.services.trading_service.hasattr') as mock_hasattr:
+        with patch("app.services.trading_service.hasattr") as mock_hasattr:
             mock_hasattr.return_value = False
-            
+
             result = await trading_service_test_data.get_price_history("AAPL", "week")
 
             assert isinstance(result, dict)
 
             if "error" not in result:
-                    # Should get fallback structure
-                    assert result["symbol"] == "AAPL"
-                    assert result["period"] == "week"
-                    assert result["interval"] == "current"
-                    # Check for either data_points or prices  
-                    price_data = result.get("data_points", result.get("prices", []))
-                    assert len(price_data) == 1  # Single current quote
-                    assert "message" in result
-                    assert "Historical data not available" in result["message"]
+                # Should get fallback structure
+                assert result["symbol"] == "AAPL"
+                assert result["period"] == "week"
+                assert result["interval"] == "current"
+                # Check for either data_points or prices
+                price_data = result.get("data_points", result.get("prices", []))
+                assert len(price_data) == 1  # Single current quote
+                assert "message" in result
+                assert "Historical data not available" in result["message"]
 
     @pytest.mark.asyncio
     async def test_get_price_history_fallback_data_point_structure(
@@ -163,7 +164,7 @@ class TestTradingServicePriceHistory:
     ):
         """Test structure of fallback price history data point."""
         # Force fallback by mocking hasattr to return False
-        with patch('app.services.trading_service.hasattr') as mock_hasattr:
+        with patch("app.services.trading_service.hasattr") as mock_hasattr:
             mock_hasattr.return_value = False
             result = await trading_service_test_data.get_price_history("AAPL", "day")
 
@@ -196,9 +197,11 @@ class TestTradingServicePriceHistory:
             trading_service_test_data.get_enhanced_quote = mock_get_enhanced_quote
 
             # Mock hasattr to return False to force fallback
-            with patch('app.services.trading_service.hasattr') as mock_hasattr:
+            with patch("app.services.trading_service.hasattr") as mock_hasattr:
                 mock_hasattr.return_value = False
-                result = await trading_service_test_data.get_price_history("AAPL", "week")
+                result = await trading_service_test_data.get_price_history(
+                    "AAPL", "week"
+                )
 
                 assert isinstance(result, dict)
                 assert "error" in result

@@ -37,7 +37,7 @@ async def check_mcp_http_health() -> dict[str, Any]:
     """Check MCP HTTP server health using FastMCP health endpoint."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:2081/health", timeout=5.0)
+            response = await client.get("http://localhost:2080/mcp/health", timeout=5.0)
             return {
                 "service": "MCP HTTP",
                 "status": "healthy" if response.status_code == 200 else "unhealthy",
@@ -58,7 +58,7 @@ async def check_mcp_tools() -> dict[str, Any]:
     """Check MCP tools listing."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:2081/tools", timeout=10.0)
+            response = await client.get("http://localhost:2080/mcp/tools", timeout=10.0)
             if response.status_code == 200:
                 tools_data = response.json()
                 return {
@@ -88,7 +88,7 @@ async def check_mcp_status() -> dict[str, Any]:
     """Check MCP server detailed status endpoint."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:2081/status", timeout=5.0)
+            response = await client.get("http://localhost:2080/mcp/status", timeout=5.0)
             if response.status_code == 200:
                 status_data = response.json()
                 return {
@@ -118,7 +118,7 @@ async def check_mcp_readiness() -> dict[str, Any]:
     """Check MCP server readiness probe."""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:2081/ready", timeout=5.0)
+            response = await client.get("http://localhost:2080/mcp/ready", timeout=5.0)
             if response.status_code == 200:
                 ready_data = response.json()
                 return {
@@ -159,7 +159,7 @@ async def test_mcp_jsonrpc() -> dict[str, Any]:
             }
 
             response = await client.post(
-                "http://localhost:2081/mcp",
+                "http://localhost:2080/mcp",
                 json=init_request,
                 timeout=10.0,
                 headers={"Content-Type": "application/json"},

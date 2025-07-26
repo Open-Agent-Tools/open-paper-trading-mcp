@@ -16,7 +16,7 @@ Coverage target: Various error handling lines throughout trading_service.py
 
 import contextlib
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -295,7 +295,6 @@ class TestTradingServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_network_timeout_simulation(self, trading_service_test_data):
         """Test handling of network timeouts."""
-        import asyncio
 
         with patch.object(
             trading_service_test_data.quote_adapter, "get_quote"
@@ -392,7 +391,10 @@ class TestTradingServiceErrorHandling:
             except (TypeError, ValueError, Exception) as e:
                 # Type errors are acceptable for edge case testing
                 error_str = str(e).lower()
-                assert any(word in error_str for word in ["type", "invalid", "validation", "error"])
+                assert any(
+                    word in error_str
+                    for word in ["type", "invalid", "validation", "error"]
+                )
 
     @pytest.mark.asyncio
     async def test_unicode_and_special_characters(self, trading_service_test_data):
@@ -472,14 +474,18 @@ class TestTradingServiceErrorHandling:
                 daily_pnl=100.0,
                 total_pnl=100.0,
             )
-            
-            with patch.object(trading_service_test_data, "get_portfolio", return_value=mock_portfolio):
+
+            with patch.object(
+                trading_service_test_data, "get_portfolio", return_value=mock_portfolio
+            ):
                 portfolio = await trading_service_test_data.get_portfolio()
-                
+
                 # Use portfolio in another operation that might reference back
                 if len(portfolio.positions) > 0:
                     position = portfolio.positions[0]
-                    quote_result = await trading_service_test_data.get_quote(position.symbol)
+                    quote_result = await trading_service_test_data.get_quote(
+                        position.symbol
+                    )
                     # Should complete without circular reference issues
                     assert quote_result is not None or isinstance(quote_result, dict)
         except Exception as e:
@@ -491,17 +497,17 @@ class TestTradingServiceErrorHandling:
     async def test_resource_cleanup_on_errors(self, trading_service_test_data):
         """Test that resources are properly cleaned up when errors occur."""
         from unittest.mock import AsyncMock
-        
+
         with patch.object(
             trading_service_test_data, "_get_async_db_session"
         ) as mock_session:
             # Mock a session that raises an error during operation
             mock_db = AsyncMock()
             mock_db.execute.side_effect = RuntimeError("Database error")
-            
+
             async def mock_session_generator():
                 yield mock_db
-            
+
             mock_session.return_value = mock_session_generator()
 
             with contextlib.suppress(RuntimeError):

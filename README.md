@@ -29,7 +29,7 @@ docker-compose up --build
 # 3. Services are now available at:
 #    - REST API: http://localhost:2080/api/v1/
 #    - API Docs: http://localhost:2080/docs
-#    - MCP Server: http://localhost:2081
+#    - MCP Server: http://localhost:2080/mcp
 ```
 
 ## 🏗️ Architecture Overview
