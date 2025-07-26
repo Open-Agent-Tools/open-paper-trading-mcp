@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Open Paper Trading MCP - Clean Architecture
-Simple server with core trading service and frontend only.
+Open Paper Trading - FastAPI + React Frontend (MCP runs separately)
 """
 
 import os
@@ -25,29 +24,21 @@ else:
     print(f"⚠️  Warning: .env file not found at {env_path}")
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.mcp_tools import mcp
-
-# Create simple FastAPI app
+# Create FastAPI app (MCP server runs independently on port 2081)
 app = FastAPI(
     title="Open Paper Trading",
-    description="Paper trading platform with FastAPI, MCP, and React frontend",
+    description="Paper trading platform with FastAPI and React frontend",
     version="0.1.0",
 )
-
-# Create MCP server and mount it as a sub-application
-mcp_app = mcp.http_app()
-app.mount("/mcp", mcp_app)
-
 
 # Basic health endpoint
 @app.get("/health")
 async def health():
     return {"status": "healthy", "server": "fastapi+mcp+react"}
-
 
 # Setup paths
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
@@ -66,7 +57,6 @@ if frontend_dist.exists():
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
         print(f"✅ Assets mounted from {assets_dir}")
 
-
 @app.get("/")
 async def serve_react_app():
     """Serve the React app index.html"""
@@ -80,7 +70,7 @@ async def serve_react_app():
         <head><title>Open Paper Trading</title></head>
         <body>
             <h1>🚀 Open Paper Trading</h1>
-            <p>Simple server with core trading service running!</p>
+            <p>Server with FastAPI, MCP, and React frontend running!</p>
             <p>React build not found. Run: <code>cd frontend && npm run build</code></p>
             <div style="margin: 20px 0;">
                 <a href="/health">❤️ Health Check</a> |
@@ -91,19 +81,18 @@ async def serve_react_app():
         </html>
         """)
 
-
 # Catch-all handler for React Router (SPA routing)
 @app.get("/{path:path}")
 async def serve_react_app_catch_all(path: str, request: Request):
     """Catch-all route to serve React app for client-side routing"""
-    # Don't intercept API routes and MCP routes
+    # Don't intercept API routes, health, docs - let them 404 properly
     if (
         path.startswith("api/")
         or path.startswith("health")
         or path.startswith("docs")
-        or path.startswith("mcp/")
+        or path.startswith("openapi.json")
     ):
-        return {"error": "Not found"}
+        raise HTTPException(status_code=404, detail="Not found")
 
     # For all other routes, serve the React app
     index_path = frontend_dist / "index.html"
@@ -114,11 +103,10 @@ async def serve_react_app_catch_all(path: str, request: Request):
             "<h1>React app not built</h1><p>Run: <code>cd frontend && npm run build</code></p>"
         )
 
-
 if __name__ == "__main__":
-    print("🚀 Starting Open Paper Trading server on port 2080...")
+    print("🚀 Starting Open Paper Trading FastAPI server on port 2080...")
     print("🔗 Frontend: http://localhost:2080/")
     print("❤️ Health: http://localhost:2080/health")
-    print("🔌 MCP Server: http://localhost:2080/mcp/")
     print("📚 Docs: http://localhost:2080/docs")
+    print("ℹ️  MCP Server runs independently on port 2081")
     uvicorn.run(app, host="0.0.0.0", port=2080, log_level="info")

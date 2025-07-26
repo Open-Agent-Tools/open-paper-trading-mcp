@@ -27,9 +27,9 @@ cd open-paper-trading-mcp
 docker-compose up --build
 
 # 3. Services are now available at:
-#    - REST API: http://localhost:2080/api/v1/
+#    - Frontend & API: http://localhost:2080/
+#    - MCP Server: http://localhost:2081/
 #    - API Docs: http://localhost:2080/docs
-#    - MCP Server: http://localhost:2080/mcp
 ```
 
 ## 🏗️ Architecture Overview

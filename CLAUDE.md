@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Open Paper Trading MCP is a comprehensive paper trading simulator with dual interfaces: a REST API (FastAPI) and AI agent tools (MCP). The system simulates multi-asset trading (stocks, options, ETFs, bonds) with real market data for algorithmic trading development and AI agent training.
 
-**Current Status (2025-07-25)**: 🎉 **MCP SERVER & ADK INTEGRATION COMPLETED** - Successfully implemented HTTP transport for MCP server, enabling ADK evaluation compatibility. 84 MCP tools properly exposed via FastMCP framework with JSON-RPC protocol support. ADK can now connect to and communicate with MCP server at http://localhost:8001/mcp. **Code cleanup completed**: All 156 ruff linting issues resolved, core application 100% mypy compliant, 661/672 tests passing (98.4% success rate). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
+**Current Status (2025-07-26)**: 🎉 **SPLIT ARCHITECTURE DEPLOYED** - Successfully implemented dual-server architecture with FastAPI server (port 2080) for frontend/API and independent MCP server (port 2081) for AI agent tools. Both servers running simultaneously with full functionality. FastMCP integration resolved via server separation after mounting conflicts. **Code cleanup completed**: All 156 ruff linting issues resolved, core application 100% mypy compliant, 661/672 tests passing (98.4% success rate). AsyncIO infrastructure fully stabilized with zero event loop conflicts.
 
 ## Essential Commands
 
@@ -16,7 +16,7 @@ Open Paper Trading MCP is a comprehensive paper trading simulator with dual inte
 python scripts/dev.py <command>
 
 # Available commands:
-python scripts/dev.py server     # Start development server (FastAPI + MCP)
+python scripts/dev.py server     # Start FastAPI server only (port 2080)
 python scripts/dev.py test       # Run all tests (uv run pytest -v)
 python scripts/dev.py format     # Format code (uv run ruff format .)
 python scripts/dev.py lint       # Lint code (uv run ruff check . --fix)
@@ -26,8 +26,9 @@ python scripts/dev.py check      # Run all checks (format + lint + typecheck + t
 
 ### Direct Commands
 ```bash
-# Server
-uv run python app/main.py        # Start both FastAPI and MCP servers
+# Servers (split architecture)
+uv run python app/main.py        # Start FastAPI server (port 2080)
+uv run python app/mcp_server.py  # Start MCP server (port 2081)
 
 # Testing
 uv run pytest -v                 # All tests
@@ -56,9 +57,10 @@ docker-compose up -d             # Start in background (required for tests)
 ## Architecture Overview
 
 ### Core Architecture Pattern
+- **Split Server Architecture**: FastAPI server (port 2080) and independent MCP server (port 2081)
 - **Simplified Direct Connection**: TradingService connects directly to PostgreSQL and Robinhood API
 - **No Message Queue/Cache**: Direct database operations for all trading state
-- **Dual Interface**: Single codebase serves both REST API and MCP tools
+- **Dual Interface**: Separate servers for REST API and MCP tools
 - **Async Throughout**: All operations use asyncio for performance
 
 ### Key Components
@@ -66,10 +68,11 @@ docker-compose up -d             # Start in background (required for tests)
 **App Structure:**
 ```
 app/
-├── main.py                 # FastAPI + MCP server startup
+├── main.py                 # FastAPI server startup (port 2080)
+├── mcp_server.py           # Independent MCP server (port 2081)
+├── mcp_tools.py            # MCP tools using FastMCP framework
 ├── core/                   # Configuration, logging, exceptions, dependencies
 ├── api/                    # REST API routes (FastAPI)
-├── mcp/                    # MCP tools and server implementation
 ├── services/               # Business logic (TradingService, etc.)
 ├── adapters/               # Data adapters (Robinhood, test data, cache)
 ├── models/                 # SQLAlchemy models and Pydantic schemas

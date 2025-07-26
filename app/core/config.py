@@ -41,11 +41,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
     # MCP Server Configuration
-    MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "2080"))
+    MCP_SERVER_PORT: int = int(os.getenv("MCP_SERVER_PORT", "2081"))
     MCP_SERVER_HOST: str = os.getenv("MCP_SERVER_HOST", "localhost")
     MCP_SERVER_NAME: str = "Open Paper Trading MCP"
-    MCP_HTTP_PORT: int = int(os.getenv("MCP_HTTP_PORT", "2080"))
-    MCP_HTTP_URL: str = os.getenv("MCP_HTTP_URL", "http://localhost:2080/mcp")
+    MCP_HTTP_PORT: int = int(os.getenv("MCP_HTTP_PORT", "2081"))
+    MCP_HTTP_URL: str = os.getenv("MCP_HTTP_URL", "http://localhost:2081")
 
     # Quote Adapter Configuration
     QUOTE_ADAPTER_TYPE: str = os.getenv("QUOTE_ADAPTER_TYPE", "test")

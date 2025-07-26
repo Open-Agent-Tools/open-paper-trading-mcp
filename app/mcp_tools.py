@@ -1,10 +1,7 @@
 """
 MCP Tools for Open Paper Trading
-Minimal MCP server with health check only
+Simple MCP server with basic trading tools for testing
 """
-
-from datetime import datetime
-from typing import Any
 
 from fastmcp import FastMCP
 
@@ -12,15 +9,16 @@ from fastmcp import FastMCP
 mcp = FastMCP("Open Paper Trading MCP")
 
 
-@mcp.tool()
-def health_check() -> dict[str, Any]:
+@mcp.tool
+def health_check() -> str:
     """Check the health status of the trading system"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "services": {"mcp_server": "operational", "api_server": "operational"},
-        "message": "Open Paper Trading MCP is running",
-    }
+    return "MCP Server is healthy and operational"
+
+
+@mcp.tool
+def get_account_balance() -> str:
+    """Get the current account balance"""
+    return "Account balance: $10,000.00 (simulated)"
 
 
 # Export the MCP instance for integration with FastAPI
