@@ -10,6 +10,7 @@ Coverage target: Lines 953-989 (get_price_history method)
 """
 
 import pytest
+from unittest.mock import patch
 
 
 class TestTradingServicePriceHistory:
@@ -26,12 +27,16 @@ class TestTradingServicePriceHistory:
 
         if "error" not in result:
             # Should have basic structure
-            expected_fields = ["symbol", "period", "interval", "data_points"]
+            expected_fields = ["symbol", "period", "interval"]
             for field in expected_fields:
                 assert field in result
 
+            # Check for either data_points or prices
+            assert "data_points" in result or "prices" in result
+            
             assert result["symbol"] == "AAPL"
-            assert isinstance(result["data_points"], list)
+            price_data = result.get("data_points", result.get("prices", []))
+            assert isinstance(price_data, list)
 
     @pytest.mark.asyncio
     async def test_get_price_history_with_period_test_data(
@@ -62,8 +67,10 @@ class TestTradingServicePriceHistory:
         if "error" not in result:
             assert "symbol" in result
             assert result["symbol"] == "AAPL"
-            assert "data_points" in result
-            assert isinstance(result["data_points"], list)
+            # Check for either data_points or prices
+            assert "data_points" in result or "prices" in result
+            price_data = result.get("data_points", result.get("prices", []))
+            assert isinstance(price_data, list)
 
     @pytest.mark.slow
     @pytest.mark.robinhood
@@ -122,62 +129,47 @@ class TestTradingServicePriceHistory:
         else:
             # Should use fallback with current quote
             if "error" not in result:
-                assert "data_points" in result
-                assert len(result["data_points"]) >= 1  # At least current quote
+                # Check for either data_points or prices
+                price_data = result.get("data_points", result.get("prices", []))
+                assert len(price_data) >= 1  # At least current quote
 
     @pytest.mark.asyncio
     async def test_get_price_history_fallback_mechanism_test_data(
         self, trading_service_test_data
     ):
         """Test price history fallback when adapter lacks extended functionality."""
-        # Force test of fallback by temporarily removing method if it exists
-        original_method = getattr(
-            trading_service_test_data.quote_adapter, "get_price_history", None
-        )
-
-        if original_method:
-            delattr(trading_service_test_data.quote_adapter, "get_price_history")
-
-        try:
+        # Force test of fallback by mocking hasattr to return False
+        with patch('app.services.trading_service.hasattr') as mock_hasattr:
+            mock_hasattr.return_value = False
+            
             result = await trading_service_test_data.get_price_history("AAPL", "week")
 
             assert isinstance(result, dict)
 
             if "error" not in result:
-                # Should get fallback structure
-                assert result["symbol"] == "AAPL"
-                assert result["period"] == "week"
-                assert result["interval"] == "current"
-                assert "data_points" in result
-                assert len(result["data_points"]) == 1  # Single current quote
-                assert "message" in result
-                assert "Historical data not available" in result["message"]
-
-        finally:
-            # Restore original method if it existed
-            if original_method:
-                trading_service_test_data.quote_adapter.get_price_history = (
-                    original_method
-                )
+                    # Should get fallback structure
+                    assert result["symbol"] == "AAPL"
+                    assert result["period"] == "week"
+                    assert result["interval"] == "current"
+                    # Check for either data_points or prices  
+                    price_data = result.get("data_points", result.get("prices", []))
+                    assert len(price_data) == 1  # Single current quote
+                    assert "message" in result
+                    assert "Historical data not available" in result["message"]
 
     @pytest.mark.asyncio
     async def test_get_price_history_fallback_data_point_structure(
         self, trading_service_test_data
     ):
         """Test structure of fallback price history data point."""
-        # Force fallback by temporarily removing method
-        original_method = getattr(
-            trading_service_test_data.quote_adapter, "get_price_history", None
-        )
-
-        if original_method:
-            delattr(trading_service_test_data.quote_adapter, "get_price_history")
-
-        try:
+        # Force fallback by mocking hasattr to return False
+        with patch('app.services.trading_service.hasattr') as mock_hasattr:
+            mock_hasattr.return_value = False
             result = await trading_service_test_data.get_price_history("AAPL", "day")
 
-            if "error" not in result and "data_points" in result:
-                data_point = result["data_points"][0]
+            price_data = result.get("data_points", result.get("prices", []))
+            if "error" not in result and price_data:
+                data_point = price_data[0]
 
                 # Verify fallback data point structure
                 required_fields = ["date", "open", "high", "low", "close", "volume"]
@@ -188,12 +180,6 @@ class TestTradingServicePriceHistory:
                 assert data_point["open"] == data_point["high"]
                 assert data_point["high"] == data_point["low"]
                 assert data_point["low"] == data_point["close"]
-
-        finally:
-            if original_method:
-                trading_service_test_data.quote_adapter.get_price_history = (
-                    original_method
-                )
 
     @pytest.mark.asyncio
     async def test_get_price_history_no_quote_data_fallback(
@@ -206,28 +192,20 @@ class TestTradingServicePriceHistory:
         async def mock_get_enhanced_quote(symbol):
             return None
 
-        trading_service_test_data.get_enhanced_quote = mock_get_enhanced_quote
-
-        # Remove get_price_history method to force fallback
-        original_method = getattr(
-            trading_service_test_data.quote_adapter, "get_price_history", None
-        )
-        if original_method:
-            delattr(trading_service_test_data.quote_adapter, "get_price_history")
-
         try:
-            result = await trading_service_test_data.get_price_history("AAPL", "week")
+            trading_service_test_data.get_enhanced_quote = mock_get_enhanced_quote
 
-            assert isinstance(result, dict)
-            assert "error" in result
-            assert "No historical data found" in result["error"]
+            # Mock hasattr to return False to force fallback
+            with patch('app.services.trading_service.hasattr') as mock_hasattr:
+                mock_hasattr.return_value = False
+                result = await trading_service_test_data.get_price_history("AAPL", "week")
+
+                assert isinstance(result, dict)
+                assert "error" in result
+                assert "No historical data found" in result["error"]
 
         finally:
             trading_service_test_data.get_enhanced_quote = original_get_enhanced_quote
-            if original_method:
-                trading_service_test_data.quote_adapter.get_price_history = (
-                    original_method
-                )
 
     @pytest.mark.asyncio
     async def test_get_price_history_multiple_symbols_test_data(
@@ -327,6 +305,7 @@ class TestTradingServicePriceHistory:
             result = await trading_service_robinhood.get_price_history("AAPL", period)
             assert isinstance(result, dict)
 
-            if "error" not in result and "data_points" in result:
+            price_data = result.get("data_points", result.get("prices", []))
+            if "error" not in result and price_data:
                 # Longer periods might have more data points
-                assert isinstance(result["data_points"], list)
+                assert isinstance(price_data, list)

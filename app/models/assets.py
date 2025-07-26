@@ -37,6 +37,10 @@ def asset_factory(symbol: Union[str, "Asset", None] = None) -> Optional["Asset"]
         return symbol
 
     symbol = symbol.upper().strip()
+    
+    # Validate that symbol is not empty after stripping
+    if not symbol:
+        return None
 
     # Options have longer symbols with specific patterns
     if len(symbol) > 8:

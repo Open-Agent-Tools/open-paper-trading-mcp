@@ -1003,7 +1003,15 @@ class TradingService:
             # For now, use the adapter's extended functionality if available
             if hasattr(self.quote_adapter, "search_stocks"):
                 result = await self.quote_adapter.search_stocks(query)
-                return dict(result) if result else {}
+                # If adapter already returns proper format, return as-is
+                if isinstance(result, dict) and "query" in result and "results" in result:
+                    return result
+                # Otherwise, wrap in proper format
+                return {
+                    "query": query,
+                    "results": result if result else [],
+                    "total_count": len(result) if result else 0
+                }
             else:
                 # Fallback to symbol matching from available symbols
                 query_upper = query.upper()

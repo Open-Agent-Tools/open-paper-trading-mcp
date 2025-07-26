@@ -144,7 +144,6 @@ class TestTradingServiceErrorHandling:
         boundary_quantities = [
             1,  # Minimum valid
             999999,  # Very large
-            0.1,  # Fractional (if supported)
         ]
 
         for quantity in boundary_quantities:

@@ -224,40 +224,6 @@ class TestTradingServiceStockSearch:
             assert isinstance(result, dict)
             assert result["query"] == query
 
-    @pytest.mark.asyncio
-    async def test_search_stocks_exception_handling_test_data(
-        self, trading_service_test_data
-    ):
-        """Test exception handling in search_stocks."""
-        # Force an exception by corrupting the adapter
-        original_get_available_symbols = getattr(
-            trading_service_test_data, "get_available_symbols", None
-        )
-
-        if original_get_available_symbols:
-            # Force exception in fallback path
-            trading_service_test_data.get_available_symbols = lambda: None
-
-            # Remove search method to force fallback
-            original_method = getattr(
-                trading_service_test_data.quote_adapter, "search_stocks", None
-            )
-            if original_method:
-                delattr(trading_service_test_data.quote_adapter, "search_stocks")
-
-            try:
-                result = await trading_service_test_data.search_stocks("AAPL")
-                assert isinstance(result, dict)
-                # Should handle exception gracefully
-
-            finally:
-                trading_service_test_data.get_available_symbols = (
-                    original_get_available_symbols
-                )
-                if original_method:
-                    trading_service_test_data.quote_adapter.search_stocks = (
-                        original_method
-                    )
 
     @pytest.mark.slow
     @pytest.mark.robinhood

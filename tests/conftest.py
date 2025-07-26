@@ -562,6 +562,46 @@ async def trading_service_test_data():
         def get_available_symbols(self):
             return list(self.test_quotes.keys())
 
+        async def get_price_history(self, symbol, period="1year", interval="1day"):
+            """Mock price history method."""
+            return {
+                "symbol": symbol.upper(),
+                "prices": [
+                    {"date": "2024-01-01", "open": 100.0, "high": 105.0, "low": 98.0, "close": 102.0, "volume": 1000000},
+                    {"date": "2024-01-02", "open": 102.0, "high": 108.0, "low": 101.0, "close": 106.0, "volume": 1200000},
+                ],
+                "period": period,
+                "interval": interval
+            }
+
+        async def get_stock_info(self, symbol):
+            """Mock stock info method."""
+            return {
+                "symbol": symbol.upper(),
+                "name": f"Mock Company {symbol}",
+                "market_cap": 1000000000,
+                "pe_ratio": 20.5,
+                "dividend_yield": 2.1,
+                "sector": "Technology"
+            }
+
+        async def search_stocks(self, query, limit=10):
+            """Mock stock search method."""
+            # Return symbols that contain the query
+            matches = [symbol for symbol in self.test_quotes.keys() if query.upper() in symbol]
+            results = [{"symbol": symbol, "name": f"Mock Company {symbol}"} for symbol in matches[:limit]]
+            
+            response = {
+                "query": query,
+                "results": results,
+                "total_count": len(results)
+            }
+            
+            if not results:
+                response["message"] = f"No stocks found matching query: {query}"
+                
+            return response
+
     adapter = MockTestQuoteAdapter()
     return TradingService(quote_adapter=adapter)
 
