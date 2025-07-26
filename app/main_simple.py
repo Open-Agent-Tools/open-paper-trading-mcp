@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Open Paper Trading MCP - Clean Architecture
-Simple server with core trading service and frontend only.
+Simple server with just core trading service and frontend.
+Minimal architecture for clean start.
 """
 
 import os
@@ -28,10 +28,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import uvicorn
 
-# Create simple FastAPI app
+# Create minimal FastAPI app
 app = FastAPI(
     title="Open Paper Trading",
-    description="Paper trading platform with core trading service and frontend",
+    description="Simple paper trading with core service and frontend",
     version="0.1.0"
 )
 
@@ -39,19 +39,6 @@ app = FastAPI(
 @app.get("/health")
 async def health():
     return {"status": "healthy", "server": "simple"}
-
-# Core trading endpoint (placeholder for trading service)
-@app.get("/api/trading/quote/{symbol}")
-async def get_quote(symbol: str):
-    """Get stock quote - placeholder for core trading service."""
-    return {
-        "symbol": symbol.upper(),
-        "price": 150.50,
-        "change": 2.35,
-        "change_percent": 1.58,
-        "status": "success",
-        "source": "core_trading_service"
-    }
 
 # Serve React frontend
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
@@ -70,13 +57,9 @@ async def serve_frontend():
         <head><title>Open Paper Trading</title></head>
         <body>
             <h1>🚀 Open Paper Trading</h1>
-            <p>Simple server with core trading service running!</p>
+            <p>Simple server running!</p>
             <p>React build not found. Run: <code>cd frontend && npm run build</code></p>
-            <div style="margin: 20px 0;">
-                <a href="/health">❤️ Health Check</a> |
-                <a href="/api/trading/quote/AAPL">📊 Sample Quote</a> |
-                <a href="/docs">📚 API Docs</a>
-            </div>
+            <p><a href="/health">Health Check</a> | <a href="/docs">API Docs</a></p>
         </body>
         </html>
         """
@@ -87,9 +70,8 @@ if frontend_dist.exists() and (frontend_dist / "assets").exists():
     print(f"✅ React assets mounted from {frontend_dist / 'assets'}")
 
 if __name__ == "__main__":
-    print("🚀 Starting Open Paper Trading server on port 2080...")
+    print("🚀 Starting simple server on port 2080...")
     print("🔗 Frontend: http://localhost:2080/")
     print("❤️ Health: http://localhost:2080/health")
-    print("📊 Trading: http://localhost:2080/api/trading/quote/AAPL")
     print("📚 Docs: http://localhost:2080/docs")
     uvicorn.run(app, host="0.0.0.0", port=2080, log_level="info")
