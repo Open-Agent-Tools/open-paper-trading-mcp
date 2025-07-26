@@ -6,6 +6,16 @@ Development utility script for Open Paper Trading MCP
 import os
 import subprocess
 import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"✅ Development script loaded environment from {env_path}")
+else:
+    print(f"⚠️  Warning: .env file not found at {env_path}")
 
 
 def run_command(cmd: str) -> str | None:

@@ -170,7 +170,104 @@ PostgreSQL Database / Robinhood API
 
 ## 📋 NEXT PHASE PRIORITIES
 
-### Phase 5: Security & Monitoring Enhancement
+### 🔥 TOP PRIORITY: Unified Single-Port Architecture
+**Status**: ⏳ **READY TO BEGIN** - Consolidate API, MCP, and Frontend on single port
+
+#### Implementation Plan - Detailed Steps
+
+**Phase 1: Analyze Current Architecture (30 mins)**
+- [x] **Current State Analysis** - Review existing multi-port setup
+  - **FastAPI**: Currently on port 2080 (`app/main.py`)
+  - **MCP Server**: Currently on port 2081 (separate process via `mcp.run()`)
+  - **Frontend**: Currently separate React build (not yet integrated)
+  - **Database**: PostgreSQL on port 5432 (Docker)
+
+**Phase 2: FastMCP Integration (Based on FastMCP docs) (2 hours)**
+- [ ] **Step 1: Create Unified FastAPI App** 
+  - Modify `app/main.py` to use FastMCP's `.from_fastapi()` method
+  - Mount MCP server back into FastAPI using `.http_app()` 
+  - Use FastMCP's recommended pattern: `app.mount("/mcp", mcp_app)`
+  
+- [ ] **Step 2: Configure FastMCP HTTP Transport**
+  - Remove separate MCP server process in `run_dual_servers()`
+  - Integrate MCP tools directly into FastAPI application lifecycle
+  - Use FastMCP's `lifespan` context manager for proper initialization
+  
+- [ ] **Step 3: Update Route Structure**
+  - **REST API**: Keep existing `/api/v1/*` endpoints
+  - **MCP Protocol**: Add `/mcp/*` endpoints via FastMCP mounting
+  - **Health Check**: Add unified health endpoint covering both API and MCP
+
+**Phase 3: Frontend Integration (1 hour)**
+- [ ] **Step 4: Frontend Static Files Setup**
+  - Build React production bundle to `frontend/dist/`
+  - Add `StaticFiles` middleware to serve frontend at `/`
+  - Configure fallback to `index.html` for React Router
+  
+- [ ] **Step 5: Update CORS and Middleware**
+  - Consolidate CORS settings for all services
+  - Unified authentication middleware across API and MCP
+  - Single logging configuration for all endpoints
+
+**Phase 4: Docker and Deployment Updates (30 mins)**
+- [ ] **Step 6: Update Docker Configuration**
+  - Modify `docker-compose.yml` to use single port 2080
+  - Remove separate MCP container/service
+  - Update environment variables and port mappings
+  
+- [ ] **Step 7: Update Scripts and Documentation**
+  - Modify `scripts/dev.py` for single-server startup
+  - Update `CLAUDE.md` and `README.md` with new architecture
+  - Update all references from multi-port to single-port
+
+**Phase 5: Testing and Validation (1 hour)**
+- [ ] **Step 8: Test All Endpoints**
+  - Verify REST API endpoints work on port 2080
+  - Verify MCP tools accessible at `/mcp/*` endpoints
+  - Test frontend loads correctly from root `/`
+  - Validate ADK can connect to new MCP endpoint
+  
+- [ ] **Step 9: Performance Validation**
+  - Run existing test suite to ensure no regressions
+  - Verify shared database connections work properly
+  - Test concurrent API and MCP requests
+
+**Expected Implementation Pattern (Based on FastMCP docs):**
+```python
+from fastmcp import FastMCP
+
+# In app/main.py - NEW unified approach
+app = FastAPI(lifespan=lifespan)
+
+# Create MCP from existing FastAPI app
+mcp = FastMCP.from_fastapi(app=app)
+
+# Mount MCP back into FastAPI 
+mcp_app = mcp.http_app(path='/mcp')
+app.mount("/mcp", mcp_app)
+
+# Add static files for frontend
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+```
+
+**Target Architecture After Implementation:**
+```
+Port 2080 (Single FastAPI Instance)
+├── / → Frontend (React Static Files)
+├── /api/v1/* → REST API Endpoints
+├── /mcp/* → MCP Tools (FastMCP HTTP Transport)
+├── /docs → API Documentation
+└── /health → Unified Health Check
+```
+
+**Benefits:**
+- **Single deployment artifact** - one Docker container, one port
+- **Shared resources** - database connections, middleware, logging
+- **Simplified networking** - no inter-service communication overhead
+- **Unified monitoring** - single health check and metrics endpoint
+- **Production-ready** - follows FastMCP recommended patterns
+
+### Phase 5: Security & Monitoring Enhancement  
 **Status**: ⏳ **READY TO BEGIN** - MCP tools foundation complete
 
 #### Security Enhancements (5 tasks)
@@ -199,13 +296,43 @@ PostgreSQL Database / Robinhood API
 
 | Phase | Priority | Status | Key Deliverables |
 |-------|----------|--------|--------------------|
-| Core Infrastructure | HIGH | ✅ COMPLETED | Testing, Quality, Coverage |
-| **MCP Tools Implementation** | **TOP** | ✅ **COMPLETED** | **84/84 tools operational (100%)** |
-| Security & Monitoring | HIGH | ⏳ READY | API security + observability |
-| Advanced Features | MEDIUM | ⏳ PLANNED | Streaming, strategies, backtesting |
+| Core Infrastructure | HIGH | ✅ **COMPLETED** | 100% | Testing, Quality, Coverage |
+| **MCP Tools Implementation** | **HIGH** | ✅ **COMPLETED** | **100%** | **84/84 tools operational** |
+| **🔥 Unified Architecture** | **🚨 TOP** | ⏳ **IN PROGRESS** | **0%** | **Single-port consolidation** |
+| Security & Monitoring | HIGH | ⏳ QUEUED | 0% | Authentication, observability |
+| Advanced Features | MEDIUM | ⏳ PLANNED | 0% | Streaming, backtesting |
 
-**Current Status**: ✅ **MCP TOOLS IMPLEMENTATION COMPLETE** - All 84 tools operational  
-**Next Priority**: 🎯 **SECURITY & MONITORING** - Production hardening and observability
+#### 🎯 **CURRENT SPRINT: UNIFIED SINGLE-PORT ARCHITECTURE**
+**Estimated Time**: 5 hours total implementation  
+**Target Completion**: End of current session  
+**Success Criteria**: All services accessible on port 2080  
+
+#### ⚠️ **CRITICAL IMPLEMENTATION CONSTRAINTS**
+- **🛡️ PRESERVE CORE TRADING SERVICE**: TradingService and business logic must remain completely intact
+- **🧪 MAINTAIN TEST SUCCESS RATE**: 661/672 tests passing (98.4%) - no regressions allowed
+- **🔗 PRESERVE DATA PIPELINE**: TradingService → Database/Robinhood connections unchanged
+- **📊 PRESERVE MCP TOOLS**: All 84 MCP tools must remain functional after consolidation
+- **🏗️ ARCHITECTURE ONLY CHANGE**: This is purely a server consolidation, not business logic changes
+
+**Progress Tracking with Testing Checkpoints:**
+- ⏳ **Phase 1**: Architecture Analysis (30 min) - ✅ **COMPLETE**
+- ⏳ **Phase 2**: FastMCP Integration (2 hr) - 🔄 **READY TO START**
+  - **Checkpoint 2A**: Test suite passes after FastMCP import
+  - **Checkpoint 2B**: MCP tools discoverable via FastMCP
+  - **Checkpoint 2C**: REST API endpoints still functional
+- ⏳ **Phase 3**: Frontend Integration (1 hr) - ⏳ **PENDING**
+  - **Checkpoint 3A**: Static files serve correctly
+  - **Checkpoint 3B**: API accessible from frontend
+- ⏳ **Phase 4**: Docker Updates (30 min) - ⏳ **PENDING**
+  - **Checkpoint 4A**: Docker builds successfully
+  - **Checkpoint 4B**: Single port configuration works
+- ⏳ **Phase 5**: Testing & Validation (1 hr) - ⏳ **PENDING**
+  - **Checkpoint 5A**: Full test suite maintains 98.4% pass rate
+  - **Checkpoint 5B**: All 84 MCP tools operational
+  - **Checkpoint 5C**: ADK integration functional
+
+**Next Action**: Begin Phase 2 - FastMCP Integration with immediate testing  
+**Ready to Execute**: All prerequisites completed, plan is detailed and actionable
 
 ## 🧹 RECENT MAINTENANCE (July 25, 2025)
 
