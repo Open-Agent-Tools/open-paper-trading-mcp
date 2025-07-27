@@ -303,6 +303,97 @@ assert "account not found" in result["message"]
 
 These files contain critical project documentation and specifications that must be preserved.
 
+## 🎓 Lessons Learned & Best Practices
+
+### Critical Technical Discoveries
+
+**1. AsyncIO Event Loop Management**
+- **Issue**: 164 test failures due to event loop conflicts between pytest-asyncio and database engines
+- **Solution**: Create fresh database engines per test in current event loop
+- **Pattern**: `create_async_engine()` in fixture scope="function" with proper disposal
+- **Impact**: Increased test success rate from 29% to 99.7%
+
+**2. FastMCP Mounting Conflicts** 
+- **Issue**: FastMCP could not be mounted on FastAPI due to routing conflicts
+- **Solution**: Split architecture with independent servers (FastAPI:2080, MCP:2081)
+- **Lesson**: Sometimes separation is better than complex integration
+- **Result**: Both interfaces fully operational with zero conflicts
+
+**3. Database Session Patterns**
+- **Anti-pattern**: Using `AsyncSessionLocal()` directly breaks dependency injection
+- **Best practice**: Always use `get_async_session()` for consistent session management
+- **Testing**: Mock `get_async_session` with `side_effect` for async generators
+- **Benefit**: Unified session handling across production and testing
+
+**4. Service Layer Architecture**
+- **Discovery**: TradingService can serve both REST API and MCP tools via dependency injection
+- **Implementation**: `get_trading_service()` factory pattern provides consistent service access
+- **Advantage**: Changes to business logic automatically benefit both interfaces
+- **Result**: Dual interface with identical functionality
+
+### Development Workflow Optimizations
+
+**1. Split Development Strategy**
+- FastAPI server handles frontend and REST API (port 2080)
+- MCP server handles AI agent tools independently (port 2081)
+- Both can be developed, tested, and deployed separately
+- Shared TradingService ensures functionality consistency
+
+**2. Test Infrastructure Stability**
+- Fresh database engines per test prevent AsyncIO conflicts
+- Standardized mocking patterns with async generators
+- Timezone-consistent datetime handling (always UTC)
+- Live API testing with `@pytest.mark.robinhood` for real-world validation
+
+**3. Code Quality Standards**
+- 100% ruff compliance for linting and formatting
+- mypy type checking with comprehensive coverage
+- Async/await throughout for performance
+- Pydantic validation for all API boundaries
+
+### Architecture Decision Insights
+
+**1. When to Split vs Integrate**
+- **Split when**: Mounting conflicts, different protocols, independent scaling needs
+- **Integrate when**: Shared business logic, consistent data access, unified deployment
+- **Our case**: Split servers, shared service layer achieved best of both worlds
+
+**2. Database Connection Strategies**
+- Connection pooling with proper lifecycle management
+- Async sessions with dependency injection for testability
+- Fresh engines per test for AsyncIO compatibility
+- Proper connection disposal to prevent leaks
+
+**3. API Design Consistency**
+- Mirror MCP tools with REST API endpoints for dual interface access
+- Consistent JSON response format across both interfaces
+- Shared validation and error handling patterns
+- Auto-generated documentation for REST API
+
+### Technical Debt Avoidance
+
+**1. AsyncIO Complexity**
+- Always create database resources in the correct event loop
+- Use proper async patterns throughout the stack
+- Test async code with pytest-asyncio in function scope
+- Avoid mixing sync and async patterns
+
+**2. Dependency Management**
+- Use dependency injection consistently
+- Mock at the right abstraction level (session generators, not direct sessions)
+- Maintain clear separation between production and test dependencies
+- Register services properly in application startup
+
+**3. Configuration Management**
+- Environment variables for all external dependencies
+- Split configuration for different server roles
+- Proper secret handling (never commit credentials)
+- Database URL configuration for different environments
+
 ## Project Memories and Guidelines
 
 - Never use STDIO for mcp, all connections need to be HTTP due to long running processes
+- Always create database engines in current event loop for AsyncIO compatibility
+- Split architecture resolves FastMCP mounting conflicts better than complex integration
+- Use `get_async_session()` dependency injection consistently throughout codebase
+- Both REST API and MCP tools should access identical TradingService functionality

@@ -1,30 +1,75 @@
 This document provides a comprehensive list of all 84 MCP tools expected in the Open Paper Trading MCP server, including their signatures and descriptions.
 
+## Implementation Status (2025-07-27)
+
+**Currently Implemented**: 6 core tools (✅ Operational)
+**Planned Implementation**: 78 additional tools (📋 Planned)
+
 ## Core System Tools
 
-### `list_tools() -> dict[str, Any]`
+### ✅ `list_tools() -> dict[str, Any]` - IMPLEMENTED
 Provides a list of available tools and their descriptions.
+- **Status**: Operational in MCP server (port 2081)
+- **Implementation**: Wraps FastMCP's `get_tools()` with user-friendly formatting
 
-### `health_check() -> dict[str, Any]`
+### ✅ `health_check() -> dict[str, Any]` - IMPLEMENTED  
 Gets health status of the MCP server.
+- **Status**: Operational in MCP server (port 2081)
+- **Implementation**: Returns "MCP Server is healthy and operational"
 
 ## Account & Portfolio Tools
 
-### `account_info() -> dict[str, Any]`
+### ✅ `get_account_balance() -> dict[str, Any]` - IMPLEMENTED
+Gets the current account balance and basic account information.
+- **Status**: Operational in MCP server (port 2081)
+- **Implementation**: Uses TradingService.get_account_balance()
+
+### ✅ `get_account_info() -> dict[str, Any]` - IMPLEMENTED
+Gets comprehensive account information including balance and basic details.
+- **Status**: Operational in MCP server (port 2081)  
+- **Implementation**: Uses TradingService._get_account() + get_account_balance()
+
+### ✅ `get_portfolio() -> dict[str, Any]` - IMPLEMENTED
+Gets comprehensive portfolio information including positions and performance.
+- **Status**: Operational in MCP server (port 2081)
+- **Implementation**: Uses TradingService.get_portfolio() with position serialization
+
+### ✅ `get_portfolio_summary() -> dict[str, Any]` - IMPLEMENTED
+Gets portfolio summary with key performance metrics.
+- **Status**: Operational in MCP server (port 2081)
+- **Implementation**: Uses TradingService.get_portfolio_summary()
+
+### 📋 `account_info() -> dict[str, Any]` - PLANNED
 Gets basic Robinhood account information.
 
-### `portfolio() -> dict[str, Any]`
+### 📋 `portfolio() -> dict[str, Any]` - PLANNED  
 Provides a high-level overview of the portfolio.
 
-### `account_details() -> dict[str, Any]`
+### 📋 `account_details() -> dict[str, Any]` - PLANNED
 Gets comprehensive account details including buying power and cash balances.
 
-### `positions() -> dict[str, Any]`
+### 📋 `positions() -> dict[str, Any]` - PLANNED
 Gets current stock positions with quantities and values.
 
-## Market Data Tools
+## 🏆 Dual Interface Achievement
 
-### `stock_price(symbol: str) -> dict[str, Any]`
+**REST API Endpoints**: All 6 implemented MCP tools have corresponding REST API endpoints:
+- `/api/v1/trading/health` ← mirrors `health_check`
+- `/api/v1/trading/account/balance` ← mirrors `get_account_balance`  
+- `/api/v1/trading/account/info` ← mirrors `get_account_info`
+- `/api/v1/trading/portfolio` ← mirrors `get_portfolio`
+- `/api/v1/trading/portfolio/summary` ← mirrors `get_portfolio_summary`
+- `/api/v1/trading/tools` ← mirrors `list_tools`
+
+**Benefits**: 
+- Web clients can use REST API endpoints
+- AI agents can use MCP tools
+- Both interfaces access identical TradingService functionality
+- Consistent JSON response format across both interfaces
+
+## Market Data Tools (📋 All Planned)
+
+### 📋 `stock_price(symbol: str) -> dict[str, Any]` - PLANNED
 Gets current stock price and basic metrics.
 - **symbol**: Stock ticker symbol (e.g., "AAPL")
 
