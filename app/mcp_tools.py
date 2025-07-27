@@ -34,6 +34,39 @@ mcp = FastMCP("Open Paper Trading MCP")
 
 
 @mcp.tool
+def list_tools() -> Dict[str, Any]:
+    """List all available MCP tools with their descriptions"""
+    try:
+        # Get tools from FastMCP instance
+        tools_dict = run_async_safely(mcp.get_tools())
+        
+        # Format tools for user-friendly display
+        tools_list = []
+        for tool_name, tool_info in tools_dict.items():
+            tools_list.append({
+                "name": tool_name,
+                "description": tool_info.description or "No description available"
+            })
+        
+        # Sort alphabetically by name
+        tools_list.sort(key=lambda x: x["name"])
+        
+        return {
+            "success": True,
+            "tools": tools_list,
+            "count": len(tools_list),
+            "message": f"Found {len(tools_list)} available tools"
+        }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to list tools: {str(e)}"
+        }
+
+
+@mcp.tool
 def health_check() -> str:
     """Check the health status of the trading system"""
     return "MCP Server is healthy and operational"

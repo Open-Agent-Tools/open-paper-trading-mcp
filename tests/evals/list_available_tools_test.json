@@ -19,13 +19,19 @@
           "final_response": {
             "parts": [
               {
-                "text": "• get_account_balance\n• get_account_info\n• get_portfolio\n• get_portfolio_summary\n• health_check"
+                "text": "• get_account_balance\n• get_account_info\n• get_portfolio\n• get_portfolio_summary\n• health_check\n• list_tools"
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [],
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "list_tools"
+              }
+            ],
             "intermediate_responses": []
           }
         }
