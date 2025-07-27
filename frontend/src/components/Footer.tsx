@@ -7,19 +7,22 @@ const Footer: React.FC = () => {
     <Paper
       component="footer"
       square
-      variant="outlined"
+      elevation={0}
       sx={{
-        py: 2,
-        px: 5,
-        mt: 'auto',
+        py: 1.5,
+        px: 3,
         backgroundColor: 'background.default',
-        textAlign: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 56,
+        borderTop: 'none',
       }}
     >
       <SystemHealthIndicator 
         variant="summary" 
         showDetails={true}
-        refreshInterval={30000}
+        refreshInterval={15000}
       />
     </Paper>
   );

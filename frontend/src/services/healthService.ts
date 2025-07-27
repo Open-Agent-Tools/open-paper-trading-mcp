@@ -17,12 +17,12 @@ const mcpClient = axios.create({
  */
 export const checkFastApiHealth = async (): Promise<HealthStatus> => {
   try {
-    console.log('Checking FastAPI health at /api/v1/health');
-    const response = await fastApiClient.get('/api/v1/health');
+    console.log('Checking FastAPI health at /health');
+    const response = await fastApiClient.get('/health');
     console.log('FastAPI health response:', response.status, response.data);
     return {
       service: 'FastAPI',
-      status: response.status === 200 && response.data?.status === 'ok' ? 'healthy' : 'unhealthy',
+      status: response.status === 200 && response.data?.status === 'healthy' ? 'healthy' : 'unhealthy',
       statusCode: response.status,
       response: response.data,
       timestamp: Date.now(),
@@ -78,12 +78,12 @@ export const checkMcpHealth = async (): Promise<HealthStatus> => {
  */
 export const checkDatabaseHealth = async (): Promise<HealthStatus> => {
   try {
-    console.log('Checking database health at /api/v1/health/live');
-    const response = await fastApiClient.get('/api/v1/health/live');
+    console.log('Checking database health via /api/v1/trading/accounts');
+    const response = await fastApiClient.get('/api/v1/trading/accounts');
     console.log('Database health response:', response.status, response.data);
     return {
       service: 'Database',
-      status: response.status === 200 && response.data?.status === 'alive' ? 'healthy' : 'unhealthy',
+      status: response.status === 200 && response.data?.success === true ? 'healthy' : 'unhealthy',
       statusCode: response.status,
       response: response.data,
       timestamp: Date.now(),

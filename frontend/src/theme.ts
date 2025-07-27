@@ -72,4 +72,10 @@ const theme = createTheme({
   },
 });
 
+// Typography constants following the style guide
+export const FONTS = {
+  primary: "'Roboto', sans-serif",
+  monospace: "'Roboto Mono', monospace",
+} as const;
+
 export default theme;

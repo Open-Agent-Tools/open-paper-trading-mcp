@@ -2535,3 +2535,480 @@ async def sell_stock_stop_limit(order_request: StockStopLimitOrderRequest) -> di
         ) from e
 
 
+# ==================== SET 6: OPTIONS TRADING ENDPOINTS ====================
+
+class OptionLimitOrderRequest(BaseModel):
+    """Schema for option limit order requests."""
+    instrument_id: str = Field(..., description="Option instrument ID")
+    quantity: int = Field(..., gt=0, description="Number of option contracts")
+    limit_price: float = Field(..., gt=0, description="Limit price per contract")
+    account_id: str | None = Field(None, description="Optional account ID")
+
+
+class OptionSpreadOrderRequest(BaseModel):
+    """Schema for option spread order requests."""
+    short_instrument_id: str = Field(..., description="Short leg option instrument ID")
+    long_instrument_id: str = Field(..., description="Long leg option instrument ID")
+    quantity: int = Field(..., gt=0, description="Number of spread contracts")
+    price: float = Field(..., gt=0, description="Net credit/debit price per spread")
+    account_id: str | None = Field(None, description="Optional account ID")
+
+
+@router.post("/orders/options/buy/limit")
+async def buy_option_limit(order_request: OptionLimitOrderRequest) -> dict[str, Any]:
+    """
+    Place a limit buy order for an option.
+    
+    Mirrors MCP tool: buy_option_limit
+    
+    Args:
+        order_request: Option limit order request data
+        
+    Returns:
+        Dict containing order confirmation
+        
+    Raises:
+        HTTPException: If order cannot be placed
+    """
+    try:
+        account_id = validate_account_id_param(order_request.account_id)
+        service = get_trading_service()
+        
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        
+        order = await service.create_order(OrderCreate(
+            symbol=order_request.instrument_id,
+            order_type=OrderType.BUY,
+            quantity=order_request.quantity,
+            price=order_request.limit_price,
+            condition=OrderCondition.LIMIT
+        ))
+        
+        return {
+            "success": True,
+            "order": order,
+            "instrument_id": order_request.instrument_id,
+            "side": "buy",
+            "quantity": order_request.quantity,
+            "order_type": "limit",
+            "limit_price": order_request.limit_price,
+            "account_id": account_id,
+            "message": f"Limit buy order placed for {order_request.quantity} option contracts of {order_request.instrument_id} at ${order_request.limit_price}"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": str(e),
+                "instrument_id": order_request.instrument_id,
+                "side": "buy",
+                "quantity": order_request.quantity,
+                "order_type": "limit",
+                "limit_price": order_request.limit_price,
+                "account_id": order_request.account_id,
+                "message": f"Failed to place limit buy order for option {order_request.instrument_id}: {e!s}",
+            },
+        ) from e
+
+
+@router.post("/orders/options/sell/limit")
+async def sell_option_limit(order_request: OptionLimitOrderRequest) -> dict[str, Any]:
+    """
+    Place a limit sell order for an option.
+    
+    Mirrors MCP tool: sell_option_limit
+    
+    Args:
+        order_request: Option limit order request data
+        
+    Returns:
+        Dict containing order confirmation
+        
+    Raises:
+        HTTPException: If order cannot be placed
+    """
+    try:
+        account_id = validate_account_id_param(order_request.account_id)
+        service = get_trading_service()
+        
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        
+        order = await service.create_order(OrderCreate(
+            symbol=order_request.instrument_id,
+            order_type=OrderType.SELL,
+            quantity=order_request.quantity,
+            price=order_request.limit_price,
+            condition=OrderCondition.LIMIT
+        ))
+        
+        return {
+            "success": True,
+            "order": order,
+            "instrument_id": order_request.instrument_id,
+            "side": "sell",
+            "quantity": order_request.quantity,
+            "order_type": "limit",
+            "limit_price": order_request.limit_price,
+            "account_id": account_id,
+            "message": f"Limit sell order placed for {order_request.quantity} option contracts of {order_request.instrument_id} at ${order_request.limit_price}"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": str(e),
+                "instrument_id": order_request.instrument_id,
+                "side": "sell",
+                "quantity": order_request.quantity,
+                "order_type": "limit",
+                "limit_price": order_request.limit_price,
+                "account_id": order_request.account_id,
+                "message": f"Failed to place limit sell order for option {order_request.instrument_id}: {e!s}",
+            },
+        ) from e
+
+
+@router.post("/orders/options/spreads/credit")
+async def option_credit_spread(order_request: OptionSpreadOrderRequest) -> dict[str, Any]:
+    """
+    Place a credit spread order (sell short option, buy long option).
+    
+    Mirrors MCP tool: option_credit_spread
+    
+    Args:
+        order_request: Option spread order request data
+        
+    Returns:
+        Dict containing order confirmation
+        
+    Raises:
+        HTTPException: If order cannot be placed
+    """
+    try:
+        account_id = validate_account_id_param(order_request.account_id)
+        service = get_trading_service()
+        
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        
+        # Place short leg (sell) order
+        short_order = await service.create_order(OrderCreate(
+            symbol=order_request.short_instrument_id,
+            order_type=OrderType.SELL,
+            quantity=order_request.quantity,
+            price=order_request.price,
+            condition=OrderCondition.LIMIT
+        ))
+        
+        # Place long leg (buy) order for protection
+        long_order = await service.create_order(OrderCreate(
+            symbol=order_request.long_instrument_id,
+            order_type=OrderType.BUY,
+            quantity=order_request.quantity,
+            price=0.01,  # Minimal price for protection
+            condition=OrderCondition.LIMIT
+        ))
+        
+        return {
+            "success": True,
+            "short_order": short_order,
+            "long_order": long_order,
+            "strategy": "credit_spread",
+            "short_instrument_id": order_request.short_instrument_id,
+            "long_instrument_id": order_request.long_instrument_id,
+            "quantity": order_request.quantity,
+            "credit_price": order_request.price,
+            "account_id": account_id,
+            "message": f"Credit spread placed: sold {order_request.quantity} contracts of {order_request.short_instrument_id}, bought {order_request.quantity} contracts of {order_request.long_instrument_id} for ${order_request.price} credit"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": str(e),
+                "strategy": "credit_spread",
+                "short_instrument_id": order_request.short_instrument_id,
+                "long_instrument_id": order_request.long_instrument_id,
+                "quantity": order_request.quantity,
+                "credit_price": order_request.price,
+                "account_id": order_request.account_id,
+                "message": f"Failed to place credit spread: {e!s}",
+            },
+        ) from e
+
+
+@router.post("/orders/options/spreads/debit")
+async def option_debit_spread(order_request: OptionSpreadOrderRequest) -> dict[str, Any]:
+    """
+    Place a debit spread order (buy long option, sell short option).
+    
+    Mirrors MCP tool: option_debit_spread
+    
+    Args:
+        order_request: Option spread order request data
+        
+    Returns:
+        Dict containing order confirmation
+        
+    Raises:
+        HTTPException: If order cannot be placed
+    """
+    try:
+        account_id = validate_account_id_param(order_request.account_id)
+        service = get_trading_service()
+        
+        from app.schemas.orders import OrderCreate, OrderType, OrderCondition
+        
+        # Place long leg (buy) order
+        long_order = await service.create_order(OrderCreate(
+            symbol=order_request.long_instrument_id,
+            order_type=OrderType.BUY,
+            quantity=order_request.quantity,
+            price=order_request.price,
+            condition=OrderCondition.LIMIT
+        ))
+        
+        # Place short leg (sell) order
+        short_order = await service.create_order(OrderCreate(
+            symbol=order_request.short_instrument_id,
+            order_type=OrderType.SELL,
+            quantity=order_request.quantity,
+            price=0.01,  # Minimal price for short leg
+            condition=OrderCondition.LIMIT
+        ))
+        
+        return {
+            "success": True,
+            "long_order": long_order,
+            "short_order": short_order,
+            "strategy": "debit_spread",
+            "short_instrument_id": order_request.short_instrument_id,
+            "long_instrument_id": order_request.long_instrument_id,
+            "quantity": order_request.quantity,
+            "debit_price": order_request.price,
+            "account_id": account_id,
+            "message": f"Debit spread placed: bought {order_request.quantity} contracts of {order_request.long_instrument_id}, sold {order_request.quantity} contracts of {order_request.short_instrument_id} for ${order_request.price} debit"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": str(e),
+                "strategy": "debit_spread",
+                "short_instrument_id": order_request.short_instrument_id,
+                "long_instrument_id": order_request.long_instrument_id,
+                "quantity": order_request.quantity,
+                "debit_price": order_request.price,
+                "account_id": order_request.account_id,
+                "message": f"Failed to place debit spread: {e!s}",
+            },
+        ) from e
+
+
+# =============================================================================
+# Order Cancellation Endpoints (4 endpoints) - Mirrors Set 7 MCP Tools
+# =============================================================================
+
+@router.delete("/orders/stocks/all")
+async def cancel_all_stock_orders() -> dict[str, Any]:
+    """
+    Cancel all open stock orders.
+    
+    Mirrors MCP tool: cancel_all_stock_orders_tool
+    
+    Returns:
+        Dict containing cancellation results
+        
+    Raises:
+        HTTPException: If cancellation fails
+    """
+    try:
+        service = get_trading_service()
+        result = await service.cancel_all_stock_orders()
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error": result["error"],
+                    "message": f"Failed to cancel all stock orders: {result['error']}",
+                },
+            )
+        
+        total_cancelled = result.get("total_cancelled", 0)
+        return {
+            "success": True,
+            "total_cancelled": total_cancelled,
+            "cancelled_orders": result.get("cancelled_orders", []),
+            "message": f"Successfully cancelled {total_cancelled} stock orders"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": str(e),
+                "message": f"Failed to cancel all stock orders: {e!s}",
+            },
+        ) from e
+
+
+@router.delete("/orders/options/all")
+async def cancel_all_option_orders() -> dict[str, Any]:
+    """
+    Cancel all open option orders.
+    
+    Mirrors MCP tool: cancel_all_option_orders_tool
+    
+    Returns:
+        Dict containing cancellation results
+        
+    Raises:
+        HTTPException: If cancellation fails
+    """
+    try:
+        service = get_trading_service()
+        result = await service.cancel_all_option_orders()
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error": result["error"],
+                    "message": f"Failed to cancel all option orders: {result['error']}",
+                },
+            )
+        
+        total_cancelled = result.get("total_cancelled", 0)
+        return {
+            "success": True,
+            "total_cancelled": total_cancelled,
+            "cancelled_orders": result.get("cancelled_orders", []),
+            "message": f"Successfully cancelled {total_cancelled} option orders"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": str(e),
+                "message": f"Failed to cancel all option orders: {e!s}",
+            },
+        ) from e
+
+
+@router.delete("/orders/stocks/{order_id}")
+async def cancel_stock_order_by_id(order_id: str) -> dict[str, Any]:
+    """
+    Cancel a specific stock order by its ID.
+    
+    Mirrors MCP tool: cancel_stock_order_by_id
+    
+    Args:
+        order_id: The ID of the stock order to cancel
+        
+    Returns:
+        Dict containing cancellation result
+        
+    Raises:
+        HTTPException: If cancellation fails
+    """
+    try:
+        service = get_trading_service()
+        result = await service.cancel_order(order_id)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error": result["error"],
+                    "order_id": order_id,
+                    "message": f"Failed to cancel stock order {order_id}: {result['error']}",
+                },
+            )
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "result": result,
+            "message": f"Stock order {order_id} cancelled successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": str(e),
+                "order_id": order_id,
+                "message": f"Failed to cancel stock order {order_id}: {e!s}",
+            },
+        ) from e
+
+
+@router.delete("/orders/options/{order_id}")
+async def cancel_option_order_by_id(order_id: str) -> dict[str, Any]:
+    """
+    Cancel a specific option order by its ID.
+    
+    Mirrors MCP tool: cancel_option_order_by_id
+    
+    Args:
+        order_id: The ID of the option order to cancel
+        
+    Returns:
+        Dict containing cancellation result
+        
+    Raises:
+        HTTPException: If cancellation fails
+    """
+    try:
+        service = get_trading_service()
+        result = await service.cancel_order(order_id)
+        
+        if "error" in result:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error": result["error"],
+                    "order_id": order_id,
+                    "message": f"Failed to cancel option order {order_id}: {result['error']}",
+                },
+            )
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "result": result,
+            "message": f"Option order {order_id} cancelled successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": str(e),
+                "order_id": order_id,
+                "message": f"Failed to cancel option order {order_id}: {e!s}",
+            },
+        ) from e
+
+

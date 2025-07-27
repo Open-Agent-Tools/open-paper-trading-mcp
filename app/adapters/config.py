@@ -51,7 +51,7 @@ class AdapterFactoryConfig:
                 "config": {"current_date": "2017-03-24", "scenario": "default"},
             },
             "robinhood": {
-                "enabled": False,  # Requires credentials
+                "enabled": True,  # Requires credentials
                 "priority": 1,  # Highest priority for live trading
                 "timeout": 30.0,
                 "cache_ttl": 300.0,  # 5 minutes for live data

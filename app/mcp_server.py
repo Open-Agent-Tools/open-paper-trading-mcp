@@ -9,23 +9,37 @@ from pathlib import Path
 import uvicorn
 from dotenv import load_dotenv
 
-from app.mcp_tools import mcp
-
-# Load environment variables
+# Load environment variables FIRST, before importing anything that might initialize adapters
 env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
     print(f"✅ Loaded environment variables from {env_path}")
+    
+    # Verify Robinhood credentials are loaded
+    import os
+    username = os.getenv("ROBINHOOD_USERNAME")
+    if username:
+        print(f"✅ Robinhood credentials found for user: {username}")
+    else:
+        print("⚠️ Robinhood credentials not found in environment variables")
+else:
+    print(f"❌ .env file not found at {env_path}")
+
+# Import MCP tools AFTER environment variables are loaded
+from app.mcp_tools import mcp
 
 if __name__ == "__main__":
     print("🚀 Starting MCP server on port 2081...")
     print("🔌 MCP Server: http://localhost:2081/")
-    print("🛠️  Available tools:")
-    print("   • get_account_balance - Get current account balance")
-    print("   • get_account_info - Get comprehensive account information")
-    print("   • get_portfolio - Get portfolio with all positions")
-    print("   • get_portfolio_summary - Get portfolio performance summary")
-    print("   • health_check - Check system health")
+    print("🛠️  Available tools (43 total):")
+    print("   • Set 1: Core System & Account Tools (9 tools)")  
+    print("   • Set 2: Market Data Tools (8 tools)")
+    print("   • Set 3: Order Management Tools (4 tools)")
+    print("   • Set 4: Options Trading Info Tools (6 tools)")
+    print("   • Set 5: Stock Trading Tools (8 tools)")
+    print("   • Set 6: Options Trading Tools (4 tools)")
+    print("   • Set 7: Order Cancellation Tools (4 tools) ✅ IMPLEMENTED")
+    print("   • For complete list, call list_tools MCP tool")
 
     # Run the MCP server directly on port 2081
     app = mcp.http_app()

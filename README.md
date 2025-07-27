@@ -14,8 +14,8 @@ A comprehensive paper trading simulator with dual interfaces: REST API (FastAPI)
 
 🎉 **SPLIT ARCHITECTURE FULLY OPERATIONAL** - Successfully implemented and deployed dual-server architecture:
 
-- **FastAPI Server** (port 2080): Frontend integration + 6 REST API endpoints operational
-- **MCP Server** (port 2081): Independent MCP server with 7 tools + list_tools function
+- **FastAPI Server** (port 2080): Frontend integration + 8 REST API endpoints operational
+- **MCP Server** (port 2081): Independent MCP server with 9 tools + list_tools function
 - **Test Success Rate**: 99.7% (596/598 tests passing, 617 total tests)
 - **Code Quality**: 100% ruff compliance, mypy clean, comprehensive code cleanup completed
 - **Database Integration**: PostgreSQL async operations with proper session management

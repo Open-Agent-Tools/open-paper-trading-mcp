@@ -64,6 +64,17 @@ class RobinhoodAdapter(QuoteAdapter):
     def __init__(self, config: RobinhoodConfig | None = None):
         self.config = config or RobinhoodConfig()
         self.session_manager = get_session_manager()
+        
+        # Load credentials from environment variables
+        import os
+        username = os.getenv("ROBINHOOD_USERNAME")
+        password = os.getenv("ROBINHOOD_PASSWORD")
+        
+        if username and password:
+            self.session_manager.set_credentials(username, password)
+            logger.info(f"✅ Robinhood credentials loaded for user: {username}")
+        else:
+            logger.warning("⚠️ Robinhood credentials not found in environment variables")
 
         # Performance metrics
         self._request_count = 0
@@ -282,12 +293,32 @@ class RobinhoodAdapter(QuoteAdapter):
         if not await self._ensure_authenticated():
             return []
 
-        chains_data = rh.options.get_chains(underlying)
+        try:
+            chains_data = rh.options.get_chains(underlying)
+            logger.info(f"get_chain returned: type={type(chains_data)}, value={chains_data}")
+        except Exception as e:
+            logger.error(f"Error calling rh.options.get_chains({underlying}): {e}")
+            return []
+            
         if not chains_data:
             return []
 
         assets = []
-        for chain in chains_data:
+        
+        # Handle different return types from get_chains
+        if isinstance(chains_data, list):
+            chain_list = chains_data
+        elif isinstance(chains_data, dict):
+            chain_list = [chains_data]
+        else:
+            logger.error(f"Unexpected chains_data type in get_chain: {type(chains_data)}, content: {chains_data}")
+            return []
+            
+        for chain in chain_list:
+            if not isinstance(chain, dict):
+                logger.warning(f"Expected dict in get_chain, got {type(chain)}: {chain}")
+                continue
+                
             expiration = chain.get("expiration_date")
             if expiration_date and expiration != expiration_date.strftime("%Y-%m-%d"):
                 continue
@@ -324,64 +355,92 @@ class RobinhoodAdapter(QuoteAdapter):
             underlying_price = None
 
         # Get chains data
-        chains_data = rh.options.get_chains(underlying)
+        try:
+            chains_data = rh.options.get_chains(underlying)
+            logger.info(f"Successfully retrieved chains data for {underlying}")
+                
+        except Exception as e:
+            logger.error(f"Error calling rh.options.get_chains({underlying}): {e}")
+            return None
+            
         if not chains_data:
+            logger.warning(f"No chains data returned for {underlying}")
             return None
 
         calls = []
         puts = []
         target_expiration = None
 
-        for chain in chains_data:
-            expiration_str = chain.get("expiration_date")
-            if not expiration_str:
-                continue
+        # Handle robinhood chains_data structure - it's a dict with expiration_dates list
+        try:
+            if not isinstance(chains_data, dict):
+                logger.error(f"Expected dict from get_chains, got {type(chains_data)}")
+                return None
+            
+            # Get list of expiration dates from the chain data
+            expiration_dates_list = chains_data.get("expiration_dates", [])
+            if not expiration_dates_list:
+                logger.warning(f"No expiration_dates found in chains_data for {underlying}")
+                return None
 
-            chain_exp_date = datetime.strptime(expiration_str, "%Y-%m-%d").date()
+            logger.info(f"Found {len(expiration_dates_list)} expiration dates for {underlying}")
 
-            # Filter by expiration if specified
-            if expiration_date:
-                exp_date = (
-                    expiration_date.date()
-                    if isinstance(expiration_date, datetime)
-                    else expiration_date
+            # Process each expiration date
+            for expiration_str in expiration_dates_list:
+                chain_exp_date = datetime.strptime(expiration_str, "%Y-%m-%d").date()
+
+                # Filter by expiration if specified
+                if expiration_date:
+                    exp_date = (
+                        expiration_date.date()
+                        if isinstance(expiration_date, datetime)
+                        else expiration_date
+                    )
+                    if chain_exp_date != exp_date:
+                        continue
+
+                target_expiration = chain_exp_date
+                logger.debug(f"Processing expiration {expiration_str}")
+
+                # Get option instruments for this expiration
+                call_instruments = rh.options.get_option_instruments(
+                    underlying, expiration_str, option_type="call"
                 )
-                if chain_exp_date != exp_date:
-                    continue
-
-            target_expiration = chain_exp_date
-
-            # Get option instruments for this expiration
-            call_instruments = rh.options.get_option_instruments(
-                underlying, expiration_str, option_type="call"
-            )
-            put_instruments = rh.options.get_option_instruments(
-                underlying, expiration_str, option_type="put"
-            )
-
-            # Process calls
-            for instrument in call_instruments:
-                option_asset = self._create_option_asset(
-                    instrument, underlying_asset, "call"
+                put_instruments = rh.options.get_option_instruments(
+                    underlying, expiration_str, option_type="put"
                 )
-                if option_asset:
-                    option_quote = await self._get_option_quote(option_asset)
-                    if option_quote:
-                        calls.append(option_quote)
 
-            # Process puts
-            for instrument in put_instruments:
-                option_asset = self._create_option_asset(
-                    instrument, underlying_asset, "put"
-                )
-                if option_asset:
-                    option_quote = await self._get_option_quote(option_asset)
-                    if option_quote:
-                        puts.append(option_quote)
+                logger.debug(f"Found {len(call_instruments) if call_instruments else 0} calls, {len(put_instruments) if put_instruments else 0} puts for {expiration_str}")
 
-            # If we have a specific expiration, we only want one
-            if expiration_date:
-                break
+                # Process calls
+                if call_instruments:
+                    for instrument in call_instruments:
+                        option_asset = self._create_option_asset(
+                            instrument, underlying_asset, "call"
+                        )
+                        if option_asset:
+                            option_quote = await self._get_option_quote(option_asset)
+                            if option_quote:
+                                calls.append(option_quote)
+
+                # Process puts
+                if put_instruments:
+                    for instrument in put_instruments:
+                        option_asset = self._create_option_asset(
+                            instrument, underlying_asset, "put"
+                        )
+                        if option_asset:
+                            option_quote = await self._get_option_quote(option_asset)
+                            if option_quote:
+                                puts.append(option_quote)
+
+                # If we have a specific expiration, we only want one
+                if expiration_date:
+                    break
+                    
+        except Exception as e:
+            logger.error(f"Error processing chains_data: {e}")
+            return None
 
         if not target_expiration:
             return None

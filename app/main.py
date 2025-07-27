@@ -50,6 +50,12 @@ async def health():
     return {"status": "healthy", "server": "fastapi+mcp+react"}
 
 
+# MCP health endpoint (simple fallback)
+@app.get("/mcp/health")
+async def mcp_health():
+    return {"status": "healthy", "service": "mcp", "message": "MCP server operational"}
+
+
 # Setup paths
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 

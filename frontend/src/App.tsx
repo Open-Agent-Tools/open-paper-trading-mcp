@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Account from './pages/Account';
 import AccountsList from './pages/AccountsList';
 import Orders from './pages/Orders';
+import StockResearch from './pages/StockResearch';
 
 const router = createBrowserRouter([
   {
@@ -15,8 +16,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <AccountsList /> },
       { path: 'dashboard', element: <Dashboard /> },
-      { path: 'account', element: <Account /> },
+      { path: 'research', element: <StockResearch /> },
       { path: 'orders', element: <Orders /> },
+      { path: 'account', element: <Account /> },
     ],
   },
 ]);

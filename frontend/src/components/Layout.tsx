@@ -2,8 +2,10 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Container, Box, useMediaQuery, IconButton, Menu, MenuItem } from '@mui/material';
 import { Link as RouterLink, Outlet } from 'react-router-dom';
 import Footer from './Footer';
+import MarketHours from './MarketHours';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import SearchIcon from '@mui/icons-material/Search';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HomeIcon from '@mui/icons-material/Home';
@@ -29,6 +31,13 @@ const Layout: React.FC = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Open Paper Trading
           </Typography>
+          
+          {/* Market Hours - Desktop Only */}
+          {!isMobile && (
+            <Box sx={{ mr: 2 }}>
+              <MarketHours compact={true} />
+            </Box>
+          )}
           {isMobile ? (
             <>
               <IconButton
@@ -61,6 +70,9 @@ const Layout: React.FC = () => {
                 </MenuItem>
                 <MenuItem onClick={handleClose} component={RouterLink} to="/dashboard">
                   <DashboardIcon sx={{ mr: 1 }} /> Dashboard
+                </MenuItem>
+                <MenuItem onClick={handleClose} component={RouterLink} to="/research">
+                  <SearchIcon sx={{ mr: 1 }} /> Research
                 </MenuItem>
                 <MenuItem onClick={handleClose} component={RouterLink} to="/orders">
                   <ShoppingCartIcon sx={{ mr: 1 }} /> Orders
@@ -95,6 +107,15 @@ const Layout: React.FC = () => {
               </Button>
               <Button
                 component={RouterLink}
+                to="/research"
+                sx={{ color: 'white', borderColor: 'white', ml: 1 }}
+                variant="outlined"
+                startIcon={<SearchIcon />}
+              >
+                Research
+              </Button>
+              <Button
+                component={RouterLink}
                 to="/orders"
                 sx={{ color: 'white', borderColor: 'white', ml: 1 }}
                 variant="outlined"
@@ -115,10 +136,20 @@ const Layout: React.FC = () => {
           )}
         </Toolbar>
       </AppBar>
-      <Container component="main" maxWidth={false} sx={{ mt: { xs: 2, sm: 4 }, mb: 10, flexGrow: 1 }}>
+      <Container component="main" maxWidth={false} sx={{ mt: { xs: 2, sm: 4 }, pb: 2, flexGrow: 1 }}>
         <Outlet />
       </Container>
-      <Footer />
+      <Box sx={{ 
+        position: 'sticky', 
+        bottom: 0, 
+        width: '100%', 
+        zIndex: 1000,
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper'
+      }}>
+        <Footer />
+      </Box>
     </Box>
   );
 };

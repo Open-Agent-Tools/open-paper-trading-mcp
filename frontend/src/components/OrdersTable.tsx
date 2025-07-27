@@ -15,8 +15,12 @@ const OrdersTable: React.FC = () => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getOrders();
-      setOrders(data);
+      const response = await getOrders();
+      if (response.success && response.orders) {
+        setOrders(response.orders);
+      } else {
+        setError(response.message || 'Failed to fetch orders.');
+      }
     } catch (err) {
       setError('Failed to fetch orders.');
       console.error(err);
@@ -43,32 +47,61 @@ const OrdersTable: React.FC = () => {
   );
 
   const columns: GridColDef[] = [
-    { field: 'symbol', headerName: 'Symbol', width: 150 },
-    { field: 'quantity', headerName: 'Quantity', type: 'number', width: 150 },
-    { field: 'type', headerName: 'Type', width: 150 },
-    { field: 'price', headerName: 'Price', type: 'number', width: 150, valueFormatter: (params: GridValueFormatterParams) => (params.value ? `$${(params.value as number).toLocaleString()}` : 'N/A') },
+    { field: 'symbol', headerName: 'Symbol', width: 120 },
+    { field: 'quantity', headerName: 'Quantity', type: 'number', width: 100 },
+    { field: 'order_type', headerName: 'Order Type', width: 140 },
+    { field: 'condition', headerName: 'Condition', width: 120 },
+    { 
+      field: 'price', 
+      headerName: 'Price', 
+      type: 'number', 
+      width: 120, 
+      valueFormatter: (params: GridValueFormatterParams) => (params.value ? `$${(params.value as number).toFixed(2)}` : 'N/A') 
+    },
+    { 
+      field: 'stop_price', 
+      headerName: 'Stop Price', 
+      type: 'number', 
+      width: 120, 
+      valueFormatter: (params: GridValueFormatterParams) => (params.value ? `$${(params.value as number).toFixed(2)}` : 'N/A') 
+    },
     {
       field: 'status',
       headerName: 'Status',
-      width: 150,
+      width: 120,
       renderCell: (params: GridRenderCellParams) => {
         let color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' = 'default';
-        if (params.value === 'FILLED') {
+        const status = params.value as string;
+        if (status === 'filled') {
           color = 'success';
-        } else if (params.value === 'CANCELLED') {
+        } else if (status === 'cancelled' || status === 'rejected') {
           color = 'error';
-        } else if (params.value === 'PENDING') {
+        } else if (status === 'pending' || status === 'triggered') {
           color = 'warning';
+        } else if (status === 'partially_filled') {
+          color = 'info';
         }
-        return <Chip label={params.value} color={color} />;
+        return <Chip label={status.toUpperCase()} color={color} size="small" />;
       },
+    },
+    { 
+      field: 'created_at', 
+      headerName: 'Created', 
+      width: 120,
+      valueFormatter: (params: GridValueFormatterParams) => {
+        if (params.value) {
+          return new Date(params.value as string).toLocaleDateString();
+        }
+        return 'N/A';
+      }
     },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 150,
+      width: 120,
       renderCell: (params: GridRenderCellParams) => {
-        if (params.row.status !== 'PENDING') {
+        const status = params.row.status;
+        if (status !== 'pending' && status !== 'triggered') {
           return null;
         }
         return (
@@ -76,6 +109,7 @@ const OrdersTable: React.FC = () => {
             onClick={handleCancelClick(params.id as string)}
             startIcon={<CancelIcon />}
             color="error"
+            size="small"
           >
             Cancel
           </Button>

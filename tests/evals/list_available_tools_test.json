@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "• get_account_balance\n• get_account_info\n• get_portfolio\n• get_portfolio_summary\n• health_check\n• list_tools"
+                "text": "• account_details\n• buy_option_limit\n• buy_stock\n• buy_stock_limit\n• buy_stock_stop\n• buy_stock_stop_limit\n• cancel_all_option_orders_tool\n• cancel_all_stock_orders_tool\n• cancel_option_order_by_id\n• cancel_stock_order_by_id\n• find_options\n• get_account_balance\n• get_account_info\n• get_all_accounts\n• get_portfolio\n• get_portfolio_summary\n• health_check\n• list_tools\n• market_hours\n• open_option_orders\n• open_stock_orders\n• option_chain\n• option_credit_spread\n• option_debit_spread\n• option_expirations\n• option_greeks\n• option_quote\n• option_strikes\n• options_orders\n• positions\n• price_history\n• search_stocks_tool\n• sell_option_limit\n• sell_stock\n• sell_stock_limit\n• sell_stock_stop\n• sell_stock_stop_limit\n• stock_events\n• stock_info\n• stock_level2_data\n• stock_orders\n• stock_price\n• stock_ratings"
               }
             ],
             "role": "model"
