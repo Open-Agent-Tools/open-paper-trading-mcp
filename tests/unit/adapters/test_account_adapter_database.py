@@ -31,7 +31,7 @@ class TestDatabaseAccountAdapter:
     async def sample_account(self):
         """Create a sample account for testing."""
         return Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=10000.0,
             positions=[],
             name="Test Account",
@@ -45,11 +45,9 @@ class TestDatabaseAccountAdapter:
         """Test successful account retrieval."""
         # Create account in database
         db_account = DBAccount(
-            id="test-account-123",
+            id="TEST123456",
             owner="test_owner",
             cash_balance=50000.0,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
         )
         db_session.add(db_account)
         await db_session.commit()
@@ -63,13 +61,13 @@ class TestDatabaseAccountAdapter:
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Test retrieval
-            result = await adapter.get_account("test-account-123")
+            result = await adapter.get_account("TEST123456")
 
             assert result is not None
-            assert result.id == "test-account-123"
+            assert result.id == "TEST123456"
             assert result.owner == "test_owner"
             assert result.cash_balance == 50000.0
-            assert result.name == "Account-test-account-123"
+            assert result.name == "Account-TEST123456"
             assert result.positions == []
 
     @pytest.mark.asyncio

@@ -21,6 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
+from app.core.id_utils import generate_account_id
 from app.models.database.base import Base
 from app.schemas.orders import OrderCondition, OrderStatus, OrderType
 
@@ -33,10 +34,11 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id: Mapped[str] = mapped_column(
-        String, primary_key=True, default=lambda: str(uuid.uuid4())
+        String(10), primary_key=True, default=generate_account_id
     )
     owner: Mapped[str] = mapped_column(String, index=True, unique=True)
-    cash_balance: Mapped[float] = mapped_column(Float, default=100000.0)
+    cash_balance: Mapped[float] = mapped_column(Float, default=10000.0)
+    starting_balance: Mapped[float] = mapped_column(Float, default=10000.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
@@ -67,7 +69,7 @@ class Position(Base):
     id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    account_id: Mapped[str] = mapped_column(String(10), ForeignKey("accounts.id"))
     symbol: Mapped[str] = mapped_column(String, index=True)
     quantity: Mapped[int] = mapped_column(Integer)
     avg_price: Mapped[float] = mapped_column(Float)
@@ -82,7 +84,7 @@ class Order(Base):
     id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: f"order_{uuid.uuid4().hex[:8]}"
     )
-    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    account_id: Mapped[str] = mapped_column(String(10), ForeignKey("accounts.id"))
     symbol: Mapped[str] = mapped_column(String, index=True)
     order_type: Mapped[OrderType] = mapped_column(Enum(OrderType))
     quantity: Mapped[int] = mapped_column(Integer)
@@ -117,7 +119,7 @@ class Transaction(Base):
     id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    account_id: Mapped[str] = mapped_column(String(10), ForeignKey("accounts.id"))
     order_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("orders.id"), nullable=True
     )
@@ -272,7 +274,7 @@ class MultiLegOrder(Base):
     id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: f"mlo_{uuid.uuid4().hex[:8]}"
     )
-    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    account_id: Mapped[str] = mapped_column(String(10), ForeignKey("accounts.id"))
 
     # Order details
     order_type: Mapped[str] = mapped_column(String, default="limit")  # limit, market
@@ -349,7 +351,7 @@ class RecognizedStrategy(Base):
     id: Mapped[str] = mapped_column(
         String, primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    account_id: Mapped[str] = mapped_column(String, ForeignKey("accounts.id"))
+    account_id: Mapped[str] = mapped_column(String(10), ForeignKey("accounts.id"))
 
     # Strategy details
     strategy_type: Mapped[str] = mapped_column(String)  # spread, covered_call, etc.

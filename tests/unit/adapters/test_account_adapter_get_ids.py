@@ -41,7 +41,7 @@ class TestGetAccountIdsNormalOperation:
         adapter = DatabaseAccountAdapter()
 
         # Create a single account
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         account = DBAccount(
             id=account_id,
             owner="test_user_single",
@@ -74,7 +74,7 @@ class TestGetAccountIdsNormalOperation:
         # Create multiple accounts
         account_ids = []
         for i in range(5):
-            account_id = str(uuid.uuid4())
+            account_id = f"TEST12345{i}"
             account_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -172,7 +172,7 @@ class TestGetAccountIdsEmptyDatabase:
 
         # Create account then delete it
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="temp_user",
             cash_balance=5000.0,
         )
@@ -247,9 +247,9 @@ class TestGetAccountIdsDataIntegrity:
 
         # Create accounts with various ID formats
         account_ids = [
-            str(uuid.uuid4()),  # Standard UUID
-            "custom_id_123",  # Custom string
-            f"mixed_{uuid.uuid4().hex[:8]}",  # Mixed format
+            "TEST123456",  # Standard format
+            "CUSTOM1234",  # Custom string
+            "MIXED12345",  # Mixed format
         ]
 
         for i, account_id in enumerate(account_ids):
@@ -287,7 +287,7 @@ class TestGetAccountIdsDataIntegrity:
         # Create multiple accounts (database should enforce uniqueness)
         account_ids = []
         for i in range(6):
-            account_id = str(uuid.uuid4())
+            account_id = f"DUP{i:07d}"
             account_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -487,7 +487,7 @@ class TestGetAccountIdsPerformance:
         # Create a moderate number of accounts
         for i in range(20):
             account = DBAccount(
-                id=str(uuid.uuid4()),
+                id=f"RPT{i:07d}",
                 owner=f"repeat_user_{i}",
                 cash_balance=10000.0,
             )
@@ -579,7 +579,7 @@ class TestGetAccountIdsConcurrency:
         # Create test accounts
         expected_ids = []
         for i in range(10):
-            account_id = str(uuid.uuid4())
+            account_id = f"CONC{i:06d}"
             expected_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -618,7 +618,7 @@ class TestGetAccountIdsConcurrency:
         # Create initial accounts
         initial_ids = []
         for i in range(5):
-            account_id = str(uuid.uuid4())
+            account_id = f"RW{i:08d}"
             initial_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -724,7 +724,7 @@ class TestGetAccountIdsEdgeCases:
         adapter = DatabaseAccountAdapter()
 
         # Create test account
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         account = DBAccount(
             id=account_id,
             owner="reuse_user",

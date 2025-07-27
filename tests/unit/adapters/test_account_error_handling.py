@@ -84,7 +84,7 @@ class TestDatabaseAccountAdapterErrors:
     async def sample_account(self):
         """Create a sample account for testing."""
         return Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=10000.0,
             positions=[],
             name="Test Account",
@@ -105,7 +105,7 @@ class TestDatabaseAccountAdapterErrors:
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
 
-        nonexistent_id = str(uuid.uuid4())
+        nonexistent_id = "TEST123456"
         result = await adapter.get_account(nonexistent_id)
         assert result is None
 

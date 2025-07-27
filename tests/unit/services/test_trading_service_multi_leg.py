@@ -48,7 +48,7 @@ class TestCreateMultiLegOrder:
         """Test creating a simple two-leg spread order."""
         # Create test account
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -111,7 +111,7 @@ class TestCreateMultiLegOrder:
     ):
         """Test creating a complex four-leg strategy (iron condor)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -169,7 +169,7 @@ class TestCreateMultiLegOrder:
     async def test_create_multi_leg_order_single_leg(self, db_session: AsyncSession):
         """Test creating a single-leg order (edge case)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -206,7 +206,7 @@ class TestCreateMultiLegOrder:
     async def test_create_multi_leg_order_empty_legs(self, db_session: AsyncSession):
         """Test creating order with empty legs list."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -231,7 +231,7 @@ class TestCreateMultiLegOrder:
     async def test_create_multi_leg_order_mixed_prices(self, db_session: AsyncSession):
         """Test multi-leg order with some None prices."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -280,7 +280,7 @@ class TestCreateMultiLegOrder:
     ):
         """Test handling database errors during multi-leg order creation."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -323,7 +323,7 @@ class TestCreateMultiLegOrderFromRequest:
     ):
         """Test successful multi-leg order creation from raw request data."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -360,7 +360,7 @@ class TestCreateMultiLegOrderFromRequest:
     ):
         """Test creating market multi-leg order from request."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -388,7 +388,7 @@ class TestCreateMultiLegOrderFromRequest:
     ):
         """Test creating complex strategy from request data."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -434,7 +434,7 @@ class TestCreateMultiLegOrderFromRequest:
     ):
         """Test error handling with invalid request data."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -459,7 +459,7 @@ class TestCreateMultiLegOrderFromRequest:
     ):
         """Test creating order with empty legs list from request."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -480,7 +480,7 @@ class TestCreateMultiLegOrderFromRequest:
     ):
         """Test proper conversion of buy/sell sides to order types."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -519,7 +519,7 @@ class TestMultiLegOrderIntegration:
         """Test complete multi-leg order workflow."""
         # Create account
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="multi_leg_trader",
             cash_balance=100000.0,
         )
@@ -587,7 +587,7 @@ class TestMultiLegOrderIntegration:
     async def test_concurrent_multi_leg_order_creation(self, db_session: AsyncSession):
         """Test concurrent multi-leg order creation for race conditions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="concurrent_trader",
             cash_balance=100000.0,
         )
@@ -644,7 +644,7 @@ class TestMultiLegOrderValidation:
     async def test_multi_leg_pricing_calculation(self, db_session: AsyncSession):
         """Test pricing calculations for multi-leg orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -707,7 +707,7 @@ class TestMultiLegOrderValidation:
     async def test_multi_leg_quantity_calculation(self, db_session: AsyncSession):
         """Test quantity calculations for multi-leg orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )

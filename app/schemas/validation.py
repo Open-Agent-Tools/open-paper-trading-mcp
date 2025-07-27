@@ -10,6 +10,8 @@ from typing import Any
 
 from pydantic import ValidationInfo, field_validator
 
+from app.core.id_utils import is_valid_account_id
+
 
 class SchemaValidationMixin:
     """Mixin class providing common validation rules for trading schemas."""
@@ -147,6 +149,17 @@ class PositionValidationMixin:
 
 class AccountValidationMixin:
     """Validation mixin specifically for account schemas."""
+
+    @field_validator("id")
+    @classmethod
+    def validate_account_id(cls, v: str) -> str:
+        """Validate account ID format."""
+        if not is_valid_account_id(v):
+            raise ValueError(
+                f"Invalid account ID format: '{v}'. "
+                "Account ID must be exactly 10 alphanumeric characters (A-Z, 0-9)."
+            )
+        return v
 
     @field_validator("owner")
     @classmethod

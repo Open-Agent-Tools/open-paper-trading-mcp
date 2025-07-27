@@ -39,7 +39,7 @@ class TestGetPortfolioGreeks:
     async def test_empty_portfolio_greeks_calculation(self, db_session: AsyncSession):
         """Test Greeks calculation for empty portfolio."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -89,7 +89,7 @@ class TestGetPortfolioGreeks:
     async def test_single_options_position_greeks(self, db_session: AsyncSession):
         """Test Greeks calculation for single options position."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -97,7 +97,7 @@ class TestGetPortfolioGreeks:
 
         # Add single call option position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL250117C00150000",
             quantity=1,
@@ -174,7 +174,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test Greeks aggregation for multiple options positions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -183,14 +183,14 @@ class TestGetPortfolioGreeks:
         # Add multiple option positions
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",
                 quantity=2,
                 avg_price=5.50,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117P00145000",
                 quantity=1,
@@ -295,7 +295,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test Greeks calculation for mixed portfolio (stocks + options)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -304,14 +304,14 @@ class TestGetPortfolioGreeks:
         # Add mixed positions (stock + option)
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL",
                 quantity=100,
                 avg_price=150.0,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",
                 quantity=1,
@@ -402,7 +402,7 @@ class TestGetPortfolioGreeks:
     async def test_large_portfolio_greeks_performance(self, db_session: AsyncSession):
         """Test Greeks calculation performance with large portfolio."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=100000.0,
         )
@@ -412,7 +412,7 @@ class TestGetPortfolioGreeks:
         positions = []
         for i in range(50):  # 50 option positions
             position = DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"AAPL25011{7 + (i % 3)}C00{150 + i}000",
                 quantity=1 + (i % 5),
@@ -489,7 +489,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test successful quote retrieval for all positions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -498,14 +498,14 @@ class TestGetPortfolioGreeks:
         # Add multiple positions
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",
                 quantity=1,
                 avg_price=5.50,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="MSFT250117C00300000",
                 quantity=1,
@@ -604,7 +604,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test handling of partial quote failures (some positions missing quotes)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -613,14 +613,14 @@ class TestGetPortfolioGreeks:
         # Add multiple positions
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",
                 quantity=1,
                 avg_price=5.50,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="INVALID_SYMBOL",
                 quantity=1,
@@ -699,7 +699,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test handling of complete quote adapter failure."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -707,7 +707,7 @@ class TestGetPortfolioGreeks:
 
         # Add option position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL250117C00150000",
             quantity=1,
@@ -761,7 +761,7 @@ class TestGetPortfolioGreeks:
     async def test_stale_quote_data_handling(self, db_session: AsyncSession):
         """Test handling of stale quote data."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -769,7 +769,7 @@ class TestGetPortfolioGreeks:
 
         # Add option position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL250117C00150000",
             quantity=1,
@@ -840,7 +840,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test quote data validation and error recovery."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -849,14 +849,14 @@ class TestGetPortfolioGreeks:
         # Add multiple positions
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",
                 quantity=1,
                 avg_price=5.50,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="MSFT250117C00300000",
                 quantity=1,
@@ -944,7 +944,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test handling positions with missing delta attributes."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -953,14 +953,14 @@ class TestGetPortfolioGreeks:
         # Add mixed positions - stock (no delta) and option (with delta)
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL",  # Stock position - no delta
                 quantity=100,
                 avg_price=150.0,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",
                 quantity=1,
@@ -1043,7 +1043,7 @@ class TestGetPortfolioGreeks:
     async def test_invalid_option_symbols_in_portfolio(self, db_session: AsyncSession):
         """Test handling of invalid option symbols in portfolio."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1052,14 +1052,14 @@ class TestGetPortfolioGreeks:
         # Add positions with malformed option symbols
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="INVALID_OPTION_FORMAT",
                 quantity=1,
                 avg_price=5.50,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL250117C00150000",  # Valid option
                 quantity=1,
@@ -1139,7 +1139,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test Greeks calculation with null/zero values."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1147,7 +1147,7 @@ class TestGetPortfolioGreeks:
 
         # Add option position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL250117C00150000",
             quantity=1,
@@ -1223,7 +1223,7 @@ class TestGetPortfolioGreeks:
     ):
         """Test exception handling in aggregation logic."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1231,7 +1231,7 @@ class TestGetPortfolioGreeks:
 
         # Add option position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL250117C00150000",
             quantity=1,
@@ -1282,7 +1282,7 @@ class TestGetPortfolioGreeks:
     async def test_portfolio_with_no_options_positions(self, db_session: AsyncSession):
         """Test portfolio with no options positions (stocks only)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1291,14 +1291,14 @@ class TestGetPortfolioGreeks:
         # Add only stock positions (no options)
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL",
                 quantity=100,
                 avg_price=150.0,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="MSFT",
                 quantity=50,

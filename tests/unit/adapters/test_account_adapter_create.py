@@ -44,7 +44,7 @@ class TestAccountAdapterCreateOperation:
     def new_account(self):
         """Create a new account instance for testing CREATE operations."""
         return Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=50000.0,
             positions=[],
             name="Test Account",
@@ -88,7 +88,7 @@ class TestAccountAdapterCreateOperation:
         """Test account creation with None owner gets default value."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=75000.0,
             positions=[],
             name="Account with default owner",
@@ -146,7 +146,7 @@ class TestAccountAdapterCreateOperation:
 
             for owner, cash_balance, expected_owner, expected_cash in test_cases:
                 account = Account(
-                    id=str(uuid.uuid4()),
+                    id="TEST123456",
                     cash_balance=cash_balance,
                     positions=[],
                     name=f"Account for {owner}",
@@ -176,7 +176,7 @@ class TestAccountAdapterCreateOperation:
         datetime.now(UTC)
 
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=30000.0,
             positions=[],
             name="Timestamp Test Account",
@@ -220,7 +220,7 @@ class TestAccountAdapterCreateOperation:
         """Test account creation with zero cash balance."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=0.0,
             positions=[],
             name="Zero Balance Account",
@@ -255,7 +255,7 @@ class TestAccountAdapterCreateOperation:
         """Test account creation with very small cash balance."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=0.01,
             positions=[],
             name="Penny Account",
@@ -289,7 +289,7 @@ class TestAccountAdapterCreateOperation:
         adapter = DatabaseAccountAdapter()
         large_balance = 999999999.99
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=large_balance,
             positions=[],
             name="Whale Account",
@@ -326,7 +326,7 @@ class TestAccountAdapterCreateOperation:
         accounts = []
         for i in range(5):
             account = Account(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 cash_balance=10000.0 * (i + 1),
                 positions=[],
                 name=f"Batch Account {i + 1}",
@@ -483,7 +483,7 @@ class TestAccountAdapterCreateBoundaryConditions:
         adapter = DatabaseAccountAdapter()
         # Create account with minimal data (based on Account schema requirements)
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=1000.0,  # Required field
             positions=[],  # Has default
             name=None,  # Optional
@@ -520,7 +520,7 @@ class TestAccountAdapterCreateBoundaryConditions:
         # Create a very long owner name to test database field limits
         long_owner = "a" * 255  # Typical VARCHAR limit
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=50000.0,
             positions=[],
             name="Long Owner Test",
@@ -654,7 +654,7 @@ class TestAccountAdapterCreateTransactionHandling:
         """Test that async session context manager is used correctly."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=45000.0,
             positions=[],
             name="Context Manager Test",
@@ -688,7 +688,7 @@ class TestAccountAdapterCreateTransactionHandling:
         """Test that transaction errors are propagated properly during creation."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=55000.0,
             positions=[],
             name="Rollback Test Account",
@@ -720,7 +720,7 @@ class TestAccountAdapterCreateTransactionHandling:
         """Test that CREATE path is taken when account doesn't exist vs UPDATE when it does."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             cash_balance=60000.0,
             positions=[],
             name="Path Test Account",

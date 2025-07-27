@@ -5,6 +5,7 @@ import theme from './theme';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Account from './pages/Account';
+import AccountsList from './pages/AccountsList';
 import Orders from './pages/Orders';
 
 const router = createBrowserRouter([
@@ -12,7 +13,8 @@ const router = createBrowserRouter([
     path: '/',
     element: <Layout />,
     children: [
-      { index: true, element: <Dashboard /> },
+      { index: true, element: <AccountsList /> },
+      { path: 'dashboard', element: <Dashboard /> },
       { path: 'account', element: <Account /> },
       { path: 'orders', element: <Orders /> },
     ],

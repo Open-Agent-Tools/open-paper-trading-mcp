@@ -112,14 +112,14 @@ class TestDatabaseSchemaIntegrity:
 
         # Create account first
         account = DBAccount(
-            id=str(uuid.uuid4()), owner="fk_test_user", cash_balance=100000.0
+            id="TEST123456", owner="fk_test_user", cash_balance=100000.0
         )
         async_db_session.add(account)
         await async_db_session.commit()
 
         # Test position foreign key constraint
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL",
             quantity=100,
@@ -130,7 +130,7 @@ class TestDatabaseSchemaIntegrity:
 
         # Test invalid foreign key
         invalid_position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id="nonexistent-account-id",
             symbol="GOOGL",
             quantity=50,
@@ -149,7 +149,7 @@ class TestDatabaseSchemaIntegrity:
 
         # Create account for order
         account = DBAccount(
-            id=str(uuid.uuid4()), owner="enum_test_user", cash_balance=50000.0
+            id="TEST123456", owner="enum_test_user", cash_balance=50000.0
         )
         async_db_session.add(account)
         await async_db_session.commit()
@@ -217,7 +217,7 @@ class TestDatabaseSchemaIntegrity:
         datetime.now(UTC).replace(tzinfo=None)
 
         account = DBAccount(
-            id=str(uuid.uuid4()), owner="timestamp_test_user", cash_balance=75000.0
+            id="TEST123456", owner="timestamp_test_user", cash_balance=75000.0
         )
         async_db_session.add(account)
         await async_db_session.commit()
@@ -269,7 +269,7 @@ class TestDataMigrationScenarios:
             VALUES (:id, :owner, :cash_balance)
         """),
             {
-                "id": str(uuid.uuid4()),
+                "id": "TEST123456",
                 "owner": "migration_test_user",
                 "cash_balance": 60000.0,
             },
@@ -298,17 +298,17 @@ class TestDataMigrationScenarios:
         # For now, test that current schema handles all expected data types
         test_accounts = [
             {
-                "id": str(uuid.uuid4()),
+                "id": "TEST123456",
                 "owner": "schema_test_1",
                 "cash_balance": 0.0,  # Minimum balance
             },
             {
-                "id": str(uuid.uuid4()),
+                "id": "TEST123456",
                 "owner": "schema_test_2",
                 "cash_balance": 999999999.99,  # Large balance
             },
             {
-                "id": str(uuid.uuid4()),
+                "id": "TEST123456",
                 "owner": "schema_test_3",
                 "cash_balance": 0.01,  # Small fractional balance
             },
@@ -332,7 +332,7 @@ class TestDataMigrationScenarios:
 
         # Test decimal precision for cash balance
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="precision_test_user",
             cash_balance=12345.6789,  # Test decimal precision
         )
@@ -359,7 +359,7 @@ class TestDataMigrationScenarios:
 
         for i, owner in enumerate(test_owners):
             account = DBAccount(
-                id=str(uuid.uuid4()), owner=owner, cash_balance=10000.0 + i * 1000
+                id="TEST123456", owner=owner, cash_balance=10000.0 + i * 1000
             )
             async_db_session.add(account)
 
@@ -377,14 +377,14 @@ class TestDataMigrationScenarios:
 
         # Create account with related data
         account = DBAccount(
-            id=str(uuid.uuid4()), owner="cascade_test_user", cash_balance=50000.0
+            id="TEST123456", owner="cascade_test_user", cash_balance=50000.0
         )
         async_db_session.add(account)
         await async_db_session.flush()
 
         # Create related position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="AAPL",
             quantity=100,
@@ -441,7 +441,7 @@ class TestPerformanceOptimization:
         test_accounts = []
         for i in range(100):
             account = DBAccount(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 owner=f"perf_user_{i:03d}",
                 cash_balance=10000.0 + i * 100,
             )
@@ -491,7 +491,7 @@ class TestPerformanceOptimization:
         accounts = []
         for i in range(500):
             account = DBAccount(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 owner=f"bulk_user_{i:04d}",
                 cash_balance=5000.0 + i,
             )

@@ -6,6 +6,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import HomeIcon from '@mui/icons-material/Home';
 import { useTheme } from '@mui/material/styles';
 
 const Layout: React.FC = () => {
@@ -56,6 +57,9 @@ const Layout: React.FC = () => {
                 onClose={handleClose}
               >
                 <MenuItem onClick={handleClose} component={RouterLink} to="/">
+                  <HomeIcon sx={{ mr: 1 }} /> Accounts
+                </MenuItem>
+                <MenuItem onClick={handleClose} component={RouterLink} to="/dashboard">
                   <DashboardIcon sx={{ mr: 1 }} /> Dashboard
                 </MenuItem>
                 <MenuItem onClick={handleClose} component={RouterLink} to="/orders">
@@ -76,6 +80,15 @@ const Layout: React.FC = () => {
                   backgroundColor: 'primary.light',
                   '&:hover': { backgroundColor: 'primary.main' },
                 }}
+                startIcon={<HomeIcon />}
+              >
+                Accounts
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/dashboard"
+                sx={{ color: 'white', borderColor: 'white', ml: 1 }}
+                variant="outlined"
                 startIcon={<DashboardIcon />}
               >
                 Dashboard

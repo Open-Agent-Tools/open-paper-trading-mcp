@@ -10,6 +10,7 @@ from typing import Any, Dict
 from fastmcp import FastMCP
 
 from app.core.service_factory import get_trading_service
+from app.core.id_utils import validate_optional_account_id
 
 
 def run_async_safely(coro):
@@ -73,64 +74,84 @@ def health_check() -> str:
 
 
 @mcp.tool
-def get_account_balance() -> Dict[str, Any]:
-    """Get the current account balance and basic account information"""
+def get_account_balance(account_id: str = None) -> Dict[str, Any]:
+    """Get the current account balance and basic account information
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
+    """
     try:
-        service = get_trading_service()
-        balance = run_async_safely(service.get_account_balance())
+        # Validate account_id parameter
+        account_id = validate_optional_account_id(account_id)
         
+        service = get_trading_service()
+        balance = run_async_safely(service.get_account_balance(account_id))
+        
+        account_msg = f" for account {account_id}" if account_id else ""
         return {
             "success": True,
             "balance": balance,
             "currency": "USD",
-            "message": f"Account balance: ${balance:,.2f}"
+            "account_id": account_id,
+            "message": f"Account balance{account_msg}: ${balance:,.2f}"
         }
             
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
+            "account_id": account_id,
             "message": f"Failed to retrieve account balance: {str(e)}"
         }
 
 
 @mcp.tool
-def get_account_info() -> Dict[str, Any]:
-    """Get comprehensive account information including balance and basic details"""
+def get_account_info(account_id: str = None) -> Dict[str, Any]:
+    """Get comprehensive account information including balance and basic details
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
+    """
     try:
+        # Validate account_id parameter
+        account_id = validate_optional_account_id(account_id)
+        
         service = get_trading_service()
         
-        # Get account details
-        account = run_async_safely(service._get_account())
-        balance = run_async_safely(service.get_account_balance())
+        # Use the new get_account_info method
+        account_info = run_async_safely(service.get_account_info(account_id))
         
         return {
             "success": True,
             "account": {
-                "id": account.id,
-                "owner": account.owner,
-                "cash_balance": balance,
-                "currency": "USD",
-                "created_at": account.created_at.isoformat() if account.created_at else None,
-                "updated_at": account.updated_at.isoformat() if account.updated_at else None
+                **account_info,
+                "currency": "USD"
             },
-            "message": f"Account {account.id} retrieved successfully"
+            "message": f"Account {account_info['account_id']} retrieved successfully"
         }
             
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
+            "account_id": account_id,
             "message": f"Failed to retrieve account information: {str(e)}"
         }
 
 
 @mcp.tool
-def get_portfolio() -> Dict[str, Any]:
-    """Get comprehensive portfolio information including positions and performance"""
+def get_portfolio(account_id: str = None) -> Dict[str, Any]:
+    """Get comprehensive portfolio information including positions and performance
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
+    """
     try:
+        # Validate account_id parameter
+        account_id = validate_optional_account_id(account_id)
+        
         service = get_trading_service()
-        portfolio = run_async_safely(service.get_portfolio())
+        portfolio = run_async_safely(service.get_portfolio(account_id))
         
         # Convert positions to serializable format
         positions_data = []
@@ -146,6 +167,7 @@ def get_portfolio() -> Dict[str, Any]:
                 "side": position.side
             })
         
+        account_msg = f" for account {account_id}" if account_id else ""
         return {
             "success": True,
             "portfolio": {
@@ -156,24 +178,34 @@ def get_portfolio() -> Dict[str, Any]:
                 "positions_count": len(portfolio.positions),
                 "positions": positions_data
             },
-            "message": f"Portfolio retrieved with {len(portfolio.positions)} positions"
+            "account_id": account_id,
+            "message": f"Portfolio{account_msg} retrieved with {len(portfolio.positions)} positions"
         }
             
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
+            "account_id": account_id,
             "message": f"Failed to retrieve portfolio: {str(e)}"
         }
 
 
 @mcp.tool
-def get_portfolio_summary() -> Dict[str, Any]:
-    """Get portfolio summary with key performance metrics"""
+def get_portfolio_summary(account_id: str = None) -> Dict[str, Any]:
+    """Get portfolio summary with key performance metrics
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
+    """
     try:
-        service = get_trading_service()
-        summary = run_async_safely(service.get_portfolio_summary())
+        # Validate account_id parameter
+        account_id = validate_optional_account_id(account_id)
         
+        service = get_trading_service()
+        summary = run_async_safely(service.get_portfolio_summary(account_id))
+        
+        account_msg = f" for account {account_id}" if account_id else ""
         return {
             "success": True,
             "summary": {
@@ -185,14 +217,57 @@ def get_portfolio_summary() -> Dict[str, Any]:
                 "total_pnl": summary.total_pnl,
                 "total_pnl_percent": summary.total_pnl_percent
             },
-            "message": f"Portfolio value: ${summary.total_value:,.2f}, Daily P&L: ${summary.daily_pnl:,.2f} ({summary.daily_pnl_percent:.2f}%)"
+            "account_id": account_id,
+            "message": f"Portfolio{account_msg} value: ${summary.total_value:,.2f}, Daily P&L: ${summary.daily_pnl:,.2f} ({summary.daily_pnl_percent:.2f}%)"
         }
             
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
+            "account_id": account_id,
             "message": f"Failed to retrieve portfolio summary: {str(e)}"
+        }
+
+
+@mcp.tool
+def get_all_accounts() -> Dict[str, Any]:
+    """Get summary of all accounts with their IDs, creation dates, and balances"""
+    try:
+        service = get_trading_service()
+        accounts_summary = run_async_safely(service.get_all_accounts_summary())
+        
+        # Convert to serializable format
+        accounts_data = []
+        for account in accounts_summary.accounts:
+            accounts_data.append({
+                "account_id": account.id,
+                "owner": account.owner,
+                "created_at": account.created_at.isoformat(),
+                "starting_balance": account.starting_balance,
+                "current_balance": account.current_balance,
+                "change": account.current_balance - account.starting_balance,
+                "change_percent": ((account.current_balance - account.starting_balance) / account.starting_balance * 100) if account.starting_balance > 0 else 0
+            })
+        
+        return {
+            "success": True,
+            "accounts": accounts_data,
+            "summary": {
+                "total_count": accounts_summary.total_count,
+                "total_starting_balance": accounts_summary.total_starting_balance,
+                "total_current_balance": accounts_summary.total_current_balance,
+                "total_change": accounts_summary.total_current_balance - accounts_summary.total_starting_balance,
+                "total_change_percent": ((accounts_summary.total_current_balance - accounts_summary.total_starting_balance) / accounts_summary.total_starting_balance * 100) if accounts_summary.total_starting_balance > 0 else 0
+            },
+            "message": f"Found {accounts_summary.total_count} accounts with total value ${accounts_summary.total_current_balance:,.2f}"
+        }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to retrieve accounts: {str(e)}"
         }
 
 

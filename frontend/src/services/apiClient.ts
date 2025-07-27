@@ -2,11 +2,16 @@ import axios from 'axios';
 import type { NewOrder } from '../types';
 
 const apiClient = axios.create({
-  baseURL: '/api/v1',
+  baseURL: '/api/v1/trading',
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+export const getAllAccounts = async () => {
+  const response = await apiClient.get('/accounts');
+  return response.data;
+};
 
 export const getAccountInfo = async () => {
   const response = await apiClient.get('/account/info');

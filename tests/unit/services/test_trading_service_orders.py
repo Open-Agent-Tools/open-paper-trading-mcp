@@ -48,7 +48,7 @@ class TestCreateOrder:
         """Test creating a basic buy market order."""
         # Create test account
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -102,7 +102,7 @@ class TestCreateOrder:
         """Test creating a limit buy order."""
         # Create test account
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -142,7 +142,7 @@ class TestCreateOrder:
     async def test_create_order_invalid_symbol(self, db_session: AsyncSession):
         """Test creating order with invalid symbol."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -177,7 +177,7 @@ class TestCreateOrder:
     async def test_create_order_sell_order(self, db_session: AsyncSession):
         """Test creating a sell order."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -218,7 +218,7 @@ class TestGetOrders:
     async def test_get_orders_empty_account(self, db_session: AsyncSession):
         """Test getting orders from account with no orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -236,7 +236,7 @@ class TestGetOrders:
     async def test_get_orders_multiple_orders(self, db_session: AsyncSession):
         """Test getting multiple orders from account."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -247,7 +247,7 @@ class TestGetOrders:
         orders = []
         for i in range(3):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"TEST{i}",
                 order_type=OrderType.BUY,
@@ -275,7 +275,7 @@ class TestGetOrders:
     async def test_get_orders_different_statuses(self, db_session: AsyncSession):
         """Test getting orders with different statuses."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -286,7 +286,7 @@ class TestGetOrders:
         statuses = [OrderStatus.PENDING, OrderStatus.FILLED, OrderStatus.CANCELLED]
         for i, status in enumerate(statuses):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"STATUS{i}",
                 order_type=OrderType.BUY,
@@ -321,7 +321,7 @@ class TestGetOrder:
     async def test_get_order_existing(self, db_session: AsyncSession):
         """Test getting an existing order by ID."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -329,7 +329,7 @@ class TestGetOrder:
         await db_session.commit()
 
         # Create test order
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -356,7 +356,7 @@ class TestGetOrder:
     async def test_get_order_nonexistent(self, db_session: AsyncSession):
         """Test getting a non-existent order."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -365,7 +365,7 @@ class TestGetOrder:
 
         service = TradingService(account_owner="test_user", db_session=db_session)
 
-        fake_order_id = str(uuid.uuid4())
+        fake_order_id = "ORDER_001"
 
         with pytest.raises(NotFoundError) as exc_info:
             await service.get_order(fake_order_id)
@@ -377,12 +377,12 @@ class TestGetOrder:
         """Test getting order from different account (should not be accessible)."""
         # Create two accounts
         account1 = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="user1",
             cash_balance=50000.0,
         )
         account2 = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="user2",
             cash_balance=50000.0,
         )
@@ -391,7 +391,7 @@ class TestGetOrder:
         await db_session.commit()
 
         # Create order for account1
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         order = DBOrder(
             id=order_id,
             account_id=account1.id,
@@ -421,7 +421,7 @@ class TestCancelOrder:
     async def test_cancel_order_success(self, db_session: AsyncSession):
         """Test successfully cancelling an order."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -429,7 +429,7 @@ class TestCancelOrder:
         await db_session.commit()
 
         # Create pending order
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -458,7 +458,7 @@ class TestCancelOrder:
     async def test_cancel_order_nonexistent(self, db_session: AsyncSession):
         """Test cancelling a non-existent order."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -467,7 +467,7 @@ class TestCancelOrder:
 
         service = TradingService(account_owner="test_user", db_session=db_session)
 
-        fake_order_id = str(uuid.uuid4())
+        fake_order_id = "ORDER_001"
 
         with pytest.raises(NotFoundError) as exc_info:
             await service.cancel_order(fake_order_id)
@@ -478,7 +478,7 @@ class TestCancelOrder:
     async def test_cancel_order_already_filled(self, db_session: AsyncSession):
         """Test cancelling an already filled order."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -486,7 +486,7 @@ class TestCancelOrder:
         await db_session.commit()
 
         # Create filled order
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -519,7 +519,7 @@ class TestCancelAllStockOrders:
     async def test_cancel_all_stock_orders_success(self, db_session: AsyncSession):
         """Test cancelling all stock orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -531,7 +531,7 @@ class TestCancelAllStockOrders:
         stock_orders = []
         for _i, symbol in enumerate(stock_symbols):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=symbol,
                 order_type=OrderType.BUY,
@@ -547,7 +547,7 @@ class TestCancelAllStockOrders:
         option_orders = []
         for _i in range(2):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="AAPL240115C00150000",  # Option-style symbols with C
                 order_type=OrderType.BUY,
@@ -584,7 +584,7 @@ class TestCancelAllStockOrders:
     async def test_cancel_all_stock_orders_no_orders(self, db_session: AsyncSession):
         """Test cancelling stock orders when none exist."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -608,7 +608,7 @@ class TestCancelAllOptionOrders:
     async def test_cancel_all_option_orders_success(self, db_session: AsyncSession):
         """Test cancelling all option orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -619,7 +619,7 @@ class TestCancelAllOptionOrders:
         stock_orders = []
         for i in range(2):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"TSLA{i}",  # Stock symbols (no C or P)
                 order_type=OrderType.BUY,
@@ -637,7 +637,7 @@ class TestCancelAllOptionOrders:
         # Options with C/P in symbol
         for _i in range(2):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol="TSLA240115C00200000",  # Call options
                 order_type=OrderType.BUY,
@@ -651,7 +651,7 @@ class TestCancelAllOptionOrders:
 
         # Options with special order types
         order = DBOrder(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="MSFT",  # Normal symbol but option order type
             order_type=OrderType.BTO,  # Buy to open
@@ -693,7 +693,7 @@ class TestOrderManagementErrorHandling:
     async def test_create_order_database_error(self, db_session: AsyncSession):
         """Test handling database errors during order creation."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -732,7 +732,7 @@ class TestOrderManagementErrorHandling:
     async def test_concurrent_order_operations(self, db_session: AsyncSession):
         """Test concurrent order operations for race conditions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -740,7 +740,7 @@ class TestOrderManagementErrorHandling:
         await db_session.commit()
 
         # Create order to test concurrent access
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -785,7 +785,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_zero_quantity(self, db_session: AsyncSession):
         """Test creating order with zero quantity (should fail at Pydantic level)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -813,7 +813,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_negative_quantity(self, db_session: AsyncSession):
         """Test creating order with negative quantity (should fail at Pydantic level)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -834,7 +834,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_negative_price(self, db_session: AsyncSession):
         """Test creating order with negative price."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -868,7 +868,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_very_large_quantity(self, db_session: AsyncSession):
         """Test creating order with very large quantity."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=500000000.0,  # Large balance
         )
@@ -901,7 +901,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_precision_handling(self, db_session: AsyncSession):
         """Test creating order with high precision price values."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -936,7 +936,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_all_order_types(self, db_session: AsyncSession):
         """Test creating orders with all supported order types."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -982,7 +982,7 @@ class TestOrderCreationValidationExtended:
     async def test_create_order_all_conditions(self, db_session: AsyncSession):
         """Test creating orders with all supported order conditions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1025,7 +1025,7 @@ class TestOrderCreationValidationExtended:
     ):
         """Test symbol case normalization during order creation."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1068,7 +1068,7 @@ class TestOrderRetrievalExtended:
     async def test_get_orders_large_volume(self, db_session: AsyncSession):
         """Test getting orders with large number of orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1079,7 +1079,7 @@ class TestOrderRetrievalExtended:
         orders = []
         for i in range(100):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"BULK{i:03d}",
                 order_type=OrderType.BUY,
@@ -1107,7 +1107,7 @@ class TestOrderRetrievalExtended:
     async def test_get_orders_mixed_statuses(self, db_session: AsyncSession):
         """Test getting orders with various status combinations."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1125,7 +1125,7 @@ class TestOrderRetrievalExtended:
 
         for i, status in enumerate(all_statuses):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"STATUS{i}",
                 order_type=OrderType.BUY,
@@ -1152,12 +1152,12 @@ class TestOrderRetrievalExtended:
         """Test that get_orders only returns orders for the correct account."""
         # Create two accounts
         account1 = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="user1",
             cash_balance=50000.0,
         )
         account2 = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="user2",
             cash_balance=50000.0,
         )
@@ -1169,7 +1169,7 @@ class TestOrderRetrievalExtended:
         for i in range(3):
             # Orders for account1
             order1 = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account1.id,
                 symbol=f"USER1_{i}",
                 order_type=OrderType.BUY,
@@ -1182,7 +1182,7 @@ class TestOrderRetrievalExtended:
 
             # Orders for account2
             order2 = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account2.id,
                 symbol=f"USER2_{i}",
                 order_type=OrderType.SELL,
@@ -1217,7 +1217,7 @@ class TestOrderRetrievalExtended:
     async def test_get_order_case_sensitivity(self, db_session: AsyncSession):
         """Test get_order with different case order IDs."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1225,7 +1225,7 @@ class TestOrderRetrievalExtended:
         await db_session.commit()
 
         # Create order with uppercase UUID
-        order_id = str(uuid.uuid4()).upper()
+        order_id = "ORDER_001".upper()
         order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -1264,7 +1264,7 @@ class TestBulkOrderOperationsExtended:
     ):
         """Test cancelling stock orders with complex symbol patterns."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1289,7 +1289,7 @@ class TestBulkOrderOperationsExtended:
         created_orders = []
         for symbol, order_type, should_cancel in test_orders:
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=symbol,
                 order_type=order_type,
@@ -1328,7 +1328,7 @@ class TestBulkOrderOperationsExtended:
     ):
         """Test cancelling option orders with various identification patterns."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1360,7 +1360,7 @@ class TestBulkOrderOperationsExtended:
         created_orders = []
         for symbol, order_type, should_cancel in test_orders:
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=symbol,
                 order_type=order_type,
@@ -1397,7 +1397,7 @@ class TestBulkOrderOperationsExtended:
     async def test_bulk_operations_partial_failures(self, db_session: AsyncSession):
         """Test bulk operations with some pre-cancelled orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1409,7 +1409,7 @@ class TestBulkOrderOperationsExtended:
         for i in range(5):
             status = OrderStatus.PENDING if i < 3 else OrderStatus.CANCELLED
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"SYM{i}",  # Changed from STOCK to SYM (no C or P)
                 order_type=OrderType.BUY,
@@ -1445,7 +1445,7 @@ class TestBulkOrderOperationsExtended:
     ):
         """Test bulk operations performance with large number of orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1458,7 +1458,7 @@ class TestBulkOrderOperationsExtended:
         # Stock orders
         for i in range(200):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"STK{i:03d}",
                 order_type=OrderType.BUY,
@@ -1472,7 +1472,7 @@ class TestBulkOrderOperationsExtended:
         # Option orders
         for i in range(50):
             order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"OPT{i:03d}240115C00150000",
                 order_type=OrderType.BTO,

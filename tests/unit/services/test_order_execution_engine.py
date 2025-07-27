@@ -41,14 +41,14 @@ class TestLoadOrderById:
         """Test successfully loading an order by ID."""
         # Create test account and order
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
         await db_session.commit()
 
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         db_order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -102,7 +102,7 @@ class TestLoadOrderById:
         )
         engine = OrderExecutionEngine(trading_service)
 
-        fake_order_id = str(uuid.uuid4())
+        fake_order_id = "ORDER_001"
 
         with patch(
             "app.services.order_execution_engine.get_async_session"
@@ -121,14 +121,14 @@ class TestLoadOrderById:
     async def test_load_order_by_id_with_all_fields(self, db_session: AsyncSession):
         """Test loading order with all optional fields populated."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
         await db_session.commit()
 
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         created_time = datetime.now()
         filled_time = datetime.now()
 
@@ -195,7 +195,7 @@ class TestLoadOrderById:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            order_id = str(uuid.uuid4())
+            order_id = "ORDER_001"
             result = await engine._load_order_by_id(order_id)
 
             # Should return None on database error
@@ -211,7 +211,7 @@ class TestLoadPendingOrders:
         """Test loading pending trigger orders successfully."""
         # Create test account
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -223,7 +223,7 @@ class TestLoadPendingOrders:
         created_orders = []
 
         for i, order_type in enumerate(trigger_order_types):
-            order_id = str(uuid.uuid4())
+            order_id = "ORDER_001"
             db_order = DBOrder(
                 id=order_id,
                 account_id=account.id,
@@ -241,7 +241,7 @@ class TestLoadPendingOrders:
 
         # Create non-trigger orders (should not be loaded)
         non_trigger_order = DBOrder(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="REGULAR",
             order_type=OrderType.BUY,
@@ -324,7 +324,7 @@ class TestLoadPendingOrders:
     async def test_load_pending_orders_filter_by_status(self, db_session: AsyncSession):
         """Test that only PENDING orders are loaded."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -336,7 +336,7 @@ class TestLoadPendingOrders:
 
         for i, status in enumerate(statuses):
             db_order = DBOrder(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=f"STATUS{i}",
                 order_type=OrderType.BUY,
@@ -415,14 +415,14 @@ class TestUpdateOrderTriggeredStatus:
         """Test successfully updating order triggered status."""
         # Create test account and order
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
         await db_session.commit()
 
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         db_order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -474,7 +474,7 @@ class TestUpdateOrderTriggeredStatus:
         )
         engine = OrderExecutionEngine(trading_service)
 
-        fake_order_id = str(uuid.uuid4())
+        fake_order_id = "ORDER_001"
 
         with patch(
             "app.services.order_execution_engine.get_async_session"
@@ -494,7 +494,7 @@ class TestUpdateOrderTriggeredStatus:
     ):
         """Test updating status for multiple orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -504,7 +504,7 @@ class TestUpdateOrderTriggeredStatus:
         # Create multiple orders
         orders = []
         for i in range(3):
-            order_id = str(uuid.uuid4())
+            order_id = "ORDER_001"
             db_order = DBOrder(
                 id=order_id,
                 account_id=account.id,
@@ -556,7 +556,7 @@ class TestUpdateOrderTriggeredStatus:
         )
         engine = OrderExecutionEngine(trading_service)
 
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
 
         with patch(
             "app.services.order_execution_engine.get_async_session"
@@ -584,14 +584,14 @@ class TestOrderExecutionEngineIntegration:
         """Test complete workflow of loading and updating an order."""
         # Create test account and order
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
         await db_session.commit()
 
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         db_order = DBOrder(
             id=order_id,
             account_id=account.id,
@@ -639,14 +639,14 @@ class TestOrderExecutionEngineIntegration:
     async def test_concurrent_order_operations(self, db_session: AsyncSession):
         """Test concurrent database operations on orders."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
         await db_session.commit()
 
-        order_id = str(uuid.uuid4())
+        order_id = "ORDER_001"
         db_order = DBOrder(
             id=order_id,
             account_id=account.id,

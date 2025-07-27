@@ -33,7 +33,7 @@ class TestAccountAdapterDeleteCRUD:
     @pytest_asyncio.fixture
     async def sample_account(self, db_session: AsyncSession):
         """Create a sample account in the database."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         db_account = DBAccount(
             id=account_id,
             owner=f"test_user_{account_id[:8]}",
@@ -47,7 +47,7 @@ class TestAccountAdapterDeleteCRUD:
     @pytest_asyncio.fixture
     async def sample_account_with_positions(self, db_session: AsyncSession):
         """Create a sample account with positions for foreign key testing."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         db_account = DBAccount(
             id=account_id,
             owner=f"test_user_{account_id[:8]}",
@@ -59,14 +59,14 @@ class TestAccountAdapterDeleteCRUD:
         # Add positions
         positions = [
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account_id,
                 symbol="AAPL",
                 quantity=100,
                 avg_price=150.0,
             ),
             DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account_id,
                 symbol="GOOGL",
                 quantity=50,
@@ -83,7 +83,7 @@ class TestAccountAdapterDeleteCRUD:
     @pytest_asyncio.fixture
     async def sample_account_with_all_relations(self, db_session: AsyncSession):
         """Create a sample account with all related data for comprehensive testing."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         db_account = DBAccount(
             id=account_id,
             owner=f"test_user_{account_id[:8]}",
@@ -94,7 +94,7 @@ class TestAccountAdapterDeleteCRUD:
 
         # Add positions
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account_id,
             symbol="AAPL",
             quantity=100,
@@ -117,7 +117,7 @@ class TestAccountAdapterDeleteCRUD:
 
         # Add transactions
         transaction = DBTransaction(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account_id,
             order_id=order.id,
             symbol="AAPL",
@@ -168,7 +168,7 @@ class TestAccountAdapterDeleteCRUD:
         self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
     ):
         """Test deletion of a non-existent account returns False."""
-        nonexistent_id = str(uuid.uuid4())
+        nonexistent_id = "TEST123456"
 
         # Mock the database session in the adapter
         with patch("app.adapters.accounts.get_async_session") as mock_get_session:
@@ -339,7 +339,7 @@ class TestAccountAdapterDeleteCRUD:
     ):
         """Test that delete_account returns correct boolean values."""
         # Test return value for successful deletion
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         db_account = DBAccount(
             id=account_id,
             owner=f"test_user_{account_id[:8]}",
@@ -360,7 +360,7 @@ class TestAccountAdapterDeleteCRUD:
         assert isinstance(result, bool)
 
         # Test return value for non-existent account
-        nonexistent_id = str(uuid.uuid4())
+        nonexistent_id = "TEST123456"
         with patch("app.adapters.accounts.get_async_session") as mock_get_session:
 
             async def mock_session_generator():
@@ -379,7 +379,7 @@ class TestAccountAdapterDeleteCRUD:
         # Create multiple accounts
         account_ids = []
         for i in range(3):
-            account_id = str(uuid.uuid4())
+            account_id = "TEST123456"
             db_account = DBAccount(
                 id=account_id,
                 owner=f"test_user_{i}_{account_id[:8]}",

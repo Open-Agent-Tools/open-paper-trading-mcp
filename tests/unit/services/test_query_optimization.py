@@ -84,7 +84,7 @@ class TestGetPendingTriggeredOrders:
     async def test_get_pending_triggered_orders_success(self, db_session: AsyncSession):
         """Test retrieving pending orders with trigger conditions."""
         # Create test account
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with trigger conditions
@@ -154,7 +154,7 @@ class TestGetPendingTriggeredOrders:
     @pytest.mark.asyncio
     async def test_get_pending_triggered_orders_limit(self, db_session: AsyncSession):
         """Test limit parameter for pending triggered orders."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create more orders than limit
@@ -199,7 +199,7 @@ class TestGetOrdersByStatusAndType:
     @pytest.mark.asyncio
     async def test_get_orders_by_status_only(self, db_session: AsyncSession):
         """Test filtering orders by status only."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with different statuses and types
@@ -248,7 +248,7 @@ class TestGetOrdersByStatusAndType:
     @pytest.mark.asyncio
     async def test_get_orders_by_status_and_type(self, db_session: AsyncSession):
         """Test filtering orders by both status and type."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with different combinations
@@ -302,7 +302,7 @@ class TestGetOrdersByStatusAndType:
         self, db_session: AsyncSession
     ):
         """Test that results are ordered by created_at desc."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with specific timestamps
@@ -362,7 +362,7 @@ class TestGetOrdersForSymbol:
     @pytest.mark.asyncio
     async def test_get_orders_for_symbol_all_statuses(self, db_session: AsyncSession):
         """Test getting all orders for a specific symbol."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders for different symbols
@@ -411,7 +411,7 @@ class TestGetOrdersForSymbol:
     @pytest.mark.asyncio
     async def test_get_orders_for_symbol_with_status(self, db_session: AsyncSession):
         """Test getting orders for symbol filtered by status."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create AAPL orders with different statuses
@@ -460,7 +460,7 @@ class TestGetOrdersForSymbol:
     @pytest.mark.asyncio
     async def test_get_orders_for_symbol_limit(self, db_session: AsyncSession):
         """Test limit parameter for symbol orders."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create more orders than limit
@@ -501,7 +501,7 @@ class TestGetAccountOrdersSummary:
     @pytest.mark.asyncio
     async def test_get_account_orders_summary_basic(self, db_session: AsyncSession):
         """Test basic account orders summary."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with different statuses and types
@@ -572,7 +572,7 @@ class TestGetAccountOrdersSummary:
         self, db_session: AsyncSession
     ):
         """Test account orders summary with date filtering."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with different timestamps
@@ -634,7 +634,7 @@ class TestGetAccountOrdersSummary:
         self, db_session: AsyncSession
     ):
         """Test account orders summary for account with no orders."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         queries = OptimizedOrderQueries(db_session)
@@ -653,7 +653,7 @@ class TestGetRecentFilledOrders:
     @pytest.mark.asyncio
     async def test_get_recent_filled_orders_success(self, db_session: AsyncSession):
         """Test getting recent filled orders."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with different statuses and fill times
@@ -728,7 +728,7 @@ class TestGetRecentFilledOrders:
         self, db_session: AsyncSession
     ):
         """Test get_recent_filled_orders with custom timeframe."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 
@@ -758,7 +758,7 @@ class TestGetRecentFilledOrders:
     @pytest.mark.asyncio
     async def test_get_recent_filled_orders_ordering(self, db_session: AsyncSession):
         """Test that recent filled orders are ordered by filled_at desc."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 
@@ -817,7 +817,7 @@ class TestGetOrderExecutionMetrics:
     @pytest.mark.asyncio
     async def test_get_order_execution_metrics_success(self, db_session: AsyncSession):
         """Test order execution metrics calculation."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 
@@ -918,7 +918,7 @@ class TestGetStopLossCandidates:
     @pytest.mark.asyncio
     async def test_get_stop_loss_candidates_buy_trigger(self, db_session: AsyncSession):
         """Test stop loss candidates for BUY orders."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create BUY order with stop price
@@ -950,7 +950,7 @@ class TestGetStopLossCandidates:
         self, db_session: AsyncSession
     ):
         """Test stop loss candidates for SELL orders."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create SELL order with stop price
@@ -980,7 +980,7 @@ class TestGetStopLossCandidates:
     @pytest.mark.asyncio
     async def test_get_stop_loss_candidates_no_trigger(self, db_session: AsyncSession):
         """Test stop loss candidates when conditions not met."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders that shouldn't trigger
@@ -1024,7 +1024,7 @@ class TestGetStopLossCandidates:
         self, db_session: AsyncSession
     ):
         """Test stop loss candidates when prices not available."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         order = DBOrder(
@@ -1055,7 +1055,7 @@ class TestGetTrailingStopCandidates:
     @pytest.mark.asyncio
     async def test_get_trailing_stop_candidates_percent(self, db_session: AsyncSession):
         """Test trailing stop candidates with percentage trailing."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create SELL order with trailing percent
@@ -1088,7 +1088,7 @@ class TestGetTrailingStopCandidates:
     @pytest.mark.asyncio
     async def test_get_trailing_stop_candidates_amount(self, db_session: AsyncSession):
         """Test trailing stop candidates with fixed amount trailing."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create BUY order with trailing amount
@@ -1122,7 +1122,7 @@ class TestGetTrailingStopCandidates:
         self, db_session: AsyncSession
     ):
         """Test trailing stop candidates with no trailing conditions."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create order without trailing stops
@@ -1153,7 +1153,7 @@ class TestGetOrderQueueDepth:
     @pytest.mark.asyncio
     async def test_get_order_queue_depth_success(self, db_session: AsyncSession):
         """Test order queue depth calculation."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders with different statuses
@@ -1243,7 +1243,7 @@ class TestGetHighFrequencySymbols:
     @pytest.mark.asyncio
     async def test_get_high_frequency_symbols_success(self, db_session: AsyncSession):
         """Test high frequency symbols identification."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 
@@ -1284,7 +1284,7 @@ class TestGetHighFrequencySymbols:
         self, db_session: AsyncSession
     ):
         """Test high frequency symbols with time filtering."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 
@@ -1339,7 +1339,7 @@ class TestGetHighFrequencySymbols:
         self, db_session: AsyncSession
     ):
         """Test high frequency symbols minimum threshold."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create symbols with counts below threshold
@@ -1373,7 +1373,7 @@ class TestBulkUpdateOrderStatus:
         self, db_session: AsyncSession
     ):
         """Test bulk updating order status without filled_at."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders to update
@@ -1417,7 +1417,7 @@ class TestBulkUpdateOrderStatus:
         self, db_session: AsyncSession
     ):
         """Test bulk updating order status with filled_at timestamp."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
 
         # Create orders to update
@@ -1486,7 +1486,7 @@ class TestCleanupOldCompletedOrders:
     @pytest.mark.asyncio
     async def test_cleanup_old_completed_orders_count(self, db_session: AsyncSession):
         """Test counting old completed orders for cleanup."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 
@@ -1586,7 +1586,7 @@ class TestOptimizedOrderQueriesIntegration:
         self, db_session: AsyncSession
     ):
         """Test comprehensive workflow using multiple query methods."""
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         await create_test_account(db_session, account_id)
         base_time = datetime.now(UTC).replace(tzinfo=None)
 

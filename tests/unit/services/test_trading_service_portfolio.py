@@ -42,7 +42,7 @@ class TestGetPortfolio:
     async def test_get_portfolio_empty_account(self, db_session: AsyncSession):
         """Test getting portfolio from account with no positions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -72,7 +72,7 @@ class TestGetPortfolio:
     async def test_get_portfolio_single_position(self, db_session: AsyncSession):
         """Test getting portfolio with single stock position."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=40000.0,
         )
@@ -80,7 +80,7 @@ class TestGetPortfolio:
 
         # Add single position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -129,7 +129,7 @@ class TestGetPortfolio:
     async def test_get_portfolio_multiple_positions(self, db_session: AsyncSession):
         """Test getting portfolio with multiple positions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=30000.0,
         )
@@ -145,7 +145,7 @@ class TestGetPortfolio:
         db_positions = []
         for symbol, qty, avg_price, current_price, pnl in positions_data:
             db_pos = DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=symbol,
                 quantity=qty,
@@ -215,7 +215,7 @@ class TestGetPortfolio:
     async def test_get_portfolio_position_with_no_quote(self, db_session: AsyncSession):
         """Test portfolio with position that has no available quote."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -223,7 +223,7 @@ class TestGetPortfolio:
 
         # Add position with symbol that won't have quote
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="DELISTED",
             quantity=100,
@@ -254,7 +254,7 @@ class TestGetPortfolio:
     async def test_get_portfolio_mixed_assets(self, db_session: AsyncSession):
         """Test portfolio with mix of stocks and options."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=25000.0,
         )
@@ -262,14 +262,14 @@ class TestGetPortfolio:
 
         # Add stock and option positions
         stock_pos = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
             avg_price=150.0,
         )
         option_pos = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA240115C00160000",
             quantity=5,
@@ -344,7 +344,7 @@ class TestGetPortfolio:
     async def test_get_portfolio_large_portfolio(self, db_session: AsyncSession):
         """Test portfolio performance with many positions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=100000.0,
         )
@@ -355,7 +355,7 @@ class TestGetPortfolio:
         for i in range(50):
             symbol = f"STOCK{i:02d}"
             db_pos = DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=symbol,
                 quantity=100 + i,
@@ -428,7 +428,7 @@ class TestGetPortfolioSummary:
     async def test_get_portfolio_summary_empty_account(self, db_session: AsyncSession):
         """Test portfolio summary for empty account."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=75000.0,
         )
@@ -458,7 +458,7 @@ class TestGetPortfolioSummary:
     async def test_get_portfolio_summary_with_positions(self, db_session: AsyncSession):
         """Test portfolio summary with positions and PnL."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -466,7 +466,7 @@ class TestGetPortfolioSummary:
 
         # Add position
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -517,14 +517,14 @@ class TestGetPortfolioSummary:
     async def test_get_portfolio_summary_negative_pnl(self, db_session: AsyncSession):
         """Test portfolio summary with negative PnL."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=60000.0,
         )
         db_session.add(account)
 
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="TSLA",
             quantity=50,
@@ -576,7 +576,7 @@ class TestGetPortfolioSummary:
     ):
         """Test portfolio summary edge case with zero total value."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=0.0,  # No cash
         )
@@ -608,7 +608,7 @@ class TestGetPositions:
     async def test_get_positions_empty_account(self, db_session: AsyncSession):
         """Test getting positions from empty account."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -631,7 +631,7 @@ class TestGetPositions:
     async def test_get_positions_multiple_positions(self, db_session: AsyncSession):
         """Test getting multiple positions."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=40000.0,
         )
@@ -641,7 +641,7 @@ class TestGetPositions:
         symbols = ["NVDA", "TSLA", "AMZN"]
         for i, symbol in enumerate(symbols):
             position = DBPosition(
-                id=str(uuid.uuid4()),
+                id="TEST123456",
                 account_id=account.id,
                 symbol=symbol,
                 quantity=100 + i * 10,
@@ -697,7 +697,7 @@ class TestGetPositions:
     async def test_get_positions_with_failed_quotes(self, db_session: AsyncSession):
         """Test positions retrieval with some failed quote lookups."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -705,14 +705,14 @@ class TestGetPositions:
 
         # Add positions where one will fail quote lookup
         good_pos = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
             avg_price=150.0,
         )
         bad_pos = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="DELISTED",
             quantity=50,
@@ -768,14 +768,14 @@ class TestGetPosition:
     async def test_get_position_existing(self, db_session: AsyncSession):
         """Test getting existing position by symbol."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
 
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -818,14 +818,14 @@ class TestGetPosition:
     async def test_get_position_case_insensitive(self, db_session: AsyncSession):
         """Test getting position with different case."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
 
         position = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -867,7 +867,7 @@ class TestGetPosition:
     async def test_get_position_not_found(self, db_session: AsyncSession):
         """Test getting non-existent position."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -890,14 +890,14 @@ class TestGetPosition:
     async def test_get_position_option_symbol(self, db_session: AsyncSession):
         """Test getting position for option symbol."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
         db_session.add(account)
 
         option_pos = DBPosition(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             account_id=account.id,
             symbol="NVDA240115C00160000",
             quantity=5,
@@ -944,7 +944,7 @@ class TestAccountBalanceManagement:
     async def test_get_account_balance_fresh_account(self, db_session: AsyncSession):
         """Test getting balance for fresh account."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=100000.0,
         )
@@ -963,7 +963,7 @@ class TestAccountBalanceManagement:
     async def test_get_account_balance_updated_balance(self, db_session: AsyncSession):
         """Test getting balance after updates."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1000,7 +1000,7 @@ class TestAccountBalanceManagement:
     async def test_validate_account_state_valid(self, db_session: AsyncSession):
         """Test account state validation for valid account."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1017,7 +1017,7 @@ class TestAccountBalanceManagement:
     async def test_account_with_zero_balance(self, db_session: AsyncSession):
         """Test account with zero cash balance."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=0.0,
         )
@@ -1034,7 +1034,7 @@ class TestAccountBalanceManagement:
     async def test_account_with_negative_balance(self, db_session: AsyncSession):
         """Test account with negative cash balance (margin account)."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=-5000.0,  # Negative balance (borrowed funds)
         )
@@ -1056,7 +1056,7 @@ class TestQuoteIntegration:
     async def test_get_quote_stock_success(self, db_session: AsyncSession):
         """Test getting quote for stock symbol."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1093,7 +1093,7 @@ class TestQuoteIntegration:
     async def test_get_quote_symbol_not_found(self, db_session: AsyncSession):
         """Test getting quote for non-existent symbol."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1119,7 +1119,7 @@ class TestQuoteIntegration:
     async def test_get_quote_adapter_exception(self, db_session: AsyncSession):
         """Test quote retrieval when adapter raises exception."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1145,7 +1145,7 @@ class TestQuoteIntegration:
     async def test_get_quote_case_normalization(self, db_session: AsyncSession):
         """Test quote retrieval with case normalization."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1176,7 +1176,7 @@ class TestQuoteIntegration:
     async def test_get_enhanced_quote_stock(self, db_session: AsyncSession):
         """Test getting enhanced quote for stock."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1218,7 +1218,7 @@ class TestQuoteIntegration:
     async def test_get_enhanced_quote_option(self, db_session: AsyncSession):
         """Test getting enhanced quote for option with Greeks."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1275,7 +1275,7 @@ class TestQuoteIntegration:
     async def test_get_enhanced_quote_not_found(self, db_session: AsyncSession):
         """Test enhanced quote for non-existent symbol."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1301,7 +1301,7 @@ class TestQuoteIntegration:
     async def test_get_enhanced_quote_invalid_symbol(self, db_session: AsyncSession):
         """Test enhanced quote with invalid symbol format."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1323,7 +1323,7 @@ class TestQuoteIntegration:
     async def test_quote_adapter_fallback_behavior(self, db_session: AsyncSession):
         """Test quote adapter fallback mechanisms."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1364,7 +1364,7 @@ class TestQuoteIntegration:
     async def test_quote_data_freshness(self, db_session: AsyncSession):
         """Test quote data timestamp handling."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1395,7 +1395,7 @@ class TestQuoteIntegration:
     async def test_quote_price_precision(self, db_session: AsyncSession):
         """Test quote price precision handling."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -1425,7 +1425,7 @@ class TestQuoteIntegration:
     async def test_quote_integration_performance(self, db_session: AsyncSession):
         """Test quote retrieval performance with multiple symbols."""
         account = DBAccount(
-            id=str(uuid.uuid4()),
+            id="TEST123456",
             owner="test_user",
             cash_balance=50000.0,
         )

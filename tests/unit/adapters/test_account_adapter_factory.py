@@ -139,7 +139,7 @@ class TestAccountFactory:
         except ValueError:
             # If it contains non-hex characters, it might include hyphens
             # Let's check if it's a valid UUID prefix
-            full_uuid = str(uuid.uuid4())
+            full_uuid = "TEST123456"
             assert len(full_uuid) >= 8
 
     @patch("app.adapters.accounts.uuid.uuid4")

@@ -6,14 +6,32 @@ allowing both AI agents (via MCP) and web clients (via REST API)
 to access the same trading functionality.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.service_factory import get_trading_service
+from app.core.id_utils import validate_optional_account_id
+from app.core.exceptions import InputValidationError
 from app.services.trading_service import TradingService
 
 router = APIRouter(prefix="/api/v1/trading", tags=["trading"])
+
+
+def validate_account_id_param(account_id: Optional[str]) -> Optional[str]:
+    """Validate account_id parameter and return appropriate error response if invalid."""
+    try:
+        return validate_optional_account_id(account_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Invalid account ID format",
+                "message": str(e),
+                "account_id": account_id
+            }
+        )
 
 
 @router.get("/health")
@@ -30,11 +48,16 @@ async def health_check() -> Dict[str, str]:
 
 
 @router.get("/account/balance")
-async def get_account_balance() -> Dict[str, Any]:
+async def get_account_balance(
+    account_id: Optional[str] = Query(None, description="Optional 10-character account ID")
+) -> Dict[str, Any]:
     """
     Get the current account balance and basic account information.
     
     Mirrors MCP tool: get_account_balance
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
     
     Returns:
         Dict containing account balance information
@@ -43,14 +66,19 @@ async def get_account_balance() -> Dict[str, Any]:
         HTTPException: If account balance cannot be retrieved
     """
     try:
-        service = get_trading_service()
-        balance = await service.get_account_balance()
+        # Validate account_id parameter
+        account_id = validate_account_id_param(account_id)
         
+        service = get_trading_service()
+        balance = await service.get_account_balance(account_id)
+        
+        account_msg = f" for account {account_id}" if account_id else ""
         return {
             "success": True,
             "balance": balance,
             "currency": "USD",
-            "message": f"Account balance: ${balance:,.2f}"
+            "account_id": account_id,
+            "message": f"Account balance{account_msg}: ${balance:,.2f}"
         }
     except Exception as e:
         raise HTTPException(
@@ -58,17 +86,23 @@ async def get_account_balance() -> Dict[str, Any]:
             detail={
                 "success": False,
                 "error": str(e),
+                "account_id": account_id,
                 "message": f"Failed to retrieve account balance: {str(e)}"
             }
         )
 
 
 @router.get("/account/info")
-async def get_account_info() -> Dict[str, Any]:
+async def get_account_info(
+    account_id: Optional[str] = Query(None, description="Optional 10-character account ID")
+) -> Dict[str, Any]:
     """
     Get comprehensive account information including balance and basic details.
     
     Mirrors MCP tool: get_account_info
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
     
     Returns:
         Dict containing comprehensive account information
@@ -77,23 +111,21 @@ async def get_account_info() -> Dict[str, Any]:
         HTTPException: If account information cannot be retrieved
     """
     try:
+        # Validate account_id parameter
+        account_id = validate_account_id_param(account_id)
+        
         service = get_trading_service()
         
-        # Get account details
-        account = await service._get_account()
-        balance = await service.get_account_balance()
+        # Use the new get_account_info method
+        account_info = await service.get_account_info(account_id)
         
         return {
             "success": True,
             "account": {
-                "id": account.id,
-                "owner": account.owner,
-                "cash_balance": balance,
-                "currency": "USD",
-                "created_at": account.created_at.isoformat() if account.created_at else None,
-                "updated_at": account.updated_at.isoformat() if account.updated_at else None
+                **account_info,
+                "currency": "USD"
             },
-            "message": f"Account {account.id} retrieved successfully"
+            "message": f"Account {account_info['account_id']} retrieved successfully"
         }
     except Exception as e:
         raise HTTPException(
@@ -101,17 +133,23 @@ async def get_account_info() -> Dict[str, Any]:
             detail={
                 "success": False,
                 "error": str(e),
+                "account_id": account_id,
                 "message": f"Failed to retrieve account information: {str(e)}"
             }
         )
 
 
 @router.get("/portfolio")
-async def get_portfolio() -> Dict[str, Any]:
+async def get_portfolio(
+    account_id: Optional[str] = Query(None, description="Optional 10-character account ID")
+) -> Dict[str, Any]:
     """
     Get comprehensive portfolio information including positions and performance.
     
     Mirrors MCP tool: get_portfolio
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
     
     Returns:
         Dict containing portfolio information with all positions
@@ -120,8 +158,11 @@ async def get_portfolio() -> Dict[str, Any]:
         HTTPException: If portfolio cannot be retrieved
     """
     try:
+        # Validate account_id parameter
+        account_id = validate_account_id_param(account_id)
+        
         service = get_trading_service()
-        portfolio = await service.get_portfolio()
+        portfolio = await service.get_portfolio(account_id)
         
         # Convert positions to serializable format
         positions_data = []
@@ -137,6 +178,7 @@ async def get_portfolio() -> Dict[str, Any]:
                 "side": position.side
             })
         
+        account_msg = f" for account {account_id}" if account_id else ""
         return {
             "success": True,
             "portfolio": {
@@ -147,7 +189,8 @@ async def get_portfolio() -> Dict[str, Any]:
                 "positions_count": len(portfolio.positions),
                 "positions": positions_data
             },
-            "message": f"Portfolio retrieved with {len(portfolio.positions)} positions"
+            "account_id": account_id,
+            "message": f"Portfolio{account_msg} retrieved with {len(portfolio.positions)} positions"
         }
     except Exception as e:
         raise HTTPException(
@@ -155,17 +198,23 @@ async def get_portfolio() -> Dict[str, Any]:
             detail={
                 "success": False,
                 "error": str(e),
+                "account_id": account_id,
                 "message": f"Failed to retrieve portfolio: {str(e)}"
             }
         )
 
 
 @router.get("/portfolio/summary")
-async def get_portfolio_summary() -> Dict[str, Any]:
+async def get_portfolio_summary(
+    account_id: Optional[str] = Query(None, description="Optional 10-character account ID")
+) -> Dict[str, Any]:
     """
     Get portfolio summary with key performance metrics.
     
     Mirrors MCP tool: get_portfolio_summary
+    
+    Args:
+        account_id: Optional 10-character account ID. If not provided, uses default account.
     
     Returns:
         Dict containing portfolio performance summary
@@ -174,9 +223,13 @@ async def get_portfolio_summary() -> Dict[str, Any]:
         HTTPException: If portfolio summary cannot be retrieved
     """
     try:
-        service = get_trading_service()
-        summary = await service.get_portfolio_summary()
+        # Validate account_id parameter
+        account_id = validate_account_id_param(account_id)
         
+        service = get_trading_service()
+        summary = await service.get_portfolio_summary(account_id)
+        
+        account_msg = f" for account {account_id}" if account_id else ""
         return {
             "success": True,
             "summary": {
@@ -188,7 +241,8 @@ async def get_portfolio_summary() -> Dict[str, Any]:
                 "total_pnl": summary.total_pnl,
                 "total_pnl_percent": summary.total_pnl_percent
             },
-            "message": f"Portfolio value: ${summary.total_value:,.2f}, Daily P&L: ${summary.daily_pnl:,.2f} ({summary.daily_pnl_percent:.2f}%)"
+            "account_id": account_id,
+            "message": f"Portfolio{account_msg} value: ${summary.total_value:,.2f}, Daily P&L: ${summary.daily_pnl:,.2f} ({summary.daily_pnl_percent:.2f}%)"
         }
     except Exception as e:
         raise HTTPException(
@@ -196,7 +250,58 @@ async def get_portfolio_summary() -> Dict[str, Any]:
             detail={
                 "success": False,
                 "error": str(e),
+                "account_id": account_id,
                 "message": f"Failed to retrieve portfolio summary: {str(e)}"
+            }
+        )
+
+
+@router.get("/accounts")
+async def get_all_accounts() -> Dict[str, Any]:
+    """
+    Get summary of all accounts with ID, created date, starting balance, and current balance.
+    
+    Returns:
+        Dict containing list of all account summaries
+        
+    Raises:
+        HTTPException: If accounts cannot be retrieved
+    """
+    try:
+        service = get_trading_service()
+        accounts_summary = await service.get_all_accounts_summary()
+        
+        # Convert accounts to serializable format
+        accounts_data = []
+        for account in accounts_summary.accounts:
+            accounts_data.append({
+                "id": account.id,
+                "owner": account.owner,
+                "created_at": account.created_at.isoformat(),
+                "starting_balance": account.starting_balance,
+                "current_balance": account.current_balance,
+                "balance_change": account.current_balance - account.starting_balance,
+                "balance_change_percent": ((account.current_balance - account.starting_balance) / account.starting_balance * 100) if account.starting_balance > 0 else 0
+            })
+        
+        return {
+            "success": True,
+            "accounts": accounts_data,
+            "summary": {
+                "total_count": accounts_summary.total_count,
+                "total_starting_balance": accounts_summary.total_starting_balance,
+                "total_current_balance": accounts_summary.total_current_balance,
+                "total_balance_change": accounts_summary.total_current_balance - accounts_summary.total_starting_balance
+            },
+            "message": f"Retrieved {accounts_summary.total_count} accounts"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": str(e),
+                "message": f"Failed to retrieve accounts: {str(e)}"
             }
         )
 
@@ -213,28 +318,38 @@ async def list_tools() -> Dict[str, Any]:
     """
     tools_list = [
         {
+            "name": "get_all_accounts",
+            "endpoint": "/api/v1/trading/accounts",
+            "method": "GET",
+            "description": "Get summary of all accounts with ID, created date, starting balance, and current balance"
+        },
+        {
             "name": "get_account_balance",
             "endpoint": "/api/v1/trading/account/balance",
             "method": "GET",
-            "description": "Get the current account balance and basic account information"
+            "parameters": "?account_id={optional_account_id}",
+            "description": "Get the current account balance and basic account information. Supports account_id parameter for multi-account access."
         },
         {
             "name": "get_account_info", 
             "endpoint": "/api/v1/trading/account/info",
             "method": "GET",
-            "description": "Get comprehensive account information including balance and basic details"
+            "parameters": "?account_id={optional_account_id}",
+            "description": "Get comprehensive account information including balance and basic details. Supports account_id parameter for multi-account access."
         },
         {
             "name": "get_portfolio",
             "endpoint": "/api/v1/trading/portfolio", 
             "method": "GET",
-            "description": "Get comprehensive portfolio information including positions and performance"
+            "parameters": "?account_id={optional_account_id}",
+            "description": "Get comprehensive portfolio information including positions and performance. Supports account_id parameter for multi-account access."
         },
         {
             "name": "get_portfolio_summary",
             "endpoint": "/api/v1/trading/portfolio/summary",
-            "method": "GET", 
-            "description": "Get portfolio summary with key performance metrics"
+            "method": "GET",
+            "parameters": "?account_id={optional_account_id}",
+            "description": "Get portfolio summary with key performance metrics. Supports account_id parameter for multi-account access."
         },
         {
             "name": "health_check",

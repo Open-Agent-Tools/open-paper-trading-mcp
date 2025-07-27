@@ -247,10 +247,9 @@ async def test_account_data(async_db_session: AsyncSession) -> dict[str, Any]:
 
     # Create test account
     account = DBAccount(
-        id=str(uuid.uuid4()),
+        id="TEST123456",
         owner="test_user",
         cash_balance=100000.0,
-        buying_power=200000.0,
     )
     async_db_session.add(account)
     await async_db_session.commit()
@@ -259,22 +258,18 @@ async def test_account_data(async_db_session: AsyncSession) -> dict[str, Any]:
     # Create test positions
     positions = [
         DBPosition(
-            id=str(uuid.uuid4()),
+            id="POS_001",
             account_id=account.id,
             symbol="AAPL",
             quantity=100,
             avg_price=150.0,
-            current_price=155.0,
-            unrealized_pnl=500.0,
         ),
         DBPosition(
-            id=str(uuid.uuid4()),
+            id="POS_002",
             account_id=account.id,
             symbol="GOOGL",
             quantity=50,
             avg_price=2800.0,
-            current_price=2750.0,
-            unrealized_pnl=-2500.0,
         ),
     ]
 

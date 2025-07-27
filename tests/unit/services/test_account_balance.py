@@ -66,7 +66,7 @@ class TestAccountBalanceRetrieval:
         expected_balance = 25000.0
 
         # Pre-create account manually using raw SQL to avoid model issues
-        account_id = str(uuid.uuid4())
+        account_id = "TEST123456"
         insert_query = text(
             "INSERT INTO accounts (id, owner, cash_balance, created_at) "
             "VALUES (:id, :owner, :cash_balance, NOW())"

@@ -166,27 +166,99 @@ class TradingService:
 
         await self._execute_with_session(_operation)
 
-    async def _get_account(self) -> DBAccount:
-        """Get the current account from database."""
+    async def _get_account(self, account_id: str | None = None) -> DBAccount:
+        """Get account from database by ID or by owner."""
         from sqlalchemy import select
+        from app.core.id_utils import validate_optional_account_id
 
-        # Ensure account exists first
-        await self._ensure_account_exists()
+        # Validate account_id format if provided
+        account_id = validate_optional_account_id(account_id)
+
+        if account_id is None:
+            # Ensure account exists first
+            await self._ensure_account_exists()
 
         async def _operation(db: AsyncSession):
-            stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
-            result = await db.execute(stmt)
-            account = result.scalar_one_or_none()
-            if not account:
-                raise NotFoundError(f"Account for owner {self.account_owner} not found")
+            if account_id is not None:
+                # Get account by ID
+                stmt = select(DBAccount).where(DBAccount.id == account_id)
+                result = await db.execute(stmt)
+                account = result.scalar_one_or_none()
+                if not account:
+                    raise NotFoundError(f"Account with ID {account_id} not found")
+            else:
+                # Get account by owner (legacy behavior)
+                stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
+                result = await db.execute(stmt)
+                account = result.scalar_one_or_none()
+                if not account:
+                    raise NotFoundError(f"Account for owner {self.account_owner} not found")
             return account
 
         return await self._execute_with_session(_operation)
 
-    async def get_account_balance(self) -> float:
+    async def get_account_balance(self, account_id: str | None = None) -> float:
         """Get current account balance from database."""
-        account = await self._get_account()
+        account = await self._get_account(account_id)
         return float(account.cash_balance)
+
+    async def get_account_info(self, account_id: str | None = None) -> dict[str, Any]:
+        """Get comprehensive account information."""
+        account = await self._get_account(account_id)
+        portfolio = await self.get_portfolio(account_id)
+        
+        return {
+            "account_id": account.id,
+            "owner": account.owner,
+            "cash_balance": float(account.cash_balance),
+            "starting_balance": float(account.starting_balance),
+            "created_at": account.created_at.isoformat(),
+            "updated_at": account.updated_at.isoformat(),
+            "total_value": portfolio.cash_balance + sum(
+                pos.quantity * (pos.current_price or 0) for pos in portfolio.positions
+            ),
+            "positions_count": len(portfolio.positions),
+            "invested_value": sum(
+                pos.quantity * (pos.current_price or 0) for pos in portfolio.positions
+            )
+        }
+
+    async def get_all_accounts_summary(self) -> "AccountSummaryList":
+        """Get summary of all accounts with ID, created date, starting balance, and current balance."""
+        from sqlalchemy import select
+        from app.schemas.accounts import AccountSummary, AccountSummaryList
+
+        async def _operation(db: AsyncSession):
+            # Query all accounts
+            stmt = select(DBAccount).order_by(DBAccount.created_at.desc())
+            result = await db.execute(stmt)
+            accounts = result.scalars().all()
+
+            # Convert to AccountSummary objects
+            account_summaries = []
+            total_starting_balance = 0.0
+            total_current_balance = 0.0
+
+            for account in accounts:
+                summary = AccountSummary(
+                    id=account.id,
+                    created_at=account.created_at,
+                    starting_balance=account.starting_balance,
+                    current_balance=account.cash_balance,
+                    owner=account.owner
+                )
+                account_summaries.append(summary)
+                total_starting_balance += account.starting_balance
+                total_current_balance += account.cash_balance
+
+            return AccountSummaryList(
+                accounts=account_summaries,
+                total_count=len(account_summaries),
+                total_starting_balance=total_starting_balance,
+                total_current_balance=total_current_balance
+            )
+
+        return await self._execute_with_session(_operation)
 
     async def get_quote(self, symbol: str) -> StockQuote:
         """Get current stock quote for a symbol."""
@@ -397,12 +469,12 @@ class TradingService:
 
         return await self._execute_with_session(_operation)
 
-    async def get_portfolio(self) -> Portfolio:
+    async def get_portfolio(self, account_id: str | None = None) -> Portfolio:
         """Get complete portfolio information."""
         from sqlalchemy import select
 
         async def _operation(db: AsyncSession):
-            account = await self._get_account()
+            account = await self._get_account(account_id)
 
             stmt = select(DBPosition).where(DBPosition.account_id == account.id)
             result = await db.execute(stmt)
@@ -441,10 +513,10 @@ class TradingService:
 
         return await self._execute_with_session(_operation)
 
-    async def get_portfolio_summary(self) -> PortfolioSummary:
+    async def get_portfolio_summary(self, account_id: str | None = None) -> PortfolioSummary:
         """Get portfolio summary."""
         # Use get_portfolio to get updated positions from database
-        portfolio = await self.get_portfolio()
+        portfolio = await self.get_portfolio(account_id)
 
         invested_value = sum(
             pos.quantity * (pos.current_price or 0) for pos in portfolio.positions
