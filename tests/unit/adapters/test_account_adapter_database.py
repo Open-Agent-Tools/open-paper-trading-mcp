@@ -5,8 +5,6 @@ Tests all CRUD operations, edge cases, and database interactions
 for the database-backed account adapter.
 """
 
-import uuid
-from datetime import datetime
 from unittest.mock import patch
 
 import pytest

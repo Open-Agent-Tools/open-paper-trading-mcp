@@ -11,8 +11,16 @@ const AccountInfo: React.FC = () => {
   useEffect(() => {
     const fetchAccountInfo = async () => {
       try {
-        const data = await getAccountInfo();
-        setAccountInfo(data);
+        const response = await getAccountInfo();
+        if (response.success && response.account) {
+          // Extract the account data from the API response
+          setAccountInfo({
+            owner: response.account.owner,
+            cash_balance: response.account.cash_balance,
+          });
+        } else {
+          setError('Failed to fetch account information.');
+        }
       } catch (err) {
         setError('Failed to fetch account information.');
         console.error(err);

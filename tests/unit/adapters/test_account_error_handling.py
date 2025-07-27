@@ -5,7 +5,6 @@ Tests all error scenarios, validation failures, database issues, and recovery me
 for account adapters and related operations.
 """
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

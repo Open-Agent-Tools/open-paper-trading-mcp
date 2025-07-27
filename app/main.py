@@ -6,7 +6,14 @@ Open Paper Trading - FastAPI + React Frontend (MCP runs separately)
 import os
 from pathlib import Path
 
+import uvicorn
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.api.v1.trading import router as trading_router
+from app.core.service_factory import register_services
 
 # Load environment variables
 env_path = Path(__file__).parent.parent / ".env"
@@ -23,14 +30,6 @@ if env_path.exists():
 else:
     print(f"⚠️  Warning: .env file not found at {env_path}")
 
-import uvicorn
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
-
-from app.api.v1.trading import router as trading_router
-from app.core.service_factory import register_services
-
 # Create FastAPI app (MCP server runs independently on port 2081)
 app = FastAPI(
     title="Open Paper Trading",
@@ -44,10 +43,12 @@ register_services()
 # Include API routes
 app.include_router(trading_router)
 
+
 # Basic health endpoint
 @app.get("/health")
 async def health():
     return {"status": "healthy", "server": "fastapi+mcp+react"}
+
 
 # Setup paths
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
@@ -65,6 +66,7 @@ if frontend_dist.exists():
     if assets_dir.exists():
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
         print(f"✅ Assets mounted from {assets_dir}")
+
 
 @app.get("/")
 async def serve_react_app():
@@ -90,6 +92,7 @@ async def serve_react_app():
         </html>
         """)
 
+
 # Catch-all handler for React Router (SPA routing)
 @app.get("/{path:path}")
 async def serve_react_app_catch_all(path: str, request: Request):
@@ -112,10 +115,11 @@ async def serve_react_app_catch_all(path: str, request: Request):
             "<h1>React app not built</h1><p>Run: <code>cd frontend && npm run build</code></p>"
         )
 
+
 if __name__ == "__main__":
     print("🚀 Starting Open Paper Trading FastAPI server on port 2080...")
     print("🔗 Frontend: http://localhost:2080/")
     print("❤️ Health: http://localhost:2080/health")
     print("📚 Docs: http://localhost:2080/docs")
-    print("ℹ️  MCP Server runs independently on port 2081")
+    print("🔧 MCP Server runs independently on port 2081")
     uvicorn.run(app, host="0.0.0.0", port=2080, log_level="info")

@@ -13,7 +13,6 @@ Function Tested:
 - TradingService.get_portfolio_greeks() - app/services/trading_service.py:474-517
 """
 
-import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 

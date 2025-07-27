@@ -28,7 +28,6 @@ Following established patterns:
 - Real database operations with test fixtures
 """
 
-import uuid
 from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 

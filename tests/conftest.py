@@ -240,7 +240,6 @@ def mock_trading_service(mocker: Any) -> MagicMock:
 @pytest_asyncio.fixture
 async def test_account_data(async_db_session: AsyncSession) -> dict[str, Any]:
     """Create test account with sample data."""
-    import uuid
 
     from app.models.database.trading import Account as DBAccount
     from app.models.database.trading import Position as DBPosition
@@ -557,22 +556,6 @@ async def trading_service_test_data():
         def get_available_symbols(self):
             return list(self.test_quotes.keys())
 
-        async def search_stocks(self, query):
-            """Mock search_stocks method."""
-            # Simple mock implementation that matches symbols containing query
-            query_upper = query.upper()
-            results = []
-            for symbol in self.test_quotes.keys():
-                if query_upper in symbol:
-                    results.append(
-                        {
-                            "symbol": symbol,
-                            "name": f"{symbol} Company",
-                            "tradeable": True,
-                        }
-                    )
-            return {"query": query, "results": results, "total_count": len(results)}
-
         async def get_price_history(self, symbol, period="1year", interval="1day"):
             """Mock price history method."""
             return {
@@ -614,10 +597,10 @@ async def trading_service_test_data():
             """Mock stock search method."""
             # Return symbols that contain the query
             matches = [
-                symbol for symbol in self.test_quotes.keys() if query.upper() in symbol
+                symbol for symbol in self.test_quotes if query.upper() in symbol
             ]
             results = [
-                {"symbol": symbol, "name": f"Mock Company {symbol}"}
+                {"symbol": symbol, "name": f"Mock Company {symbol}", "tradeable": True}
                 for symbol in matches[:limit]
             ]
 

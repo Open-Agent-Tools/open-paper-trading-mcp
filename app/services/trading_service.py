@@ -11,6 +11,7 @@ from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Order as DBOrder
 from app.models.database.trading import Position as DBPosition
 from app.models.quotes import OptionQuote, OptionsChain, Quote
+from app.schemas.accounts import AccountSummaryList
 from app.schemas.orders import (
     Order,
     OrderCondition,
@@ -122,10 +123,10 @@ class TradingService:
         finally:
             # Only close session if we created it (not injected)
             if not session_injected:
-                if hasattr(db, 'aclose'):
+                if hasattr(db, "aclose"):
                     await db.aclose()
-                elif hasattr(db, 'close'):
-                    await db.close()
+                elif hasattr(db, "close"):
+                    db.close()
 
     async def _ensure_account_exists(self) -> None:
         """Ensure the account exists in the database."""
@@ -169,6 +170,7 @@ class TradingService:
     async def _get_account(self, account_id: str | None = None) -> DBAccount:
         """Get account from database by ID or by owner."""
         from sqlalchemy import select
+
         from app.core.id_utils import validate_optional_account_id
 
         # Validate account_id format if provided
@@ -192,7 +194,9 @@ class TradingService:
                 result = await db.execute(stmt)
                 account = result.scalar_one_or_none()
                 if not account:
-                    raise NotFoundError(f"Account for owner {self.account_owner} not found")
+                    raise NotFoundError(
+                        f"Account for owner {self.account_owner} not found"
+                    )
             return account
 
         return await self._execute_with_session(_operation)
@@ -206,7 +210,7 @@ class TradingService:
         """Get comprehensive account information."""
         account = await self._get_account(account_id)
         portfolio = await self.get_portfolio(account_id)
-        
+
         return {
             "account_id": account.id,
             "owner": account.owner,
@@ -214,19 +218,21 @@ class TradingService:
             "starting_balance": float(account.starting_balance),
             "created_at": account.created_at.isoformat(),
             "updated_at": account.updated_at.isoformat(),
-            "total_value": portfolio.cash_balance + sum(
+            "total_value": portfolio.cash_balance
+            + sum(
                 pos.quantity * (pos.current_price or 0) for pos in portfolio.positions
             ),
             "positions_count": len(portfolio.positions),
             "invested_value": sum(
                 pos.quantity * (pos.current_price or 0) for pos in portfolio.positions
-            )
+            ),
         }
 
-    async def get_all_accounts_summary(self) -> "AccountSummaryList":
+    async def get_all_accounts_summary(self) -> AccountSummaryList:
         """Get summary of all accounts with ID, created date, starting balance, and current balance."""
         from sqlalchemy import select
-        from app.schemas.accounts import AccountSummary, AccountSummaryList
+
+        from app.schemas.accounts import AccountSummary
 
         async def _operation(db: AsyncSession):
             # Query all accounts
@@ -245,7 +251,7 @@ class TradingService:
                     created_at=account.created_at,
                     starting_balance=account.starting_balance,
                     current_balance=account.cash_balance,
-                    owner=account.owner
+                    owner=account.owner,
                 )
                 account_summaries.append(summary)
                 total_starting_balance += account.starting_balance
@@ -255,7 +261,7 @@ class TradingService:
                 accounts=account_summaries,
                 total_count=len(account_summaries),
                 total_starting_balance=total_starting_balance,
-                total_current_balance=total_current_balance
+                total_current_balance=total_current_balance,
             )
 
         return await self._execute_with_session(_operation)
@@ -513,7 +519,9 @@ class TradingService:
 
         return await self._execute_with_session(_operation)
 
-    async def get_portfolio_summary(self, account_id: str | None = None) -> PortfolioSummary:
+    async def get_portfolio_summary(
+        self, account_id: str | None = None
+    ) -> PortfolioSummary:
         """Get portfolio summary."""
         # Use get_portfolio to get updated positions from database
         portfolio = await self.get_portfolio(account_id)

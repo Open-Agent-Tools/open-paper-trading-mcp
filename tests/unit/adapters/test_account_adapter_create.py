@@ -6,7 +6,6 @@ the DatabaseAccountAdapter.put_account() method, covering successful account cre
 data validation, database persistence, and edge cases.
 """
 
-import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch

@@ -1,10 +1,15 @@
 """
 Tests for account ID validation and generation.
 """
+
 import pytest
 from pydantic import ValidationError
 
-from app.core.id_utils import generate_account_id, is_valid_account_id, validate_account_id
+from app.core.id_utils import (
+    generate_account_id,
+    is_valid_account_id,
+    validate_account_id,
+)
 from app.schemas.accounts import Account
 
 
@@ -40,7 +45,7 @@ class TestAccountIdValidation:
             "1234567890",
             "Z9Y8X7W6V5",
         ]
-        
+
         for account_id in valid_ids:
             assert is_valid_account_id(account_id), f"Should be valid: {account_id}"
             assert validate_account_id(account_id) == account_id
@@ -48,22 +53,24 @@ class TestAccountIdValidation:
     def test_invalid_account_ids(self):
         """Test that invalid account IDs fail validation."""
         invalid_ids = [
-            "short",           # Too short
+            "short",  # Too short
             "toolongforsure",  # Too long
-            "a1b2c3d4e5",      # Lowercase letters
-            "A1B2C3D4E",       # Only 9 characters
-            "A1B2C3D4E5X",     # 11 characters
-            "A1B2-C3D4E",      # Contains hyphen
-            "A1B2_C3D4E",      # Contains underscore
-            "A1B2 C3D4E",      # Contains space
-            "",                # Empty
-            None,              # None value
-            123,               # Not a string
+            "a1b2c3d4e5",  # Lowercase letters
+            "A1B2C3D4E",  # Only 9 characters
+            "A1B2C3D4E5X",  # 11 characters
+            "A1B2-C3D4E",  # Contains hyphen
+            "A1B2_C3D4E",  # Contains underscore
+            "A1B2 C3D4E",  # Contains space
+            "",  # Empty
+            None,  # None value
+            123,  # Not a string
         ]
-        
+
         for account_id in invalid_ids:
-            assert not is_valid_account_id(account_id), f"Should be invalid: {account_id}"
-            
+            assert not is_valid_account_id(account_id), (
+                f"Should be invalid: {account_id}"
+            )
+
             if isinstance(account_id, str):
                 with pytest.raises(ValueError, match="Invalid account ID format"):
                     validate_account_id(account_id)
@@ -78,9 +85,9 @@ class TestAccountSchemaValidation:
             "id": "TEST123456",
             "cash_balance": 100000.0,
             "owner": "test_user",
-            "positions": []
+            "positions": [],
         }
-        
+
         account = Account(**valid_account_data)
         assert account.id == "TEST123456"
         assert account.cash_balance == 100000.0
@@ -91,12 +98,12 @@ class TestAccountSchemaValidation:
             "id": "invalid",  # Too short
             "cash_balance": 100000.0,
             "owner": "test_user",
-            "positions": []
+            "positions": [],
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             Account(**invalid_account_data)
-        
+
         assert "Invalid account ID format" in str(exc_info.value)
 
     def test_account_schema_validation_comprehensive(self):
@@ -106,35 +113,35 @@ class TestAccountSchemaValidation:
                 "id": "TESTACCT01",
                 "cash_balance": 50000.0,
                 "owner": "trader1",
-                "should_pass": True
+                "should_pass": True,
             },
             {
                 "id": "lowercase1",  # Invalid: lowercase
                 "cash_balance": 50000.0,
                 "owner": "trader2",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "id": "SHORT",  # Invalid: too short
                 "cash_balance": 50000.0,
                 "owner": "trader3",
-                "should_pass": False
+                "should_pass": False,
             },
             {
                 "id": "TOOLONGACCOUNT",  # Invalid: too long
                 "cash_balance": 50000.0,
                 "owner": "trader4",
-                "should_pass": False
-            }
+                "should_pass": False,
+            },
         ]
-        
+
         for case in test_cases:
             if case["should_pass"]:
                 account = Account(
                     id=case["id"],
                     cash_balance=case["cash_balance"],
                     owner=case["owner"],
-                    positions=[]
+                    positions=[],
                 )
                 assert account.id == case["id"]
             else:
@@ -143,7 +150,7 @@ class TestAccountSchemaValidation:
                         id=case["id"],
                         cash_balance=case["cash_balance"],
                         owner=case["owner"],
-                        positions=[]
+                        positions=[],
                     )
 
 
@@ -156,12 +163,9 @@ class TestAccountIdIntegration:
             generated_id = generate_account_id()
             assert is_valid_account_id(generated_id)
             assert validate_account_id(generated_id) == generated_id
-            
+
             # Should also work in Account schema
             account = Account(
-                id=generated_id,
-                cash_balance=100000.0,
-                owner="test_user",
-                positions=[]
+                id=generated_id, cash_balance=100000.0, owner="test_user", positions=[]
             )
             assert account.id == generated_id

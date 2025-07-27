@@ -253,9 +253,9 @@ class TestTradingServiceErrorHandling:
 
                 # Verify calculations don't break with edge values
                 for position in result.positions:
-                    assert isinstance(position.avg_price, (float, int))
-                    assert isinstance(position.current_price, (float, int, type(None)))
-                    assert isinstance(position.unrealized_pnl, (float, int, type(None)))
+                    assert isinstance(position.avg_price, float | int)
+                    assert isinstance(position.current_price, float | int | type(None))
+                    assert isinstance(position.unrealized_pnl, float | int | type(None))
         except Exception as e:
             # Edge case handling is acceptable - ensure it doesn't crash
             error_str = str(e).lower()
@@ -387,7 +387,7 @@ class TestTradingServiceErrorHandling:
                 )
                 # Just test that Pydantic validation works - don't actually create the order
                 assert order_data.symbol == "AAPL"
-                assert isinstance(order_data.quantity, (int, float))
+                assert isinstance(order_data.quantity, int | float)
             except (TypeError, ValueError, Exception) as e:
                 # Type errors are acceptable for edge case testing
                 error_str = str(e).lower()
@@ -505,7 +505,7 @@ class TestTradingServiceErrorHandling:
             mock_db = AsyncMock()
             mock_db.execute.side_effect = RuntimeError("Database error")
             mock_db.aclose = AsyncMock()  # Add proper cleanup method
-            
+
             mock_get_session.return_value = mock_db
 
             with contextlib.suppress(RuntimeError):

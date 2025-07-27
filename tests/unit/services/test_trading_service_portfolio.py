@@ -20,7 +20,6 @@ Functions Tested:
 - TradingService.get_enhanced_quote() - app/services/trading_service.py:604-618
 """
 
-import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 

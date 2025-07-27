@@ -6,6 +6,7 @@ This module contains all Pydantic models for account management:
 """
 
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.positions import Position
@@ -19,7 +20,9 @@ class Account(BaseModel, AccountValidationMixin):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(..., description="Unique 10-character alphanumeric account identifier")
+    id: str = Field(
+        ..., description="Unique 10-character alphanumeric account identifier"
+    )
     cash_balance: float = Field(..., description="Available cash balance")
     positions: list[Position] = Field(
         default_factory=list, description="Current positions held in the account"
@@ -41,9 +44,15 @@ class AccountSummary(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(..., description="Unique 10-character alphanumeric account identifier")
-    created_at: datetime = Field(..., description="Date and time when account was created")
-    starting_balance: float = Field(..., description="Initial cash balance when account was created")
+    id: str = Field(
+        ..., description="Unique 10-character alphanumeric account identifier"
+    )
+    created_at: datetime = Field(
+        ..., description="Date and time when account was created"
+    )
+    starting_balance: float = Field(
+        ..., description="Initial cash balance when account was created"
+    )
     current_balance: float = Field(..., description="Current available cash balance")
     owner: str = Field(..., description="Account owner")
 
@@ -57,5 +66,7 @@ class AccountSummaryList(BaseModel):
 
     accounts: list[AccountSummary] = Field(..., description="List of account summaries")
     total_count: int = Field(..., description="Total number of accounts")
-    total_starting_balance: float = Field(..., description="Sum of all starting balances")
+    total_starting_balance: float = Field(
+        ..., description="Sum of all starting balances"
+    )
     total_current_balance: float = Field(..., description="Sum of all current balances")
