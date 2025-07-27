@@ -28,12 +28,21 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.v1.trading import router as trading_router
+from app.core.service_factory import register_services
+
 # Create FastAPI app (MCP server runs independently on port 2081)
 app = FastAPI(
     title="Open Paper Trading",
     description="Paper trading platform with FastAPI and React frontend",
     version="0.1.0",
 )
+
+# Register services (dependency injection)
+register_services()
+
+# Include API routes
+app.include_router(trading_router)
 
 # Basic health endpoint
 @app.get("/health")

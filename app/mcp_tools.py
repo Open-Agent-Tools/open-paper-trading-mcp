@@ -108,10 +108,11 @@ def get_account_info() -> Dict[str, Any]:
             "success": True,
             "account": {
                 "id": account.id,
-                "name": account.name,
                 "owner": account.owner,
                 "cash_balance": balance,
-                "currency": "USD"
+                "currency": "USD",
+                "created_at": account.created_at.isoformat() if account.created_at else None,
+                "updated_at": account.updated_at.isoformat() if account.updated_at else None
             },
             "message": f"Account {account.id} retrieved successfully"
         }
