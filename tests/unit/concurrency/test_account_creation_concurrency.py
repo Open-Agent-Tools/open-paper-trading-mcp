@@ -254,7 +254,7 @@ class TestAccountCreationConcurrency:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     @pytest.mark.asyncio
-    async def test_database_transaction_isolation(self, db_session: AsyncSession):
+    async def synthetic_database_transaction_isolation(self, db_session: AsyncSession):
         """Test database transaction isolation during concurrent account operations."""
 
         async def concurrent_account_operation(operation_id: int) -> dict[str, Any]:

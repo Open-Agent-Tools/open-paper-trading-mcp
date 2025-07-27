@@ -18,11 +18,11 @@ class TestTradingServicePriceHistory:
     """Test price history functionality."""
 
     @pytest.mark.asyncio
-    async def test_get_price_history_basic_success_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_basic_success_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test basic successful price history retrieval with test data."""
-        result = await trading_service_test_data.get_price_history("AAPL")
+        result = await trading_service_synthetic_data.get_price_history("AAPL")
 
         assert isinstance(result, dict)
 
@@ -40,14 +40,14 @@ class TestTradingServicePriceHistory:
             assert isinstance(price_data, list)
 
     @pytest.mark.asyncio
-    async def test_get_price_history_with_period_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_with_period_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test price history with different periods."""
         periods = ["day", "week", "month", "year"]
 
         for period in periods:
-            result = await trading_service_test_data.get_price_history("AAPL", period)
+            result = await trading_service_synthetic_data.get_price_history("AAPL", period)
 
             assert isinstance(result, dict)
             if "error" not in result:
@@ -90,11 +90,11 @@ class TestTradingServicePriceHistory:
                 assert result["period"] == period
 
     @pytest.mark.asyncio
-    async def test_get_price_history_invalid_symbol_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_invalid_symbol_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test price history with invalid symbol using test data."""
-        result = await trading_service_test_data.get_price_history("INVALID_SYMBOL_XYZ")
+        result = await trading_service_synthetic_data.get_price_history("INVALID_SYMBOL_XYZ")
 
         assert isinstance(result, dict)
         assert "error" in result
@@ -113,14 +113,14 @@ class TestTradingServicePriceHistory:
 
     @pytest.mark.asyncio
     async def test_get_price_history_adapter_with_extended_functionality(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test price history when adapter has get_price_history method."""
         has_extended = hasattr(
-            trading_service_test_data.quote_adapter, "get_price_history"
+            trading_service_synthetic_data.quote_adapter, "get_price_history"
         )
 
-        result = await trading_service_test_data.get_price_history("AAPL", "week")
+        result = await trading_service_synthetic_data.get_price_history("AAPL", "week")
 
         assert isinstance(result, dict)
 
@@ -135,15 +135,15 @@ class TestTradingServicePriceHistory:
                 assert len(price_data) >= 1  # At least current quote
 
     @pytest.mark.asyncio
-    async def test_get_price_history_fallback_mechanism_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_fallback_mechanism_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test price history fallback when adapter lacks extended functionality."""
         # Force test of fallback by mocking hasattr to return False
         with patch("app.services.trading_service.hasattr") as mock_hasattr:
             mock_hasattr.return_value = False
 
-            result = await trading_service_test_data.get_price_history("AAPL", "week")
+            result = await trading_service_synthetic_data.get_price_history("AAPL", "week")
 
             assert isinstance(result, dict)
 
@@ -160,13 +160,13 @@ class TestTradingServicePriceHistory:
 
     @pytest.mark.asyncio
     async def test_get_price_history_fallback_data_point_structure(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test structure of fallback price history data point."""
         # Force fallback by mocking hasattr to return False
         with patch("app.services.trading_service.hasattr") as mock_hasattr:
             mock_hasattr.return_value = False
-            result = await trading_service_test_data.get_price_history("AAPL", "day")
+            result = await trading_service_synthetic_data.get_price_history("AAPL", "day")
 
             price_data = result.get("data_points", result.get("prices", []))
             if "error" not in result and price_data:
@@ -184,22 +184,22 @@ class TestTradingServicePriceHistory:
 
     @pytest.mark.asyncio
     async def test_get_price_history_no_quote_data_fallback(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test price history fallback when no quote data is available."""
         # Force no quote data scenario
-        original_get_enhanced_quote = trading_service_test_data.get_enhanced_quote
+        original_get_enhanced_quote = trading_service_synthetic_data.get_enhanced_quote
 
         async def mock_get_enhanced_quote(symbol):
             return None
 
         try:
-            trading_service_test_data.get_enhanced_quote = mock_get_enhanced_quote
+            trading_service_synthetic_data.get_enhanced_quote = mock_get_enhanced_quote
 
             # Mock hasattr to return False to force fallback
             with patch("app.services.trading_service.hasattr") as mock_hasattr:
                 mock_hasattr.return_value = False
-                result = await trading_service_test_data.get_price_history(
+                result = await trading_service_synthetic_data.get_price_history(
                     "AAPL", "week"
                 )
 
@@ -208,17 +208,17 @@ class TestTradingServicePriceHistory:
                 assert "No historical data found" in result["error"]
 
         finally:
-            trading_service_test_data.get_enhanced_quote = original_get_enhanced_quote
+            trading_service_synthetic_data.get_enhanced_quote = original_get_enhanced_quote
 
     @pytest.mark.asyncio
-    async def test_get_price_history_multiple_symbols_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_multiple_symbols_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test price history retrieval for multiple symbols."""
         symbols = ["AAPL", "MSFT", "GOOGL"]
 
         for symbol in symbols:
-            result = await trading_service_test_data.get_price_history(symbol, "week")
+            result = await trading_service_synthetic_data.get_price_history(symbol, "week")
             assert isinstance(result, dict)
 
             if "error" not in result:
@@ -238,11 +238,11 @@ class TestTradingServicePriceHistory:
             assert isinstance(result, dict)
 
     @pytest.mark.asyncio
-    async def test_get_price_history_default_period_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_default_period_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test price history with default period (week)."""
-        result = await trading_service_test_data.get_price_history("AAPL")
+        result = await trading_service_synthetic_data.get_price_history("AAPL")
 
         assert isinstance(result, dict)
         if "error" not in result:
@@ -260,11 +260,11 @@ class TestTradingServicePriceHistory:
 
     @pytest.mark.asyncio
     async def test_get_price_history_exception_handling(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test exception handling in get_price_history."""
         # Test with empty string
-        result = await trading_service_test_data.get_price_history("")
+        result = await trading_service_synthetic_data.get_price_history("")
         assert isinstance(result, dict)
         assert "error" in result
 
@@ -284,11 +284,11 @@ class TestTradingServicePriceHistory:
         # Should handle gracefully
 
     @pytest.mark.asyncio
-    async def test_get_price_history_lowercase_symbol_test_data(
-        self, trading_service_test_data
+    async def test_get_price_history_lowercase_symbol_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test price history with lowercase symbol gets converted to uppercase."""
-        result = await trading_service_test_data.get_price_history("aapl", "day")
+        result = await trading_service_synthetic_data.get_price_history("aapl", "day")
 
         assert isinstance(result, dict)
         if "error" not in result:

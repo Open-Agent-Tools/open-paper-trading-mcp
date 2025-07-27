@@ -46,11 +46,11 @@ def _get_quote_adapter() -> QuoteAdapter:
 
     if quote_adapter is None:
         # Fall back to database test data adapter
-        quote_adapter = factory.create_adapter("test_data_db")
+        quote_adapter = factory.create_adapter("synthetic_data_db")
 
     if quote_adapter is None:
         # Final fallback to dev data adapter
-        from app.adapters.test_data import DevDataQuoteAdapter
+        from app.adapters.synthetic_data import DevDataQuoteAdapter
 
         quote_adapter = DevDataQuoteAdapter()
 

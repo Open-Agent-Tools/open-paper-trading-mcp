@@ -38,6 +38,7 @@ from app.schemas.orders import OrderCondition, OrderCreate, OrderStatus, OrderTy
 from app.services.trading_service import TradingService
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestCreateOrder:
     """Test TradingService.create_order() function."""
@@ -74,6 +75,9 @@ class TestCreateOrder:
             quantity=100,
             price=None,  # Market order
             condition=OrderCondition.MARKET,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         # Create order
@@ -127,6 +131,9 @@ class TestCreateOrder:
             quantity=10,
             price=2800.0,
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         result = await service.create_order(order_data)
@@ -164,6 +171,9 @@ class TestCreateOrder:
             quantity=100,
             price=None,
             condition=OrderCondition.MARKET,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         # Should raise NotFoundError for invalid symbol
@@ -200,6 +210,9 @@ class TestCreateOrder:
             quantity=50,
             price=160.0,
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         result = await service.create_order(order_data)
@@ -209,6 +222,7 @@ class TestCreateOrder:
         assert result.price == 160.0
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestGetOrders:
     """Test TradingService.get_orders() function."""
@@ -312,6 +326,7 @@ class TestGetOrders:
         assert result_statuses == expected_statuses
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestGetOrder:
     """Test TradingService.get_order() function."""
@@ -412,6 +427,7 @@ class TestGetOrder:
             await service.get_order(order_id)
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestCancelOrder:
     """Test TradingService.cancel_order() function."""
@@ -510,6 +526,7 @@ class TestCancelOrder:
         assert order.status == OrderStatus.CANCELLED
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestCancelAllStockOrders:
     """Test TradingService.cancel_all_stock_orders() function."""
@@ -599,6 +616,7 @@ class TestCancelAllStockOrders:
         assert len(result["cancelled_orders"]) == 0
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestCancelAllOptionOrders:
     """Test TradingService.cancel_all_option_orders() function."""
@@ -684,6 +702,7 @@ class TestCancelAllOptionOrders:
             assert stock_order.status == OrderStatus.PENDING
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestOrderManagementErrorHandling:
     """Test error handling in order management functions."""
@@ -722,6 +741,9 @@ class TestOrderManagementErrorHandling:
                 quantity=100,
                 price=150.0,
                 condition=OrderCondition.LIMIT,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
 
             with pytest.raises(DatabaseError):
@@ -776,6 +798,7 @@ class TestOrderManagementErrorHandling:
         assert success_count >= 1
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestOrderCreationValidationExtended:
     """Extended validation tests for order creation - Phase 1.1 requirements."""
@@ -806,6 +829,9 @@ class TestOrderCreationValidationExtended:
                 quantity=0,  # Invalid: must be > 0
                 price=150.0,
                 condition=OrderCondition.LIMIT,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
 
     @pytest.mark.asyncio
@@ -827,6 +853,9 @@ class TestOrderCreationValidationExtended:
                 quantity=-100,  # Invalid: must be > 0
                 price=150.0,
                 condition=OrderCondition.LIMIT,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
 
     @pytest.mark.asyncio
@@ -857,6 +886,9 @@ class TestOrderCreationValidationExtended:
             quantity=100,
             price=-50.0,  # Negative price
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         # Should create order (service doesn't validate price range)
@@ -891,6 +923,9 @@ class TestOrderCreationValidationExtended:
             quantity=1000000,  # Very large quantity
             price=1.0,
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         result = await service.create_order(order_data)
@@ -924,6 +959,9 @@ class TestOrderCreationValidationExtended:
             quantity=100,
             price=123.456789123456,  # High precision
             condition=OrderCondition.LIMIT,
+            stop_price=None,
+            trail_percent=None,
+            trail_amount=None,
         )
 
         result = await service.create_order(order_data)
@@ -970,6 +1008,9 @@ class TestOrderCreationValidationExtended:
                 quantity=100,
                 price=150.0 + i,
                 condition=OrderCondition.LIMIT,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
             result = await service.create_order(order_data)
             results.append(result)
@@ -1013,6 +1054,9 @@ class TestOrderCreationValidationExtended:
                 quantity=100,
                 price=150.0 if condition != OrderCondition.MARKET else None,
                 condition=condition,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
             result = await service.create_order(order_data)
             # Note: Service may not preserve condition in response
@@ -1053,12 +1097,16 @@ class TestOrderCreationValidationExtended:
                 quantity=100,
                 price=150.0,
                 condition=OrderCondition.LIMIT,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
             result = await service.create_order(order_data)
             # Service should normalize to uppercase
             assert result.symbol == expected_symbol.upper()
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestOrderRetrievalExtended:
     """Extended tests for order retrieval operations - Phase 1.2 requirements."""
@@ -1253,6 +1301,7 @@ class TestOrderRetrievalExtended:
             pass
 
 
+@pytest.mark.journey_basic_trading
 @pytest.mark.database
 class TestBulkOrderOperationsExtended:
     """Extended tests for bulk order operations - Phase 1.3 requirements."""

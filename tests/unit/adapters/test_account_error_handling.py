@@ -238,7 +238,7 @@ class TestErrorMessageAccuracy:
         assert "Cash balance cannot be negative" in error_msg
 
     @pytest.mark.asyncio
-    async def test_database_error_propagation(self):
+    async def synthetic_database_error_propagation(self):
         """Test that database errors are properly propagated with context."""
         adapter = DatabaseAccountAdapter()
 

@@ -22,6 +22,12 @@ def pytest_configure(config):
         "markers", "robinhood: Tests that use live Robinhood API calls"
     )
     config.addinivalue_line("markers", "asyncio: Async test marker")
+    # User Journey Markers
+    config.addinivalue_line("markers", "journey_account_management: Account management user journey tests")
+    config.addinivalue_line("markers", "journey_basic_trading: Basic stock trading user journey tests")
+    config.addinivalue_line("markers", "journey_market_data: Market data retrieval user journey tests")
+    config.addinivalue_line("markers", "journey_options_trading: Options trading user journey tests")
+    config.addinivalue_line("markers", "journey_portfolio_management: Portfolio management user journey tests")
 
 
 # Set testing environment variables BEFORE importing the app
@@ -54,7 +60,7 @@ def event_loop_policy():
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_test_database():
+async def setup_synthetic_database():
     """Set up test database once per test session."""
     # Create engine in the current event loop
     database_url = os.environ.get(
@@ -481,7 +487,7 @@ def performance_monitor():
 
 
 @pytest_asyncio.fixture
-async def trading_service_test_data():
+async def trading_service_synthetic_data():
     """Create TradingService with mock test data adapter (read-only)."""
     from datetime import datetime
 
@@ -596,9 +602,7 @@ async def trading_service_test_data():
         async def search_stocks(self, query, limit=10):
             """Mock stock search method."""
             # Return symbols that contain the query
-            matches = [
-                symbol for symbol in self.test_quotes if query.upper() in symbol
-            ]
+            matches = [symbol for symbol in self.test_quotes if query.upper() in symbol]
             results = [
                 {"symbol": symbol, "name": f"Mock Company {symbol}", "tradeable": True}
                 for symbol in matches[:limit]

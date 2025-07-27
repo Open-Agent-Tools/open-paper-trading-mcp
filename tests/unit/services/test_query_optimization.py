@@ -1564,7 +1564,7 @@ class TestOptimizedOrderQueriesErrorHandling:
     """Test error handling in OptimizedOrderQueries methods."""
 
     @pytest.mark.asyncio
-    async def test_database_error_handling(self):
+    async def synthetic_database_error_handling(self):
         """Test handling of database errors."""
         # Create mock session that raises database error
         mock_session = MagicMock()

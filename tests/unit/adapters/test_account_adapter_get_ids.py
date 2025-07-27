@@ -318,7 +318,7 @@ class TestGetAccountIdsDatabaseErrors:
     """Test database error scenarios."""
 
     @pytest.mark.asyncio
-    async def test_database_connection_error(self):
+    async def synthetic_database_connection_error(self):
         """Test handling of database connection failures."""
         adapter = DatabaseAccountAdapter()
 
@@ -338,7 +338,7 @@ class TestGetAccountIdsDatabaseErrors:
             assert "Connection to database failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_database_query_error(self):
+    async def synthetic_database_query_error(self):
         """Test handling of query execution failures."""
         adapter = DatabaseAccountAdapter()
 
@@ -370,7 +370,7 @@ class TestGetAccountIdsDatabaseErrors:
             assert "Query execution failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_database_session_cleanup_on_error(self):
+    async def synthetic_database_session_cleanup_on_error(self):
         """Test that database session errors are properly handled."""
         adapter = DatabaseAccountAdapter()
 

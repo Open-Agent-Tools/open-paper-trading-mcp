@@ -19,11 +19,11 @@ class TestTradingServiceStockPriceMetrics:
     """Test stock price and metrics functionality."""
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_basic_success_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_basic_success_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test basic successful stock price retrieval with test data."""
-        result = await trading_service_test_data.get_stock_price("AAPL")
+        result = await trading_service_synthetic_data.get_stock_price("AAPL")
 
         assert "error" not in result
         assert result["symbol"] == "AAPL"
@@ -110,11 +110,11 @@ class TestTradingServiceStockPriceMetrics:
             assert result["ask_price"] >= result["bid_price"]
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_invalid_symbol_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_invalid_symbol_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock price with invalid symbol using test data."""
-        result = await trading_service_test_data.get_stock_price("INVALID_SYMBOL_XYZ")
+        result = await trading_service_synthetic_data.get_stock_price("INVALID_SYMBOL_XYZ")
 
         assert "error" in result
         # Error message could be "Invalid symbol" or "Invalid option symbol format"
@@ -132,34 +132,34 @@ class TestTradingServiceStockPriceMetrics:
         assert "error" in result
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_multiple_symbols_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_multiple_symbols_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock price retrieval for multiple symbols with test data."""
         symbols = ["AAPL", "MSFT", "GOOGL", "TSLA"]
 
         for symbol in symbols:
-            result = await trading_service_test_data.get_stock_price(symbol)
+            result = await trading_service_synthetic_data.get_stock_price(symbol)
             assert "error" not in result
             assert result["symbol"] == symbol
             assert "price" in result
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_lowercase_symbol_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_lowercase_symbol_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock price with lowercase symbol gets converted to uppercase."""
-        result = await trading_service_test_data.get_stock_price("aapl")
+        result = await trading_service_synthetic_data.get_stock_price("aapl")
 
         assert "error" not in result
         assert result["symbol"] == "AAPL"  # Should be uppercase
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_change_calculation_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_change_calculation_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that change calculations are performed correctly."""
-        result = await trading_service_test_data.get_stock_price("AAPL")
+        result = await trading_service_synthetic_data.get_stock_price("AAPL")
 
         assert "error" not in result
         if result["price"] and result["previous_close"]:
@@ -173,11 +173,11 @@ class TestTradingServiceStockPriceMetrics:
                 assert abs(result["change_percent"] - expected_change_percent) < 0.01
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_response_completeness_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_response_completeness_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that all expected fields are present in response."""
-        result = await trading_service_test_data.get_stock_price("AAPL")
+        result = await trading_service_synthetic_data.get_stock_price("AAPL")
 
         expected_fields = [
             "symbol",
@@ -196,11 +196,11 @@ class TestTradingServiceStockPriceMetrics:
             assert field in result, f"Missing field: {field}"
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_numeric_precision_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_numeric_precision_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that numeric values have appropriate precision."""
-        result = await trading_service_test_data.get_stock_price("AAPL")
+        result = await trading_service_synthetic_data.get_stock_price("AAPL")
 
         assert "error" not in result
 
@@ -237,12 +237,12 @@ class TestTradingServiceStockPriceMetrics:
         assert time_diff.total_seconds() < 86400
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_exception_handling_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_exception_handling_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test exception handling with corrupted adapter."""
         # Test with None symbol
-        result = await trading_service_test_data.get_stock_price("")
+        result = await trading_service_synthetic_data.get_stock_price("")
         assert "error" in result
 
     @pytest.mark.slow
@@ -273,19 +273,19 @@ class TestTradingServiceStockPriceMetrics:
         assert result["price"] is not None
 
     @pytest.mark.asyncio
-    async def test_get_stock_price_edge_case_symbols_test_data(
-        self, trading_service_test_data
+    async def test_get_stock_price_edge_case_symbols_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock price with edge case symbols."""
         # Test symbols with dots, dashes, etc.
         edge_symbols = (
             ["BRK.B", "BRK-B"]
-            if hasattr(trading_service_test_data.quote_adapter, "get_quote")
+            if hasattr(trading_service_synthetic_data.quote_adapter, "get_quote")
             else ["AAPL"]
         )
 
         for symbol in edge_symbols:
-            result = await trading_service_test_data.get_stock_price(symbol)
+            result = await trading_service_synthetic_data.get_stock_price(symbol)
             # May error or succeed depending on adapter support
             assert isinstance(result, dict)
             assert "symbol" in result or "error" in result

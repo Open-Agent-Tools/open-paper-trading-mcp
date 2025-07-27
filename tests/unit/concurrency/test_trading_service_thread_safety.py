@@ -175,6 +175,9 @@ class TestTradingServiceThreadSafety:
                         quantity=10 + order_id,  # Different quantities
                         price=None,  # Market order
                         condition=OrderCondition.MARKET,
+                        stop_price=None,
+                        trail_percent=None,
+                        trail_amount=None,
                     )
 
                     # Add small delay to increase concurrency
@@ -477,7 +480,7 @@ class TestTradingServiceThreadSafety:
                 owner_id = f"thread_owner_{thread_id}_{uuid.uuid4().hex[:6]}"
 
                 # Note: This test uses a mock adapter since we can't easily use async DB in threads
-                from app.adapters.test_data import DevDataQuoteAdapter
+                from app.adapters.synthetic_data import DevDataQuoteAdapter
 
                 service = TradingService(
                     quote_adapter=DevDataQuoteAdapter(), account_owner=owner_id
@@ -714,6 +717,9 @@ class TestRaceConditionScenarios:
                             quantity=10,
                             price=150.0,
                             condition=OrderCondition.LIMIT,
+                            stop_price=None,
+                            trail_percent=None,
+                            trail_amount=None,
                         )
 
                         order = await service.create_order(order_data)

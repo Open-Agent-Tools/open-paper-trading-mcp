@@ -327,7 +327,7 @@ class TestDataMigrationScenarios:
         assert result.scalar() == 3
 
     @pytest.mark.asyncio
-    async def test_data_type_precision(self, async_db_session: AsyncSession):
+    async def synthetic_data_type_precision(self, async_db_session: AsyncSession):
         """Test data type precision and range handling."""
 
         # Test decimal precision for cash balance

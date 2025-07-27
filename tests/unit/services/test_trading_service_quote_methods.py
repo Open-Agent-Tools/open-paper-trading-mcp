@@ -25,13 +25,14 @@ from app.models.quotes import OptionQuote, Quote
 from app.schemas.trading import StockQuote
 
 
+@pytest.mark.journey_market_data
 class TestTradingServiceQuoteMethods:
     """Test core quote retrieval methods."""
 
     @pytest.mark.asyncio
-    async def test_get_quote_basic_success_test_data(self, trading_service_test_data):
+    async def test_get_quote_basic_success_synthetic_data(self, trading_service_synthetic_data):
         """Test basic get_quote with test data adapter."""
-        result = await trading_service_test_data.get_quote("AAPL")
+        result = await trading_service_synthetic_data.get_quote("AAPL")
 
         assert isinstance(result, StockQuote)
         assert result.symbol == "AAPL"
@@ -41,17 +42,18 @@ class TestTradingServiceQuoteMethods:
         assert result.last_updated is not None
 
     @pytest.mark.asyncio
-    async def test_get_quote_invalid_symbol_test_data(self, trading_service_test_data):
+    async def test_get_quote_invalid_symbol_synthetic_data(self, trading_service_synthetic_data):
         """Test get_quote with invalid symbol."""
         with pytest.raises((NotFoundError, ValidationError)):
-            await trading_service_test_data.get_quote("INVALID_SYMBOL_XYZ")
+            await trading_service_synthetic_data.get_quote("INVALID_SYMBOL_XYZ")
 
     @pytest.mark.asyncio
-    async def test_get_quote_empty_symbol_test_data(self, trading_service_test_data):
+    async def test_get_quote_empty_symbol_synthetic_data(self, trading_service_synthetic_data):
         """Test get_quote with empty symbol."""
         with pytest.raises((NotFoundError, ValidationError, ValueError)):
-            await trading_service_test_data.get_quote("")
+            await trading_service_synthetic_data.get_quote("")
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -71,6 +73,7 @@ class TestTradingServiceQuoteMethods:
 
         # StockQuote doesn't have bid/ask fields - those are in Quote/OptionQuote
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -83,6 +86,7 @@ class TestTradingServiceQuoteMethods:
         assert result.price is not None
         assert result.price > 0
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -95,6 +99,7 @@ class TestTradingServiceQuoteMethods:
         assert result.price is not None
         assert result.price > 0
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -104,11 +109,11 @@ class TestTradingServiceQuoteMethods:
             await trading_service_robinhood.get_quote("INVALID_SYMBOL_XYZ")
 
     @pytest.mark.asyncio
-    async def test_get_enhanced_quote_basic_success_test_data(
-        self, trading_service_test_data
+    async def test_get_enhanced_quote_basic_success_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test basic get_enhanced_quote with test data."""
-        result = await trading_service_test_data.get_enhanced_quote("AAPL")
+        result = await trading_service_synthetic_data.get_enhanced_quote("AAPL")
 
         # Test data returns MockQuote which has the expected attributes
         assert hasattr(result, "symbol")
@@ -118,13 +123,13 @@ class TestTradingServiceQuoteMethods:
         assert result.price > 0
 
     @pytest.mark.asyncio
-    async def test_get_enhanced_quote_with_validation_test_data(
-        self, trading_service_test_data
+    async def test_get_enhanced_quote_with_validation_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test get_enhanced_quote with symbol validation."""
         # Test that invalid symbols are handled
         try:
-            result = await trading_service_test_data.get_enhanced_quote("INVALID")
+            result = await trading_service_synthetic_data.get_enhanced_quote("INVALID")
             # If no exception, should return None or valid quote
             if result:
                 assert isinstance(result, StockQuote)
@@ -132,6 +137,7 @@ class TestTradingServiceQuoteMethods:
             # Exception is acceptable for invalid symbols
             pass
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -149,6 +155,7 @@ class TestTradingServiceQuoteMethods:
         assert result.ask is not None
         assert result.quote_date is not None
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -163,6 +170,7 @@ class TestTradingServiceQuoteMethods:
         assert result.price is not None
         assert result.price > 0
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -180,12 +188,12 @@ class TestTradingServiceQuoteMethods:
             assert result.price > 0
 
     @pytest.mark.asyncio
-    async def test_get_enhanced_quote_adapter_call_test_data(
-        self, trading_service_test_data
+    async def test_get_enhanced_quote_adapter_call_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that get_enhanced_quote properly calls the adapter."""
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_quote"
+            trading_service_synthetic_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
             from datetime import datetime
 
@@ -199,24 +207,25 @@ class TestTradingServiceQuoteMethods:
             )
             mock_get_quote.return_value = mock_quote
 
-            result = await trading_service_test_data.get_enhanced_quote("AAPL")
+            result = await trading_service_synthetic_data.get_enhanced_quote("AAPL")
 
             assert result == mock_quote
             mock_get_quote.assert_called_once_with("AAPL")
 
     @pytest.mark.asyncio
-    async def test_get_enhanced_quote_exception_handling_test_data(
-        self, trading_service_test_data
+    async def test_get_enhanced_quote_exception_handling_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test exception handling in get_enhanced_quote."""
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_quote"
+            trading_service_synthetic_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
             mock_get_quote.side_effect = NotFoundError("Test exception")
 
             with pytest.raises(NotFoundError):
-                await trading_service_test_data.get_enhanced_quote("AAPL")
+                await trading_service_synthetic_data.get_enhanced_quote("AAPL")
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -243,17 +252,18 @@ class TestTradingServiceQuoteMethods:
             assert all(isinstance(r, Quote | OptionQuote) for r in results)
 
     @pytest.mark.asyncio
-    async def test_quote_methods_consistency_test_data(self, trading_service_test_data):
+    async def test_quote_methods_consistency_synthetic_data(self, trading_service_synthetic_data):
         """Test that get_quote and get_enhanced_quote return consistent data."""
         symbol = "AAPL"
 
-        basic_quote = await trading_service_test_data.get_quote(symbol)
-        enhanced_quote = await trading_service_test_data.get_enhanced_quote(symbol)
+        basic_quote = await trading_service_synthetic_data.get_quote(symbol)
+        enhanced_quote = await trading_service_synthetic_data.get_enhanced_quote(symbol)
 
         assert basic_quote.symbol == enhanced_quote.symbol
         assert basic_quote.price == enhanced_quote.price
         # Note: StockQuote doesn't have bid/ask, enhanced quote does
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -270,13 +280,13 @@ class TestTradingServiceQuoteMethods:
         # Note: StockQuote doesn't have bid/ask, enhanced quote does
 
     @pytest.mark.asyncio
-    async def test_get_quote_case_sensitivity_test_data(
-        self, trading_service_test_data
+    async def test_get_quote_case_sensitivity_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that get_quote handles symbol case properly."""
         # Test both uppercase and lowercase
-        result_upper = await trading_service_test_data.get_quote("AAPL")
-        result_lower = await trading_service_test_data.get_quote("aapl")
+        result_upper = await trading_service_synthetic_data.get_quote("AAPL")
+        result_lower = await trading_service_synthetic_data.get_quote("aapl")
 
         # Both should work and return normalized symbols
         assert isinstance(result_upper, StockQuote)
@@ -284,6 +294,7 @@ class TestTradingServiceQuoteMethods:
         assert result_upper.symbol == "AAPL"
         assert result_lower.symbol == "AAPL"
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio

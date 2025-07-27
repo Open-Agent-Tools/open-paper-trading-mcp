@@ -31,6 +31,7 @@ from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestAccountBalanceRetrieval:
     """Test basic account balance retrieval functionality."""
@@ -128,6 +129,7 @@ class TestAccountBalanceRetrieval:
             assert owner2 in owners
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestBalancePersistence:
     """Test balance persistence across sessions and service restarts."""
@@ -182,6 +184,7 @@ class TestBalancePersistence:
             assert updated_balance == new_balance
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestAccountStateConsistency:
     """Test account state consistency during various operations."""
@@ -223,6 +226,7 @@ class TestAccountStateConsistency:
             assert is_valid is True
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestAccountInitialization:
     """Test account creation and initialization logic."""
@@ -276,12 +280,13 @@ class TestAccountInitialization:
             assert accounts[0].cash_balance == original_balance
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
     @pytest.mark.asyncio
-    async def test_database_connection_error(self, db_session: AsyncSession):
+    async def synthetic_database_connection_error(self, db_session: AsyncSession):
         """Test handling of database connection errors."""
         owner = f"db_error_user_{uuid.uuid4().hex[:8]}"
         service = TradingService(account_owner=owner)
@@ -339,6 +344,7 @@ class TestErrorHandling:
             assert balance == 0.0
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestPerformanceBenchmarks:
     """Test performance benchmarks for balance operations."""
@@ -366,6 +372,7 @@ class TestPerformanceBenchmarks:
             )
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestIntegrationWithTrading:
     """Test balance integration with trading operations."""
@@ -408,6 +415,9 @@ class TestIntegrationWithTrading:
                 quantity=10,
                 price=150.0,
                 condition=OrderCondition.LIMIT,
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
 
             order = await service.create_order(order_data)

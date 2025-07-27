@@ -26,7 +26,7 @@ from .config import (
     create_test_adapter,
     get_adapter_factory,
 )
-from .test_data import DevDataQuoteAdapter, TestDataError, get_test_adapter
+from .synthetic_data import DevDataQuoteAdapter, TestDataError, get_test_adapter
 
 __all__ = [
     "AdapterConfig",

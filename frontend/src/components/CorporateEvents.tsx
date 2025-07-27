@@ -109,7 +109,7 @@ const CorporateEvents: React.FC<CorporateEventsProps> = ({
     }
   };
 
-  const formatAmount = (amount: number | null): string => {
+  const formatAmount = (amount: number | null | undefined): string => {
     if (amount === null || amount === undefined) {
       return 'N/A';
     }
@@ -226,11 +226,11 @@ const CorporateEvents: React.FC<CorporateEventsProps> = ({
                 <TableRow key={index} hover>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1}>
-                      {getEventIcon(event.event_type)}
+                      {getEventIcon(event.type)}
                       <Chip
-                        label={event.event_type}
+                        label={event.type}
                         size="small"
-                        color={getEventChipColor(event.event_type)}
+                        color={getEventChipColor(event.type)}
                         variant="outlined"
                       />
                     </Box>
@@ -247,9 +247,9 @@ const CorporateEvents: React.FC<CorporateEventsProps> = ({
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={event.status || 'Scheduled'}
+                      label="Scheduled"
                       size="small"
-                      color={event.status === 'confirmed' ? 'success' : 'default'}
+                      color="default"
                       variant="filled"
                     />
                   </TableCell>

@@ -17,12 +17,13 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.test_data import DevDataQuoteAdapter
+from app.adapters.synthetic_data import DevDataQuoteAdapter
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Position as DBPosition
 from app.services.trading_service import TradingService
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestTradingServiceAccountCreation:
     """Test suite for TradingService account creation and initialization."""
@@ -607,7 +608,7 @@ class TestTradingServiceAccountCreation:
     # Tests for integration with different adapter types
     # ========================================================================
 
-    def test_init_with_test_data_adapter(self):
+    def test_init_with_synthetic_data_adapter(self):
         """Test __init__() with DevDataQuoteAdapter."""
         # Arrange
         adapter = DevDataQuoteAdapter()

@@ -20,15 +20,16 @@ from unittest.mock import patch
 import pytest
 
 
+@pytest.mark.journey_options_trading
 class TestTradingServiceOptionsChain:
     """Test options chain functionality."""
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_basic_success_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_basic_success_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test basic get_formatted_options_chain with test data."""
-        result = await trading_service_test_data.get_formatted_options_chain("AAPL")
+        result = await trading_service_synthetic_data.get_formatted_options_chain("AAPL")
 
         assert isinstance(result, dict)
         # Test data may not have options chain, so check for error or valid response
@@ -43,12 +44,12 @@ class TestTradingServiceOptionsChain:
             assert isinstance(result["puts"], list)
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_with_expiration_filter_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_with_expiration_filter_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with expiration date filter."""
         future_date = date.today() + timedelta(days=30)
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", expiration_date=future_date
         )
 
@@ -61,11 +62,11 @@ class TestTradingServiceOptionsChain:
         assert result["underlying_symbol"] == "AAPL"
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_with_strike_filters_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_with_strike_filters_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with strike price filters."""
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", min_strike=150.0, max_strike=200.0
         )
 
@@ -89,11 +90,11 @@ class TestTradingServiceOptionsChain:
                     assert 150.0 <= put["strike"] <= 200.0
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_without_greeks_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_without_greeks_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain without Greeks."""
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", include_greeks=False
         )
 
@@ -110,11 +111,11 @@ class TestTradingServiceOptionsChain:
                 assert "iv" not in call
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_with_greeks_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_with_greeks_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with Greeks included."""
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", include_greeks=True
         )
 
@@ -130,6 +131,7 @@ class TestTradingServiceOptionsChain:
                 assert "rho" in call
                 assert "iv" in call
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -161,6 +163,7 @@ class TestTradingServiceOptionsChain:
             assert "ask" in call
             assert "mark" in call
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -201,6 +204,7 @@ class TestTradingServiceOptionsChain:
             else:
                 raise
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -224,6 +228,7 @@ class TestTradingServiceOptionsChain:
             assert "rho" in call
             assert "iv" in call
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -249,11 +254,11 @@ class TestTradingServiceOptionsChain:
                     raise
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_invalid_symbol_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_invalid_symbol_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with invalid symbol."""
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "INVALID_SYMBOL"
         )
 
@@ -262,6 +267,7 @@ class TestTradingServiceOptionsChain:
         if "error" in result:
             assert isinstance(result["error"], str)
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -279,11 +285,11 @@ class TestTradingServiceOptionsChain:
             assert isinstance(result["error"], str)
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_response_structure_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_response_structure_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that options chain response has correct structure."""
-        result = await trading_service_test_data.get_formatted_options_chain("AAPL")
+        result = await trading_service_synthetic_data.get_formatted_options_chain("AAPL")
 
         assert isinstance(result, dict)
 
@@ -301,30 +307,30 @@ class TestTradingServiceOptionsChain:
                         assert field in call
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_strike_boundary_conditions_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_strike_boundary_conditions_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with edge case strike filters."""
         # Test with very high min_strike (should return empty or minimal results)
-        result_high = await trading_service_test_data.get_formatted_options_chain(
+        result_high = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", min_strike=10000.0
         )
         assert isinstance(result_high, dict)
 
         # Test with very low max_strike (should return empty or minimal results)
-        result_low = await trading_service_test_data.get_formatted_options_chain(
+        result_low = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", max_strike=1.0
         )
         assert isinstance(result_low, dict)
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_expiration_date_formats_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_expiration_date_formats_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with different expiration date formats."""
         # Test with future date
         future_date = date.today() + timedelta(days=60)
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL", expiration_date=future_date
         )
 
@@ -336,21 +342,22 @@ class TestTradingServiceOptionsChain:
         assert "underlying_symbol" in result
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_exception_handling_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_exception_handling_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test exception handling in get_formatted_options_chain."""
         with patch.object(
-            trading_service_test_data, "get_options_chain"
+            trading_service_synthetic_data, "get_options_chain"
         ) as mock_get_chain:
             mock_get_chain.side_effect = Exception("Test exception")
 
-            result = await trading_service_test_data.get_formatted_options_chain("AAPL")
+            result = await trading_service_synthetic_data.get_formatted_options_chain("AAPL")
 
             assert isinstance(result, dict)
             assert "error" in result
             assert "Test exception" in result["error"]
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -370,12 +377,12 @@ class TestTradingServiceOptionsChain:
                 raise
 
     @pytest.mark.asyncio
-    async def test_get_formatted_options_chain_comprehensive_filters_test_data(
-        self, trading_service_test_data
+    async def test_get_formatted_options_chain_comprehensive_filters_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test options chain with all filters combined."""
         future_date = date.today() + timedelta(days=30)
-        result = await trading_service_test_data.get_formatted_options_chain(
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
             "AAPL",
             expiration_date=future_date,
             min_strike=150.0,
@@ -398,6 +405,7 @@ class TestTradingServiceOptionsChain:
             # Greeks should be included
             assert "delta" in option
 
+    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio

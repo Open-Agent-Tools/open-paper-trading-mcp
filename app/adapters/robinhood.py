@@ -64,12 +64,13 @@ class RobinhoodAdapter(QuoteAdapter):
     def __init__(self, config: RobinhoodConfig | None = None):
         self.config = config or RobinhoodConfig()
         self.session_manager = get_session_manager()
-        
+
         # Load credentials from environment variables
         import os
+
         username = os.getenv("ROBINHOOD_USERNAME")
         password = os.getenv("ROBINHOOD_PASSWORD")
-        
+
         if username and password:
             self.session_manager.set_credentials(username, password)
             logger.info(f"✅ Robinhood credentials loaded for user: {username}")
@@ -295,30 +296,36 @@ class RobinhoodAdapter(QuoteAdapter):
 
         try:
             chains_data = rh.options.get_chains(underlying)
-            logger.info(f"get_chain returned: type={type(chains_data)}, value={chains_data}")
+            logger.info(
+                f"get_chain returned: type={type(chains_data)}, value={chains_data}"
+            )
         except Exception as e:
             logger.error(f"Error calling rh.options.get_chains({underlying}): {e}")
             return []
-            
+
         if not chains_data:
             return []
 
         assets = []
-        
+
         # Handle different return types from get_chains
         if isinstance(chains_data, list):
             chain_list = chains_data
         elif isinstance(chains_data, dict):
             chain_list = [chains_data]
         else:
-            logger.error(f"Unexpected chains_data type in get_chain: {type(chains_data)}, content: {chains_data}")
+            logger.error(
+                f"Unexpected chains_data type in get_chain: {type(chains_data)}, content: {chains_data}"
+            )
             return []
-            
+
         for chain in chain_list:
             if not isinstance(chain, dict):
-                logger.warning(f"Expected dict in get_chain, got {type(chain)}: {chain}")
+                logger.warning(
+                    f"Expected dict in get_chain, got {type(chain)}: {chain}"
+                )
                 continue
-                
+
             expiration = chain.get("expiration_date")
             if expiration_date and expiration != expiration_date.strftime("%Y-%m-%d"):
                 continue
@@ -358,11 +365,11 @@ class RobinhoodAdapter(QuoteAdapter):
         try:
             chains_data = rh.options.get_chains(underlying)
             logger.info(f"Successfully retrieved chains data for {underlying}")
-                
+
         except Exception as e:
             logger.error(f"Error calling rh.options.get_chains({underlying}): {e}")
             return None
-            
+
         if not chains_data:
             logger.warning(f"No chains data returned for {underlying}")
             return None
@@ -376,14 +383,18 @@ class RobinhoodAdapter(QuoteAdapter):
             if not isinstance(chains_data, dict):
                 logger.error(f"Expected dict from get_chains, got {type(chains_data)}")
                 return None
-            
+
             # Get list of expiration dates from the chain data
             expiration_dates_list = chains_data.get("expiration_dates", [])
             if not expiration_dates_list:
-                logger.warning(f"No expiration_dates found in chains_data for {underlying}")
+                logger.warning(
+                    f"No expiration_dates found in chains_data for {underlying}"
+                )
                 return None
 
-            logger.info(f"Found {len(expiration_dates_list)} expiration dates for {underlying}")
+            logger.info(
+                f"Found {len(expiration_dates_list)} expiration dates for {underlying}"
+            )
 
             # Process each expiration date
             for expiration_str in expiration_dates_list:
@@ -410,7 +421,9 @@ class RobinhoodAdapter(QuoteAdapter):
                     underlying, expiration_str, option_type="put"
                 )
 
-                logger.debug(f"Found {len(call_instruments) if call_instruments else 0} calls, {len(put_instruments) if put_instruments else 0} puts for {expiration_str}")
+                logger.debug(
+                    f"Found {len(call_instruments) if call_instruments else 0} calls, {len(put_instruments) if put_instruments else 0} puts for {expiration_str}"
+                )
 
                 # Process calls
                 if call_instruments:
@@ -437,7 +450,7 @@ class RobinhoodAdapter(QuoteAdapter):
                 # If we have a specific expiration, we only want one
                 if expiration_date:
                     break
-                    
+
         except Exception as e:
             logger.error(f"Error processing chains_data: {e}")
             return None

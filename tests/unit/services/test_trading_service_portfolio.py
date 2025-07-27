@@ -33,6 +33,7 @@ from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.services.trading_service import TradingService
 
 
+@pytest.mark.journey_portfolio_management
 @pytest.mark.database
 class TestGetPortfolio:
     """Test TradingService.get_portfolio() function - Phase 2.1 requirements."""
@@ -419,6 +420,7 @@ class TestGetPortfolio:
         assert result.total_pnl == expected_pnl
 
 
+@pytest.mark.journey_portfolio_management
 @pytest.mark.database
 class TestGetPortfolioSummary:
     """Test TradingService.get_portfolio_summary() function - Phase 2.2 requirements."""
@@ -599,6 +601,7 @@ class TestGetPortfolioSummary:
         assert result.total_pnl_percent == 0.0  # Should be 0, not error
 
 
+@pytest.mark.journey_portfolio_management
 @pytest.mark.database
 class TestGetPositions:
     """Test TradingService.get_positions() function - Phase 2.3 requirements."""
@@ -759,6 +762,7 @@ class TestGetPositions:
         assert result[0].symbol == "NVDA"
 
 
+@pytest.mark.journey_portfolio_management
 @pytest.mark.database
 class TestGetPosition:
     """Test TradingService.get_position() function - Phase 2.3 requirements."""
@@ -935,6 +939,7 @@ class TestGetPosition:
         assert result.quantity == 5
 
 
+@pytest.mark.journey_account_management
 @pytest.mark.database
 class TestAccountBalanceManagement:
     """Test account and balance management functions - Phase 2.4 requirements."""
@@ -1047,6 +1052,7 @@ class TestAccountBalanceManagement:
         assert account_result.cash_balance == -5000.0
 
 
+@pytest.mark.journey_market_data
 @pytest.mark.database
 class TestQuoteIntegration:
     """Test quote integration methods - Phase 2.5 requirements."""

@@ -31,7 +31,7 @@ from app.utils.schema_converters import (
 
 # Database imports removed - using async patterns only
 from ..adapters.base import QuoteAdapter
-from ..adapters.test_data import DevDataQuoteAdapter
+from ..adapters.synthetic_data import DevDataQuoteAdapter
 from .greeks import calculate_option_greeks
 
 # Import new services
@@ -74,7 +74,7 @@ class TradingService:
 
             if quote_adapter is None:
                 # Fall back to database test data adapter
-                quote_adapter = factory.create_adapter("test_data_db")
+                quote_adapter = factory.create_adapter("synthetic_data_db")
 
                 if quote_adapter is None:
                     # Final fallback to CSV test data adapter

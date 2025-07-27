@@ -343,7 +343,7 @@ class TestAccountIntegration:
                 assert not await adapter.account_exists(account.id)
 
     @pytest.mark.asyncio
-    async def test_database_constraints_and_relationships(
+    async def synthetic_database_constraints_and_relationships(
         self, db_session: AsyncSession
     ):
         """Test database constraints and potential relationships."""

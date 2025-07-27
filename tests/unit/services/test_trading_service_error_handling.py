@@ -29,31 +29,31 @@ class TestTradingServiceErrorHandling:
     """Test error handling and edge cases."""
 
     @pytest.mark.asyncio
-    async def test_database_session_failure_handling(self, trading_service_test_data):
+    async def synthetic_database_session_failure_handling(self, trading_service_synthetic_data):
         """Test handling of database session failures."""
         with patch.object(
-            trading_service_test_data, "_get_async_db_session"
+            trading_service_synthetic_data, "_get_async_db_session"
         ) as mock_session:
             mock_session.side_effect = RuntimeError("Database connection failed")
 
             # Test that portfolio retrieval handles database errors gracefully
             with pytest.raises(RuntimeError, match="Database connection failed"):
-                await trading_service_test_data.get_portfolio()
+                await trading_service_synthetic_data.get_portfolio()
 
     @pytest.mark.asyncio
-    async def test_quote_adapter_failure_fallback(self, trading_service_test_data):
+    async def test_quote_adapter_failure_fallback(self, trading_service_synthetic_data):
         """Test fallback behavior when quote adapter fails."""
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_quote"
+            trading_service_synthetic_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
             mock_get_quote.side_effect = Exception("Quote service unavailable")
 
             # Test that get_quote handles adapter failures
             with pytest.raises(Exception, match="Quote service unavailable"):
-                await trading_service_test_data.get_quote("AAPL")
+                await trading_service_synthetic_data.get_quote("AAPL")
 
     @pytest.mark.asyncio
-    async def test_invalid_symbol_format_validation(self, trading_service_test_data):
+    async def test_invalid_symbol_format_validation(self, trading_service_synthetic_data):
         """Test validation of invalid symbol formats."""
         invalid_symbols = [
             "",  # Empty string
@@ -65,7 +65,7 @@ class TestTradingServiceErrorHandling:
 
         for symbol in invalid_symbols[:-1]:  # Skip None for now
             try:
-                result = await trading_service_test_data.get_quote(symbol)
+                result = await trading_service_synthetic_data.get_quote(symbol)
                 # If no exception, check for error in result
                 if isinstance(result, dict) and "error" in result:
                     assert "Invalid" in result["error"] or "error" in result
@@ -78,7 +78,7 @@ class TestTradingServiceErrorHandling:
                 )
 
     @pytest.mark.asyncio
-    async def test_malformed_order_data_handling(self, trading_service_test_data):
+    async def test_malformed_order_data_handling(self, trading_service_synthetic_data):
         """Test handling of malformed order data."""
         from pydantic import ValidationError
 
@@ -102,7 +102,7 @@ class TestTradingServiceErrorHandling:
             try:
                 # This should raise ValidationError at Pydantic level
                 order_data = OrderCreate(**invalid_data)
-                result = await trading_service_test_data.create_order(order_data)
+                result = await trading_service_synthetic_data.create_order(order_data)
                 # If we get here, should have error indication
                 assert hasattr(result, "id") or "error" in str(result)
             except ValidationError as e:
@@ -126,9 +126,11 @@ class TestTradingServiceErrorHandling:
                 symbol="AAPL",
                 quantity=100,
                 order_type=OrderType.BUY,
-                side="invalid_side",
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
-            result = await trading_service_test_data.create_order(order_data)
+            result = await trading_service_synthetic_data.create_order(order_data)
             # Should have error indication
             assert hasattr(result, "id") or "error" in str(result)
         except (InputValidationError, ValueError, Exception) as e:
@@ -139,7 +141,7 @@ class TestTradingServiceErrorHandling:
             )
 
     @pytest.mark.asyncio
-    async def test_boundary_value_order_quantities(self, trading_service_test_data):
+    async def test_boundary_value_order_quantities(self, trading_service_synthetic_data):
         """Test boundary values for order quantities."""
         boundary_quantities = [
             1,  # Minimum valid
@@ -151,11 +153,13 @@ class TestTradingServiceErrorHandling:
                 symbol="AAPL",
                 quantity=quantity,
                 order_type=OrderType.BUY,
-                side="buy",
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
 
             try:
-                result = await trading_service_test_data.create_order(order_data)
+                result = await trading_service_synthetic_data.create_order(order_data)
                 # Should succeed or have clear validation error
                 assert hasattr(result, "id") or hasattr(result, "status")
             except Exception as e:
@@ -171,21 +175,21 @@ class TestTradingServiceErrorHandling:
                     assert "error" in error_str or len(error_str) > 0
 
     @pytest.mark.asyncio
-    async def test_portfolio_retrieval_empty_account(self, trading_service_test_data):
+    async def test_portfolio_retrieval_empty_account(self, trading_service_synthetic_data):
         """Test portfolio retrieval for empty account."""
         # Mock empty portfolio scenario
         try:
             with (
                 patch.object(
-                    trading_service_test_data,
+                    trading_service_synthetic_data,
                     "_get_portfolio_positions",
                     return_value=[],
                 ),
                 patch.object(
-                    trading_service_test_data, "get_account_balance", return_value=0.0
+                    trading_service_synthetic_data, "get_account_balance", return_value=0.0
                 ),
             ):
-                result = await trading_service_test_data.get_portfolio()
+                result = await trading_service_synthetic_data.get_portfolio()
 
                 assert isinstance(result, Portfolio)
                 assert len(result.positions) == 0
@@ -195,20 +199,20 @@ class TestTradingServiceErrorHandling:
             assert "error" in str(e).lower() or "portfolio" in str(e).lower()
 
     @pytest.mark.asyncio
-    async def test_account_creation_duplicate_handling(self, trading_service_test_data):
+    async def test_account_creation_duplicate_handling(self, trading_service_synthetic_data):
         """Test handling of duplicate account creation attempts."""
         # This tests the _ensure_account_exists method's duplicate handling
-        with patch.object(trading_service_test_data, "_get_async_db_session"):
+        with patch.object(trading_service_synthetic_data, "_get_async_db_session"):
             # First creation should succeed
-            await trading_service_test_data._ensure_account_exists()
+            await trading_service_synthetic_data._ensure_account_exists()
 
             # Second creation should handle existing account gracefully
-            await trading_service_test_data._ensure_account_exists()
+            await trading_service_synthetic_data._ensure_account_exists()
 
             # No exception should be raised
 
     @pytest.mark.asyncio
-    async def test_position_calculation_edge_cases(self, trading_service_test_data):
+    async def test_position_calculation_edge_cases(self, trading_service_synthetic_data):
         """Test edge cases in position calculations."""
         edge_case_positions = [
             Position(
@@ -244,9 +248,9 @@ class TestTradingServiceErrorHandling:
 
         try:
             with patch.object(
-                trading_service_test_data, "get_portfolio", return_value=portfolio
+                trading_service_synthetic_data, "get_portfolio", return_value=portfolio
             ):
-                result = await trading_service_test_data.get_portfolio()
+                result = await trading_service_synthetic_data.get_portfolio()
 
                 assert isinstance(result, Portfolio)
                 assert len(result.positions) == 3
@@ -262,7 +266,7 @@ class TestTradingServiceErrorHandling:
             assert "error" in error_str or "position" in error_str or len(error_str) > 0
 
     @pytest.mark.asyncio
-    async def test_option_symbol_parsing_errors(self, trading_service_test_data):
+    async def test_option_symbol_parsing_errors(self, trading_service_synthetic_data):
         """Test handling of unparseable option symbols."""
         invalid_option_symbols = [
             "INVALID_OPTION_FORMAT",
@@ -273,7 +277,7 @@ class TestTradingServiceErrorHandling:
 
         for symbol in invalid_option_symbols:
             try:
-                result = await trading_service_test_data.get_quote(symbol)
+                result = await trading_service_synthetic_data.get_quote(symbol)
                 # If no exception, should have error indication
                 if isinstance(result, dict):
                     # May return error dict or empty result
@@ -293,25 +297,25 @@ class TestTradingServiceErrorHandling:
                 )
 
     @pytest.mark.asyncio
-    async def test_network_timeout_simulation(self, trading_service_test_data):
+    async def test_network_timeout_simulation(self, trading_service_synthetic_data):
         """Test handling of network timeouts."""
 
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_quote"
+            trading_service_synthetic_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
             mock_get_quote.side_effect = TimeoutError("Network timeout")
 
             with pytest.raises((TimeoutError, Exception)):
-                await trading_service_test_data.get_quote("AAPL")
+                await trading_service_synthetic_data.get_quote("AAPL")
 
     @pytest.mark.asyncio
-    async def test_concurrent_access_edge_cases(self, trading_service_test_data):
+    async def test_concurrent_access_edge_cases(self, trading_service_synthetic_data):
         """Test edge cases with concurrent access patterns."""
         # Simulate concurrent portfolio access
         import asyncio
 
         async def get_portfolio_concurrent():
-            return await trading_service_test_data.get_portfolio()
+            return await trading_service_synthetic_data.get_portfolio()
 
         # Run multiple concurrent requests
         tasks = [get_portfolio_concurrent() for _ in range(5)]
@@ -335,7 +339,7 @@ class TestTradingServiceErrorHandling:
             assert "concurrent" in str(e).lower() or "database" in str(e).lower()
 
     @pytest.mark.asyncio
-    async def test_memory_pressure_large_data_sets(self, trading_service_test_data):
+    async def test_memory_pressure_large_data_sets(self, trading_service_synthetic_data):
         """Test handling of large data sets that might cause memory pressure."""
         # Create a very large position list
         large_positions = []
@@ -359,16 +363,16 @@ class TestTradingServiceErrorHandling:
         )
 
         with patch.object(
-            trading_service_test_data, "get_portfolio", return_value=large_portfolio
+            trading_service_synthetic_data, "get_portfolio", return_value=large_portfolio
         ):
-            result = await trading_service_test_data.get_portfolio()
+            result = await trading_service_synthetic_data.get_portfolio()
 
             assert isinstance(result, Portfolio)
             assert len(result.positions) == 1000
             # Should handle large data set without issues
 
     @pytest.mark.asyncio
-    async def test_type_coercion_edge_cases(self, trading_service_test_data):
+    async def test_type_coercion_edge_cases(self, trading_service_synthetic_data):
         """Test type coercion edge cases."""
         # Test various input types that might need coercion
         type_test_cases = [
@@ -383,7 +387,9 @@ class TestTradingServiceErrorHandling:
                     symbol="AAPL",
                     quantity=test_value,  # Different types
                     order_type=OrderType.BUY,
-                    side="buy",
+                    stop_price=None,
+                    trail_percent=None,
+                    trail_amount=None,
                 )
                 # Just test that Pydantic validation works - don't actually create the order
                 assert order_data.symbol == "AAPL"
@@ -397,7 +403,7 @@ class TestTradingServiceErrorHandling:
                 )
 
     @pytest.mark.asyncio
-    async def test_unicode_and_special_characters(self, trading_service_test_data):
+    async def test_unicode_and_special_characters(self, trading_service_synthetic_data):
         """Test handling of unicode and special characters in input."""
         special_symbols = [
             "AAPL🚀",  # Emoji
@@ -409,7 +415,7 @@ class TestTradingServiceErrorHandling:
 
         for symbol in special_symbols:
             try:
-                result = await trading_service_test_data.get_quote(symbol)
+                result = await trading_service_synthetic_data.get_quote(symbol)
                 # May succeed or fail depending on adapter
                 if isinstance(result, dict) and "error" in result:
                     assert "symbol" in result["error"] or "Invalid" in result["error"]
@@ -422,7 +428,7 @@ class TestTradingServiceErrorHandling:
                 )
 
     @pytest.mark.asyncio
-    async def test_date_parsing_edge_cases(self, trading_service_test_data):
+    async def test_date_parsing_edge_cases(self, trading_service_synthetic_data):
         """Test edge cases in date parsing for expiration simulation."""
         edge_case_dates = [
             "2024-02-29",  # Leap year
@@ -434,7 +440,7 @@ class TestTradingServiceErrorHandling:
 
         for date_str in edge_case_dates:
             try:
-                result = await trading_service_test_data.simulate_expiration(
+                result = await trading_service_synthetic_data.simulate_expiration(
                     processing_date=date_str if date_str else None
                 )
 
@@ -455,7 +461,7 @@ class TestTradingServiceErrorHandling:
                     assert "date" in str(e).lower() or "time" in str(e).lower()
 
     @pytest.mark.asyncio
-    async def test_circular_dependency_prevention(self, trading_service_test_data):
+    async def test_circular_dependency_prevention(self, trading_service_synthetic_data):
         """Test prevention of circular dependencies in operations."""
         # Test that operations don't create circular references
         try:
@@ -476,14 +482,14 @@ class TestTradingServiceErrorHandling:
             )
 
             with patch.object(
-                trading_service_test_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
             ):
-                portfolio = await trading_service_test_data.get_portfolio()
+                portfolio = await trading_service_synthetic_data.get_portfolio()
 
                 # Use portfolio in another operation that might reference back
                 if len(portfolio.positions) > 0:
                     position = portfolio.positions[0]
-                    quote_result = await trading_service_test_data.get_quote(
+                    quote_result = await trading_service_synthetic_data.get_quote(
                         position.symbol
                     )
                     # Should complete without circular reference issues
@@ -494,12 +500,12 @@ class TestTradingServiceErrorHandling:
             assert "error" in error_str or len(error_str) > 0
 
     @pytest.mark.asyncio
-    async def test_resource_cleanup_on_errors(self, trading_service_test_data):
+    async def test_resource_cleanup_on_errors(self, trading_service_synthetic_data):
         """Test that resources are properly cleaned up when errors occur."""
         from unittest.mock import AsyncMock
 
         with patch.object(
-            trading_service_test_data, "_get_async_db_session"
+            trading_service_synthetic_data, "_get_async_db_session"
         ) as mock_get_session:
             # Mock a session that raises an error during operation
             mock_db = AsyncMock()
@@ -509,7 +515,7 @@ class TestTradingServiceErrorHandling:
             mock_get_session.return_value = mock_db
 
             with contextlib.suppress(RuntimeError):
-                await trading_service_test_data.get_portfolio()
+                await trading_service_synthetic_data.get_portfolio()
 
             # Session cleanup should still happen (tested via context manager)
             assert mock_get_session.called

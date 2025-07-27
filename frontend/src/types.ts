@@ -264,6 +264,7 @@ export interface OptionGreeks {
   theta: number;
   vega: number;
   rho: number;
+  iv?: number;
 }
 
 export interface OptionGreeksResponse {

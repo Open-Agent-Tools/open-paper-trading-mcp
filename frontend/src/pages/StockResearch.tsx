@@ -23,11 +23,13 @@ import CompanyInfo from '../components/CompanyInfo';
 import PriceHistoryChart from '../components/PriceHistoryChart';
 import AnalystRatings from '../components/AnalystRatings';
 import OptionsChain from '../components/OptionsChain';
+import OptionGreeks from '../components/OptionGreeks';
 import type { StockSearchResult, OptionQuote } from '../types';
 
 const StockResearch: React.FC = () => {
   const navigate = useNavigate();
   const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
+  const [selectedOption, setSelectedOption] = useState<OptionQuote | null>(null);
   const [tabValue, setTabValue] = useState(0); // 0 = overview, 1 = charts, 2 = ratings, 3 = options
 
   const handleStockSelect = (stock: StockSearchResult) => {
@@ -46,13 +48,20 @@ const StockResearch: React.FC = () => {
   };
 
   const handleOptionSelect = (option: OptionQuote) => {
-    // Navigate to orders page with pre-filled option symbol
-    navigate('/orders', {
-      state: {
-        prefillSymbol: option.symbol,
-        orderType: 'option'
-      }
-    });
+    // Store selected option for Greeks display
+    setSelectedOption(option);
+  };
+
+  const handleTradeOption = () => {
+    if (selectedOption) {
+      // Navigate to orders page with pre-filled option symbol
+      navigate('/orders', {
+        state: {
+          prefillSymbol: selectedOption.symbol,
+          orderType: 'option'
+        }
+      });
+    }
   };
 
   return (
@@ -169,12 +178,29 @@ const StockResearch: React.FC = () => {
 
           {tabValue === 3 && (
             <Grid container spacing={3}>
-              <Grid item xs={12}>
+              <Grid item xs={12} lg={8}>
                 <OptionsChain
                   symbol={selectedStock.symbol}
                   onOptionSelect={handleOptionSelect}
                 />
               </Grid>
+              {selectedOption && (
+                <Grid item xs={12} lg={4}>
+                  <OptionGreeks
+                    optionSymbol={selectedOption.symbol}
+                  />
+                  <Box mt={2}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      onClick={handleTradeOption}
+                    >
+                      Trade This Option
+                    </Button>
+                  </Box>
+                </Grid>
+              )}
             </Grid>
           )}
         </Box>

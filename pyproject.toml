@@ -78,3 +78,8 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
 ignore = ["E501"]
+
+[dependency-groups]
+dev = [
+    "types-toml>=0.10.8.20240310",
+]

@@ -14,7 +14,7 @@ from app.core.logging import logger
 
 from .base import AdapterConfig, AdapterRegistry, QuoteAdapter
 from .cache import CachedQuoteAdapter, QuoteCache
-from .test_data import DevDataQuoteAdapter
+from .synthetic_data import DevDataQuoteAdapter
 
 
 @dataclass
@@ -24,8 +24,8 @@ class AdapterFactoryConfig:
     # Adapter type mappings
     adapter_types: dict[str, str] = field(
         default_factory=lambda: {
-            "test_data": "app.adapters.test_data.DevDataQuoteAdapter",
-            "test_data_db": "app.adapters.test_data_db.TestDataDBQuoteAdapter",
+            "test_data": "app.adapters.synthetic_data.DevDataQuoteAdapter",
+            "test_data_db": "app.adapters.synthetic_data_db.TestDataDBQuoteAdapter",
             "robinhood": "app.adapters.robinhood.RobinhoodAdapter",
             "polygon": "app.adapters.polygon.PolygonQuoteAdapter",  # Future
             "yahoo": "app.adapters.yahoo.YahooQuoteAdapter",  # Future
@@ -292,12 +292,12 @@ class AdapterFactory:
             adapter_class: type[Any]
             if adapter_type == "test_data":
                 # Import from current package
-                from .test_data import DevDataQuoteAdapter
+                from .synthetic_data import DevDataQuoteAdapter
 
                 adapter_class = DevDataQuoteAdapter
             elif adapter_type == "test_data_db":
                 # Import from current package
-                from .test_data_db import (
+                from .synthetic_data_db import (
                     TestDataDBQuoteAdapter as TestDataDBQuoteAdapter,
                 )
 

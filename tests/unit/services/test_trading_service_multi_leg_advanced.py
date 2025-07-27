@@ -25,7 +25,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_basic_spread(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order from request data for basic spread."""
         legs = [
@@ -46,10 +46,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=2.50
                 )
             )
@@ -86,7 +86,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_market_order(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg market order from request data."""
         legs = [
@@ -106,10 +106,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="market", net_price=None
                 )
             )
@@ -136,7 +136,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_complex_iron_condor(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating complex multi-leg order (iron condor) from request data."""
         legs = [
@@ -160,10 +160,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=3.75
                 )
             )
@@ -189,7 +189,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_single_leg(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with single leg (edge case)."""
         legs = [{"symbol": "AAPL240315C00150000", "quantity": 5, "side": "buy"}]
@@ -206,10 +206,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=7.50
                 )
             )
@@ -230,7 +230,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_empty_legs(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with empty legs list."""
         legs = []
@@ -247,10 +247,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=0.00
                 )
             )
@@ -265,7 +265,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_mixed_quantities(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with different quantities per leg."""
         legs = [
@@ -286,10 +286,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=5.25
                 )
             )
@@ -307,7 +307,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_missing_required_fields(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with missing required fields in legs."""
         legs = [
@@ -319,13 +319,13 @@ class TestTradingServiceMultiLegAdvanced:
 
         # Should raise ValueError when trying to access missing fields
         with pytest.raises(ValueError, match="Failed to create multi-leg order"):
-            await trading_service_test_data.create_multi_leg_order_from_request(
+            await trading_service_synthetic_data.create_multi_leg_order_from_request(
                 legs=legs, order_type="limit", net_price=5.00
             )
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_invalid_order_type(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with invalid order type."""
         legs = [{"symbol": "AAPL240315C00150000", "quantity": 1, "side": "buy"}]
@@ -342,10 +342,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs,
                     order_type="invalid_order_type",  # Invalid type
                     net_price=5.00,
@@ -365,7 +365,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_zero_net_price(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with zero net price."""
         legs = [
@@ -389,10 +389,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=0.00
                 )
             )
@@ -410,7 +410,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_negative_net_price(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with negative net price (credit spread)."""
         legs = [
@@ -430,10 +430,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs,
                     order_type="limit",
                     net_price=-2.25,  # Credit spread
@@ -453,7 +453,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_large_quantities(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test creating multi-leg order with large quantities."""
         legs = [
@@ -473,10 +473,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=1.50
                 )
             )
@@ -494,24 +494,24 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_underlying_create_error(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test error handling when underlying create_multi_leg_order fails."""
         legs = [{"symbol": "INVALID240315C00150000", "quantity": 1, "side": "buy"}]
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order"
+            trading_service_synthetic_data, "create_multi_leg_order"
         ) as mock_create:
             mock_create.side_effect = Exception("Invalid symbol format")
 
             with pytest.raises(Exception, match="Invalid symbol format"):
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=5.00
                 )
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_preserves_leg_order(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test that leg order is preserved in multi-leg order creation."""
         legs = [
@@ -533,10 +533,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=2.00
                 )
             )
@@ -555,7 +555,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_different_sides_validation(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test multi-leg order with various side combinations."""
         legs = [
@@ -577,10 +577,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=1.75
                 )
             )
@@ -603,7 +603,7 @@ class TestTradingServiceMultiLegAdvanced:
 
     @pytest.mark.asyncio
     async def test_create_multi_leg_order_from_request_comprehensive_structure_validation(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test comprehensive validation of structured legs output."""
         legs = [{"symbol": "TEST240315C00100000", "quantity": 5, "side": "buy"}]
@@ -620,10 +620,10 @@ class TestTradingServiceMultiLegAdvanced:
         )
 
         with patch.object(
-            trading_service_test_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
         ) as mock_create:
             result = (
-                await trading_service_test_data.create_multi_leg_order_from_request(
+                await trading_service_synthetic_data.create_multi_leg_order_from_request(
                     legs=legs, order_type="limit", net_price=3.33
                 )
             )

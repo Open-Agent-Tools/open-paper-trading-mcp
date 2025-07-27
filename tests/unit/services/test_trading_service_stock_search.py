@@ -12,15 +12,16 @@ Coverage target: Lines 998-1028 (search_stocks method)
 import pytest
 
 
+@pytest.mark.journey_market_data
 class TestTradingServiceStockSearch:
     """Test stock search functionality."""
 
     @pytest.mark.asyncio
-    async def test_search_stocks_basic_success_test_data(
-        self, trading_service_test_data
+    async def test_search_stocks_basic_success_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test basic successful stock search with test data."""
-        result = await trading_service_test_data.search_stocks("AAPL")
+        result = await trading_service_synthetic_data.search_stocks("AAPL")
 
         assert isinstance(result, dict)
         assert "query" in result
@@ -29,11 +30,11 @@ class TestTradingServiceStockSearch:
         assert isinstance(result["results"], list)
 
     @pytest.mark.asyncio
-    async def test_search_stocks_partial_match_test_data(
-        self, trading_service_test_data
+    async def test_search_stocks_partial_match_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock search with partial symbol match."""
-        result = await trading_service_test_data.search_stocks("APP")
+        result = await trading_service_synthetic_data.search_stocks("APP")
 
         assert isinstance(result, dict)
         assert result["query"] == "APP"
@@ -43,6 +44,7 @@ class TestTradingServiceStockSearch:
         if result["results"]:
             assert any("APP" in res["symbol"] for res in result["results"])
 
+    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -75,12 +77,12 @@ class TestTradingServiceStockSearch:
 
     @pytest.mark.asyncio
     async def test_search_stocks_adapter_with_extended_functionality(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test stock search when adapter has search_stocks method."""
-        has_extended = hasattr(trading_service_test_data.quote_adapter, "search_stocks")
+        has_extended = hasattr(trading_service_synthetic_data.quote_adapter, "search_stocks")
 
-        result = await trading_service_test_data.search_stocks("MSFT")
+        result = await trading_service_synthetic_data.search_stocks("MSFT")
 
         assert isinstance(result, dict)
         assert result["query"] == "MSFT"
@@ -95,20 +97,20 @@ class TestTradingServiceStockSearch:
                     assert "MSFT" in res["symbol"].upper()
 
     @pytest.mark.asyncio
-    async def test_search_stocks_fallback_mechanism_test_data(
-        self, trading_service_test_data
+    async def test_search_stocks_fallback_mechanism_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock search fallback when adapter lacks extended functionality."""
         # Force test of fallback by temporarily removing method if it exists
         original_method = getattr(
-            trading_service_test_data.quote_adapter, "search_stocks", None
+            trading_service_synthetic_data.quote_adapter, "search_stocks", None
         )
 
         if original_method:
-            delattr(trading_service_test_data.quote_adapter, "search_stocks")
+            delattr(trading_service_synthetic_data.quote_adapter, "search_stocks")
 
         try:
-            result = await trading_service_test_data.search_stocks("AAPL")
+            result = await trading_service_synthetic_data.search_stocks("AAPL")
 
             assert isinstance(result, dict)
             assert result["query"] == "AAPL"
@@ -126,38 +128,38 @@ class TestTradingServiceStockSearch:
         finally:
             # Restore original method if it existed
             if original_method:
-                trading_service_test_data.quote_adapter.search_stocks = original_method
+                trading_service_synthetic_data.quote_adapter.search_stocks = original_method
 
     @pytest.mark.asyncio
-    async def test_search_stocks_result_limit_fallback(self, trading_service_test_data):
+    async def test_search_stocks_result_limit_fallback(self, trading_service_synthetic_data):
         """Test that search results are limited to 10 in fallback mode."""
         # Force fallback by temporarily removing method
         original_method = getattr(
-            trading_service_test_data.quote_adapter, "search_stocks", None
+            trading_service_synthetic_data.quote_adapter, "search_stocks", None
         )
 
         if original_method:
-            delattr(trading_service_test_data.quote_adapter, "search_stocks")
+            delattr(trading_service_synthetic_data.quote_adapter, "search_stocks")
 
         try:
             # Search for a common letter that might match many symbols
-            result = await trading_service_test_data.search_stocks("A")
+            result = await trading_service_synthetic_data.search_stocks("A")
 
             assert isinstance(result, dict)
             assert len(result["results"]) <= 10  # Should limit to 10 results
 
         finally:
             if original_method:
-                trading_service_test_data.quote_adapter.search_stocks = original_method
+                trading_service_synthetic_data.quote_adapter.search_stocks = original_method
 
     @pytest.mark.asyncio
-    async def test_search_stocks_case_insensitive_test_data(
-        self, trading_service_test_data
+    async def test_search_stocks_case_insensitive_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test that stock search is case insensitive."""
         # Test lowercase query
-        result_lower = await trading_service_test_data.search_stocks("aapl")
-        result_upper = await trading_service_test_data.search_stocks("AAPL")
+        result_lower = await trading_service_synthetic_data.search_stocks("aapl")
+        result_upper = await trading_service_synthetic_data.search_stocks("AAPL")
 
         assert isinstance(result_lower, dict)
         assert isinstance(result_upper, dict)
@@ -167,9 +169,9 @@ class TestTradingServiceStockSearch:
         assert result_upper["query"] == "AAPL"
 
     @pytest.mark.asyncio
-    async def test_search_stocks_no_matches_test_data(self, trading_service_test_data):
+    async def test_search_stocks_no_matches_synthetic_data(self, trading_service_synthetic_data):
         """Test stock search with query that has no matches."""
-        result = await trading_service_test_data.search_stocks("ZZZZNOMATCH")
+        result = await trading_service_synthetic_data.search_stocks("ZZZZNOMATCH")
 
         assert isinstance(result, dict)
         assert result["query"] == "ZZZZNOMATCH"
@@ -190,20 +192,20 @@ class TestTradingServiceStockSearch:
         assert result["query"] == "ZZZZNOMATCH"
 
     @pytest.mark.asyncio
-    async def test_search_stocks_empty_query_test_data(self, trading_service_test_data):
+    async def test_search_stocks_empty_query_synthetic_data(self, trading_service_synthetic_data):
         """Test stock search with empty query."""
-        result = await trading_service_test_data.search_stocks("")
+        result = await trading_service_synthetic_data.search_stocks("")
 
         assert isinstance(result, dict)
         assert result["query"] == ""
         # May return error or empty results
 
     @pytest.mark.asyncio
-    async def test_search_stocks_special_characters_test_data(
-        self, trading_service_test_data
+    async def test_search_stocks_special_characters_synthetic_data(
+        self, trading_service_synthetic_data
     ):
         """Test stock search with special characters."""
-        result = await trading_service_test_data.search_stocks("BRK.B")
+        result = await trading_service_synthetic_data.search_stocks("BRK.B")
 
         assert isinstance(result, dict)
         assert result["query"] == "BRK.B"

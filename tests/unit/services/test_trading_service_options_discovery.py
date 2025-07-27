@@ -26,7 +26,7 @@ class TestTradingServiceOptionsDiscovery:
     """Test options discovery and market data functionality."""
 
     @pytest.mark.asyncio
-    async def test_find_tradable_options_basic_success(self, trading_service_test_data):
+    async def test_find_tradable_options_basic_success(self, trading_service_synthetic_data):
         """Test basic successful options discovery."""
         # Mock option chain data
         mock_calls = [
@@ -82,11 +82,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="AAPL", expiration_date="2024-03-15"
             )
 
@@ -107,7 +107,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_with_strike_filter(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery with strike price filtering - method doesn't support filtering."""
         mock_calls = [
@@ -165,12 +165,12 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
             # Method doesn't support min_strike/max_strike parameters
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="AAPL",
                 expiration_date="2024-03-15",
             )
@@ -186,7 +186,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_calls_only_filter(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery with calls-only filtering."""
         mock_calls = [
@@ -236,11 +236,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="SPY",
                 expiration_date="2024-03-15",
                 option_type="CALL",
@@ -254,7 +254,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_puts_only_filter(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery with puts-only filtering."""
         mock_calls = [
@@ -304,11 +304,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="TSLA",
                 expiration_date="2024-03-15",
                 option_type="PUT",
@@ -322,7 +322,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_combined_filters(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery with option type filtering (no strike filtering supported)."""
         mock_calls = [
@@ -394,11 +394,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="QQQ",
                 expiration_date="2024-03-15",
                 option_type="CALL",
@@ -410,7 +410,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_no_expiration_date(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery without expiration date filter."""
         mock_calls = [
@@ -446,11 +446,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="AAPL"
             )
 
@@ -459,16 +459,16 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_no_options_found(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery when no options match criteria."""
         # Return None to simulate no chain found
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=None,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="AAPL", expiration_date="2024-03-15"
             )
 
@@ -478,14 +478,14 @@ class TestTradingServiceOptionsDiscovery:
             assert result["message"] == "No tradable options found"
 
     @pytest.mark.asyncio
-    async def test_find_tradable_options_adapter_error(self, trading_service_test_data):
+    async def test_find_tradable_options_adapter_error(self, trading_service_synthetic_data):
         """Test options discovery when adapter throws error."""
         with patch.object(
-            trading_service_test_data, "get_options_chain"
+            trading_service_synthetic_data, "get_options_chain"
         ) as mock_get_chain:
             mock_get_chain.side_effect = Exception("Chain not available")
 
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="INVALID", expiration_date="2024-03-15"
             )
 
@@ -494,7 +494,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_invalid_strike_range(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery - method doesn't support strike range filtering."""
         mock_calls = [
@@ -519,12 +519,12 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
             # Method doesn't support min_strike/max_strike parameters
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="AAPL",
                 expiration_date="2024-03-15",
             )
@@ -534,7 +534,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_get_market_hours_with_extended_adapter(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test get_market_hours with adapter that supports extended functionality."""
         mock_hours = {
@@ -546,11 +546,11 @@ class TestTradingServiceOptionsDiscovery:
 
         # Mock adapter with get_market_hours method
         with patch.object(
-            trading_service_test_data.quote_adapter,
+            trading_service_synthetic_data.quote_adapter,
             "get_market_hours",
             return_value=mock_hours,
         ):
-            result = await trading_service_test_data.get_market_hours()
+            result = await trading_service_synthetic_data.get_market_hours()
 
             assert isinstance(result, dict)
             assert result["is_open"] is True
@@ -560,19 +560,19 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_get_market_hours_fallback_basic_info(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test get_market_hours fallback when adapter lacks extended functionality."""
         # Mock hasattr to return False to trigger fallback
         with (
             patch("builtins.hasattr", return_value=False),
             patch.object(
-                trading_service_test_data.quote_adapter,
+                trading_service_synthetic_data.quote_adapter,
                 "is_market_open",
                 return_value=True,
             ),
         ):
-            result = await trading_service_test_data.get_market_hours()
+            result = await trading_service_synthetic_data.get_market_hours()
 
             assert isinstance(result, dict)
             assert "is_market_open" in result
@@ -581,20 +581,20 @@ class TestTradingServiceOptionsDiscovery:
             assert "Market hours data from fallback implementation" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_get_market_hours_adapter_error(self, trading_service_test_data):
+    async def test_get_market_hours_adapter_error(self, trading_service_synthetic_data):
         """Test get_market_hours when adapter throws error."""
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_market_hours"
+            trading_service_synthetic_data.quote_adapter, "get_market_hours"
         ) as mock_hours:
             mock_hours.side_effect = Exception("Market data unavailable")
 
-            result = await trading_service_test_data.get_market_hours()
+            result = await trading_service_synthetic_data.get_market_hours()
 
             assert "error" in result
             assert "Market data unavailable" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_get_market_hours_market_closed(self, trading_service_test_data):
+    async def test_get_market_hours_market_closed(self, trading_service_synthetic_data):
         """Test get_market_hours when market is closed."""
         mock_hours = {
             "is_open": False,
@@ -604,18 +604,18 @@ class TestTradingServiceOptionsDiscovery:
         }
 
         with patch.object(
-            trading_service_test_data.quote_adapter,
+            trading_service_synthetic_data.quote_adapter,
             "get_market_hours",
             return_value=mock_hours,
         ):
-            result = await trading_service_test_data.get_market_hours()
+            result = await trading_service_synthetic_data.get_market_hours()
 
             assert result["is_open"] is False
             assert "next_open" in result
             assert "last_close" in result
 
     @pytest.mark.asyncio
-    async def test_get_market_hours_weekend(self, trading_service_test_data):
+    async def test_get_market_hours_weekend(self, trading_service_synthetic_data):
         """Test get_market_hours during weekend."""
         mock_hours = {
             "is_open": False,
@@ -626,17 +626,17 @@ class TestTradingServiceOptionsDiscovery:
         }
 
         with patch.object(
-            trading_service_test_data.quote_adapter,
+            trading_service_synthetic_data.quote_adapter,
             "get_market_hours",
             return_value=mock_hours,
         ):
-            result = await trading_service_test_data.get_market_hours()
+            result = await trading_service_synthetic_data.get_market_hours()
 
             assert result["is_open"] is False
             assert result["day_type"] == "weekend"
 
     @pytest.mark.asyncio
-    async def test_get_market_hours_holiday(self, trading_service_test_data):
+    async def test_get_market_hours_holiday(self, trading_service_synthetic_data):
         """Test get_market_hours during market holiday."""
         mock_hours = {
             "is_open": False,
@@ -648,11 +648,11 @@ class TestTradingServiceOptionsDiscovery:
         }
 
         with patch.object(
-            trading_service_test_data.quote_adapter,
+            trading_service_synthetic_data.quote_adapter,
             "get_market_hours",
             return_value=mock_hours,
         ):
-            result = await trading_service_test_data.get_market_hours()
+            result = await trading_service_synthetic_data.get_market_hours()
 
             assert result["is_open"] is False
             assert result["day_type"] == "holiday"
@@ -660,7 +660,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_response_structure_validation(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test comprehensive validation of find_tradable_options response structure."""
         mock_calls = [
@@ -685,11 +685,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="VALIDATION", expiration_date="2024-03-15"
             )
 
@@ -720,7 +720,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_edge_case_zero_strike(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery with zero strike price (edge case)."""
         mock_calls = [
@@ -756,11 +756,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="EDGE",
                 expiration_date="2024-03-15",
             )
@@ -772,7 +772,7 @@ class TestTradingServiceOptionsDiscovery:
 
     @pytest.mark.asyncio
     async def test_find_tradable_options_very_high_strikes(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test options discovery with very high strike prices."""
         mock_calls = [
@@ -808,11 +808,11 @@ class TestTradingServiceOptionsDiscovery:
         )
 
         with patch.object(
-            trading_service_test_data,
+            trading_service_synthetic_data,
             "get_options_chain",
             return_value=mock_chain,
         ):
-            result = await trading_service_test_data.find_tradable_options(
+            result = await trading_service_synthetic_data.find_tradable_options(
                 symbol="HIGH",
                 expiration_date="2024-03-15",
             )

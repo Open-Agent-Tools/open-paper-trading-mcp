@@ -31,12 +31,21 @@ uv run python app/main.py        # Start FastAPI server (port 2080)
 uv run python app/mcp_server.py  # Start MCP server (port 2081)
 
 # Testing
-uv run pytest -v                 # All tests
+uv run pytest -v                 # All tests (606 total)
 pytest tests/unit/               # Unit tests only
 pytest tests/integration/        # Integration tests
-pytest tests/performance/        # Performance tests
+pytest tests/performance/        # Performance tests (if directory exists)
 pytest -m "not slow"             # Skip slow tests
 pytest -m "database"             # Database tests only
+
+# User Journey Testing (see User Journey-Based Test Organization section below)
+pytest -m "journey_account_management"    # Account setup & management (69 tests)
+pytest -m "journey_basic_trading"         # Stock orders & portfolio (73 tests)
+pytest -m "journey_market_data"           # Quotes & market data (76 tests)
+pytest -m "journey_options_trading"       # Options & Greeks (79 tests)
+pytest -m "journey_complex_strategies"    # Multi-leg strategies (72 tests)
+pytest -m "journey_performance"           # Performance & optimization (78 tests)
+pytest -m "journey_integration"           # End-to-end & live API (59 tests)
 
 # Code Quality
 uv run ruff check . --fix        # Lint and auto-fix issues
@@ -117,6 +126,97 @@ The system provides 5 core MCP tools for AI agent interaction:
 - **Exclusion**: Run `pytest -m "not robinhood"` to exclude live API tests
 - **Rate Limiting**: Robinhood tests are marked `@pytest.mark.slow` to prevent rate limiting
 - **Shared Fixtures**: Use `trading_service_robinhood` fixture for consistent Robinhood adapter setup
+
+### User Journey-Based Test Organization
+
+The test suite (606 total tests) is organized around user journeys with pytest marks for efficient test execution. Each journey has ≤80 tests to maintain manageable execution times.
+
+#### Available Pytest Marks for User Journeys
+
+**Core Journey Marks:**
+```bash
+# Account Management Journey (69 tests)
+pytest -m "journey_account_management"
+# Coverage: Account creation, balance checks, multi-account functionality
+# Files: account_adapter_*, account_balance.py, accounts_summary.py, multi_account_functionality.py
+
+# Basic Stock Trading Journey (73 tests) 
+pytest -m "journey_basic_trading"
+# Coverage: Order creation/cancellation, portfolio management, basic positions
+# Files: trading_service_orders.py, trading_service_portfolio.py, order_execution_engine.py
+
+# Market Data & Quotes Journey (76 tests)
+pytest -m "journey_market_data" 
+# Coverage: Quote retrieval, stock search, price history, market data
+# Files: trading_service_quote_methods.py, trading_service_stock_*.py, trading_service_price_history.py
+
+# Options Trading Journey (79 tests)
+pytest -m "journey_options_trading"
+# Coverage: Options chains, Greeks calculations, options discovery, option market data
+# Files: trading_service_options*.py, trading_service_*greeks.py
+
+# Complex Strategies Journey (72 tests)
+pytest -m "journey_complex_strategies" 
+# Coverage: Multi-leg orders, advanced strategies, expiration simulation
+# Files: trading_service_multi_leg*.py, trading_service_expiration_simulation.py
+
+# System Performance Journey (78 tests)
+pytest -m "journey_performance"
+# Coverage: Concurrency, query optimization, error handling, database validation
+# Files: *concurrency*.py, query_optimization.py, *error_handling.py, database_schema_validation.py
+
+# Integration & Live Data Journey (59 tests)
+pytest -m "journey_integration"
+# Coverage: End-to-end workflows, live Robinhood API, real market data
+# Files: test_account_integration.py, robinhood_session_fixture.py, coverage_gaps.py
+```
+
+**Special Testing Marks:**
+```bash
+# Live API Testing (requires credentials)
+pytest -m "robinhood"              # Tests using live Robinhood API calls
+pytest -m "live_data"              # Tests requiring current market data
+pytest -m "slow"                   # Rate-limited tests (includes robinhood)
+
+# Infrastructure Testing  
+pytest -m "database"               # Tests requiring database operations
+pytest -m "unit"                   # Pure unit tests with mocks
+pytest -m "integration"            # Integration tests across components
+pytest -m "performance"            # Performance and benchmarking tests
+
+# Combined Journey Testing
+pytest -m "journey_account_management or journey_basic_trading"  # Multi-journey execution
+pytest -m "not slow"               # Exclude rate-limited tests for fast execution
+pytest -m "journey_market_data and robinhood"  # Live market data tests only
+```
+
+#### Test Distribution by Journey
+
+| Journey | Test Count | Key Files | Real Data Usage |
+|---------|------------|-----------|-----------------|
+| Account Management | 69 | account_adapter_*, balance, summary | Database only |
+| Basic Trading | 73 | orders, portfolio, execution | Database + Mock quotes |
+| Market Data | 76 | quotes, search, history | Mixed (synthetic + live) |
+| Options Trading | 79 | options_chain, greeks, discovery | Mixed (synthetic + live) |
+| Complex Strategies | 72 | multi_leg, strategies | Database + Mock options |
+| Performance | 78 | concurrency, optimization | Database stress testing |
+| Integration | 59 | end-to-end, live API | Live Robinhood API calls |
+
+#### Recommendations for Real Data Integration
+
+**High Priority for Real Data:**
+- Market Data Journey: Replace synthetic quotes with live data for AAPL, MSFT, GOOGL
+- Options Trading Journey: Use live options chains for liquid underlyings
+- Integration Journey: All tests should use live Robinhood API where possible
+
+**Database-Only (Keep Synthetic):**
+- Account Management: Test data ensures consistent state
+- Basic Trading: Mock quotes prevent external dependencies  
+- Performance: Controlled data for reliable benchmarks
+
+**Mixed Approach:**
+- Complex Strategies: Live underlying prices, synthetic options for complex chains
+- Error Handling: Synthetic data for testing edge cases
 
 ### Code Style
 - **Async/Await**: All I/O operations must be async

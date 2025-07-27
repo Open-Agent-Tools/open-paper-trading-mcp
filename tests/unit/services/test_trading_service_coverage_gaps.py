@@ -22,8 +22,8 @@ class TestTradingServiceCoverageGaps:
     """Test specific coverage gaps in TradingService."""
 
     @pytest.mark.asyncio
-    async def test_database_session_runtime_error_fallback(
-        self, trading_service_test_data
+    async def synthetic_database_session_runtime_error_fallback(
+        self, trading_service_synthetic_data
     ):
         """Test RuntimeError fallback in _get_async_db_session (line 113)."""
 
@@ -38,11 +38,11 @@ class TestTradingServiceCoverageGaps:
 
             # This should trigger the RuntimeError on line 113
             with pytest.raises(RuntimeError, match="Unable to obtain database session"):
-                await trading_service_test_data._get_async_db_session()
+                await trading_service_synthetic_data._get_async_db_session()
 
     @pytest.mark.asyncio
     async def test_get_price_history_invalid_symbol_error(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test invalid symbol error path in get_price_history (line 956)."""
 
@@ -50,7 +50,7 @@ class TestTradingServiceCoverageGaps:
         with patch("app.services.trading_service.asset_factory") as mock_factory:
             mock_factory.return_value = None
 
-            result = await trading_service_test_data.get_price_history("INVALID_SYM")
+            result = await trading_service_synthetic_data.get_price_history("INVALID_SYM")
 
             assert isinstance(result, dict)
             assert "error" in result
@@ -58,7 +58,7 @@ class TestTradingServiceCoverageGaps:
 
     @pytest.mark.asyncio
     async def test_get_price_history_no_quote_fallback_error(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test no quote data error in get_price_history fallback (lines 966-967)."""
 
@@ -68,11 +68,11 @@ class TestTradingServiceCoverageGaps:
 
             # Mock get_enhanced_quote to return None (no quote data)
             with patch.object(
-                trading_service_test_data, "get_enhanced_quote"
+                trading_service_synthetic_data, "get_enhanced_quote"
             ) as mock_quote:
                 mock_quote.return_value = None
 
-                result = await trading_service_test_data.get_price_history(
+                result = await trading_service_synthetic_data.get_price_history(
                     "AAPL", "week"
                 )
 
@@ -82,17 +82,17 @@ class TestTradingServiceCoverageGaps:
 
     @pytest.mark.asyncio
     async def test_get_price_history_extended_adapter_with_none_result(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test get_price_history when adapter method returns None (line 961)."""
 
         # Mock adapter to have get_price_history method that returns None
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_price_history"
+            trading_service_synthetic_data.quote_adapter, "get_price_history"
         ) as mock_method:
             mock_method.return_value = None
 
-            result = await trading_service_test_data.get_price_history("AAPL", "day")
+            result = await trading_service_synthetic_data.get_price_history("AAPL", "day")
 
             assert isinstance(result, dict)
             # Should return empty dict when adapter returns None
@@ -100,7 +100,7 @@ class TestTradingServiceCoverageGaps:
 
     @pytest.mark.asyncio
     async def test_get_price_history_exception_handling(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test exception handling in get_price_history (line 988-989)."""
 
@@ -108,7 +108,7 @@ class TestTradingServiceCoverageGaps:
         with patch("app.services.trading_service.asset_factory") as mock_factory:
             mock_factory.side_effect = Exception("Asset factory error")
 
-            result = await trading_service_test_data.get_price_history("AAPL")
+            result = await trading_service_synthetic_data.get_price_history("AAPL")
 
             assert isinstance(result, dict)
             assert "error" in result
@@ -116,7 +116,7 @@ class TestTradingServiceCoverageGaps:
 
     @pytest.mark.asyncio
     async def test_get_stock_info_adapter_extended_functionality(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test get_stock_info when adapter has extended functionality."""
 
@@ -129,18 +129,18 @@ class TestTradingServiceCoverageGaps:
         }
 
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_stock_info"
+            trading_service_synthetic_data.quote_adapter, "get_stock_info"
         ) as mock_method:
             mock_method.return_value = mock_info
 
-            result = await trading_service_test_data.get_stock_info("AAPL")
+            result = await trading_service_synthetic_data.get_stock_info("AAPL")
 
             assert isinstance(result, dict)
             assert result == mock_info
 
     @pytest.mark.asyncio
     async def test_search_stocks_adapter_extended_functionality(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test search_stocks when adapter has extended functionality."""
 
@@ -154,98 +154,98 @@ class TestTradingServiceCoverageGaps:
         }
 
         with patch.object(
-            trading_service_test_data.quote_adapter, "search_stocks"
+            trading_service_synthetic_data.quote_adapter, "search_stocks"
         ) as mock_method:
             mock_method.return_value = mock_results
 
-            result = await trading_service_test_data.search_stocks("AAPL")
+            result = await trading_service_synthetic_data.search_stocks("AAPL")
 
             assert isinstance(result, dict)
             assert result == mock_results
 
     @pytest.mark.asyncio
-    async def test_search_stocks_adapter_returns_none(self, trading_service_test_data):
+    async def test_search_stocks_adapter_returns_none(self, trading_service_synthetic_data):
         """Test search_stocks when adapter returns None."""
 
         with patch.object(
-            trading_service_test_data.quote_adapter, "search_stocks"
+            trading_service_synthetic_data.quote_adapter, "search_stocks"
         ) as mock_method:
             mock_method.return_value = None
 
-            result = await trading_service_test_data.search_stocks("AAPL")
+            result = await trading_service_synthetic_data.search_stocks("AAPL")
 
             assert isinstance(result, dict)
             assert result == {"query": "AAPL", "results": [], "total_count": 0}
 
     @pytest.mark.asyncio
-    async def test_get_stock_info_adapter_returns_none(self, trading_service_test_data):
+    async def test_get_stock_info_adapter_returns_none(self, trading_service_synthetic_data):
         """Test get_stock_info when adapter returns None."""
 
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_stock_info"
+            trading_service_synthetic_data.quote_adapter, "get_stock_info"
         ) as mock_method:
             mock_method.return_value = None
 
-            result = await trading_service_test_data.get_stock_info("AAPL")
+            result = await trading_service_synthetic_data.get_stock_info("AAPL")
 
             assert isinstance(result, dict)
             assert result == {}
 
     @pytest.mark.asyncio
-    async def test_edge_case_empty_string_symbol(self, trading_service_test_data):
+    async def test_edge_case_empty_string_symbol(self, trading_service_synthetic_data):
         """Test edge case with empty string symbol."""
 
-        result = await trading_service_test_data.get_price_history("")
+        result = await trading_service_synthetic_data.get_price_history("")
 
         assert isinstance(result, dict)
         assert "error" in result
 
     @pytest.mark.asyncio
-    async def test_edge_case_whitespace_symbol(self, trading_service_test_data):
+    async def test_edge_case_whitespace_symbol(self, trading_service_synthetic_data):
         """Test edge case with whitespace symbol."""
 
-        result = await trading_service_test_data.get_price_history("   ")
+        result = await trading_service_synthetic_data.get_price_history("   ")
 
         assert isinstance(result, dict)
         # Should either error or handle gracefully
 
     @pytest.mark.asyncio
-    async def test_edge_case_very_long_symbol(self, trading_service_test_data):
+    async def test_edge_case_very_long_symbol(self, trading_service_synthetic_data):
         """Test edge case with extremely long symbol."""
 
         long_symbol = "A" * 1000
-        result = await trading_service_test_data.get_price_history(long_symbol)
+        result = await trading_service_synthetic_data.get_price_history(long_symbol)
 
         assert isinstance(result, dict)
         # Should either error or handle gracefully
 
     @pytest.mark.asyncio
-    async def test_edge_case_special_characters_symbol(self, trading_service_test_data):
+    async def test_edge_case_special_characters_symbol(self, trading_service_synthetic_data):
         """Test edge case with special characters in symbol."""
 
         special_symbols = ["AAPL@", "MSFT!", "GOOGL#", "TSLA$", "AMZN%"]
 
         for symbol in special_symbols:
-            result = await trading_service_test_data.get_price_history(symbol)
+            result = await trading_service_synthetic_data.get_price_history(symbol)
             assert isinstance(result, dict)
             # Should handle gracefully without crashing
 
     @pytest.mark.asyncio
     async def test_fallback_data_point_with_missing_volume(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test fallback data point creation when quote has no volume attribute."""
 
         # Mock get_price_history method to raise AttributeError to force fallback
         original_method = getattr(
-            trading_service_test_data.quote_adapter, "get_price_history", None
+            trading_service_synthetic_data.quote_adapter, "get_price_history", None
         )
 
         # Temporarily replace get_price_history with a method that raises AttributeError
         async def raise_attribute_error(*args, **kwargs):
             raise AttributeError("get_price_history method not available")
 
-        trading_service_test_data.quote_adapter.get_price_history = (
+        trading_service_synthetic_data.quote_adapter.get_price_history = (
             raise_attribute_error
         )
 
@@ -258,11 +258,11 @@ class TestTradingServiceCoverageGaps:
             del mock_quote.volume
 
             with patch.object(
-                trading_service_test_data, "get_enhanced_quote"
+                trading_service_synthetic_data, "get_enhanced_quote"
             ) as mock_get_quote:
                 mock_get_quote.return_value = mock_quote
 
-                result = await trading_service_test_data.get_price_history(
+                result = await trading_service_synthetic_data.get_price_history(
                     "AAPL", "day"
                 )
 
@@ -273,12 +273,12 @@ class TestTradingServiceCoverageGaps:
 
         finally:
             if original_method:
-                trading_service_test_data.quote_adapter.get_price_history = (
+                trading_service_synthetic_data.quote_adapter.get_price_history = (
                     original_method
                 )
 
     @pytest.mark.asyncio
-    async def test_get_account_not_found_error(self, trading_service_test_data):
+    async def test_get_account_not_found_error(self, trading_service_synthetic_data):
         """Test NotFoundError when account is not found (line 178)."""
 
         async def _operation(db):
@@ -300,11 +300,11 @@ class TestTradingServiceCoverageGaps:
         with pytest.raises(
             (NotFoundError, Exception)
         ):  # More specific exception handling
-            await trading_service_test_data._execute_with_session(_operation)
+            await trading_service_synthetic_data._execute_with_session(_operation)
 
     @pytest.mark.asyncio
     async def test_get_enhanced_quote_invalid_symbol_error(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test NotFoundError when asset_factory returns None (line 194)."""
 
@@ -314,10 +314,10 @@ class TestTradingServiceCoverageGaps:
             from app.core.exceptions import NotFoundError
 
             with pytest.raises(NotFoundError, match="Invalid symbol"):
-                await trading_service_test_data.get_enhanced_quote("INVALID")
+                await trading_service_synthetic_data.get_enhanced_quote("INVALID")
 
     @pytest.mark.asyncio
-    async def test_error_handling_lines_660_670_range(self, trading_service_test_data):
+    async def test_error_handling_lines_660_670_range(self, trading_service_synthetic_data):
         """Test error handling in lines around 660-670 range."""
 
         # Look for methods that might have error handling around those lines
@@ -325,7 +325,7 @@ class TestTradingServiceCoverageGaps:
 
         # Test with invalid position data that might trigger validation errors
         with patch.object(
-            trading_service_test_data, "_get_async_db_session"
+            trading_service_synthetic_data, "_get_async_db_session"
         ) as mock_session:
             mock_db = AsyncMock()
             mock_session.return_value = mock_db
@@ -334,14 +334,14 @@ class TestTradingServiceCoverageGaps:
             mock_db.execute.side_effect = Exception("Database error in position lookup")
 
             try:
-                await trading_service_test_data.get_portfolio()
+                await trading_service_synthetic_data.get_portfolio()
             except Exception as e:
                 # Should handle the error gracefully
                 assert "error" in str(e).lower() or "database" in str(e).lower()
 
     @pytest.mark.asyncio
     async def test_boundary_value_testing_extreme_quantities(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test boundary values for order quantities."""
 
@@ -353,9 +353,11 @@ class TestTradingServiceCoverageGaps:
                 symbol="AAPL",
                 quantity=999999999999,  # Very large number
                 order_type=OrderType.BUY,
-                side="buy",
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
-            result = await trading_service_test_data.create_order(large_order)
+            result = await trading_service_synthetic_data.create_order(large_order)
             # Should either succeed or fail gracefully
             assert result is not None
         except Exception as e:
@@ -377,7 +379,7 @@ class TestTradingServiceCoverageGaps:
 
     @pytest.mark.asyncio
     async def test_boundary_value_testing_extreme_prices(
-        self, trading_service_test_data
+        self, trading_service_synthetic_data
     ):
         """Test boundary values for order prices."""
 
@@ -391,10 +393,12 @@ class TestTradingServiceCoverageGaps:
                 symbol="AAPL",
                 quantity=1,
                 order_type=OrderType.BUY,
-                side="buy",
-                price=Decimal("0.0001"),  # Very small price
+                price=float(Decimal("0.0001")),  # Very small price
+                stop_price=None,
+                trail_percent=None,
+                trail_amount=None,
             )
-            result = await trading_service_test_data.create_order(small_price_order)
+            result = await trading_service_synthetic_data.create_order(small_price_order)
             assert result is not None
         except Exception as e:
             # Should handle gracefully
@@ -405,14 +409,14 @@ class TestTradingServiceCoverageGaps:
             )
 
     @pytest.mark.asyncio
-    async def test_network_timeout_simulation(self, trading_service_test_data):
+    async def test_network_timeout_simulation(self, trading_service_synthetic_data):
         """Test network timeout handling."""
 
         import asyncio
 
         # Mock quote adapter to simulate timeout
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_quote"
+            trading_service_synthetic_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
 
             async def timeout_simulation(*args, **kwargs):
@@ -424,11 +428,11 @@ class TestTradingServiceCoverageGaps:
             # Test with a short timeout to trigger timeout handling
             with contextlib.suppress(TimeoutError):
                 await asyncio.wait_for(
-                    trading_service_test_data.get_enhanced_quote("AAPL"), timeout=0.1
+                    trading_service_synthetic_data.get_enhanced_quote("AAPL"), timeout=0.1
                 )
 
     @pytest.mark.asyncio
-    async def test_memory_pressure_simulation(self, trading_service_test_data):
+    async def test_memory_pressure_simulation(self, trading_service_synthetic_data):
         """Test behavior under simulated memory pressure."""
 
         # Create a large number of mock objects to simulate memory pressure
@@ -436,13 +440,13 @@ class TestTradingServiceCoverageGaps:
 
         # Test that the service can handle large data gracefully
         with patch.object(
-            trading_service_test_data.quote_adapter, "get_quote"
+            trading_service_synthetic_data.quote_adapter, "get_quote"
         ) as mock_get_quote:
             mock_get_quote.return_value = MagicMock(price=150.0, symbol="AAPL")
 
             try:
                 # Try to process while holding large data in memory
-                result = await trading_service_test_data.get_enhanced_quote("AAPL")
+                result = await trading_service_synthetic_data.get_enhanced_quote("AAPL")
                 assert result is not None
             except MemoryError:
                 # Handle memory errors gracefully
@@ -452,13 +456,13 @@ class TestTradingServiceCoverageGaps:
                 del large_data
 
     @pytest.mark.asyncio
-    async def test_circular_dependency_avoidance(self, trading_service_test_data):
+    async def test_circular_dependency_avoidance(self, trading_service_synthetic_data):
         """Test that circular dependencies are avoided."""
 
         # Test that multiple calls don't create circular references
         calls_made = []
 
-        original_get_quote = trading_service_test_data.get_enhanced_quote
+        original_get_quote = trading_service_synthetic_data.get_enhanced_quote
 
         async def tracking_get_quote(symbol):
             calls_made.append(symbol)
@@ -466,10 +470,10 @@ class TestTradingServiceCoverageGaps:
                 raise RecursionError("Too many recursive calls detected")
             return await original_get_quote(symbol)
 
-        trading_service_test_data.get_enhanced_quote = tracking_get_quote
+        trading_service_synthetic_data.get_enhanced_quote = tracking_get_quote
 
         try:
-            await trading_service_test_data.get_enhanced_quote("AAPL")
+            await trading_service_synthetic_data.get_enhanced_quote("AAPL")
             # Should complete without hitting recursion limit
             assert len(calls_made) < 10  # Should be efficient
         except RecursionError:
@@ -477,4 +481,4 @@ class TestTradingServiceCoverageGaps:
             pytest.fail("Circular dependency detected in get_enhanced_quote")
         finally:
             # Restore original method
-            trading_service_test_data.get_enhanced_quote = original_get_quote
+            trading_service_synthetic_data.get_enhanced_quote = original_get_quote

@@ -7,12 +7,14 @@ from datetime import datetime
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.test_data import DevDataQuoteAdapter
+from app.adapters.synthetic_data import DevDataQuoteAdapter
 from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import AccountSummary, AccountSummaryList
 from app.services.trading_service import TradingService
 
 
+@pytest.mark.journey_account_management
+@pytest.mark.database
 @pytest.mark.asyncio
 class TestGetAllAccountsSummary:
     """Test cases for get_all_accounts_summary function."""

@@ -14,9 +14,10 @@ env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
     print(f"✅ Loaded environment variables from {env_path}")
-    
+
     # Verify Robinhood credentials are loaded
     import os
+
     username = os.getenv("ROBINHOOD_USERNAME")
     if username:
         print(f"✅ Robinhood credentials found for user: {username}")
@@ -26,13 +27,13 @@ else:
     print(f"❌ .env file not found at {env_path}")
 
 # Import MCP tools AFTER environment variables are loaded
-from app.mcp_tools import mcp
+from app.mcp_tools import mcp  # noqa: E402
 
 if __name__ == "__main__":
     print("🚀 Starting MCP server on port 2081...")
     print("🔌 MCP Server: http://localhost:2081/")
     print("🛠️  Available tools (43 total):")
-    print("   • Set 1: Core System & Account Tools (9 tools)")  
+    print("   • Set 1: Core System & Account Tools (9 tools)")
     print("   • Set 2: Market Data Tools (8 tools)")
     print("   • Set 3: Order Management Tools (4 tools)")
     print("   • Set 4: Options Trading Info Tools (6 tools)")
