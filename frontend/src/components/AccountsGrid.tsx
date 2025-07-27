@@ -27,12 +27,14 @@ interface AccountsGridProps {
   onSelectAccount?: (accountId: string) => void;
   showSelectButton?: boolean;
   title?: string;
+  refreshTrigger?: number;
 }
 
 const AccountsGrid: React.FC<AccountsGridProps> = ({
   onSelectAccount,
   showSelectButton = false,
-  title = 'All Accounts'
+  title = 'All Accounts',
+  refreshTrigger = 0
 }) => {
   const theme = useTheme();
   const [accounts, setAccounts] = useState<AccountSummary[]>([]);
@@ -60,7 +62,7 @@ const AccountsGrid: React.FC<AccountsGridProps> = ({
     };
 
     fetchAccounts();
-  }, []);
+  }, [refreshTrigger]);
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -222,49 +224,6 @@ const AccountsGrid: React.FC<AccountsGridProps> = ({
         subheader={summary ? `${summary.total_count} accounts` : ''}
       />
       <CardContent>
-        {summary && (
-          <Box mb={3}>
-            <Typography variant="h6" gutterBottom>
-              Portfolio Summary
-            </Typography>
-            <Box display="flex" gap={4} flexWrap="wrap">
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Total Starting Balance
-                </Typography>
-                <Typography variant="h6">
-                  {formatCurrency(summary.total_starting_balance)}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Total Current Balance
-                </Typography>
-                <Typography variant="h6">
-                  {formatCurrency(summary.total_current_balance)}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Total P&L
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: summary.total_balance_change >= 0 
-                      ? theme.palette.success.main 
-                      : theme.palette.error.main,
-                    fontWeight: 500,
-                    fontFamily: 'Roboto Mono, monospace',
-                  }}
-                >
-                  {formatCurrency(summary.total_balance_change)}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        )}
-        
         <Box height={600}>
           <DataGrid
             rows={accounts}

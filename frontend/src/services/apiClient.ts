@@ -1,6 +1,11 @@
 import axios from 'axios';
 import type { NewOrder } from '../types';
 
+export interface CreateAccountData {
+  owner: string;
+  starting_balance: number;
+}
+
 const apiClient = axios.create({
   baseURL: '/api/v1/trading',
   headers: {
@@ -10,6 +15,11 @@ const apiClient = axios.create({
 
 export const getAllAccounts = async () => {
   const response = await apiClient.get('/accounts');
+  return response.data;
+};
+
+export const createAccount = async (accountData: CreateAccountData) => {
+  const response = await apiClient.post('/accounts', accountData);
   return response.data;
 };
 
@@ -24,7 +34,7 @@ export const getPortfolioSummary = async () => {
 };
 
 export const getPositions = async () => {
-  const response = await apiClient.get('/portfolio/positions');
+  const response = await apiClient.get('/positions');
   return response.data;
 };
 
