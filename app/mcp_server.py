@@ -21,7 +21,12 @@ from app.mcp_tools import mcp
 if __name__ == "__main__":
     print("🚀 Starting MCP server on port 2081...")
     print("🔌 MCP Server: http://localhost:2081/")
-    print("🛠️  Available tools: health_check, get_account_balance")
+    print("🛠️  Available tools:")
+    print("   • get_account_balance - Get current account balance")
+    print("   • get_account_info - Get comprehensive account information")
+    print("   • get_portfolio - Get portfolio with all positions")
+    print("   • get_portfolio_summary - Get portfolio performance summary")
+    print("   • health_check - Check system health")
     
     # Run the MCP server directly on port 2081
     app = mcp.http_app()

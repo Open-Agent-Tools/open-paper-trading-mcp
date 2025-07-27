@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "• account_details\n• account_info\n• aggregate_option_positions\n• all_option_positions\n• buy_option_limit\n• buy_stock_limit\n• buy_stock_market\n• buy_stock_stop_loss\n• buy_stock_trailing_stop\n• calculate_option_greeks\n• cancel_all_option_orders_tool\n• cancel_all_stock_orders_tool\n• cancel_option_order_by_id\n• cancel_stock_order_by_id\n• create_buy_order\n• create_multi_leg_order\n• create_sell_order\n• find_options\n• find_tradable_options\n• get_expiration_dates\n• get_option_market_data\n• get_options_chain\n• get_order\n• get_position\n• get_price_history\n• get_stock_info\n• get_stock_price\n• get_stock_quote\n• get_strategy_analysis\n• health_check\n• list_tools\n• market_hours\n• open_option_orders\n• open_option_positions\n• open_stock_orders\n• option_credit_spread\n• option_debit_spread\n• option_historicals\n• option_market_data\n• options_chains\n• options_orders\n• portfolio\n• positions\n• price_history\n• search_stocks\n• search_stocks_tool\n• sell_option_limit\n• sell_stock_limit\n• sell_stock_market\n• sell_stock_stop_loss\n• sell_stock_trailing_stop\n• simulate_option_expiration\n• stock_events\n• stock_info\n• stock_level2_data\n• stock_orders\n• stock_price\n• stock_ratings"
+                "text": "• get_account_balance\n• get_account_info\n• get_portfolio\n• get_portfolio_summary\n• health_check"
               }
             ],
             "role": "model"

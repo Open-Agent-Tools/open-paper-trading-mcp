@@ -122,7 +122,10 @@ class TradingService:
         finally:
             # Only close session if we created it (not injected)
             if not session_injected:
-                await db.close()
+                if hasattr(db, 'aclose'):
+                    await db.aclose()
+                elif hasattr(db, 'close'):
+                    await db.close()
 
     async def _ensure_account_exists(self) -> None:
         """Ensure the account exists in the database."""

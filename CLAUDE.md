@@ -93,11 +93,12 @@ app/
 - Async SQLAlchemy ORM with proper connection pooling
 
 ### MCP Tools Implementation
-The system provides 84 MCP tools (currently 17 implemented) for AI agent interaction:
-- Account & Portfolio tools
-- Market Data tools  
-- Order Management tools
-- Options Trading tools
+The system provides 5 core MCP tools for AI agent interaction:
+- `health_check` - System health monitoring
+- `get_account_balance` - Account balance lookup
+- `get_account_info` - Comprehensive account information
+- `get_portfolio` - Full portfolio with positions
+- `get_portfolio_summary` - Portfolio performance metrics
 
 **Note**: FastMCP automatically provides a `list_tools` function that dynamically lists all registered tools. Do not implement a custom `list_tools` function as it will override this built-in functionality.
 

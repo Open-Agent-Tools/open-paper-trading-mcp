@@ -500,18 +500,18 @@ class TestTradingServiceErrorHandling:
 
         with patch.object(
             trading_service_test_data, "_get_async_db_session"
-        ) as mock_session:
+        ) as mock_get_session:
             # Mock a session that raises an error during operation
             mock_db = AsyncMock()
             mock_db.execute.side_effect = RuntimeError("Database error")
-
-            async def mock_session_generator():
-                yield mock_db
-
-            mock_session.return_value = mock_session_generator()
+            mock_db.aclose = AsyncMock()  # Add proper cleanup method
+            
+            mock_get_session.return_value = mock_db
 
             with contextlib.suppress(RuntimeError):
                 await trading_service_test_data.get_portfolio()
 
             # Session cleanup should still happen (tested via context manager)
-            assert mock_session.called
+            assert mock_get_session.called
+            # Verify cleanup was attempted
+            assert mock_db.aclose.called
