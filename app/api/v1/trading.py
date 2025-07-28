@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from app.core.exceptions import NotFoundError
 from app.core.id_utils import validate_optional_account_id
 from app.core.service_factory import get_trading_service
-from app.schemas.orders import OrderCreate, OrderCondition, OrderType
+from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 
 router = APIRouter(prefix="/api/v1/trading", tags=["trading"])
 logger = logging.getLogger(__name__)
@@ -398,7 +398,7 @@ async def create_account(account_data: AccountCreate) -> dict[str, Any]:
                 },
                 "message": f"Account created successfully for {account_data.owner}",
             }
-        
+
         # This should never be reached, but mypy requires it
         raise HTTPException(
             status_code=500,
@@ -585,11 +585,11 @@ async def get_positions(
             market_value = x["market_value"]
             if market_value is None:
                 return 0.0
-            elif isinstance(market_value, (int, float)):
+            elif isinstance(market_value, int | float):
                 return float(market_value)
             else:
                 return 0.0
-        
+
         positions_data.sort(key=get_market_value, reverse=True)
 
         account_msg = f" for account {account_id}" if account_id else ""
@@ -2194,16 +2194,18 @@ async def buy_stock(order_request: StockOrderRequest) -> dict[str, Any]:
             order_type = OrderType.SELL
         else:
             order_type = OrderType.BUY  # default for buy_stock function
-        
+
         order_create = OrderCreate(
             symbol=order_request.symbol,
             order_type=order_type,
             quantity=int(order_request.quantity),
             price=order_request.price,
-            condition=order_request.condition if hasattr(order_request, 'condition') else OrderCondition.MARKET,
+            condition=order_request.condition
+            if hasattr(order_request, "condition")
+            else OrderCondition.MARKET,
             stop_price=None,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2263,16 +2265,18 @@ async def sell_stock(order_request: StockOrderRequest) -> dict[str, Any]:
             order_type = OrderType.BUY
         else:
             order_type = OrderType.SELL  # default for sell_stock function
-        
+
         order_create = OrderCreate(
             symbol=order_request.symbol,
             order_type=order_type,
             quantity=int(order_request.quantity),
             price=order_request.price,
-            condition=order_request.condition if hasattr(order_request, 'condition') else OrderCondition.MARKET,
+            condition=order_request.condition
+            if hasattr(order_request, "condition")
+            else OrderCondition.MARKET,
             stop_price=None,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2333,7 +2337,7 @@ async def buy_stock_limit(order_request: StockLimitOrderRequest) -> dict[str, An
             condition=OrderCondition.LIMIT,
             stop_price=None,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2394,7 +2398,7 @@ async def sell_stock_limit(order_request: StockLimitOrderRequest) -> dict[str, A
             condition=OrderCondition.LIMIT,
             stop_price=None,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2455,7 +2459,7 @@ async def buy_stock_stop(order_request: StockStopOrderRequest) -> dict[str, Any]
             condition=OrderCondition.STOP,
             stop_price=order_request.stop_price,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2516,7 +2520,7 @@ async def sell_stock_stop(order_request: StockStopOrderRequest) -> dict[str, Any
             condition=OrderCondition.STOP,
             stop_price=order_request.stop_price,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2579,7 +2583,7 @@ async def buy_stock_stop_limit(
             condition=OrderCondition.STOP_LIMIT,
             stop_price=order_request.stop_price,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)
@@ -2644,7 +2648,7 @@ async def sell_stock_stop_limit(
             condition=OrderCondition.STOP_LIMIT,
             stop_price=order_request.stop_price,
             trail_percent=None,
-            trail_amount=None
+            trail_amount=None,
         )
 
         order = await service.create_order(order_create)

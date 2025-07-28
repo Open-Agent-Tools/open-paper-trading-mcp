@@ -53,7 +53,7 @@ class TestCancelAllOptionOrdersEnhanced:
     ):
         """Test cancelling option orders when account has no orders."""
         account = DBAccount(
-            id="TEST123456",
+            id="CDAE2AC694",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -75,7 +75,7 @@ class TestCancelAllOptionOrdersEnhanced:
     ):
         """Test cancelling option orders when account has only stock orders."""
         account = DBAccount(
-            id="TEST123456",
+            id="945879DC7B",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -84,9 +84,10 @@ class TestCancelAllOptionOrdersEnhanced:
 
         # Create only stock orders (symbols without C or P)
         stock_symbols = ["MSFT", "GOOGL", "AMZN"]  # No C or P in these symbols
-        for symbol in stock_symbols:
+        for i, symbol in enumerate(stock_symbols):
+            import uuid
             order = DBOrder(
-                id="TEST123456",
+                id=uuid.uuid4().hex[:10].upper(),
                 account_id=account.id,
                 symbol=symbol,
                 order_type=OrderType.BUY,
@@ -114,7 +115,7 @@ class TestCancelAllOptionOrdersEnhanced:
     ):
         """Test cancelling option orders with mixed order statuses."""
         account = DBAccount(
-            id="TEST123456",
+            id="E6816963B1",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -123,7 +124,7 @@ class TestCancelAllOptionOrdersEnhanced:
 
         # Create option orders with different statuses
         pending_order = DBOrder(
-            id="TEST123456",
+            id="BD48A7AD3A",
             account_id=account.id,
             symbol="AAPL240115C00150000",
             order_type=OrderType.BTO,
@@ -135,7 +136,7 @@ class TestCancelAllOptionOrdersEnhanced:
         db_session.add(pending_order)
 
         filled_order = DBOrder(
-            id="TEST123456",
+            id="2556912C03",
             account_id=account.id,
             symbol="TSLA240115P00200000",
             order_type=OrderType.STO,
@@ -147,7 +148,7 @@ class TestCancelAllOptionOrdersEnhanced:
         db_session.add(filled_order)
 
         cancelled_order = DBOrder(
-            id="TEST123456",
+            id="19840B754C",
             account_id=account.id,
             symbol="MSFT240115C00300000",
             order_type=OrderType.BTC,
@@ -185,7 +186,7 @@ class TestCancelAllOptionOrdersEnhanced:
     ):
         """Test option order detection by symbol patterns."""
         account = DBAccount(
-            id="TEST123456",
+            id="DE75C9687D",
             owner="test_user",
             cash_balance=50000.0,
         )
@@ -208,9 +209,10 @@ class TestCancelAllOptionOrdersEnhanced:
         orders = []
         expected_cancelled = 0
 
-        for symbol, should_cancel in test_cases:
+        for i, (symbol, should_cancel) in enumerate(test_cases):
+            import uuid
             order = DBOrder(
-                id="TEST123456",
+                id=uuid.uuid4().hex[:10].upper(),
                 account_id=account.id,
                 symbol=symbol,
                 order_type=OrderType.BUY,  # Using standard order type
@@ -604,7 +606,7 @@ class TestOptionsIntegration:
         """Test complete options trading workflow."""
         # Create account
         account = DBAccount(
-            id="TEST123456",
+            id="D842118F66",
             owner="options_trader",
             cash_balance=100000.0,
         )
@@ -635,8 +637,9 @@ class TestOptionsIntegration:
         # 3. Create some option orders (would normally use create_order, but testing cancellation)
         option_orders = []
         for i in range(3):
+            import uuid
             order = DBOrder(
-                id="TEST123456",
+                id=uuid.uuid4().hex[:10].upper(),
                 account_id=account.id,
                 symbol=f"AAPL240119C0015{i}000",
                 order_type=OrderType.BTO,

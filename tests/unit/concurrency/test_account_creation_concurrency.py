@@ -36,7 +36,7 @@ class TestAccountCreationConcurrency:
     ):
         """Test concurrent creation of accounts with the same owner - should prevent duplicates."""
         adapter = DatabaseAccountAdapter()
-        owner_id = f"test_owner_{uuid.uuid4().hex[:8]}"
+        owner_id = f"OWNER{uuid.uuid4().hex[:5].upper()}"
 
         with patch("app.adapters.accounts.get_async_session") as mock_get_session:
 
@@ -68,7 +68,7 @@ class TestAccountCreationConcurrency:
 
             # Launch multiple concurrent creation attempts
             tasks = []
-            account_ids = [f"acc_{i}_{uuid.uuid4().hex[:6]}" for i in range(5)]
+            account_ids = [f"ACC{i:03d}{uuid.uuid4().hex[:4].upper()}" for i in range(5)]
 
             for account_id in account_ids:
                 tasks.append(create_account_attempt(account_id))
@@ -107,8 +107,8 @@ class TestAccountCreationConcurrency:
             async def create_unique_account(index: int) -> tuple[bool, str | None]:
                 """Create an account with a unique owner."""
                 try:
-                    owner_id = f"owner_{index}_{uuid.uuid4().hex[:8]}"
-                    account_id = f"acc_{index}_{uuid.uuid4().hex[:8]}"
+                    owner_id = f"OWN{index:02d}{uuid.uuid4().hex[:5].upper()}"
+                    account_id = f"ACC{index:03d}{uuid.uuid4().hex[:4].upper()}"
 
                     account = Account(
                         id=account_id,
@@ -154,7 +154,7 @@ class TestAccountCreationConcurrency:
         self, db_session: AsyncSession
     ):
         """Test concurrent TradingService initialization with same account owner."""
-        owner_id = f"service_owner_{uuid.uuid4().hex[:8]}"
+        owner_id = f"SRVC{uuid.uuid4().hex[:6].upper()}"
 
         # Mock the async session to use our test session
         with patch(
@@ -324,7 +324,7 @@ class TestAccountCreationConcurrency:
     ):
         """Test race condition between account existence check and creation."""
         adapter = DatabaseAccountAdapter()
-        owner_id = f"race_test_{uuid.uuid4().hex[:8]}"
+        owner_id = f"RACE{uuid.uuid4().hex[:6].upper()}"
 
         # Simulate the race condition scenario
         async def check_and_create_account(attempt_id: int) -> dict[str, Any]:
@@ -347,7 +347,7 @@ class TestAccountCreationConcurrency:
                         # Step 3: Create account if it doesn't exist
                         if existing_account is None:
                             account = Account(
-                                id=f"race_acc_{attempt_id}_{uuid.uuid4().hex[:6]}",
+                                id=f"RC{attempt_id:02d}{uuid.uuid4().hex[:6].upper()}",
                                 owner=owner_id,
                                 cash_balance=100000.0,
                                 positions=[],
@@ -396,10 +396,10 @@ class TestAccountCreationConcurrency:
         """Test concurrent updates to the same account."""
         # First create an account
         adapter = DatabaseAccountAdapter()
-        owner_id = f"update_test_{uuid.uuid4().hex[:8]}"
+        owner_id = f"UPD{uuid.uuid4().hex[:7].upper()}"
 
         account = Account(
-            id=f"update_acc_{uuid.uuid4().hex[:8]}",
+            id=f"UPD{uuid.uuid4().hex[:7].upper()}",
             owner=owner_id,
             cash_balance=100000.0,
             positions=[],
@@ -602,7 +602,7 @@ class TestMemoryVsPersistentAdapterConcurrency:
                 try:
                     account = account_factory(
                         name=f"FileAccount-{i}",
-                        owner=f"file_owner_{i}_{uuid.uuid4().hex[:6]}",
+                        owner=f"FILE{i:02d}{uuid.uuid4().hex[:4].upper()}",
                         cash=60000.0,
                     )
 
@@ -642,8 +642,8 @@ class TestMemoryVsPersistentAdapterConcurrency:
 
         # Create initial account
         test_account = Account(
-            id=f"consistency_acc_{uuid.uuid4().hex[:8]}",
-            owner=f"consistency_owner_{uuid.uuid4().hex[:8]}",
+            id=f"CONS{uuid.uuid4().hex[:6].upper()}",
+            owner=f"CONSO{uuid.uuid4().hex[:5].upper()}",
             cash_balance=100000.0,
             positions=[],
             name="ConsistencyTestAccount",

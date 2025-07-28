@@ -114,7 +114,9 @@ class TestTradingServiceStockPriceMetrics:
         self, trading_service_synthetic_data
     ):
         """Test stock price with invalid symbol using test data."""
-        result = await trading_service_synthetic_data.get_stock_price("INVALID_SYMBOL_XYZ")
+        result = await trading_service_synthetic_data.get_stock_price(
+            "INVALID_SYMBOL_XYZ"
+        )
 
         assert "error" in result
         # Error message could be "Invalid symbol" or "Invalid option symbol format"

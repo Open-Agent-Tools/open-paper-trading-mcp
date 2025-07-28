@@ -90,7 +90,7 @@ class TestGetPendingTriggeredOrders:
         # Create orders with trigger conditions
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"EAA58FD781"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -100,7 +100,7 @@ class TestGetPendingTriggeredOrders:
                 "stop_price": 150.0,  # Has stop price (trigger condition)
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"051D1126E3"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -110,7 +110,7 @@ class TestGetPendingTriggeredOrders:
                 "trail_percent": 5.0,  # Has trailing percent (trigger condition)
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"AE29DE981B"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -160,7 +160,7 @@ class TestGetPendingTriggeredOrders:
         # Create more orders than limit
         for i in range(5):
             order = DBOrder(
-                id=f"order_{i}_{uuid.uuid4().hex[:8]}",
+                id=f"order_{i}_{"A199869D13"}",
                 account_id=account_id,
                 symbol=f"STOCK{i}",
                 order_type=OrderType.BUY,
@@ -205,7 +205,7 @@ class TestGetOrdersByStatusAndType:
         # Create orders with different statuses and types
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"C8CFC8AC3E"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -213,7 +213,7 @@ class TestGetOrdersByStatusAndType:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"F55E0231F9"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -221,7 +221,7 @@ class TestGetOrdersByStatusAndType:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"B658ABE84D"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -254,7 +254,7 @@ class TestGetOrdersByStatusAndType:
         # Create orders with different combinations
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"7CD84FA4AC"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -262,7 +262,7 @@ class TestGetOrdersByStatusAndType:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"DDB80CAA39"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -270,7 +270,7 @@ class TestGetOrdersByStatusAndType:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"6E48319195"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -310,7 +310,7 @@ class TestGetOrdersByStatusAndType:
 
         orders_data = [
             {
-                "id": f"order_1_{uuid.uuid4().hex[:8]}",
+                "id": f"order_1_{"1B5A0EFB12"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -319,7 +319,7 @@ class TestGetOrdersByStatusAndType:
                 "created_at": base_time - timedelta(hours=2),
             },
             {
-                "id": f"order_2_{uuid.uuid4().hex[:8]}",
+                "id": f"order_2_{"AA969E17CD"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.BUY,
@@ -328,7 +328,7 @@ class TestGetOrdersByStatusAndType:
                 "created_at": base_time - timedelta(hours=1),
             },
             {
-                "id": f"order_3_{uuid.uuid4().hex[:8]}",
+                "id": f"order_3_{"7F2621689F"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -368,7 +368,7 @@ class TestGetOrdersForSymbol:
         # Create orders for different symbols
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"1094A260E5"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -376,7 +376,7 @@ class TestGetOrdersForSymbol:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"B5F33CE1D1"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.SELL,
@@ -384,7 +384,7 @@ class TestGetOrdersForSymbol:
                 "status": OrderStatus.PENDING,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"9AFAD045AD"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.BUY,
@@ -417,7 +417,7 @@ class TestGetOrdersForSymbol:
         # Create AAPL orders with different statuses
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"D09D473A45"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -425,7 +425,7 @@ class TestGetOrdersForSymbol:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"25FEC4429A"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.SELL,
@@ -433,7 +433,7 @@ class TestGetOrdersForSymbol:
                 "status": OrderStatus.PENDING,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"1018AE7760"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -466,7 +466,7 @@ class TestGetOrdersForSymbol:
         # Create more orders than limit
         for i in range(5):
             order = DBOrder(
-                id=f"order_{i}_{uuid.uuid4().hex[:8]}",
+                id=f"order_{i}_{"0BC882E652"}",
                 account_id=account_id,
                 symbol="AAPL",
                 order_type=OrderType.BUY,
@@ -507,7 +507,7 @@ class TestGetAccountOrdersSummary:
         # Create orders with different statuses and types
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"6CE0D1B0BF"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -515,7 +515,7 @@ class TestGetAccountOrdersSummary:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"6C904AD8FD"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -523,7 +523,7 @@ class TestGetAccountOrdersSummary:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"1DAC96E727"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -531,7 +531,7 @@ class TestGetAccountOrdersSummary:
                 "status": OrderStatus.PENDING,
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"089CAF1A61"}",
                 "account_id": account_id,
                 "symbol": "TSLA",
                 "order_type": OrderType.SELL,
@@ -580,7 +580,7 @@ class TestGetAccountOrdersSummary:
 
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"7E96C5D728"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -589,7 +589,7 @@ class TestGetAccountOrdersSummary:
                 "created_at": base_time - timedelta(days=10),  # Outside range
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"D1690A43D1"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -598,7 +598,7 @@ class TestGetAccountOrdersSummary:
                 "created_at": base_time - timedelta(days=5),  # In range
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"7B209D3F7F"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -661,7 +661,7 @@ class TestGetRecentFilledOrders:
 
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"05A9BF7456"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -670,7 +670,7 @@ class TestGetRecentFilledOrders:
                 "filled_at": base_time - timedelta(hours=2),  # Recent
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"A8CFF0C0D4"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -679,7 +679,7 @@ class TestGetRecentFilledOrders:
                 "filled_at": base_time - timedelta(days=2),  # Too old
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"BAB71DE94F"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -688,7 +688,7 @@ class TestGetRecentFilledOrders:
                 "filled_at": None,  # Not filled
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"FEC4E76C73"}",
                 "account_id": account_id,
                 "symbol": "TSLA",
                 "order_type": OrderType.SELL,
@@ -734,7 +734,7 @@ class TestGetRecentFilledOrders:
 
         # Create filled order 6 hours ago
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"CAC29E34C6"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -765,7 +765,7 @@ class TestGetRecentFilledOrders:
         # Create multiple filled orders
         orders_data = [
             {
-                "id": f"order_1_{uuid.uuid4().hex[:8]}",
+                "id": f"order_1_{"29AC66E48A"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -774,7 +774,7 @@ class TestGetRecentFilledOrders:
                 "filled_at": base_time - timedelta(hours=3),
             },
             {
-                "id": f"order_2_{uuid.uuid4().hex[:8]}",
+                "id": f"order_2_{"E07361F038"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -783,7 +783,7 @@ class TestGetRecentFilledOrders:
                 "filled_at": base_time - timedelta(hours=1),  # Most recent
             },
             {
-                "id": f"order_3_{uuid.uuid4().hex[:8]}",
+                "id": f"order_3_{"2E09EA1BF5"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -824,7 +824,7 @@ class TestGetOrderExecutionMetrics:
         # Create filled orders with known execution times
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"96C85E7B94"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -834,7 +834,7 @@ class TestGetOrderExecutionMetrics:
                 "filled_at": base_time - timedelta(minutes=8),  # 2 min execution
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"B040155695"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -844,7 +844,7 @@ class TestGetOrderExecutionMetrics:
                 "filled_at": base_time - timedelta(minutes=16),  # 4 min execution
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"4AE4F3BFE9"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -923,7 +923,7 @@ class TestGetStopLossCandidates:
 
         # Create BUY order with stop price
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"46A6361DA8"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -955,7 +955,7 @@ class TestGetStopLossCandidates:
 
         # Create SELL order with stop price
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"6725EF8FC0"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.SELL,
@@ -986,7 +986,7 @@ class TestGetStopLossCandidates:
         # Create orders that shouldn't trigger
         orders_data = [
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"A86E85471C"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -995,7 +995,7 @@ class TestGetStopLossCandidates:
                 "stop_price": 150.0,  # Buy when >= 150, current is 145
             },
             {
-                "id": f"order_{uuid.uuid4().hex[:8]}",
+                "id": f"order_{"1855405591"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -1028,7 +1028,7 @@ class TestGetStopLossCandidates:
         await create_test_account(db_session, account_id)
 
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"8A3492427B"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -1060,7 +1060,7 @@ class TestGetTrailingStopCandidates:
 
         # Create SELL order with trailing percent
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"E69621A20D"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.SELL,
@@ -1093,7 +1093,7 @@ class TestGetTrailingStopCandidates:
 
         # Create BUY order with trailing amount
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"ECFFE83377"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -1127,7 +1127,7 @@ class TestGetTrailingStopCandidates:
 
         # Create order without trailing stops
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"order_{"5C9085A52A"}",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -1160,7 +1160,7 @@ class TestGetOrderQueueDepth:
         orders_data = [
             # 3 PENDING orders
             {
-                "id": f"order_1_{uuid.uuid4().hex[:8]}",
+                "id": f"order_1_{"476D24D2B5"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -1168,7 +1168,7 @@ class TestGetOrderQueueDepth:
                 "status": OrderStatus.PENDING,
             },
             {
-                "id": f"order_2_{uuid.uuid4().hex[:8]}",
+                "id": f"order_2_{"FDCB5B6878"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -1176,7 +1176,7 @@ class TestGetOrderQueueDepth:
                 "status": OrderStatus.PENDING,
             },
             {
-                "id": f"order_3_{uuid.uuid4().hex[:8]}",
+                "id": f"order_3_{"3E83710EF9"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -1185,7 +1185,7 @@ class TestGetOrderQueueDepth:
             },
             # 2 FILLED orders
             {
-                "id": f"order_4_{uuid.uuid4().hex[:8]}",
+                "id": f"order_4_{"D4A451FA8D"}",
                 "account_id": account_id,
                 "symbol": "TSLA",
                 "order_type": OrderType.SELL,
@@ -1193,7 +1193,7 @@ class TestGetOrderQueueDepth:
                 "status": OrderStatus.FILLED,
             },
             {
-                "id": f"order_5_{uuid.uuid4().hex[:8]}",
+                "id": f"order_5_{"8EA5F252EC"}",
                 "account_id": account_id,
                 "symbol": "NVDA",
                 "order_type": OrderType.BUY,
@@ -1202,7 +1202,7 @@ class TestGetOrderQueueDepth:
             },
             # 1 CANCELLED order
             {
-                "id": f"order_6_{uuid.uuid4().hex[:8]}",
+                "id": f"order_6_{"FED3D8292C"}",
                 "account_id": account_id,
                 "symbol": "AMD",
                 "order_type": OrderType.SELL,
@@ -1253,7 +1253,7 @@ class TestGetHighFrequencySymbols:
         for symbol, count in symbol_counts.items():
             for i in range(count):
                 order = DBOrder(
-                    id=f"order_{symbol}_{i}_{uuid.uuid4().hex[:8]}",
+                    id=f"order_{symbol}_{i}_{"A2430FCF75"}",
                     account_id=account_id,
                     symbol=symbol,
                     order_type=OrderType.BUY,
@@ -1293,7 +1293,7 @@ class TestGetHighFrequencySymbols:
             # Recent orders (within 12 hours)
             *[
                 {
-                    "id": f"order_recent_{i}_{uuid.uuid4().hex[:8]}",
+                    "id": f"order_recent_{i}_{"1770BE55EB"}",
                     "account_id": account_id,
                     "symbol": "AAPL",
                     "order_type": OrderType.BUY,
@@ -1306,7 +1306,7 @@ class TestGetHighFrequencySymbols:
             # Old orders (outside 12 hour window)
             *[
                 {
-                    "id": f"order_old_{i}_{uuid.uuid4().hex[:8]}",
+                    "id": f"order_old_{i}_{"0432B835AD"}",
                     "account_id": account_id,
                     "symbol": "AAPL",
                     "order_type": OrderType.BUY,
@@ -1345,7 +1345,7 @@ class TestGetHighFrequencySymbols:
         # Create symbols with counts below threshold
         for i in range(5):  # Only 5 orders, below min_orders=10
             order = DBOrder(
-                id=f"order_{i}_{uuid.uuid4().hex[:8]}",
+                id=f"order_{i}_{"358EA1B75B"}",
                 account_id=account_id,
                 symbol="LOWVOL",
                 order_type=OrderType.BUY,
@@ -1365,121 +1365,6 @@ class TestGetHighFrequencySymbols:
 
 
 @pytest.mark.database
-class TestBulkUpdateOrderStatus:
-    """Test bulk_update_order_status method."""
-
-    @pytest.mark.asyncio
-    async def test_bulk_update_order_status_without_filled_at(
-        self, db_session: AsyncSession
-    ):
-        """Test bulk updating order status without filled_at."""
-        account_id = "TEST123456"
-        await create_test_account(db_session, account_id)
-
-        # Create orders to update
-        order_ids = []
-        for i in range(3):
-            order_id = f"order_{i}_{uuid.uuid4().hex[:8]}"
-            order_ids.append(order_id)
-            order = DBOrder(
-                id=order_id,
-                account_id=account_id,
-                symbol=f"STOCK{i}",
-                order_type=OrderType.BUY,
-                quantity=100,
-                status=OrderStatus.PENDING,
-            )
-            db_session.add(order)
-
-        await db_session.commit()
-
-        queries = OptimizedOrderQueries(db_session)
-
-        # Update to FILLED status
-        updated_count = await queries.bulk_update_order_status(
-            order_ids, OrderStatus.FILLED
-        )
-
-        await db_session.commit()
-
-        # Verify update count
-        assert updated_count == 3
-
-        # Verify orders were updated
-        for order_id in order_ids:
-            stmt = select(DBOrder).where(DBOrder.id == order_id)
-            result = await db_session.execute(stmt)
-            order = result.scalar_one()
-            assert order.status == OrderStatus.FILLED
-
-    @pytest.mark.asyncio
-    async def test_bulk_update_order_status_with_filled_at(
-        self, db_session: AsyncSession
-    ):
-        """Test bulk updating order status with filled_at timestamp."""
-        account_id = "TEST123456"
-        await create_test_account(db_session, account_id)
-
-        # Create orders to update
-        order_ids = []
-        for i in range(2):
-            order_id = f"order_{i}_{uuid.uuid4().hex[:8]}"
-            order_ids.append(order_id)
-            order = DBOrder(
-                id=order_id,
-                account_id=account_id,
-                symbol=f"STOCK{i}",
-                order_type=OrderType.BUY,
-                quantity=100,
-                status=OrderStatus.PENDING,
-            )
-            db_session.add(order)
-
-        await db_session.commit()
-
-        queries = OptimizedOrderQueries(db_session)
-
-        # Update to FILLED status with filled_at
-        filled_time = datetime.now(UTC).replace(tzinfo=None)
-        updated_count = await queries.bulk_update_order_status(
-            order_ids, OrderStatus.FILLED, filled_at=filled_time
-        )
-
-        await db_session.commit()
-
-        # Verify update count
-        assert updated_count == 2
-
-        # Verify orders were updated with filled_at
-        for order_id in order_ids:
-            stmt = select(DBOrder).where(DBOrder.id == order_id)
-            result = await db_session.execute(stmt)
-            order = result.scalar_one()
-            assert order.status == OrderStatus.FILLED
-            assert order.filled_at is not None
-            # Check that filled_at is close to our timestamp (within 1 second)
-            assert order.filled_at is not None
-            time_diff = order.filled_at - filled_time
-            assert abs(time_diff.total_seconds()) < 1.0
-
-    @pytest.mark.asyncio
-    async def test_bulk_update_order_status_nonexistent_orders(
-        self, db_session: AsyncSession
-    ):
-        """Test bulk updating non-existent order IDs."""
-        queries = OptimizedOrderQueries(db_session)
-
-        # Try to update non-existent orders
-        nonexistent_ids = [f"fake_{i}" for i in range(3)]
-        updated_count = await queries.bulk_update_order_status(
-            nonexistent_ids, OrderStatus.FILLED
-        )
-
-        # Should return 0 updated count
-        assert updated_count == 0
-
-
-@pytest.mark.database
 class TestCleanupOldCompletedOrders:
     """Test cleanup_old_completed_orders method."""
 
@@ -1494,7 +1379,7 @@ class TestCleanupOldCompletedOrders:
         orders_data = [
             # Old completed orders (should be counted)
             {
-                "id": f"order_old_filled_{uuid.uuid4().hex[:8]}",
+                "id": f"order_old_filled_{"8CE8C84382"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -1503,7 +1388,7 @@ class TestCleanupOldCompletedOrders:
                 "created_at": base_time - timedelta(days=100),  # Old
             },
             {
-                "id": f"order_old_cancelled_{uuid.uuid4().hex[:8]}",
+                "id": f"order_old_cancelled_{"339B0F9295"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -1513,7 +1398,7 @@ class TestCleanupOldCompletedOrders:
             },
             # Recent completed orders (should not be counted)
             {
-                "id": f"order_recent_filled_{uuid.uuid4().hex[:8]}",
+                "id": f"order_recent_filled_{"3FBB4A385E"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.BUY,
@@ -1523,7 +1408,7 @@ class TestCleanupOldCompletedOrders:
             },
             # Old pending orders (should not be counted)
             {
-                "id": f"order_old_pending_{uuid.uuid4().hex[:8]}",
+                "id": f"order_old_pending_{"923EB628F8"}",
                 "account_id": account_id,
                 "symbol": "TSLA",
                 "order_type": OrderType.SELL,
@@ -1594,7 +1479,7 @@ class TestOptimizedOrderQueriesIntegration:
         orders_data = [
             # Pending orders with various conditions
             {
-                "id": f"order_pending_1_{uuid.uuid4().hex[:8]}",
+                "id": f"order_pending_1_{"26B7791185"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -1604,7 +1489,7 @@ class TestOptimizedOrderQueriesIntegration:
                 "created_at": base_time - timedelta(hours=1),
             },
             {
-                "id": f"order_pending_2_{uuid.uuid4().hex[:8]}",
+                "id": f"order_pending_2_{"569F063937"}",
                 "account_id": account_id,
                 "symbol": "GOOGL",
                 "order_type": OrderType.SELL,
@@ -1615,7 +1500,7 @@ class TestOptimizedOrderQueriesIntegration:
             },
             # Recently filled orders
             {
-                "id": f"order_filled_1_{uuid.uuid4().hex[:8]}",
+                "id": f"order_filled_1_{"B33C6F186F"}",
                 "account_id": account_id,
                 "symbol": "AAPL",
                 "order_type": OrderType.BUY,
@@ -1625,7 +1510,7 @@ class TestOptimizedOrderQueriesIntegration:
                 "filled_at": base_time - timedelta(hours=2, minutes=58),
             },
             {
-                "id": f"order_filled_2_{uuid.uuid4().hex[:8]}",
+                "id": f"order_filled_2_{"32387720ED"}",
                 "account_id": account_id,
                 "symbol": "MSFT",
                 "order_type": OrderType.SELL,

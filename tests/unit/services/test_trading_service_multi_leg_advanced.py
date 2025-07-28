@@ -20,6 +20,7 @@ import pytest
 from app.schemas.orders import Order, OrderStatus, OrderType
 
 
+@pytest.mark.journey_options_trading
 class TestTradingServiceMultiLegAdvanced:
     """Test advanced multi-leg order functionality."""
 
@@ -35,27 +36,27 @@ class TestTradingServiceMultiLegAdvanced:
 
         # Mock the underlying create_multi_leg_order method
         mock_order = Order(
-            id="multi-leg-123",
+            id="MULTILEG12",
             symbol="AAPL_SPREAD",
             quantity=1,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("2.50"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=2.50
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=2.50
             )
 
             assert isinstance(result, Order)
-            assert result.id == "multi-leg-123"
+            assert result.id == "MULTILEG12"
             assert result.symbol == "AAPL_SPREAD"
 
             # Verify the mock order data was passed correctly
@@ -95,23 +96,23 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="multi-leg-market-456",
+            id="MULTILEGMA",
             symbol="SPY240315P00400000",  # Use valid symbol format
             quantity=2,
             order_type=OrderType.BUY,
             side="buy",
             price=None,
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="market", net_price=None
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="market", net_price=None
             )
 
             assert isinstance(result, Order)
@@ -149,27 +150,27 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="iron-condor-789",
+            id="IRONCONDOR",
             symbol="TSLA240315C00200000",  # Use valid symbol format
             quantity=1,
             order_type=OrderType.BUY,
             side="sell",  # Net credit strategy
             price=Decimal("3.75"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=3.75
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=3.75
             )
 
             assert isinstance(result, Order)
-            assert result.id == "iron-condor-789"
+            assert result.id == "IRONCONDOR"
 
             # Verify all 4 legs were structured correctly
             mock_order_data = mock_create.call_args[0][0]
@@ -195,23 +196,23 @@ class TestTradingServiceMultiLegAdvanced:
         legs = [{"symbol": "AAPL240315C00150000", "quantity": 5, "side": "buy"}]
 
         mock_order = Order(
-            id="single-leg-101",
+            id="SINGLELEG1",
             symbol="AAPL240315C00150000",
             quantity=5,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("7.50"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=7.50
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=7.50
             )
 
             assert isinstance(result, Order)
@@ -236,23 +237,23 @@ class TestTradingServiceMultiLegAdvanced:
         legs = []
 
         mock_order = Order(
-            id="empty-order-102",
+            id="EMPTYORDER",
             symbol="AAPL240315C00150000",  # Use valid symbol format
             quantity=1,  # Use valid quantity (must be > 0)
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("0.00"),
             status=OrderStatus.REJECTED,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=0.00
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=0.00
             )
 
             assert isinstance(result, Order)
@@ -275,23 +276,23 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="mixed-quantities-103",
+            id="MIXEDQUANT",
             symbol="QQQ240315C00350000",  # Use valid symbol format
             quantity=10,  # Usually based on primary leg
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("5.25"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=5.25
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=5.25
             )
 
             assert isinstance(result, Order)
@@ -331,25 +332,25 @@ class TestTradingServiceMultiLegAdvanced:
         legs = [{"symbol": "AAPL240315C00150000", "quantity": 1, "side": "buy"}]
 
         mock_order = Order(
-            id="invalid-type-104",
+            id="INVALIDTYP",
             symbol="AAPL240315C00150000",
             quantity=1,
             order_type=OrderType.BUY,  # Default fallback
             side="buy",
             price=Decimal("5.00"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs,
-                    order_type="invalid_order_type",  # Invalid type
-                    net_price=5.00,
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs,
+                order_type="invalid_order_type",  # Invalid type
+                net_price=5.00,
             )
 
             assert isinstance(result, Order)
@@ -378,23 +379,23 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="zero-price-105",
+            id="ZEROPRICE1",
             symbol="SPY240315C00400000",  # Use valid symbol format
             quantity=1,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("0.00"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=0.00
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=0.00
             )
 
             assert isinstance(result, Order)
@@ -419,25 +420,25 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="credit-spread-106",
+            id="CREDITSPRE",
             symbol="AAPL240315C00150000",  # Use valid symbol format
             quantity=1,
             order_type=OrderType.BUY,
             side="sell",  # Net credit
             price=Decimal("-2.25"),  # Negative indicates credit
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs,
-                    order_type="limit",
-                    net_price=-2.25,  # Credit spread
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs,
+                order_type="limit",
+                net_price=-2.25,  # Credit spread
             )
 
             assert isinstance(result, Order)
@@ -462,23 +463,23 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="large-order-107",
+            id="LARGEORDER",
             symbol="SPY240315C00400000",  # Use valid symbol format
             quantity=1000,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("1.50"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=1.50
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=1.50
             )
 
             assert isinstance(result, Order)
@@ -505,8 +506,10 @@ class TestTradingServiceMultiLegAdvanced:
             mock_create.side_effect = Exception("Invalid symbol format")
 
             with pytest.raises(Exception, match="Invalid symbol format"):
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=5.00
+                await (
+                    trading_service_synthetic_data.create_multi_leg_order_from_request(
+                        legs=legs, order_type="limit", net_price=5.00
+                    )
                 )
 
     @pytest.mark.asyncio
@@ -522,23 +525,23 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="ordered-legs-108",
+            id="ORDEREDLEG",
             symbol="FIRST240315C00150000",  # Use valid symbol format
             quantity=1,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("2.00"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=2.00
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=2.00
             )
 
             assert isinstance(result, Order)
@@ -566,23 +569,23 @@ class TestTradingServiceMultiLegAdvanced:
         ]
 
         mock_order = Order(
-            id="mixed-sides-109",
+            id="MIXEDSIDES",
             symbol="AAPL240315C00150000",  # Use valid symbol format
             quantity=2,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("1.75"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=1.75
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=1.75
             )
 
             assert isinstance(result, Order)
@@ -609,23 +612,23 @@ class TestTradingServiceMultiLegAdvanced:
         legs = [{"symbol": "TEST240315C00100000", "quantity": 5, "side": "buy"}]
 
         mock_order = Order(
-            id="structure-test-110",
+            id="STRUCTURET",
             symbol="TEST240315C00100000",
             quantity=5,
             order_type=OrderType.BUY,
             side="buy",
             price=Decimal("3.33"),
             status=OrderStatus.PENDING,
-            account_id="test-account",
+            account_id="TESTACCOUN",
         )
 
         with patch.object(
-            trading_service_synthetic_data, "create_multi_leg_order", return_value=mock_order
+            trading_service_synthetic_data,
+            "create_multi_leg_order",
+            return_value=mock_order,
         ) as mock_create:
-            result = (
-                await trading_service_synthetic_data.create_multi_leg_order_from_request(
-                    legs=legs, order_type="limit", net_price=3.33
-                )
+            result = await trading_service_synthetic_data.create_multi_leg_order_from_request(
+                legs=legs, order_type="limit", net_price=3.33
             )
 
             assert isinstance(result, Order)

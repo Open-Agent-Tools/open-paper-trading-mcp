@@ -80,7 +80,7 @@ class TestDatabaseAccountAdapter:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            result = await adapter.get_account("nonexistent-account")
+            result = await adapter.get_account("NOTEXIST01")
             assert result is None
 
     @pytest.mark.asyncio
@@ -115,7 +115,7 @@ class TestDatabaseAccountAdapter:
         """Test updating an existing account."""
         # Create initial account
         original_account = Account(
-            id="update-test-123",
+            id="UPDATE0123",
             cash_balance=5000.0,
             positions=[],
             name="Original Account",
@@ -133,7 +133,7 @@ class TestDatabaseAccountAdapter:
 
             # Update the account
             updated_account = Account(
-                id="update-test-123",
+                id="UPDATE0123",
                 cash_balance=15000.0,
                 positions=[],
                 name="Updated Account",
@@ -143,7 +143,7 @@ class TestDatabaseAccountAdapter:
             await adapter.put_account(updated_account)
 
             # Verify the update
-            result = await adapter.get_account("update-test-123")
+            result = await adapter.get_account("UPDATE0123")
             assert result is not None
             assert result.cash_balance == 15000.0
             assert result.owner == "updated_owner"
@@ -154,7 +154,7 @@ class TestDatabaseAccountAdapter:
     ):
         """Test creating account with None owner uses default."""
         account_with_none_owner = Account(
-            id="default-owner-test",
+            id="DEFAULT001",
             cash_balance=1000.0,
             positions=[],
             name="Test Account",
@@ -171,7 +171,7 @@ class TestDatabaseAccountAdapter:
             await adapter.put_account(account_with_none_owner)
 
             # Verify default owner was used
-            result = await adapter.get_account("default-owner-test")
+            result = await adapter.get_account("DEFAULT001")
             assert result is not None
             assert result.owner == "default"
 
@@ -182,9 +182,9 @@ class TestDatabaseAccountAdapter:
         """Test retrieving all account IDs."""
         # Create multiple accounts
         accounts = [
-            DBAccount(id="acc-1", owner="user1", cash_balance=1000.0),
-            DBAccount(id="acc-2", owner="user2", cash_balance=2000.0),
-            DBAccount(id="acc-3", owner="user3", cash_balance=3000.0),
+            DBAccount(id="ACCOUNT001", owner="user1", cash_balance=1000.0),
+            DBAccount(id="ACCOUNT002", owner="user2", cash_balance=2000.0),
+            DBAccount(id="ACCOUNT003", owner="user3", cash_balance=3000.0),
         ]
 
         for account in accounts:
@@ -201,9 +201,9 @@ class TestDatabaseAccountAdapter:
             result = await adapter.get_account_ids()
 
             assert len(result) == 3
-            assert "acc-1" in result
-            assert "acc-2" in result
-            assert "acc-3" in result
+            assert "ACCOUNT001" in result
+            assert "ACCOUNT002" in result
+            assert "ACCOUNT003" in result
 
     @pytest.mark.asyncio
     async def test_get_account_ids_empty(
@@ -227,7 +227,7 @@ class TestDatabaseAccountAdapter:
         """Test account_exists returns True for existing account."""
         # Create account
         db_account = DBAccount(
-            id="exists-test",
+            id="EXISTS0001",
             owner="test_user",
             cash_balance=1000.0,
         )
@@ -241,7 +241,7 @@ class TestDatabaseAccountAdapter:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            result = await adapter.account_exists("exists-test")
+            result = await adapter.account_exists("EXISTS0001")
             assert result is True
 
     @pytest.mark.asyncio
@@ -256,7 +256,7 @@ class TestDatabaseAccountAdapter:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            result = await adapter.account_exists("does-not-exist")
+            result = await adapter.account_exists("NOTEXIST02")
             assert result is False
 
     @pytest.mark.asyncio
@@ -266,7 +266,7 @@ class TestDatabaseAccountAdapter:
         """Test successful account deletion."""
         # Create account
         db_account = DBAccount(
-            id="delete-test",
+            id="DELETE0001",
             owner="test_user",
             cash_balance=1000.0,
         )
@@ -281,11 +281,11 @@ class TestDatabaseAccountAdapter:
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Delete the account
-            result = await adapter.delete_account("delete-test")
+            result = await adapter.delete_account("DELETE0001")
             assert result is True
 
             # Verify it's gone
-            exists = await adapter.account_exists("delete-test")
+            exists = await adapter.account_exists("DELETE0001")
             assert exists is False
 
     @pytest.mark.asyncio
@@ -300,7 +300,7 @@ class TestDatabaseAccountAdapter:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            result = await adapter.delete_account("does-not-exist")
+            result = await adapter.delete_account("NOTEXIST03")
             assert result is False
 
 
@@ -319,7 +319,7 @@ class TestDatabaseAccountAdapterEdgeCases:
     ):
         """Test account with zero cash balance."""
         zero_balance_account = Account(
-            id="zero-balance-test",
+            id="ZEROBAL001",
             cash_balance=0.0,
             positions=[],
             name="Zero Balance Account",
@@ -335,7 +335,7 @@ class TestDatabaseAccountAdapterEdgeCases:
 
             await adapter.put_account(zero_balance_account)
 
-            result = await adapter.get_account("zero-balance-test")
+            result = await adapter.get_account("ZEROBAL001")
             assert result is not None
             assert result.cash_balance == 0.0
 
@@ -345,7 +345,7 @@ class TestDatabaseAccountAdapterEdgeCases:
     ):
         """Test account with very large cash balance."""
         large_balance_account = Account(
-            id="large-balance-test",
+            id="LARGEBAL01",
             cash_balance=999999999.99,
             positions=[],
             name="Large Balance Account",
@@ -361,7 +361,7 @@ class TestDatabaseAccountAdapterEdgeCases:
 
             await adapter.put_account(large_balance_account)
 
-            result = await adapter.get_account("large-balance-test")
+            result = await adapter.get_account("LARGEBAL01")
             assert result is not None
             assert result.cash_balance == 999999999.99
 
@@ -370,7 +370,7 @@ class TestDatabaseAccountAdapterEdgeCases:
         self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
     ):
         """Test account with very long ID."""
-        long_id = "a" * 255  # Very long ID
+        long_id = "A123456789"  # Valid 10-char ID for database constraint
         long_id_account = Account(
             id=long_id,
             cash_balance=1000.0,
@@ -398,7 +398,7 @@ class TestDatabaseAccountAdapterEdgeCases:
     ):
         """Test account with special characters in owner name."""
         special_chars_account = Account(
-            id="special-chars-test",
+            id="SPECIAL001",
             cash_balance=1000.0,
             positions=[],
             name="Special Chars Account",
@@ -414,7 +414,7 @@ class TestDatabaseAccountAdapterEdgeCases:
 
             await adapter.put_account(special_chars_account)
 
-            result = await adapter.get_account("special-chars-test")
+            result = await adapter.get_account("SPECIAL001")
             assert result is not None
             assert result.owner == "user@example.com!#$%"
 
@@ -434,7 +434,7 @@ class TestDatabaseAccountAdapterEdgeCases:
             accounts = []
             for i in range(10):
                 account = Account(
-                    id=f"rapid-test-{i}",
+                    id=f"RAPID{i:05d}",
                     cash_balance=1000.0 * i,
                     positions=[],
                     name=f"Rapid Test Account {i}",
@@ -446,7 +446,7 @@ class TestDatabaseAccountAdapterEdgeCases:
             # Verify all were created
             account_ids = await adapter.get_account_ids()
             for i in range(10):
-                assert f"rapid-test-{i}" in account_ids
+                assert f"RAPID{i:05d}" in account_ids
 
             # Update all accounts
             for i, account in enumerate(accounts):
@@ -455,18 +455,18 @@ class TestDatabaseAccountAdapterEdgeCases:
 
             # Verify updates
             for i in range(10):
-                result = await adapter.get_account(f"rapid-test-{i}")
+                result = await adapter.get_account(f"RAPID{i:05d}")
                 assert result is not None
                 assert result.cash_balance == 2000.0 * i
 
             # Delete all accounts
             for i in range(10):
-                deleted = await adapter.delete_account(f"rapid-test-{i}")
+                deleted = await adapter.delete_account(f"RAPID{i:05d}")
                 assert deleted is True
 
             # Verify all are gone
             for i in range(10):
-                exists = await adapter.account_exists(f"rapid-test-{i}")
+                exists = await adapter.account_exists(f"RAPID{i:05d}")
                 assert exists is False
 
 

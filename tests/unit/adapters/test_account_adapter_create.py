@@ -219,7 +219,7 @@ class TestAccountAdapterCreateOperation:
         """Test account creation with zero cash balance."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id="TEST123456",
+            id="TEST12345E",
             cash_balance=0.0,
             positions=[],
             name="Zero Balance Account",
@@ -254,7 +254,7 @@ class TestAccountAdapterCreateOperation:
         """Test account creation with very small cash balance."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id="TEST123456",
+            id="TEST12345F",
             cash_balance=0.01,
             positions=[],
             name="Penny Account",
@@ -288,7 +288,7 @@ class TestAccountAdapterCreateOperation:
         adapter = DatabaseAccountAdapter()
         large_balance = 999999999.99
         account = Account(
-            id="TEST123456",
+            id="TEST12345G",
             cash_balance=large_balance,
             positions=[],
             name="Whale Account",
@@ -325,7 +325,7 @@ class TestAccountAdapterCreateOperation:
         accounts = []
         for i in range(5):
             account = Account(
-                id="TEST123456",
+                id=f"TEST1234{i:02d}",
                 cash_balance=10000.0 * (i + 1),
                 positions=[],
                 name=f"Batch Account {i + 1}",
@@ -482,7 +482,7 @@ class TestAccountAdapterCreateBoundaryConditions:
         adapter = DatabaseAccountAdapter()
         # Create account with minimal data (based on Account schema requirements)
         account = Account(
-            id="TEST123456",
+            id="TEST12345H",
             cash_balance=1000.0,  # Required field
             positions=[],  # Has default
             name=None,  # Optional
@@ -519,7 +519,7 @@ class TestAccountAdapterCreateBoundaryConditions:
         # Create a very long owner name to test database field limits
         long_owner = "a" * 255  # Typical VARCHAR limit
         account = Account(
-            id="TEST123456",
+            id="TEST12345I",
             cash_balance=50000.0,
             positions=[],
             name="Long Owner Test",
@@ -551,14 +551,22 @@ class TestAccountAdapterCreateBoundaryConditions:
     async def test_create_account_special_characters_in_id(
         self, db_session: AsyncSession
     ):
-        """Test account creation with special characters in account ID."""
+        """Test account creation validation rejects special characters in account ID."""
         adapter = DatabaseAccountAdapter()
-        special_ids = [
+        invalid_ids = [
             "account-with-dashes",
-            "account_with_underscores",
+            "account_with_underscores", 
             "account.with.dots",
-            "account123numbers",
             "UPPERCASE-ACCOUNT",
+            "short123",  # Too short
+            "TOOLONGID123456789",  # Too long
+        ]
+
+        # Valid IDs should work (10 alphanumeric characters)
+        valid_ids = [
+            "ACCOUNT123",
+            "1234567890",
+            "ABCDEFGHIJ",
         ]
 
         # Mock the database session in the adapter
@@ -569,13 +577,25 @@ class TestAccountAdapterCreateBoundaryConditions:
 
             mock_get_session.side_effect = lambda: mock_session_generator()
 
-            for special_id in special_ids:
+            # Test that invalid IDs are rejected during Account creation
+            for invalid_id in invalid_ids:
+                with pytest.raises(ValueError, match="Invalid account ID format"):
+                    Account(
+                        id=invalid_id,
+                        cash_balance=20000.0,
+                        positions=[],
+                        name=f"Account {invalid_id}",
+                        owner=f"user_{invalid_id}",
+                    )
+
+            # Test that valid IDs work
+            for i, valid_id in enumerate(valid_ids):
                 account = Account(
-                    id=special_id,
+                    id=valid_id,
                     cash_balance=20000.0,
                     positions=[],
-                    name=f"Account {special_id}",
-                    owner=f"user_{special_id}",
+                    name=f"Account {valid_id}",
+                    owner=f"user_{valid_id}_{i}",  # Unique owner per test
                 )
 
                 # Execute the operation
@@ -584,12 +604,12 @@ class TestAccountAdapterCreateBoundaryConditions:
                 # Verify that the account was saved to database
                 from sqlalchemy import select
 
-                stmt = select(DBAccount).where(DBAccount.id == special_id)
+                stmt = select(DBAccount).where(DBAccount.id == valid_id)
                 result = await db_session.execute(stmt)
                 saved_account = result.scalar_one_or_none()
 
                 assert saved_account is not None
-                assert saved_account.id == special_id
+                assert saved_account.id == valid_id
 
     @pytest.mark.asyncio
     async def test_create_account_cash_balance_precision(
@@ -615,7 +635,7 @@ class TestAccountAdapterCreateBoundaryConditions:
 
             for i, balance in enumerate(precision_cases):
                 account = Account(
-                    id=f"precision-test-{i}",
+                    id=f"PREC{i:06d}",  # Valid 10-char ID: PREC000000, PREC000001, etc.
                     cash_balance=balance,
                     positions=[],
                     name=f"Precision Test {i}",
@@ -653,7 +673,7 @@ class TestAccountAdapterCreateTransactionHandling:
         """Test that async session context manager is used correctly."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id="TEST123456",
+            id="TEST12345J",
             cash_balance=45000.0,
             positions=[],
             name="Context Manager Test",
@@ -687,7 +707,7 @@ class TestAccountAdapterCreateTransactionHandling:
         """Test that transaction errors are propagated properly during creation."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id="TEST123456",
+            id="TEST12345K",
             cash_balance=55000.0,
             positions=[],
             name="Rollback Test Account",
@@ -719,7 +739,7 @@ class TestAccountAdapterCreateTransactionHandling:
         """Test that CREATE path is taken when account doesn't exist vs UPDATE when it does."""
         adapter = DatabaseAccountAdapter()
         account = Account(
-            id="TEST123456",
+            id="TEST12345L",
             cash_balance=60000.0,
             positions=[],
             name="Path Test Account",

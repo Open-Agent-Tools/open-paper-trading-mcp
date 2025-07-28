@@ -8,6 +8,7 @@ for the filesystem-backed account adapter.
 import json
 import os
 import tempfile
+import uuid
 from unittest.mock import patch
 
 import pytest
@@ -16,6 +17,7 @@ from app.adapters.accounts import LocalFileSystemAccountAdapter
 from app.schemas.accounts import Account
 
 
+@pytest.mark.journey_account_management
 class TestLocalFileSystemAccountAdapter:
     """Test the LocalFileSystemAccountAdapter with file operations."""
 
@@ -34,7 +36,7 @@ class TestLocalFileSystemAccountAdapter:
     def sample_account(self):
         """Create a sample account for testing."""
         return Account(
-            id="test-account-123",
+            id="E7B826081C",
             cash_balance=10000.0,
             positions=[],
             name="Test Account",
@@ -129,7 +131,8 @@ class TestLocalFileSystemAccountAdapter:
     async def test_get_account_ids_with_accounts(self, adapter, temp_dir):
         """Test get_account_ids with multiple accounts."""
         # Create multiple account files
-        account_ids = ["acc-1", "acc-2", "acc-3"]
+        import uuid
+        account_ids = [uuid.uuid4().hex[:10].upper() for _ in range(3)]
 
         for account_id in account_ids:
             account = Account(
@@ -150,8 +153,10 @@ class TestLocalFileSystemAccountAdapter:
     async def test_get_account_ids_ignores_non_json_files(self, adapter, temp_dir):
         """Test get_account_ids ignores non-JSON files."""
         # Create account files
+        import uuid
+        valid_id = uuid.uuid4().hex[:10].upper()
         account = Account(
-            id="valid-account",
+            id=valid_id,
             cash_balance=1000.0,
             positions=[],
             name="Valid Account",
@@ -169,7 +174,7 @@ class TestLocalFileSystemAccountAdapter:
         result = await adapter.get_account_ids()
 
         assert len(result) == 1
-        assert result[0] == "valid-account"
+        assert result[0] == valid_id
 
     @pytest.mark.asyncio
     async def test_account_exists_true(self, adapter, sample_account):
@@ -182,7 +187,7 @@ class TestLocalFileSystemAccountAdapter:
     @pytest.mark.asyncio
     async def test_account_exists_false(self, adapter):
         """Test account_exists returns False for non-existent account."""
-        result = await adapter.account_exists("does-not-exist")
+        result = await adapter.account_exists("nonexistent")
         assert result is False
 
     @pytest.mark.asyncio
@@ -210,7 +215,7 @@ class TestLocalFileSystemAccountAdapter:
         """Test updating an existing account overwrites the file."""
         # Create initial account
         original_account = Account(
-            id="update-test",
+            id="7D736870D5",
             cash_balance=5000.0,
             positions=[],
             name="Original Account",
@@ -220,7 +225,7 @@ class TestLocalFileSystemAccountAdapter:
 
         # Update the account
         updated_account = Account(
-            id="update-test",
+            id="7D736870D5",
             cash_balance=15000.0,
             positions=[],
             name="Updated Account",
@@ -229,7 +234,7 @@ class TestLocalFileSystemAccountAdapter:
         await adapter.put_account(updated_account)
 
         # Verify the update
-        result = await adapter.get_account("update-test")
+        result = await adapter.get_account(updated_account.id)
         assert result is not None
         assert result.cash_balance == 15000.0
         assert result.owner == "updated_owner"
@@ -252,7 +257,7 @@ class TestLocalFileSystemAccountAdapter:
         mock_open.side_effect = PermissionError("Permission denied")
 
         # Should return None on any exception
-        result = await adapter.get_account("test-account")
+        result = await adapter.get_account("permission_test")
         assert result is None
 
     @pytest.mark.asyncio
@@ -261,7 +266,7 @@ class TestLocalFileSystemAccountAdapter:
 
         # Create account with datetime in positions (if they had timestamps)
         account = Account(
-            id="datetime-test",
+            id="EF35182046",
             cash_balance=1000.0,
             positions=[],
             name="DateTime Test Account",
@@ -272,11 +277,12 @@ class TestLocalFileSystemAccountAdapter:
         await adapter.put_account(account)
 
         # Verify it can be read back
-        result = await adapter.get_account("datetime-test")
+        result = await adapter.get_account(account.id)
         assert result is not None
-        assert result.id == "datetime-test"
+        assert result.id == account.id
 
 
+@pytest.mark.journey_account_management
 class TestLocalFileSystemAccountAdapterEdgeCases:
     """Test edge cases and boundary conditions for LocalFileSystemAccountAdapter."""
 
@@ -295,7 +301,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
     async def test_account_with_zero_balance(self, adapter):
         """Test account with zero cash balance."""
         zero_balance_account = Account(
-            id="zero-balance-test",
+            id="F348B92E0A",
             cash_balance=0.0,
             positions=[],
             name="Zero Balance Account",
@@ -303,16 +309,16 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         )
 
         await adapter.put_account(zero_balance_account)
-        result = await adapter.get_account("zero-balance-test")
+        result = await adapter.get_account(zero_balance_account.id)
 
         assert result is not None
         assert result.cash_balance == 0.0
 
     @pytest.mark.asyncio
     async def test_account_with_special_characters_in_id(self, adapter):
-        """Test account with special characters in ID."""
-        # Note: Some special characters might not be valid in filenames
-        special_id = "test-account_123"
+        """Test account with valid ID format that's safe for filenames."""
+        # Use valid 10-character alphanumeric ID (no special characters allowed by schema)
+        special_id = "SPECIAL123"
         special_account = Account(
             id=special_id,
             cash_balance=1000.0,
@@ -331,7 +337,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
     async def test_account_with_unicode_characters(self, adapter):
         """Test account with unicode characters in owner name."""
         unicode_account = Account(
-            id="unicode-test",
+            id="E0A623B17E",
             cash_balance=1000.0,
             positions=[],
             name="Unicode Test Account",
@@ -339,7 +345,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         )
 
         await adapter.put_account(unicode_account)
-        result = await adapter.get_account("unicode-test")
+        result = await adapter.get_account(unicode_account.id)
 
         assert result is not None
         assert result.owner == "用户测试"
@@ -348,16 +354,19 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
     async def test_large_number_of_accounts(self, adapter):
         """Test handling a large number of accounts."""
         num_accounts = 100
+        created_accounts = []
 
         # Create many accounts
         for i in range(num_accounts):
+            account_id = f"ACCT{i:06d}"  # ACCT000000, ACCT000001, etc. (10 chars)
             account = Account(
-                id=f"account-{i:03d}",
-                cash_balance=1000.0 + i,
+                id=account_id,
+                cash_balance=1000.0 * i,
                 positions=[],
                 name=f"Account {i}",
                 owner=f"user_{i}",
             )
+            created_accounts.append(account)
             await adapter.put_account(account)
 
         # Verify all were created
@@ -365,10 +374,11 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         assert len(account_ids) == num_accounts
 
         # Verify we can retrieve them all
-        for i in range(num_accounts):
-            result = await adapter.get_account(f"account-{i:03d}")
+        for i, account in enumerate(created_accounts):
+            result = await adapter.get_account(account.id)
             assert result is not None
-            assert result.cash_balance == 1000.0 + i
+            assert result.cash_balance == account.cash_balance
+            assert result.owner == f"user_{i}"
 
     @pytest.mark.asyncio
     async def test_concurrent_file_operations(self, adapter):
@@ -379,7 +389,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         # Create accounts rapidly
         for i in range(10):
             account = Account(
-                id=f"concurrent-{i}",
+                id=uuid.uuid4().hex[:10].upper(),
                 cash_balance=1000.0 * i,
                 positions=[],
                 name=f"Concurrent Account {i}",
@@ -400,7 +410,7 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         """Test behavior when file gets corrupted after creation."""
         # Create account normally
         account = Account(
-            id="corruption-test",
+            id="CORRUPT123",
             cash_balance=1000.0,
             positions=[],
             name="Corruption Test Account",
@@ -409,27 +419,27 @@ class TestLocalFileSystemAccountAdapterEdgeCases:
         await adapter.put_account(account)
 
         # Verify it exists
-        assert await adapter.account_exists("corruption-test") is True
+        assert await adapter.account_exists(account.id) is True
 
         # Corrupt the file
-        corrupted_path = os.path.join(temp_dir, "corruption-test.json")
+        corrupted_path = os.path.join(temp_dir, "CORRUPT123.json")
         with open(corrupted_path, "w") as f:
             f.write("{ corrupted json ")
 
         # Getting the account should return None (graceful handling)
-        result = await adapter.get_account("corruption-test")
+        result = await adapter.get_account(account.id)
         assert result is None
 
         # But file still exists, so account_exists should return True
-        assert await adapter.account_exists("corruption-test") is True
+        assert await adapter.account_exists(account.id) is True
 
         # We can overwrite the corrupted file
         await adapter.put_account(account)
 
         # Now it should work again
-        result = await adapter.get_account("corruption-test")
+        result = await adapter.get_account(account.id)
         assert result is not None
-        assert result.id == "corruption-test"
+        assert result.id == "CORRUPT123"
 
 
 if __name__ == "__main__":

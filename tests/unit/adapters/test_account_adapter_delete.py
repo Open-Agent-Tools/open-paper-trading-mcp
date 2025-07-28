@@ -33,10 +33,10 @@ class TestAccountAdapterDeleteCRUD:
     @pytest_asyncio.fixture
     async def sample_account(self, db_session: AsyncSession):
         """Create a sample account in the database."""
-        account_id = "TEST123456"
+        account_id = "SAMPLE0001"
         db_account = DBAccount(
             id=account_id,
-            owner=f"test_user_{account_id[:8]}",
+            owner=f"sample_user_001",
             cash_balance=10000.0,
         )
         db_session.add(db_account)
@@ -47,10 +47,10 @@ class TestAccountAdapterDeleteCRUD:
     @pytest_asyncio.fixture
     async def sample_account_with_positions(self, db_session: AsyncSession):
         """Create a sample account with positions for foreign key testing."""
-        account_id = "TEST123456"
+        account_id = "POSITIONS1"
         db_account = DBAccount(
             id=account_id,
-            owner=f"test_user_{account_id[:8]}",
+            owner=f"positions_user_001",
             cash_balance=50000.0,
         )
         db_session.add(db_account)
@@ -59,14 +59,14 @@ class TestAccountAdapterDeleteCRUD:
         # Add positions
         positions = [
             DBPosition(
-                id="TEST123456",
+                id="POS0000001",
                 account_id=account_id,
                 symbol="AAPL",
                 quantity=100,
                 avg_price=150.0,
             ),
             DBPosition(
-                id="TEST123456",
+                id="POS0000002",
                 account_id=account_id,
                 symbol="GOOGL",
                 quantity=50,
@@ -83,10 +83,10 @@ class TestAccountAdapterDeleteCRUD:
     @pytest_asyncio.fixture
     async def sample_account_with_all_relations(self, db_session: AsyncSession):
         """Create a sample account with all related data for comprehensive testing."""
-        account_id = "TEST123456"
+        account_id = "RELATIONS1"
         db_account = DBAccount(
             id=account_id,
-            owner=f"test_user_{account_id[:8]}",
+            owner=f"relations_user_001",
             cash_balance=100000.0,
         )
         db_session.add(db_account)
@@ -94,7 +94,7 @@ class TestAccountAdapterDeleteCRUD:
 
         # Add positions
         position = DBPosition(
-            id="TEST123456",
+            id="POS0000003",
             account_id=account_id,
             symbol="AAPL",
             quantity=100,
@@ -104,7 +104,7 @@ class TestAccountAdapterDeleteCRUD:
 
         # Add orders
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id="ORDER00001",
             account_id=account_id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -117,7 +117,7 @@ class TestAccountAdapterDeleteCRUD:
 
         # Add transactions
         transaction = DBTransaction(
-            id="TEST123456",
+            id="TRANS00001",
             account_id=account_id,
             order_id=order.id,
             symbol="AAPL",
@@ -376,13 +376,13 @@ class TestAccountAdapterDeleteCRUD:
         self, adapter: DatabaseAccountAdapter, db_session: AsyncSession
     ):
         """Test database remains in consistent state after deletions."""
-        # Create multiple accounts
+        # Create multiple accounts with unique IDs
         account_ids = []
         for i in range(3):
-            account_id = "TEST123456"
+            account_id = f"DELTEST{i:03d}"  # DELTEST000, DELTEST001, DELTEST002
             db_account = DBAccount(
                 id=account_id,
-                owner=f"test_user_{i}_{account_id[:8]}",
+                owner=f"test_user_{i}_{account_id}",
                 cash_balance=10000.0 + (i * 1000),
             )
             db_session.add(db_account)

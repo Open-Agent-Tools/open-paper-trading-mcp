@@ -79,7 +79,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -124,7 +126,9 @@ class TestTradingServiceExpirationSimulation:
             assert result["summary"]["estimated_cash_impact"] == 1000.0
 
     @pytest.mark.asyncio
-    async def test_simulate_expiration_call_option_itm(self, trading_service_synthetic_data):
+    async def test_simulate_expiration_call_option_itm(
+        self, trading_service_synthetic_data
+    ):
         """Test expiration simulation for in-the-money call option."""
         mock_portfolio = Portfolio(
             total_value=Decimal("10000.00"),
@@ -172,7 +176,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -199,7 +205,9 @@ class TestTradingServiceExpirationSimulation:
             assert expiring_option["action"] == "exercise_or_assign"
 
     @pytest.mark.asyncio
-    async def test_simulate_expiration_put_option_itm(self, trading_service_synthetic_data):
+    async def test_simulate_expiration_put_option_itm(
+        self, trading_service_synthetic_data
+    ):
         """Test expiration simulation for in-the-money put option."""
         mock_portfolio = Portfolio(
             total_value=Decimal("10000.00"),
@@ -247,7 +255,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -348,7 +358,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -379,7 +391,9 @@ class TestTradingServiceExpirationSimulation:
                 assert expiring_option["action"] == "expire_worthless"
 
     @pytest.mark.asyncio
-    async def test_simulate_expiration_mixed_portfolio(self, trading_service_synthetic_data):
+    async def test_simulate_expiration_mixed_portfolio(
+        self, trading_service_synthetic_data
+    ):
         """Test expiration simulation with mixed portfolio (expiring and non-expiring positions)."""
         mock_portfolio = Portfolio(
             total_value=Decimal("20000.00"),
@@ -445,7 +459,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -558,7 +574,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -601,7 +619,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch("app.models.assets.asset_factory") as mock_asset_factory,
         ):
@@ -710,7 +730,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"
@@ -737,7 +759,9 @@ class TestTradingServiceExpirationSimulation:
             assert expiring_option["action"] == "expire_worthless"
 
     @pytest.mark.asyncio
-    async def test_simulate_expiration_empty_portfolio(self, trading_service_synthetic_data):
+    async def test_simulate_expiration_empty_portfolio(
+        self, trading_service_synthetic_data
+    ):
         """Test expiration simulation with empty portfolio."""
         mock_portfolio = Portfolio(
             total_value=Decimal("10000.00"),
@@ -849,7 +873,9 @@ class TestTradingServiceExpirationSimulation:
 
         with (
             patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ),
             patch.object(
                 trading_service_synthetic_data, "get_enhanced_quote"

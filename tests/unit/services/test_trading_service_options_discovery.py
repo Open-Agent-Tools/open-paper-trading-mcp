@@ -26,7 +26,9 @@ class TestTradingServiceOptionsDiscovery:
     """Test options discovery and market data functionality."""
 
     @pytest.mark.asyncio
-    async def test_find_tradable_options_basic_success(self, trading_service_synthetic_data):
+    async def test_find_tradable_options_basic_success(
+        self, trading_service_synthetic_data
+    ):
         """Test basic successful options discovery."""
         # Mock option chain data
         mock_calls = [
@@ -478,7 +480,9 @@ class TestTradingServiceOptionsDiscovery:
             assert result["message"] == "No tradable options found"
 
     @pytest.mark.asyncio
-    async def test_find_tradable_options_adapter_error(self, trading_service_synthetic_data):
+    async def test_find_tradable_options_adapter_error(
+        self, trading_service_synthetic_data
+    ):
         """Test options discovery when adapter throws error."""
         with patch.object(
             trading_service_synthetic_data, "get_options_chain"

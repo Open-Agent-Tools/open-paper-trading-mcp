@@ -23,7 +23,7 @@ class TestAccountFactory:
         account = account_factory()
 
         assert isinstance(account, Account)
-        assert len(account.id) == 8  # Short UUID format
+        assert len(account.id) == 10  # 10 alphanumeric characters for database constraint
         assert account.cash_balance == 100000.0
         assert account.owner == "default"
         assert account.name == f"Account-{account.id}"
@@ -69,7 +69,7 @@ class TestAccountFactory:
         assert account.name == custom_name
         assert account.owner == custom_owner
         assert account.cash_balance == custom_cash
-        assert len(account.id) == 8
+        assert len(account.id) == 10
         assert account.positions == []
 
     def test_account_factory_zero_cash(self):
@@ -121,16 +121,16 @@ class TestAccountFactory:
         # All IDs should be unique
         assert len(set(account_ids)) == 100
 
-        # All IDs should be 8 characters long
+        # All IDs should be 10 characters long
         for account_id in account_ids:
-            assert len(account_id) == 8
+            assert len(account_id) == 10
 
     def test_account_factory_id_format(self):
         """Test that account factory generates properly formatted IDs."""
         account = account_factory()
 
         # ID should be 8 characters from a UUID
-        assert len(account.id) == 8
+        assert len(account.id) == 10
         assert isinstance(account.id, str)
 
         # Should be valid hexadecimal characters (UUID4 uses hex)
@@ -150,9 +150,9 @@ class TestAccountFactory:
 
         account = account_factory()
 
-        # Should use first 8 characters of the UUID string representation
-        assert account.id == "12345678"
-        assert account.name == "Account-12345678"
+        # Should use first 10 characters of the UUID hex representation
+        assert account.id == "1234567812"
+        assert account.name == "Account-1234567812"
 
     def test_account_factory_special_characters_in_name(self):
         """Test account factory with special characters in name."""
@@ -281,7 +281,7 @@ class TestAccountFactoryEdgeCases:
         assert account1.id != account2.id
         assert account1.cash_balance == account2.cash_balance
         assert account1.owner == account2.owner
-        assert len(account1.id) == len(account2.id) == 8
+        assert len(account1.id) == len(account2.id) == 10
 
 
 if __name__ == "__main__":

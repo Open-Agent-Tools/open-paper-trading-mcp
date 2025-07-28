@@ -50,7 +50,9 @@ class TestTradingServiceCoverageGaps:
         with patch("app.services.trading_service.asset_factory") as mock_factory:
             mock_factory.return_value = None
 
-            result = await trading_service_synthetic_data.get_price_history("INVALID_SYM")
+            result = await trading_service_synthetic_data.get_price_history(
+                "INVALID_SYM"
+            )
 
             assert isinstance(result, dict)
             assert "error" in result
@@ -92,7 +94,9 @@ class TestTradingServiceCoverageGaps:
         ) as mock_method:
             mock_method.return_value = None
 
-            result = await trading_service_synthetic_data.get_price_history("AAPL", "day")
+            result = await trading_service_synthetic_data.get_price_history(
+                "AAPL", "day"
+            )
 
             assert isinstance(result, dict)
             # Should return empty dict when adapter returns None
@@ -164,7 +168,9 @@ class TestTradingServiceCoverageGaps:
             assert result == mock_results
 
     @pytest.mark.asyncio
-    async def test_search_stocks_adapter_returns_none(self, trading_service_synthetic_data):
+    async def test_search_stocks_adapter_returns_none(
+        self, trading_service_synthetic_data
+    ):
         """Test search_stocks when adapter returns None."""
 
         with patch.object(
@@ -178,7 +184,9 @@ class TestTradingServiceCoverageGaps:
             assert result == {"query": "AAPL", "results": [], "total_count": 0}
 
     @pytest.mark.asyncio
-    async def test_get_stock_info_adapter_returns_none(self, trading_service_synthetic_data):
+    async def test_get_stock_info_adapter_returns_none(
+        self, trading_service_synthetic_data
+    ):
         """Test get_stock_info when adapter returns None."""
 
         with patch.object(
@@ -220,7 +228,9 @@ class TestTradingServiceCoverageGaps:
         # Should either error or handle gracefully
 
     @pytest.mark.asyncio
-    async def test_edge_case_special_characters_symbol(self, trading_service_synthetic_data):
+    async def test_edge_case_special_characters_symbol(
+        self, trading_service_synthetic_data
+    ):
         """Test edge case with special characters in symbol."""
 
         special_symbols = ["AAPL@", "MSFT!", "GOOGL#", "TSLA$", "AMZN%"]
@@ -317,7 +327,9 @@ class TestTradingServiceCoverageGaps:
                 await trading_service_synthetic_data.get_enhanced_quote("INVALID")
 
     @pytest.mark.asyncio
-    async def test_error_handling_lines_660_670_range(self, trading_service_synthetic_data):
+    async def test_error_handling_lines_660_670_range(
+        self, trading_service_synthetic_data
+    ):
         """Test error handling in lines around 660-670 range."""
 
         # Look for methods that might have error handling around those lines
@@ -398,7 +410,9 @@ class TestTradingServiceCoverageGaps:
                 trail_percent=None,
                 trail_amount=None,
             )
-            result = await trading_service_synthetic_data.create_order(small_price_order)
+            result = await trading_service_synthetic_data.create_order(
+                small_price_order
+            )
             assert result is not None
         except Exception as e:
             # Should handle gracefully
@@ -428,7 +442,8 @@ class TestTradingServiceCoverageGaps:
             # Test with a short timeout to trigger timeout handling
             with contextlib.suppress(TimeoutError):
                 await asyncio.wait_for(
-                    trading_service_synthetic_data.get_enhanced_quote("AAPL"), timeout=0.1
+                    trading_service_synthetic_data.get_enhanced_quote("AAPL"),
+                    timeout=0.1,
                 )
 
     @pytest.mark.asyncio

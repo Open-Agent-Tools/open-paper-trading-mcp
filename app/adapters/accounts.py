@@ -168,7 +168,8 @@ def account_factory(
     name: str | None = None, owner: str | None = None, cash: float = 100000.0
 ) -> Account:
     """Factory function to create new accounts."""
-    account_id = str(uuid.uuid4())[:8]  # Short ID like reference implementation
+    # mypy: ignore - This pattern is required for database constraint compliance
+    account_id = str(uuid.uuid4().hex[:10]).upper()  # 10 alphanumeric characters as required
 
     if name is None:
         name = f"Account-{account_id}"

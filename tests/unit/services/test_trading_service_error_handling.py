@@ -29,7 +29,9 @@ class TestTradingServiceErrorHandling:
     """Test error handling and edge cases."""
 
     @pytest.mark.asyncio
-    async def synthetic_database_session_failure_handling(self, trading_service_synthetic_data):
+    async def synthetic_database_session_failure_handling(
+        self, trading_service_synthetic_data
+    ):
         """Test handling of database session failures."""
         with patch.object(
             trading_service_synthetic_data, "_get_async_db_session"
@@ -53,7 +55,9 @@ class TestTradingServiceErrorHandling:
                 await trading_service_synthetic_data.get_quote("AAPL")
 
     @pytest.mark.asyncio
-    async def test_invalid_symbol_format_validation(self, trading_service_synthetic_data):
+    async def test_invalid_symbol_format_validation(
+        self, trading_service_synthetic_data
+    ):
         """Test validation of invalid symbol formats."""
         invalid_symbols = [
             "",  # Empty string
@@ -141,7 +145,9 @@ class TestTradingServiceErrorHandling:
             )
 
     @pytest.mark.asyncio
-    async def test_boundary_value_order_quantities(self, trading_service_synthetic_data):
+    async def test_boundary_value_order_quantities(
+        self, trading_service_synthetic_data
+    ):
         """Test boundary values for order quantities."""
         boundary_quantities = [
             1,  # Minimum valid
@@ -175,7 +181,9 @@ class TestTradingServiceErrorHandling:
                     assert "error" in error_str or len(error_str) > 0
 
     @pytest.mark.asyncio
-    async def test_portfolio_retrieval_empty_account(self, trading_service_synthetic_data):
+    async def test_portfolio_retrieval_empty_account(
+        self, trading_service_synthetic_data
+    ):
         """Test portfolio retrieval for empty account."""
         # Mock empty portfolio scenario
         try:
@@ -186,7 +194,9 @@ class TestTradingServiceErrorHandling:
                     return_value=[],
                 ),
                 patch.object(
-                    trading_service_synthetic_data, "get_account_balance", return_value=0.0
+                    trading_service_synthetic_data,
+                    "get_account_balance",
+                    return_value=0.0,
                 ),
             ):
                 result = await trading_service_synthetic_data.get_portfolio()
@@ -199,7 +209,9 @@ class TestTradingServiceErrorHandling:
             assert "error" in str(e).lower() or "portfolio" in str(e).lower()
 
     @pytest.mark.asyncio
-    async def test_account_creation_duplicate_handling(self, trading_service_synthetic_data):
+    async def test_account_creation_duplicate_handling(
+        self, trading_service_synthetic_data
+    ):
         """Test handling of duplicate account creation attempts."""
         # This tests the _ensure_account_exists method's duplicate handling
         with patch.object(trading_service_synthetic_data, "_get_async_db_session"):
@@ -212,7 +224,9 @@ class TestTradingServiceErrorHandling:
             # No exception should be raised
 
     @pytest.mark.asyncio
-    async def test_position_calculation_edge_cases(self, trading_service_synthetic_data):
+    async def test_position_calculation_edge_cases(
+        self, trading_service_synthetic_data
+    ):
         """Test edge cases in position calculations."""
         edge_case_positions = [
             Position(
@@ -339,7 +353,9 @@ class TestTradingServiceErrorHandling:
             assert "concurrent" in str(e).lower() or "database" in str(e).lower()
 
     @pytest.mark.asyncio
-    async def test_memory_pressure_large_data_sets(self, trading_service_synthetic_data):
+    async def test_memory_pressure_large_data_sets(
+        self, trading_service_synthetic_data
+    ):
         """Test handling of large data sets that might cause memory pressure."""
         # Create a very large position list
         large_positions = []
@@ -363,7 +379,9 @@ class TestTradingServiceErrorHandling:
         )
 
         with patch.object(
-            trading_service_synthetic_data, "get_portfolio", return_value=large_portfolio
+            trading_service_synthetic_data,
+            "get_portfolio",
+            return_value=large_portfolio,
         ):
             result = await trading_service_synthetic_data.get_portfolio()
 
@@ -482,7 +500,9 @@ class TestTradingServiceErrorHandling:
             )
 
             with patch.object(
-                trading_service_synthetic_data, "get_portfolio", return_value=mock_portfolio
+                trading_service_synthetic_data,
+                "get_portfolio",
+                return_value=mock_portfolio,
             ):
                 portfolio = await trading_service_synthetic_data.get_portfolio()
 

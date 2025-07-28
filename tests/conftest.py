@@ -23,11 +23,31 @@ def pytest_configure(config):
     )
     config.addinivalue_line("markers", "asyncio: Async test marker")
     # User Journey Markers
-    config.addinivalue_line("markers", "journey_account_management: Account management user journey tests")
-    config.addinivalue_line("markers", "journey_basic_trading: Basic stock trading user journey tests")
-    config.addinivalue_line("markers", "journey_market_data: Market data retrieval user journey tests")
-    config.addinivalue_line("markers", "journey_options_trading: Options trading user journey tests")
-    config.addinivalue_line("markers", "journey_portfolio_management: Portfolio management user journey tests")
+    config.addinivalue_line(
+        "markers", "journey_account_management: Account management user journey tests"
+    )
+    config.addinivalue_line(
+        "markers", "journey_basic_trading: Basic stock trading user journey tests"
+    )
+    config.addinivalue_line(
+        "markers", "journey_market_data: Market data retrieval user journey tests"
+    )
+    config.addinivalue_line(
+        "markers", "journey_options_trading: Options trading user journey tests"
+    )
+    config.addinivalue_line(
+        "markers",
+        "journey_portfolio_management: Portfolio management user journey tests",
+    )
+    config.addinivalue_line(
+        "markers", "journey_performance: Performance and optimization user journey tests"
+    )
+    config.addinivalue_line(
+        "markers", "journey_complex_strategies: Complex strategies user journey tests"
+    )
+    config.addinivalue_line(
+        "markers", "journey_integration: Integration and live data user journey tests"
+    )
 
 
 # Set testing environment variables BEFORE importing the app
@@ -263,14 +283,14 @@ async def test_account_data(async_db_session: AsyncSession) -> dict[str, Any]:
     # Create test positions
     positions = [
         DBPosition(
-            id="POS_001",
+            id="POS0010000",
             account_id=account.id,
             symbol="AAPL",
             quantity=100,
             avg_price=150.0,
         ),
         DBPosition(
-            id="POS_002",
+            id="POS0020000",
             account_id=account.id,
             symbol="GOOGL",
             quantity=50,
@@ -555,12 +575,26 @@ async def trading_service_synthetic_data():
 
         def get_test_scenarios(self):
             return {"default": "Mock test data"}
+        
+        async def search_stocks(self, query, limit=10):
+            """Mock stock search functionality."""
+            # Simple mock search - return stocks that contain the query
+            matches = []
+            for symbol in self.test_quotes.keys():
+                if query.upper() in symbol:
+                    matches.append({
+                        "symbol": symbol,
+                        "name": f"{symbol} Inc.",
+                        "price": self.test_quotes[symbol].price
+                    })
+            return matches[:limit]
+        
+        def get_available_symbols(self):
+            """Return list of available symbols."""
+            return list(self.test_quotes.keys())
 
         def set_date(self, date):
             pass
-
-        def get_available_symbols(self):
-            return list(self.test_quotes.keys())
 
         async def get_price_history(self, symbol, period="1year", interval="1day"):
             """Mock price history method."""

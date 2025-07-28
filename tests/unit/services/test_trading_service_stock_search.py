@@ -80,7 +80,9 @@ class TestTradingServiceStockSearch:
         self, trading_service_synthetic_data
     ):
         """Test stock search when adapter has search_stocks method."""
-        has_extended = hasattr(trading_service_synthetic_data.quote_adapter, "search_stocks")
+        has_extended = hasattr(
+            trading_service_synthetic_data.quote_adapter, "search_stocks"
+        )
 
         result = await trading_service_synthetic_data.search_stocks("MSFT")
 
@@ -102,15 +104,25 @@ class TestTradingServiceStockSearch:
     ):
         """Test stock search fallback when adapter lacks extended functionality."""
         # Force test of fallback by temporarily removing method if it exists
-        original_method = getattr(
-            trading_service_synthetic_data.quote_adapter, "search_stocks", None
-        )
-
-        if original_method:
-            delattr(trading_service_synthetic_data.quote_adapter, "search_stocks")
+        adapter = trading_service_synthetic_data.quote_adapter
+        print(f"DEBUG: Adapter type = {type(adapter)}")
+        print(f"DEBUG: hasattr search_stocks = {hasattr(adapter, 'search_stocks')}")
+        print(f"DEBUG: Method exists = {getattr(adapter, 'search_stocks', None) is not None}")
+        
+        # Remove the search_stocks method to test fallback - use monkey patching
+        if hasattr(adapter, "search_stocks"):
+            # Save original for later restoration  
+            original_method = adapter.search_stocks
+            # Remove by setting to None and updating __dict__ if it exists there
+            if hasattr(adapter, "__dict__") and "search_stocks" in adapter.__dict__:
+                del adapter.__dict__["search_stocks"]
+            else:
+                # Set a flag to skip the hasattr check in the service
+                adapter._skip_search_stocks = True
 
         try:
             result = await trading_service_synthetic_data.search_stocks("AAPL")
+            print(f"DEBUG: Result = {result}")  # Debug print
 
             assert isinstance(result, dict)
             assert result["query"] == "AAPL"
@@ -128,29 +140,54 @@ class TestTradingServiceStockSearch:
         finally:
             # Restore original method if it existed
             if original_method:
-                trading_service_synthetic_data.quote_adapter.search_stocks = original_method
+                trading_service_synthetic_data.quote_adapter.search_stocks = (
+                    original_method
+                )
 
     @pytest.mark.asyncio
-    async def test_search_stocks_result_limit_fallback(self, trading_service_synthetic_data):
+    async def test_search_stocks_result_limit_fallback(
+        self, trading_service_synthetic_data
+    ):
         """Test that search results are limited to 10 in fallback mode."""
-        # Force fallback by temporarily removing method
-        original_method = getattr(
-            trading_service_synthetic_data.quote_adapter, "search_stocks", None
+        # Force fallback by creating minimal adapter without search_stocks method
+        from app.adapters.base import QuoteAdapter
+        from app.services.trading_service import TradingService
+        
+        class MinimalQuoteAdapter(QuoteAdapter):
+            def get_available_symbols(self):
+                return ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD", "NFLX", "ADBE", "ABBV", "ABC"]  # 12 symbols
+            async def get_quote(self, asset):
+                return None
+            async def get_quotes(self, assets):
+                return {}
+            async def get_chain(self, underlying, expiration_date=None):
+                return []
+            async def get_options_chain(self, underlying, expiration_date=None):
+                return None
+            async def is_market_open(self):
+                return True
+            async def get_market_hours(self):
+                return {"market_open": True}
+            def get_sample_data_info(self):
+                return {"provider": "minimal", "symbols": self.get_available_symbols()}
+            def get_expiration_dates(self, underlying):
+                return []
+            def get_test_scenarios(self):
+                return {"default": "Minimal test data"}
+            def set_date(self, date):
+                pass
+        
+        # Create new service with minimal adapter for this test
+        test_service = TradingService(
+            account_owner="limit_test_user",
+            quote_adapter=MinimalQuoteAdapter(),
         )
 
-        if original_method:
-            delattr(trading_service_synthetic_data.quote_adapter, "search_stocks")
+        # Search for a common letter that might match many symbols
+        result = await test_service.search_stocks("A")
 
-        try:
-            # Search for a common letter that might match many symbols
-            result = await trading_service_synthetic_data.search_stocks("A")
-
-            assert isinstance(result, dict)
-            assert len(result["results"]) <= 10  # Should limit to 10 results
-
-        finally:
-            if original_method:
-                trading_service_synthetic_data.quote_adapter.search_stocks = original_method
+        assert isinstance(result, dict)
+        assert len(result["results"]) <= 10  # Should limit to 10 results
 
     @pytest.mark.asyncio
     async def test_search_stocks_case_insensitive_synthetic_data(
@@ -169,7 +206,9 @@ class TestTradingServiceStockSearch:
         assert result_upper["query"] == "AAPL"
 
     @pytest.mark.asyncio
-    async def test_search_stocks_no_matches_synthetic_data(self, trading_service_synthetic_data):
+    async def test_search_stocks_no_matches_synthetic_data(
+        self, trading_service_synthetic_data
+    ):
         """Test stock search with query that has no matches."""
         result = await trading_service_synthetic_data.search_stocks("ZZZZNOMATCH")
 
@@ -192,7 +231,9 @@ class TestTradingServiceStockSearch:
         assert result["query"] == "ZZZZNOMATCH"
 
     @pytest.mark.asyncio
-    async def test_search_stocks_empty_query_synthetic_data(self, trading_service_synthetic_data):
+    async def test_search_stocks_empty_query_synthetic_data(
+        self, trading_service_synthetic_data
+    ):
         """Test stock search with empty query."""
         result = await trading_service_synthetic_data.search_stocks("")
 

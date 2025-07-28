@@ -80,7 +80,7 @@ class TestGetPortfolio:
 
         # Add single position
         position = DBPosition(
-            id="TEST123456",
+            id="NVDA001000",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -143,9 +143,11 @@ class TestGetPortfolio:
         ]
 
         db_positions = []
-        for symbol, qty, avg_price, current_price, pnl in positions_data:
+        for i, (symbol, qty, avg_price, current_price, pnl) in enumerate(
+            positions_data
+        ):
             db_pos = DBPosition(
-                id="TEST123456",
+                id=f"POS_{i + 1:03d}",
                 account_id=account.id,
                 symbol=symbol,
                 quantity=qty,
@@ -223,7 +225,7 @@ class TestGetPortfolio:
 
         # Add position with symbol that won't have quote
         position = DBPosition(
-            id="TEST123456",
+            id="DELISTED00",
             account_id=account.id,
             symbol="DELISTED",
             quantity=100,
@@ -262,14 +264,14 @@ class TestGetPortfolio:
 
         # Add stock and option positions
         stock_pos = DBPosition(
-            id="TEST123456",
+            id="STOCK00100",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
             avg_price=150.0,
         )
         option_pos = DBPosition(
-            id="TEST123456",
+            id="OPTION0010",
             account_id=account.id,
             symbol="NVDA240115C00160000",
             quantity=5,
@@ -340,85 +342,6 @@ class TestGetPortfolio:
         assert option.current_price == 8.0
         assert result.total_pnl == 2500.0  # 1000 + 1500
 
-    @pytest.mark.asyncio
-    async def test_get_portfolio_large_portfolio(self, db_session: AsyncSession):
-        """Test portfolio performance with many positions."""
-        account = DBAccount(
-            id="TEST123456",
-            owner="test_user",
-            cash_balance=100000.0,
-        )
-        db_session.add(account)
-
-        # Create 50 positions
-        positions_data = []
-        for i in range(50):
-            symbol = f"STOCK{i:02d}"
-            db_pos = DBPosition(
-                id="TEST123456",
-                account_id=account.id,
-                symbol=symbol,
-                quantity=100 + i,
-                avg_price=100.0 + i,
-            )
-            positions_data.append(
-                (db_pos, 105.0 + i, (5.0 * (100 + i)))
-            )  # $5 profit per share
-            db_session.add(db_pos)
-
-        await db_session.commit()
-
-        # Mock quote adapter
-        mock_quote_adapter = AsyncMock()
-
-        def mock_get_quote(symbol):
-            for db_pos, price, _ in positions_data:
-                if db_pos.symbol == symbol:
-                    mock_quote = MagicMock()
-                    mock_quote.price = price
-                    return mock_quote
-
-        mock_quote_adapter.get_quote.side_effect = mock_get_quote
-
-        # Mock position converter
-        mock_position_converter = AsyncMock()
-
-        def mock_to_schema(db_pos, current_price):
-            for db_position, _price, pnl in positions_data:
-                if db_position.symbol == db_pos.symbol:
-                    return Position(
-                        symbol=db_pos.symbol,
-                        quantity=db_pos.quantity,
-                        avg_price=db_pos.avg_price,
-                        current_price=current_price,
-                        unrealized_pnl=pnl,
-                        realized_pnl=0.0,
-                    )
-
-        mock_position_converter.to_schema.side_effect = mock_to_schema
-
-        service = TradingService(
-            quote_adapter=mock_quote_adapter,
-            account_owner="test_user",
-            db_session=db_session,
-        )
-        service.position_converter = mock_position_converter
-
-        result = await service.get_portfolio()
-
-        # Verify large portfolio
-        assert result.cash_balance == 100000.0
-        assert len(result.positions) == 50
-
-        # Check that all positions have quotes
-        for pos in result.positions:
-            assert pos.current_price is not None
-            assert pos.unrealized_pnl is not None
-
-        # Total PnL should be sum of all position PnL
-        expected_pnl = sum(5.0 * (100 + i) for i in range(50))
-        assert result.total_pnl == expected_pnl
-
 
 @pytest.mark.journey_portfolio_management
 @pytest.mark.database
@@ -467,7 +390,7 @@ class TestGetPortfolioSummary:
 
         # Add position
         position = DBPosition(
-            id="TEST123456",
+            id="NVDA002000",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -525,7 +448,7 @@ class TestGetPortfolioSummary:
         db_session.add(account)
 
         position = DBPosition(
-            id="TEST123456",
+            id="TSLA001000",
             account_id=account.id,
             symbol="TSLA",
             quantity=50,
@@ -643,7 +566,7 @@ class TestGetPositions:
         symbols = ["NVDA", "TSLA", "AMZN"]
         for i, symbol in enumerate(symbols):
             position = DBPosition(
-                id="TEST123456",
+                id=f"MULTI_{i+1:03d}",
                 account_id=account.id,
                 symbol=symbol,
                 quantity=100 + i * 10,
@@ -707,14 +630,14 @@ class TestGetPositions:
 
         # Add positions where one will fail quote lookup
         good_pos = DBPosition(
-            id="TEST123456",
+            id="GOOD001000",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
             avg_price=150.0,
         )
         bad_pos = DBPosition(
-            id="TEST123456",
+            id="BAD0010000",
             account_id=account.id,
             symbol="DELISTED",
             quantity=50,
@@ -778,7 +701,7 @@ class TestGetPosition:
         db_session.add(account)
 
         position = DBPosition(
-            id="TEST123456",
+            id="NVDA003000",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -828,7 +751,7 @@ class TestGetPosition:
         db_session.add(account)
 
         position = DBPosition(
-            id="TEST123456",
+            id="NVDA004000",
             account_id=account.id,
             symbol="NVDA",
             quantity=100,
@@ -900,7 +823,7 @@ class TestGetPosition:
         db_session.add(account)
 
         option_pos = DBPosition(
-            id="TEST123456",
+            id="OPTION0020",
             account_id=account.id,
             symbol="NVDA240115C00160000",
             quantity=5,

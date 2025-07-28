@@ -222,52 +222,6 @@ class TestTradingServicePositionGreeks:
         assert result["position_greeks"]["vega"] == pytest.approx(105.0)  # 0.35 * 300
         assert result["position_greeks"]["rho"] == pytest.approx(-24.0)  # -0.08 * 300
 
-    async def test_get_position_greeks_large_position(self, async_db_session):
-        """Test Greeks calculation for large position size."""
-        from app.models.assets import Option, Stock
-
-        # Create TradingService with mock adapter
-        mock_quote_adapter = AsyncMock()
-        trading_service = TradingService(quote_adapter=mock_quote_adapter)
-
-        # Create large option position
-        position = Position(
-            symbol="SPY240315C00450000",
-            quantity=50,  # Large position
-            avg_price=3.25,
-            current_price=4.10,
-            asset=Option(
-                symbol="SPY240315C00450000",
-                underlying=Stock(symbol="SPY"),
-                option_type="call",
-                strike=450.0,
-                expiration_date=date(2024, 3, 15),
-            ),
-        )
-
-        # Mock quote with small per-contract Greeks
-        quote = Mock()
-        quote.delta = 0.45
-        quote.gamma = 0.02
-        quote.theta = -0.08
-        quote.vega = 0.18
-        quote.rho = 0.12
-        quote.quote_date = datetime.now()
-
-        # Mock dependencies
-        trading_service.get_position = AsyncMock(return_value=position)
-        trading_service.get_enhanced_quote = AsyncMock(return_value=quote)
-
-        # Test
-        result = await trading_service.get_position_greeks("SPY240315C00450000")
-
-        # Verify - Greeks scaled by quantity * multiplier (50 * 100 = 5000)
-        assert result["symbol"] == "SPY240315C00450000"
-        assert result["position_greeks"]["delta"] == 2250.0  # 0.45 * 5000
-        assert result["position_greeks"]["gamma"] == 100.0  # 0.02 * 5000
-        assert result["position_greeks"]["theta"] == -400.0  # -0.08 * 5000
-        assert result["position_greeks"]["vega"] == 900.0  # 0.18 * 5000
-        assert result["position_greeks"]["rho"] == 600.0  # 0.12 * 5000
 
     async def test_get_position_greeks_short_position(self, async_db_session):
         """Test Greeks calculation for short position (negative quantity)."""

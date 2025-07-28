@@ -29,7 +29,9 @@ class TestTradingServiceOptionsChain:
         self, trading_service_synthetic_data
     ):
         """Test basic get_formatted_options_chain with test data."""
-        result = await trading_service_synthetic_data.get_formatted_options_chain("AAPL")
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
+            "AAPL"
+        )
 
         assert isinstance(result, dict)
         # Test data may not have options chain, so check for error or valid response
@@ -289,7 +291,9 @@ class TestTradingServiceOptionsChain:
         self, trading_service_synthetic_data
     ):
         """Test that options chain response has correct structure."""
-        result = await trading_service_synthetic_data.get_formatted_options_chain("AAPL")
+        result = await trading_service_synthetic_data.get_formatted_options_chain(
+            "AAPL"
+        )
 
         assert isinstance(result, dict)
 
@@ -351,7 +355,9 @@ class TestTradingServiceOptionsChain:
         ) as mock_get_chain:
             mock_get_chain.side_effect = Exception("Test exception")
 
-            result = await trading_service_synthetic_data.get_formatted_options_chain("AAPL")
+            result = await trading_service_synthetic_data.get_formatted_options_chain(
+                "AAPL"
+            )
 
             assert isinstance(result, dict)
             assert "error" in result

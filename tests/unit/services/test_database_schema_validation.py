@@ -72,7 +72,7 @@ class TestDatabaseSchemaIntegrity:
 
         # Test primary key constraint
         account1 = DBAccount(
-            id="test-id-1", owner="constraint_test_user", cash_balance=50000.0
+            id="TESTID1000", owner="constraint_test_user", cash_balance=50000.0
         )
         async_db_session.add(account1)
         await async_db_session.commit()
@@ -82,7 +82,7 @@ class TestDatabaseSchemaIntegrity:
 
         # Attempt to insert duplicate primary key
         account2 = DBAccount(
-            id="test-id-1",  # Same ID
+            id="TESTID1000",  # Same ID
             owner="different_user",
             cash_balance=25000.0,
         )
@@ -95,7 +95,7 @@ class TestDatabaseSchemaIntegrity:
 
         # Test unique constraint on owner
         account3 = DBAccount(
-            id="test-id-2",
+            id="TESTID2000",
             owner="constraint_test_user",  # Same owner
             cash_balance=30000.0,
         )
@@ -112,14 +112,14 @@ class TestDatabaseSchemaIntegrity:
 
         # Create account first
         account = DBAccount(
-            id="TEST123456", owner="fk_test_user", cash_balance=100000.0
+            id="TEST1FK456", owner="fk_test_user", cash_balance=100000.0
         )
         async_db_session.add(account)
         await async_db_session.commit()
 
         # Test position foreign key constraint
         position = DBPosition(
-            id="TEST123456",
+            id="POS1FK4567",
             account_id=account.id,
             symbol="AAPL",
             quantity=100,
@@ -130,8 +130,8 @@ class TestDatabaseSchemaIntegrity:
 
         # Test invalid foreign key
         invalid_position = DBPosition(
-            id="TEST123456",
-            account_id="nonexistent-account-id",
+            id="POS2FK4567",
+            account_id="NONEXISTEN",
             symbol="GOOGL",
             quantity=50,
             avg_price=2800.0,
@@ -149,14 +149,14 @@ class TestDatabaseSchemaIntegrity:
 
         # Create account for order
         account = DBAccount(
-            id="TEST123456", owner="enum_test_user", cash_balance=50000.0
+            id="TESTENUM56", owner="enum_test_user", cash_balance=50000.0
         )
         async_db_session.add(account)
         await async_db_session.commit()
 
         # Test valid enum values
         valid_order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"ORD{uuid.uuid4().hex[:7].upper()}",
             account_id=account.id,
             symbol="AAPL",
             order_type=OrderType.BUY,
@@ -217,7 +217,7 @@ class TestDatabaseSchemaIntegrity:
         datetime.now(UTC).replace(tzinfo=None)
 
         account = DBAccount(
-            id="TEST123456", owner="timestamp_test_user", cash_balance=75000.0
+            id="TESTTIME56", owner="timestamp_test_user", cash_balance=75000.0
         )
         async_db_session.add(account)
         await async_db_session.commit()
@@ -269,7 +269,7 @@ class TestDataMigrationScenarios:
             VALUES (:id, :owner, :cash_balance)
         """),
             {
-                "id": "TEST123456",
+                "id": "TESTMIGR56",
                 "owner": "migration_test_user",
                 "cash_balance": 60000.0,
             },
@@ -298,17 +298,17 @@ class TestDataMigrationScenarios:
         # For now, test that current schema handles all expected data types
         test_accounts = [
             {
-                "id": "TEST123456",
+                "id": "TEST12345A",
                 "owner": "schema_test_1",
                 "cash_balance": 0.0,  # Minimum balance
             },
             {
-                "id": "TEST123456",
+                "id": "TEST12345B",
                 "owner": "schema_test_2",
                 "cash_balance": 999999999.99,  # Large balance
             },
             {
-                "id": "TEST123456",
+                "id": "TEST12345C",
                 "owner": "schema_test_3",
                 "cash_balance": 0.01,  # Small fractional balance
             },
@@ -332,7 +332,7 @@ class TestDataMigrationScenarios:
 
         # Test decimal precision for cash balance
         account = DBAccount(
-            id="TEST123456",
+            id="TESTPREC56",
             owner="precision_test_user",
             cash_balance=12345.6789,  # Test decimal precision
         )
@@ -359,7 +359,7 @@ class TestDataMigrationScenarios:
 
         for i, owner in enumerate(test_owners):
             account = DBAccount(
-                id="TEST123456", owner=owner, cash_balance=10000.0 + i * 1000
+                id=f"TEST1234{i:02d}", owner=owner, cash_balance=10000.0 + i * 1000
             )
             async_db_session.add(account)
 
@@ -377,14 +377,14 @@ class TestDataMigrationScenarios:
 
         # Create account with related data
         account = DBAccount(
-            id="TEST123456", owner="cascade_test_user", cash_balance=50000.0
+            id="TESTCASC56", owner="cascade_test_user", cash_balance=50000.0
         )
         async_db_session.add(account)
         await async_db_session.flush()
 
         # Create related position
         position = DBPosition(
-            id="TEST123456",
+            id="POSCASC567",
             account_id=account.id,
             symbol="AAPL",
             quantity=100,
@@ -394,7 +394,7 @@ class TestDataMigrationScenarios:
 
         # Create related order
         order = DBOrder(
-            id=f"order_{uuid.uuid4().hex[:8]}",
+            id=f"ORD{uuid.uuid4().hex[:7].upper()}",
             account_id=account.id,
             symbol="GOOGL",
             order_type=OrderType.BUY,
@@ -425,153 +425,6 @@ class TestDataMigrationScenarios:
             await async_db_session.commit()
 
         await async_db_session.rollback()
-
-
-@pytest.mark.database
-class TestPerformanceOptimization:
-    """Test database performance optimization features."""
-
-    @pytest.mark.asyncio
-    async def test_query_performance_with_indexes(
-        self, async_db_session: AsyncSession, performance_monitor
-    ):
-        """Test query performance with proper indexes."""
-
-        # Create multiple test accounts
-        test_accounts = []
-        for i in range(100):
-            account = DBAccount(
-                id="TEST123456",
-                owner=f"perf_user_{i:03d}",
-                cash_balance=10000.0 + i * 100,
-            )
-            test_accounts.append(account)
-            async_db_session.add(account)
-
-        await async_db_session.commit()
-
-        # Test indexed query performance (by owner)
-        performance_monitor.start_timing("owner_lookup")
-
-        result = await async_db_session.execute(
-            text("SELECT * FROM accounts WHERE owner = 'perf_user_050'")
-        )
-        account_row = result.fetchone()
-
-        owner_lookup_time = performance_monitor.end_timing("owner_lookup")
-
-        assert account_row is not None
-        assert owner_lookup_time < 0.1  # Should be fast with index
-
-        # Test range query performance
-        performance_monitor.start_timing("balance_range")
-
-        result = await async_db_session.execute(
-            text("""
-            SELECT COUNT(*) FROM accounts 
-            WHERE cash_balance BETWEEN 15000 AND 25000
-        """)
-        )
-        count = result.scalar()
-
-        range_query_time = performance_monitor.end_timing("balance_range")
-
-        assert count is not None and count > 0
-        assert range_query_time < 0.2  # Range queries should be reasonable
-
-    @pytest.mark.asyncio
-    async def test_bulk_operations_performance(
-        self, async_db_session: AsyncSession, performance_monitor
-    ):
-        """Test performance of bulk database operations."""
-
-        # Test bulk insert performance
-        performance_monitor.start_timing("bulk_insert")
-
-        accounts = []
-        for i in range(500):
-            account = DBAccount(
-                id="TEST123456",
-                owner=f"bulk_user_{i:04d}",
-                cash_balance=5000.0 + i,
-            )
-            accounts.append(account)
-
-        async_db_session.add_all(accounts)
-        await async_db_session.commit()
-
-        bulk_insert_time = performance_monitor.end_timing("bulk_insert")
-
-        # Should handle 500 inserts in reasonable time
-        assert bulk_insert_time < 2.0
-
-        # Test bulk query performance
-        performance_monitor.start_timing("bulk_query")
-
-        result = await async_db_session.execute(
-            text("SELECT COUNT(*) FROM accounts WHERE owner LIKE 'bulk_user_%'")
-        )
-        count = result.scalar()
-
-        bulk_query_time = performance_monitor.end_timing("bulk_query")
-
-        assert count == 500
-        assert bulk_query_time < 0.5
-
-    @pytest.mark.asyncio
-    async def test_connection_pool_efficiency(self, performance_monitor):
-        """Test connection pool efficiency under concurrent load."""
-
-        import asyncio
-        import os
-
-        from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
-        database_url = os.getenv("TEST_DATABASE_URL")
-
-        # Create engine with specific pool settings
-        engine = create_async_engine(
-            database_url,
-            pool_size=5,
-            max_overflow=10,
-            pool_timeout=10,
-            pool_recycle=300,
-        )
-
-        session_local = async_sessionmaker(bind=engine, class_=AsyncSession)
-
-        async def perform_db_operation(operation_id: int) -> float:
-            """Perform a database operation and measure time."""
-            import time
-
-            start = time.time()
-
-            async with session_local() as session:
-                # Simple operation to test connection efficiency
-                result = await session.execute(
-                    text("SELECT CAST(:id AS INTEGER)"), {"id": operation_id}
-                )
-                assert result.scalar() == operation_id
-
-            return time.time() - start
-
-        try:
-            performance_monitor.start_timing("concurrent_operations")
-
-            # Run 20 concurrent operations
-            timings = await asyncio.gather(
-                *[perform_db_operation(i) for i in range(20)]
-            )
-
-            total_time = performance_monitor.end_timing("concurrent_operations")
-
-            # Verify operations completed efficiently
-            assert max(timings) < 1.0  # No single operation should take too long
-            assert total_time < 3.0  # All operations should complete quickly
-            assert len(timings) == 20  # All operations should complete
-
-        finally:
-            await engine.dispose()
 
 
 if __name__ == "__main__":

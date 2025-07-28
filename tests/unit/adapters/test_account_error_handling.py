@@ -21,6 +21,7 @@ from app.adapters.accounts import (
 from app.schemas.accounts import Account
 
 
+@pytest.mark.journey_account_management
 class TestAccountValidationErrors:
     """Test input validation errors for account operations."""
 
@@ -28,7 +29,7 @@ class TestAccountValidationErrors:
         """Test Account schema validation with empty owner name."""
         with pytest.raises(ValidationError) as exc_info:
             Account(
-                id="test-123",
+                id="TEST123000",
                 cash_balance=1000.0,
                 positions=[],
                 name="Test Account",
@@ -42,7 +43,7 @@ class TestAccountValidationErrors:
         """Test Account schema validation with negative cash balance."""
         with pytest.raises(ValidationError) as exc_info:
             Account(
-                id="test-123",
+                id="TEST123000",
                 cash_balance=-1000.0,  # Negative balance should fail
                 positions=[],
                 name="Test Account",
@@ -57,7 +58,7 @@ class TestAccountValidationErrors:
         account = account_factory()
         assert account.owner == "default"
         assert account.cash_balance == 100000.0
-        assert len(account.id) == 8  # Short UUID format
+        assert len(account.id) == 10  # 10 alphanumeric characters as required by database
 
     def test_account_factory_edge_cases(self):
         """Test account factory with edge case inputs."""
@@ -167,6 +168,7 @@ class TestDatabaseAccountAdapterErrors:
             assert result is False
 
 
+@pytest.mark.journey_account_management
 class TestFileSystemAccountAdapterErrors:
     """Test file system adapter error handling scenarios."""
 
@@ -179,7 +181,7 @@ class TestFileSystemAccountAdapterErrors:
     async def sample_account(self):
         """Create a sample account for testing."""
         return Account(
-            id="test-account",
+            id="TESTACCOUN",
             cash_balance=10000.0,
             positions=[],
             name="Test Account",
@@ -220,6 +222,7 @@ class TestFileSystemAccountAdapterErrors:
         assert result is False
 
 
+@pytest.mark.journey_account_management
 class TestErrorMessageAccuracy:
     """Test that error messages are clear and actionable."""
 
@@ -227,7 +230,7 @@ class TestErrorMessageAccuracy:
         """Test that validation error messages provide specific guidance."""
         with pytest.raises(ValidationError) as exc_info:
             Account(
-                id="test-123",
+                id="TEST123000",
                 cash_balance=-100.0,
                 positions=[],
                 name="Test Account",

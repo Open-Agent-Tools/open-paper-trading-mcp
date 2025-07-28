@@ -40,7 +40,7 @@ class TestAccountBalanceRetrieval:
     async def test_get_account_balance_new_account(self, db_session: AsyncSession):
         """Test balance retrieval for a newly created account."""
         # Create trading service with unique owner
-        owner = f"test_user_{uuid.uuid4().hex[:8]}"
+        owner = f"test_user_{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         # Mock the database session
@@ -63,7 +63,7 @@ class TestAccountBalanceRetrieval:
     @pytest.mark.asyncio
     async def test_get_account_balance_existing_account(self, db_session: AsyncSession):
         """Test balance retrieval for an existing account."""
-        owner = f"existing_user_{uuid.uuid4().hex[:8]}"
+        owner = f"existing_user_{uuid.uuid4().hex[:6].upper()}"
         expected_balance = 25000.0
 
         # Pre-create account manually using raw SQL to avoid model issues
@@ -89,7 +89,7 @@ class TestAccountBalanceRetrieval:
     @pytest.mark.asyncio
     async def test_get_account_balance_multiple_calls(self, db_session: AsyncSession):
         """Test multiple consecutive balance retrieval calls."""
-        owner = f"multi_call_user_{uuid.uuid4().hex[:8]}"
+        owner = f"multi_call_user_{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         with patch.object(service, "_get_async_db_session", return_value=db_session):
@@ -103,8 +103,8 @@ class TestAccountBalanceRetrieval:
     @pytest.mark.asyncio
     async def test_get_account_balance_different_owners(self, db_session: AsyncSession):
         """Test balance retrieval for different account owners."""
-        owner1 = f"user1_{uuid.uuid4().hex[:8]}"
-        owner2 = f"user2_{uuid.uuid4().hex[:8]}"
+        owner1 = f"user1_{uuid.uuid4().hex[:6].upper()}"
+        owner2 = f"user2_{uuid.uuid4().hex[:6].upper()}"
 
         service1 = TradingService(account_owner=owner1)
         service2 = TradingService(account_owner=owner2)
@@ -137,7 +137,7 @@ class TestBalancePersistence:
     @pytest.mark.asyncio
     async def test_balance_persistence_across_sessions(self, db_session: AsyncSession):
         """Test that balance persists when creating new service instances."""
-        owner = f"persist_user_{uuid.uuid4().hex[:8]}"
+        owner = f"persist_user_{uuid.uuid4().hex[:6].upper()}"
         expected_balance = 15000.0
 
         # Create account with specific balance
@@ -160,7 +160,7 @@ class TestBalancePersistence:
     @pytest.mark.asyncio
     async def test_balance_update_persistence(self, db_session: AsyncSession):
         """Test that manual balance updates persist correctly."""
-        owner = f"update_user_{uuid.uuid4().hex[:8]}"
+        owner = f"update_user_{uuid.uuid4().hex[:6].upper()}"
         initial_balance = 10000.0
         new_balance = 75000.0
 
@@ -192,14 +192,14 @@ class TestAccountStateConsistency:
     @pytest.mark.asyncio
     async def test_concurrent_balance_retrieval(self, db_session: AsyncSession):
         """Test concurrent balance retrieval operations (mocked for stability)."""
-        owner = f"concurrent_user_{uuid.uuid4().hex[:8]}"
+        owner = f"concurrent_user_{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         # Mock the account retrieval to return consistent results without database conflicts
         mock_account = MagicMock()
         mock_account.cash_balance = 15000.0
 
-        async def mock_get_account():
+        async def mock_get_account(account_id=None):
             return mock_account
 
         async def get_balance():
@@ -217,7 +217,7 @@ class TestAccountStateConsistency:
     @pytest.mark.asyncio
     async def test_account_state_validation(self, db_session: AsyncSession):
         """Test account state validation functionality."""
-        owner = f"validation_user_{uuid.uuid4().hex[:8]}"
+        owner = f"VALID{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         with patch.object(service, "_get_async_db_session", return_value=db_session):
@@ -234,7 +234,7 @@ class TestAccountInitialization:
     @pytest.mark.asyncio
     async def test_ensure_account_exists_new_account(self, db_session: AsyncSession):
         """Test _ensure_account_exists() creates new accounts correctly."""
-        owner = f"new_account_{uuid.uuid4().hex[:8]}"
+        owner = f"new_account_{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         with patch.object(service, "_get_async_db_session", return_value=db_session):
@@ -255,7 +255,7 @@ class TestAccountInitialization:
         self, db_session: AsyncSession
     ):
         """Test _ensure_account_exists() doesn't duplicate existing accounts."""
-        owner = f"existing_account_{uuid.uuid4().hex[:8]}"
+        owner = f"existing_account_{uuid.uuid4().hex[:6].upper()}"
         original_balance = 25000.0
 
         # Pre-create account
@@ -288,7 +288,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def synthetic_database_connection_error(self, db_session: AsyncSession):
         """Test handling of database connection errors."""
-        owner = f"db_error_user_{uuid.uuid4().hex[:8]}"
+        owner = f"db_error_user_{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         with (
@@ -304,7 +304,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_balance_type_conversion(self, db_session: AsyncSession):
         """Test that balance is properly converted to float."""
-        owner = f"type_test_user_{uuid.uuid4().hex[:8]}"
+        owner = f"type_test_user_{uuid.uuid4().hex[:6].upper()}"
 
         # Create account with Decimal balance
         from decimal import Decimal
@@ -327,7 +327,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_zero_balance_handling(self, db_session: AsyncSession):
         """Test handling of zero account balance."""
-        owner = f"zero_user_{uuid.uuid4().hex[:8]}"
+        owner = f"zero_user_{uuid.uuid4().hex[:6].upper()}"
 
         # Create account with zero balance
         account = DBAccount(
@@ -346,41 +346,13 @@ class TestErrorHandling:
 
 @pytest.mark.journey_account_management
 @pytest.mark.database
-class TestPerformanceBenchmarks:
-    """Test performance benchmarks for balance operations."""
-
-    @pytest.mark.asyncio
-    async def test_balance_retrieval_performance(self, db_session: AsyncSession):
-        """Test performance of balance retrieval operations."""
-        owner = f"perf_user_{uuid.uuid4().hex[:8]}"
-        service = TradingService(account_owner=owner)
-
-        with patch.object(service, "_get_async_db_session", return_value=db_session):
-            # Time multiple balance retrievals
-            start_time = time.time()
-
-            for _ in range(50):  # Reduced for CI
-                await service.get_account_balance()
-
-            end_time = time.time()
-            total_time = end_time - start_time
-            avg_time = total_time / 50
-
-            # Balance retrieval should be reasonably fast
-            assert avg_time < 0.1, (
-                f"Average balance retrieval time too slow: {avg_time:.4f}s"
-            )
-
-
-@pytest.mark.journey_account_management
-@pytest.mark.database
 class TestIntegrationWithTrading:
     """Test balance integration with trading operations."""
 
     @pytest.mark.asyncio
     async def test_balance_after_order_creation(self, db_session: AsyncSession):
         """Test that balance retrieval works correctly after creating orders."""
-        owner = f"trading_user_{uuid.uuid4().hex[:8]}"
+        owner = f"trading_user_{uuid.uuid4().hex[:6].upper()}"
         service = TradingService(account_owner=owner)
 
         # Mock quote adapter

@@ -106,10 +106,10 @@ class TestGetAccountIdsNormalOperation:
         """Test that account IDs are returned in consistent order."""
         adapter = DatabaseAccountAdapter()
 
-        # Create accounts with predictable IDs for testing order
+        # Create accounts with predictable IDs for testing order (max 10 chars)
         account_ids = []
         for i in range(3):
-            account_id = f"account_{i:03d}_{uuid.uuid4().hex[:8]}"
+            account_id = f"ACC{i:03d}{uuid.uuid4().hex[:4].upper()}"  # ACC000ABCD format (10 chars)
             account_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -210,7 +210,7 @@ class TestGetAccountIdsDataIntegrity:
         # Create accounts with known IDs
         created_ids = []
         for i in range(4):
-            account_id = f"verify_{i}_{uuid.uuid4().hex[:12]}"
+            account_id = f"VER{i:04d}{uuid.uuid4().hex[:3].upper()}"  # VER0000ABC format (10 chars)
             created_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -247,9 +247,9 @@ class TestGetAccountIdsDataIntegrity:
 
         # Create accounts with various ID formats
         account_ids = [
-            "TEST123456",  # Standard format
-            "CUSTOM1234",  # Custom string
-            "MIXED12345",  # Mixed format
+            "TEST123456",  # 10 chars exactly
+            "CUSTOM1234",  # 10 chars exactly
+            "MIXED12345",  # 10 chars exactly
         ]
 
         for i, account_id in enumerate(account_ids):
@@ -443,7 +443,7 @@ class TestGetAccountIdsPerformance:
         performance_monitor.start_timing("create_accounts")
 
         for i in range(num_accounts):
-            account_id = f"perf_{i}_{uuid.uuid4().hex[:8]}"
+            account_id = f"PERF{i:06d}"  # PERF000000 format (10 chars)
             account_ids.append(account_id)
             account = DBAccount(
                 id=account_id,
@@ -531,7 +531,7 @@ class TestGetAccountIdsPerformance:
 
         for i in range(num_accounts):
             # Create longer IDs to test memory efficiency
-            long_id = f"memory_test_{i:05d}_{uuid.uuid4()}_{uuid.uuid4().hex}"
+            long_id = f"MEM{i:07d}"  # MEM0000000 format (10 chars)
             long_ids.append(long_id)
             account = DBAccount(
                 id=long_id,
@@ -657,11 +657,11 @@ class TestGetAccountIdsEdgeCases:
 
         # Create accounts with various ID formats (within database constraints)
         special_ids = [
-            "account-with-dashes",
-            "account_with_underscores",
-            "account.with.dots",
-            "ACCOUNT_WITH_CAPS",
-            "123456789",  # Numeric string
+            "ACCT12345A",  # Account with uppercase letters
+            "ACCT12345B",  # Account with numbers  
+            "1234567890",  # Numeric string (10 chars)
+            "CAPS123456",  # All caps account
+            "TEST000001",  # Test account with zeros
         ]
 
         for i, account_id in enumerate(special_ids):
@@ -693,8 +693,8 @@ class TestGetAccountIdsEdgeCases:
         """Test handling of very long account IDs."""
         adapter = DatabaseAccountAdapter()
 
-        # Create account with long ID (within reasonable database limits)
-        long_id = f"very_long_account_id_{'x' * 200}_{uuid.uuid4()}"
+        # Create account with maximum allowed ID length (10 chars)
+        long_id = "MAXLENGTHI"  # Exactly 10 characters
         account = DBAccount(
             id=long_id,
             owner="long_id_user",

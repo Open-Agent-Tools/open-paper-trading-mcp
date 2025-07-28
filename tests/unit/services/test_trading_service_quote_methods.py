@@ -30,7 +30,9 @@ class TestTradingServiceQuoteMethods:
     """Test core quote retrieval methods."""
 
     @pytest.mark.asyncio
-    async def test_get_quote_basic_success_synthetic_data(self, trading_service_synthetic_data):
+    async def test_get_quote_basic_success_synthetic_data(
+        self, trading_service_synthetic_data
+    ):
         """Test basic get_quote with test data adapter."""
         result = await trading_service_synthetic_data.get_quote("AAPL")
 
@@ -42,13 +44,17 @@ class TestTradingServiceQuoteMethods:
         assert result.last_updated is not None
 
     @pytest.mark.asyncio
-    async def test_get_quote_invalid_symbol_synthetic_data(self, trading_service_synthetic_data):
+    async def test_get_quote_invalid_symbol_synthetic_data(
+        self, trading_service_synthetic_data
+    ):
         """Test get_quote with invalid symbol."""
         with pytest.raises((NotFoundError, ValidationError)):
             await trading_service_synthetic_data.get_quote("INVALID_SYMBOL_XYZ")
 
     @pytest.mark.asyncio
-    async def test_get_quote_empty_symbol_synthetic_data(self, trading_service_synthetic_data):
+    async def test_get_quote_empty_symbol_synthetic_data(
+        self, trading_service_synthetic_data
+    ):
         """Test get_quote with empty symbol."""
         with pytest.raises((NotFoundError, ValidationError, ValueError)):
             await trading_service_synthetic_data.get_quote("")
@@ -252,7 +258,9 @@ class TestTradingServiceQuoteMethods:
             assert all(isinstance(r, Quote | OptionQuote) for r in results)
 
     @pytest.mark.asyncio
-    async def test_quote_methods_consistency_synthetic_data(self, trading_service_synthetic_data):
+    async def test_quote_methods_consistency_synthetic_data(
+        self, trading_service_synthetic_data
+    ):
         """Test that get_quote and get_enhanced_quote return consistent data."""
         symbol = "AAPL"
 
