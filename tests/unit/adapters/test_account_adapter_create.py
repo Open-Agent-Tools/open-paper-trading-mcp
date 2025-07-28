@@ -555,7 +555,7 @@ class TestAccountAdapterCreateBoundaryConditions:
         adapter = DatabaseAccountAdapter()
         invalid_ids = [
             "account-with-dashes",
-            "account_with_underscores", 
+            "account_with_underscores",
             "account.with.dots",
             "UPPERCASE-ACCOUNT",
             "short123",  # Too short

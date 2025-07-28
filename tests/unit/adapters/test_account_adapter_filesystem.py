@@ -132,6 +132,7 @@ class TestLocalFileSystemAccountAdapter:
         """Test get_account_ids with multiple accounts."""
         # Create multiple account files
         import uuid
+
         account_ids = [uuid.uuid4().hex[:10].upper() for _ in range(3)]
 
         for account_id in account_ids:
@@ -154,6 +155,7 @@ class TestLocalFileSystemAccountAdapter:
         """Test get_account_ids ignores non-JSON files."""
         # Create account files
         import uuid
+
         valid_id = uuid.uuid4().hex[:10].upper()
         account = Account(
             id=valid_id,

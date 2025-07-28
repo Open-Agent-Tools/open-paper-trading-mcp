@@ -40,7 +40,8 @@ def pytest_configure(config):
         "journey_portfolio_management: Portfolio management user journey tests",
     )
     config.addinivalue_line(
-        "markers", "journey_performance: Performance and optimization user journey tests"
+        "markers",
+        "journey_performance: Performance and optimization user journey tests",
     )
     config.addinivalue_line(
         "markers", "journey_complex_strategies: Complex strategies user journey tests"
@@ -575,20 +576,22 @@ async def trading_service_synthetic_data():
 
         def get_test_scenarios(self):
             return {"default": "Mock test data"}
-        
+
         async def search_stocks(self, query, limit=10):
             """Mock stock search functionality."""
             # Simple mock search - return stocks that contain the query
             matches = []
-            for symbol in self.test_quotes.keys():
+            for symbol in self.test_quotes:
                 if query.upper() in symbol:
-                    matches.append({
-                        "symbol": symbol,
-                        "name": f"{symbol} Inc.",
-                        "price": self.test_quotes[symbol].price
-                    })
+                    matches.append(
+                        {
+                            "symbol": symbol,
+                            "name": f"{symbol} Inc.",
+                            "price": self.test_quotes[symbol].price,
+                        }
+                    )
             return matches[:limit]
-        
+
         def get_available_symbols(self):
             """Return list of available symbols."""
             return list(self.test_quotes.keys())
@@ -632,22 +635,6 @@ async def trading_service_synthetic_data():
                 "dividend_yield": 2.1,
                 "sector": "Technology",
             }
-
-        async def search_stocks(self, query, limit=10):
-            """Mock stock search method."""
-            # Return symbols that contain the query
-            matches = [symbol for symbol in self.test_quotes if query.upper() in symbol]
-            results = [
-                {"symbol": symbol, "name": f"Mock Company {symbol}", "tradeable": True}
-                for symbol in matches[:limit]
-            ]
-
-            response = {"query": query, "results": results, "total_count": len(results)}
-
-            if not results:
-                response["message"] = f"No stocks found matching query: {query}"
-
-            return response
 
     adapter = MockTestQuoteAdapter()
     return TradingService(quote_adapter=adapter)

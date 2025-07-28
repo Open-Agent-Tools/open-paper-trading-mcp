@@ -58,7 +58,9 @@ class TestAccountValidationErrors:
         account = account_factory()
         assert account.owner == "default"
         assert account.cash_balance == 100000.0
-        assert len(account.id) == 10  # 10 alphanumeric characters as required by database
+        assert (
+            len(account.id) == 10
+        )  # 10 alphanumeric characters as required by database
 
     def test_account_factory_edge_cases(self):
         """Test account factory with edge case inputs."""

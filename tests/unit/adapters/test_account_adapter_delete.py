@@ -5,7 +5,6 @@ Tests all DELETE operation scenarios including successful deletion, non-existent
 foreign key constraints, cascade behavior, transaction integrity, and database consistency.
 """
 
-import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -36,7 +35,7 @@ class TestAccountAdapterDeleteCRUD:
         account_id = "SAMPLE0001"
         db_account = DBAccount(
             id=account_id,
-            owner=f"sample_user_001",
+            owner="sample_user_001",
             cash_balance=10000.0,
         )
         db_session.add(db_account)
@@ -50,7 +49,7 @@ class TestAccountAdapterDeleteCRUD:
         account_id = "POSITIONS1"
         db_account = DBAccount(
             id=account_id,
-            owner=f"positions_user_001",
+            owner="positions_user_001",
             cash_balance=50000.0,
         )
         db_session.add(db_account)
@@ -86,7 +85,7 @@ class TestAccountAdapterDeleteCRUD:
         account_id = "RELATIONS1"
         db_account = DBAccount(
             id=account_id,
-            owner=f"relations_user_001",
+            owner="relations_user_001",
             cash_balance=100000.0,
         )
         db_session.add(db_account)

@@ -411,7 +411,7 @@ class TestGetPortfolioGreeks:
         positions = []
         for i in range(50):  # 50 option positions
             position = DBPosition(
-                id=f"POS{i+1000:06d}",  # POS001000, POS001001, etc.
+                id=f"POS{i + 1000:06d}",  # POS001000, POS001001, etc.
                 account_id=account.id,
                 symbol=f"AAPL25011{7 + (i % 3)}C00{150 + i}000",
                 quantity=1 + (i % 5),

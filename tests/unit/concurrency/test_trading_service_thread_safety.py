@@ -33,7 +33,7 @@ class TestTradingServiceThreadSafety:
         self, db_session: AsyncSession
     ):
         """Test multiple TradingService instances with same owner initializing concurrently."""
-        owner_id = f"thread_safety_owner_{"128A3F0BFE"}"
+        owner_id = "thread_safety_owner_128A3F0BFE"
 
         with patch("app.storage.database.get_async_session") as mock_get_session:
 
@@ -119,7 +119,7 @@ class TestTradingServiceThreadSafety:
     @pytest.mark.asyncio
     async def test_concurrent_order_creation(self, db_session: AsyncSession):
         """Test concurrent order creation with the same service instance."""
-        owner_id = f"order_safety_owner_{"1557172D79"}"
+        owner_id = f"order_safety_owner_{'1557172D79'}"
 
         with patch("app.storage.database.get_async_session") as mock_get_session:
 
@@ -238,7 +238,7 @@ class TestTradingServiceThreadSafety:
     @pytest.mark.asyncio
     async def test_concurrent_portfolio_access(self, db_session: AsyncSession):
         """Test concurrent portfolio and position access."""
-        owner_id = f"portfolio_safety_owner_{"2F7969A3F4"}"
+        owner_id = f"portfolio_safety_owner_{'2F7969A3F4'}"
 
         with patch("app.storage.database.get_async_session") as mock_get_session:
 
@@ -369,7 +369,7 @@ class TestTradingServiceThreadSafety:
     @pytest.mark.asyncio
     async def test_concurrent_account_balance_updates(self, db_session: AsyncSession):
         """Test race conditions in account balance updates."""
-        owner_id = f"balance_safety_owner_{"63BB7EFCB0"}"
+        owner_id = f"balance_safety_owner_{'63BB7EFCB0'}"
 
         with patch("app.storage.database.get_async_session") as mock_get_session:
 
@@ -553,7 +553,7 @@ class TestRaceConditionScenarios:
         self, db_session: AsyncSession
     ):
         """Test the specific race condition in _ensure_account_exists method."""
-        owner_id = f"race_init_owner_{"4002D0A8A8"}"
+        owner_id = f"race_init_owner_{'4002D0A8A8'}"
 
         # Create a custom TradingService class that introduces artificial delays
         class DelayedTradingService(TradingService):
@@ -657,7 +657,7 @@ class TestRaceConditionScenarios:
     @pytest.mark.asyncio
     async def test_order_sequence_race_condition(self, db_session: AsyncSession):
         """Test race conditions in order creation sequence."""
-        owner_id = f"order_race_owner_{"F009E17367"}"
+        owner_id = f"order_race_owner_{'F009E17367'}"
 
         with patch("app.storage.database.get_async_session") as mock_get_session:
 
@@ -777,7 +777,7 @@ class TestRaceConditionScenarios:
     @pytest.mark.asyncio
     async def test_concurrent_position_updates(self, db_session: AsyncSession):
         """Test race conditions in position updates."""
-        owner_id = f"position_race_owner_{"0E22BC34BD"}"
+        owner_id = f"position_race_owner_{'0E22BC34BD'}"
 
         with patch("app.storage.database.get_async_session") as mock_get_session:
 

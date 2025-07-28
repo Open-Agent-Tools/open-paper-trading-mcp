@@ -658,7 +658,7 @@ class TestGetAccountIdsEdgeCases:
         # Create accounts with various ID formats (within database constraints)
         special_ids = [
             "ACCT12345A",  # Account with uppercase letters
-            "ACCT12345B",  # Account with numbers  
+            "ACCT12345B",  # Account with numbers
             "1234567890",  # Numeric string (10 chars)
             "CAPS123456",  # All caps account
             "TEST000001",  # Test account with zeros

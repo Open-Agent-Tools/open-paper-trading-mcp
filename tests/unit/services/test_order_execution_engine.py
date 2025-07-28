@@ -222,7 +222,7 @@ class TestLoadPendingOrders:
         created_orders = []
 
         for i, order_type in enumerate(trigger_order_types):
-            order_id = f"ORDER_00{i+1}"
+            order_id = f"ORDER_00{i + 1}"
             db_order = DBOrder(
                 id=order_id,
                 account_id=account.id,
@@ -503,7 +503,7 @@ class TestUpdateOrderTriggeredStatus:
         # Create multiple orders
         orders = []
         for i in range(3):
-            order_id = f"ORDER_01{i+1}"
+            order_id = f"ORDER_01{i + 1}"
             db_order = DBOrder(
                 id=order_id,
                 account_id=account.id,

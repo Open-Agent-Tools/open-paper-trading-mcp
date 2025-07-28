@@ -68,7 +68,9 @@ class TestAccountCreationConcurrency:
 
             # Launch multiple concurrent creation attempts
             tasks = []
-            account_ids = [f"ACC{i:03d}{uuid.uuid4().hex[:4].upper()}" for i in range(5)]
+            account_ids = [
+                f"ACC{i:03d}{uuid.uuid4().hex[:4].upper()}" for i in range(5)
+            ]
 
             for account_id in account_ids:
                 tasks.append(create_account_attempt(account_id))

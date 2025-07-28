@@ -23,7 +23,9 @@ class TestAccountFactory:
         account = account_factory()
 
         assert isinstance(account, Account)
-        assert len(account.id) == 10  # 10 alphanumeric characters for database constraint
+        assert (
+            len(account.id) == 10
+        )  # 10 alphanumeric characters for database constraint
         assert account.cash_balance == 100000.0
         assert account.owner == "default"
         assert account.name == f"Account-{account.id}"

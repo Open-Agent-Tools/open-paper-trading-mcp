@@ -222,7 +222,6 @@ class TestTradingServicePositionGreeks:
         assert result["position_greeks"]["vega"] == pytest.approx(105.0)  # 0.35 * 300
         assert result["position_greeks"]["rho"] == pytest.approx(-24.0)  # -0.08 * 300
 
-
     async def test_get_position_greeks_short_position(self, async_db_session):
         """Test Greeks calculation for short position (negative quantity)."""
         from app.models.assets import Option, Stock

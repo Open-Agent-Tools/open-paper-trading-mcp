@@ -566,7 +566,7 @@ class TestGetPositions:
         symbols = ["NVDA", "TSLA", "AMZN"]
         for i, symbol in enumerate(symbols):
             position = DBPosition(
-                id=f"MULTI_{i+1:03d}",
+                id=f"MULTI_{i + 1:03d}",
                 account_id=account.id,
                 symbol=symbol,
                 quantity=100 + i * 10,

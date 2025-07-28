@@ -84,8 +84,9 @@ class TestCancelAllOptionOrdersEnhanced:
 
         # Create only stock orders (symbols without C or P)
         stock_symbols = ["MSFT", "GOOGL", "AMZN"]  # No C or P in these symbols
-        for i, symbol in enumerate(stock_symbols):
+        for _i, symbol in enumerate(stock_symbols):
             import uuid
+
             order = DBOrder(
                 id=uuid.uuid4().hex[:10].upper(),
                 account_id=account.id,
@@ -209,8 +210,9 @@ class TestCancelAllOptionOrdersEnhanced:
         orders = []
         expected_cancelled = 0
 
-        for i, (symbol, should_cancel) in enumerate(test_cases):
+        for _i, (symbol, should_cancel) in enumerate(test_cases):
             import uuid
+
             order = DBOrder(
                 id=uuid.uuid4().hex[:10].upper(),
                 account_id=account.id,
@@ -638,6 +640,7 @@ class TestOptionsIntegration:
         option_orders = []
         for i in range(3):
             import uuid
+
             order = DBOrder(
                 id=uuid.uuid4().hex[:10].upper(),
                 account_id=account.id,

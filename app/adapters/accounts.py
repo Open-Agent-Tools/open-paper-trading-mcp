@@ -169,7 +169,9 @@ def account_factory(
 ) -> Account:
     """Factory function to create new accounts."""
     # mypy: ignore - This pattern is required for database constraint compliance
-    account_id = str(uuid.uuid4().hex[:10]).upper()  # 10 alphanumeric characters as required
+    account_id = str(
+        uuid.uuid4().hex[:10]
+    ).upper()  # 10 alphanumeric characters as required
 
     if name is None:
         name = f"Account-{account_id}"
