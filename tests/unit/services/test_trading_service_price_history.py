@@ -13,6 +13,8 @@ from unittest.mock import patch
 
 import pytest
 
+pytestmark = pytest.mark.journey_market_data
+
 
 class TestTradingServicePriceHistory:
     """Test price history functionality."""

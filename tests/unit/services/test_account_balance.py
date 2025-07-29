@@ -29,6 +29,8 @@ from app.models.database.trading import Account as DBAccount
 from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_account_management
+
 
 @pytest.mark.journey_account_management
 @pytest.mark.database

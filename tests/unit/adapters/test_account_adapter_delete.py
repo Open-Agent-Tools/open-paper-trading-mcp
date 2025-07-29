@@ -19,6 +19,8 @@ from app.models.database.trading import Position as DBPosition
 from app.models.database.trading import Transaction as DBTransaction
 from app.schemas.orders import OrderStatus, OrderType
 
+pytestmark = pytest.mark.journey_account_management
+
 
 @pytest.mark.asyncio
 class TestAccountAdapterDeleteCRUD:

@@ -37,6 +37,8 @@ from app.models.database.trading import Order as DBOrder
 from app.schemas.orders import OrderCondition, OrderCreate, OrderStatus, OrderType
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_basic_trading
+
 
 @pytest.mark.journey_basic_trading
 @pytest.mark.database

@@ -21,6 +21,8 @@ from app.models.assets import Option, Stock
 from app.models.quotes import OptionQuote, Quote
 from app.schemas.positions import Portfolio, Position
 
+pytestmark = pytest.mark.journey_options_advanced
+
 
 class TestTradingServiceExpirationSimulation:
     """Test options expiration simulation functionality."""

@@ -1,36 +1,43 @@
-export interface AccountInfo {
-  owner: string;
-  cash_balance: number;
-}
-
-export interface AccountSummary {
-  id: string;
-  owner: string;
-  created_at: string;
-  starting_balance: number;
-  current_balance: number;
-  balance_change: number;
-  balance_change_percent: number;
-}
-
-export interface AccountsResponse {
-  success: boolean;
-  accounts: AccountSummary[];
-  summary: {
-    total_count: number;
-    total_starting_balance: number;
-    total_current_balance: number;
-    total_balance_change: number;
-  };
-  message: string;
-}
+// Re-export account types for backwards compatibility
+export type {
+  AccountInfo,
+  AccountSummary,
+  AccountsResponse,
+  CreateAccountRequest,
+  CreateAccountResponse,
+  DeleteAccountResponse,
+  AccountBalance,
+  AccountType,
+  AccountFormData,
+  AccountFormErrors,
+} from './types/account';
 
 export interface Position {
-  id: string;
   symbol: string;
   quantity: number;
-  average_price: number;
-  value: number;
+  avg_price: number;
+  current_price: number | null;
+  market_value: number | null;
+  cost_basis?: number;
+  unrealized_pnl: number | null;
+  unrealized_pnl_percent?: number | null;
+  realized_pnl?: number;
+  asset_type?: string;
+  side?: string;
+  
+  // Options-specific fields
+  option_type: string | null;
+  strike: number | null;
+  expiration_date: string | null;
+  underlying_symbol: string | null;
+  
+  // Greeks (for options positions)
+  delta?: number | null;
+  gamma?: number | null;
+  theta?: number | null;
+  vega?: number | null;
+  rho?: number | null;
+  iv?: number | null;
 }
 
 export type OrderType = 'buy' | 'sell' | 'buy_to_open' | 'sell_to_open' | 'buy_to_close' | 'sell_to_close' | 'stop_loss' | 'stop_limit' | 'trailing_stop';
@@ -48,6 +55,7 @@ export interface NewOrder {
   stop_price?: number;
   trail_percent?: number;
   trail_amount?: number;
+  account_id?: string;
 }
 
 export interface Order {

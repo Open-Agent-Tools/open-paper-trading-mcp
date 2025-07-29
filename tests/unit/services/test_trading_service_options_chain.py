@@ -19,8 +19,9 @@ from unittest.mock import patch
 
 import pytest
 
+pytestmark = pytest.mark.journey_options_trading
 
-@pytest.mark.journey_options_trading
+
 class TestTradingServiceOptionsChain:
     """Test options chain functionality."""
 
@@ -133,7 +134,6 @@ class TestTradingServiceOptionsChain:
                 assert "rho" in call
                 assert "iv" in call
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -165,7 +165,6 @@ class TestTradingServiceOptionsChain:
             assert "ask" in call
             assert "mark" in call
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -206,7 +205,6 @@ class TestTradingServiceOptionsChain:
             else:
                 raise
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -230,7 +228,6 @@ class TestTradingServiceOptionsChain:
             assert "rho" in call
             assert "iv" in call
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -269,7 +266,6 @@ class TestTradingServiceOptionsChain:
         if "error" in result:
             assert isinstance(result["error"], str)
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -363,7 +359,6 @@ class TestTradingServiceOptionsChain:
             assert "error" in result
             assert "Test exception" in result["error"]
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -411,7 +406,6 @@ class TestTradingServiceOptionsChain:
             # Greeks should be included
             assert "delta" in option
 
-    @pytest.mark.journey_options_trading
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio

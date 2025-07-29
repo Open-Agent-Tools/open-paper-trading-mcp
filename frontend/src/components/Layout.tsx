@@ -3,6 +3,7 @@ import { AppBar, Toolbar, Typography, Button, Container, Box, useMediaQuery, Ico
 import { Link as RouterLink, Outlet } from 'react-router-dom';
 import Footer from './Footer';
 import MarketHours from './MarketHours';
+import AccountSelector from './account/AccountSelector';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SearchIcon from '@mui/icons-material/Search';
@@ -68,6 +69,20 @@ const Layout: React.FC = () => {
                 <MenuItem onClick={handleClose} component={RouterLink} to="/">
                   <HomeIcon sx={{ mr: 1 }} /> Accounts
                 </MenuItem>
+                <MenuItem 
+                  onClick={handleClose}
+                  sx={{ 
+                    '&:hover': { backgroundColor: 'transparent' },
+                    cursor: 'default',
+                    py: 1,
+                  }}
+                >
+                  <AccountSelector 
+                    variant="compact" 
+                    showBalance={false} 
+                    showCreateOption={true}
+                  />
+                </MenuItem>
                 <MenuItem onClick={handleClose} component={RouterLink} to="/dashboard">
                   <DashboardIcon sx={{ mr: 1 }} /> Dashboard
                 </MenuItem>
@@ -132,6 +147,15 @@ const Layout: React.FC = () => {
               >
                 Account
               </Button>
+              
+              {/* Account Selector - Desktop - Positioned at far right */}
+              <Box sx={{ ml: 2 }}>
+                <AccountSelector 
+                  variant="button" 
+                  showBalance={true} 
+                  showCreateOption={true}
+                />
+              </Box>
             </>
           )}
         </Toolbar>

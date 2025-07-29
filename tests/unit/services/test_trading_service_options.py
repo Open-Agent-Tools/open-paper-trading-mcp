@@ -41,6 +41,8 @@ from app.models.quotes import OptionsChain, Quote
 from app.schemas.orders import OrderStatus, OrderType
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_options_trading
+
 
 @pytest.mark.journey_options_trading
 @pytest.mark.database

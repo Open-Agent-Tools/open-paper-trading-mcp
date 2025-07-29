@@ -21,6 +21,8 @@ import pytest
 from app.models.assets import Option, Stock
 from app.models.quotes import OptionQuote, OptionsChain
 
+pytestmark = pytest.mark.journey_options_trading
+
 
 class TestTradingServiceOptionsDiscovery:
     """Test options discovery and market data functionality."""

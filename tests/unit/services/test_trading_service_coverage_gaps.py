@@ -17,6 +17,8 @@ import pytest
 
 from app.core.exceptions import NotFoundError
 
+pytestmark = pytest.mark.journey_system_performance
+
 
 class TestTradingServiceCoverageGaps:
     """Test specific coverage gaps in TradingService."""

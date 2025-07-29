@@ -17,7 +17,7 @@ python scripts/dev.py <command>
 
 # Available commands:
 python scripts/dev.py server     # Start FastAPI server only (port 2080)
-python scripts/dev.py test       # Run all tests (uv run pytest -v)
+python scripts/dev.py test       # Run all tests (AVOID - use journey-based testing instead)
 python scripts/dev.py format     # Format code (uv run ruff format .)
 python scripts/dev.py lint       # Lint code (uv run ruff check . --fix)
 python scripts/dev.py typecheck  # Type check (uv run mypy .)
@@ -30,8 +30,8 @@ python scripts/dev.py check      # Run all checks (format + lint + typecheck + t
 uv run python app/main.py        # Start FastAPI server (port 2080)
 uv run python app/mcp_server.py  # Start MCP server (port 2081)
 
-# Testing
-uv run pytest -v                 # All tests (606 total)
+# Testing - PREFER USER JOURNEY-BASED TESTING
+uv run pytest -v                 # All tests (AVOID - causes timeouts with 606 tests)
 pytest tests/unit/               # Unit tests only
 pytest tests/integration/        # Integration tests
 pytest tests/performance/        # Performance tests (if directory exists)
@@ -102,14 +102,32 @@ app/
 - Async SQLAlchemy ORM with proper connection pooling
 
 ### MCP Tools Implementation
-The system provides 5 core MCP tools for AI agent interaction:
-- `health_check` - System health monitoring
-- `get_account_balance` - Account balance lookup
-- `get_account_info` - Comprehensive account information
-- `get_portfolio` - Full portfolio with positions
-- `get_portfolio_summary` - Portfolio performance metrics
+The system provides 43 core MCP tools for AI agent interaction across 7 functional sets:
+- **Set 1**: Core System & Account Tools (9 tools) - health_check, account management, portfolio
+- **Set 2**: Market Data Tools (8 tools) - stock prices, company info, search, market hours, ratings  
+- **Set 3**: Order Management Tools (4 tools) - order history, status tracking, filtering
+- **Set 4**: Options Trading Info Tools (6 tools) - options chains, Greeks, expirations, strikes
+- **Set 5**: Stock Trading Tools (8 tools) - buy/sell orders (market, limit, stop, stop-limit)
+- **Set 6**: Options Trading Tools (4 tools) - options orders, credit/debit spreads
+- **Set 7**: Order Cancellation Tools (4 tools) - individual and bulk order cancellation
 
 **Note**: FastMCP automatically provides a `list_tools` function that dynamically lists all registered tools. Do not implement a custom `list_tools` function as it will override this built-in functionality.
+
+### MCP Testing Strategy
+**CRITICAL**: MCP tools cannot be tested with traditional unit tests. They must be validated using ADK (Agent Development Kit) evaluations:
+
+```bash
+# Current ADK evaluation tests
+tests/evals/list_available_tools_test.json  # Validates all 43 tools are accessible
+
+# Future ADK evaluations needed:
+# - Individual tool function tests
+# - Edge case handling 
+# - Error response validation
+# - Multi-tool workflow tests
+```
+
+**Why ADK Evaluations**: MCP tools operate through the Model Context Protocol and require agent-based evaluation to test their actual functionality in the MCP environment.
 
 ## Development Patterns
 
@@ -119,6 +137,34 @@ The system provides 5 core MCP tools for AI agent interaction:
 - **Test Categories**: Unit, Integration, Performance, Edge Cases
 - **Clean State**: Each test gets clean database state via fixtures
 - **Live API Testing**: Tests marked with `@pytest.mark.robinhood` make live calls to Robinhood API (read-only)
+
+### **CRITICAL: User Journey-Based Testing Strategy**
+**Always run tests by specific user journey associated with current work scope** to avoid performance issues and focus testing efforts:
+
+```bash
+# PREFERRED: Run specific journey relevant to your work
+pytest -m "journey_account_management"    # For account-related features
+pytest -m "journey_basic_trading"         # For order/portfolio features  
+pytest -m "journey_market_data"           # For quotes/market data features
+pytest -m "journey_options_trading"       # For options features
+pytest -m "journey_complex_strategies"    # For multi-leg strategies
+pytest -m "journey_performance"           # For optimization/error handling
+pytest -m "journey_integration"           # For end-to-end testing
+
+# IF COMPREHENSIVE TESTING NEEDED: Run all journeys in complexity order
+pytest -m "journey_account_management" && \
+pytest -m "journey_basic_trading" && \
+pytest -m "journey_market_data" && \
+pytest -m "journey_options_trading" && \
+pytest -m "journey_complex_strategies" && \
+pytest -m "journey_performance" && \
+pytest -m "journey_integration"
+
+# AVOID: Running all tests simultaneously (causes timeouts)
+pytest -v  # DON'T USE - causes performance issues with 606 tests
+```
+
+**Rationale**: The full test suite (606 tests) can cause timeout issues when run simultaneously. User journey-based testing provides focused, reliable test execution while maintaining comprehensive coverage.
 
 ### Testing with Live Robinhood API
 - **Robinhood Tests**: Use `@pytest.mark.robinhood` for tests making live API calls

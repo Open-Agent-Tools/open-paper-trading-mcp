@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.adapters.accounts import DatabaseAccountAdapter, account_factory
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_integration
+
 
 class TestAccountIntegration:
     """Integration tests for account functionality using real database."""

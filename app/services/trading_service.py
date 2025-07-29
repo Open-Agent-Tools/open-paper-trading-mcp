@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InputValidationError, NotFoundError
@@ -10,6 +11,7 @@ from app.models.assets import Option, asset_factory
 from app.models.database.trading import Account as DBAccount
 from app.models.database.trading import Order as DBOrder
 from app.models.database.trading import Position as DBPosition
+from app.models.database.trading import User as DBUser
 from app.models.quotes import OptionQuote, OptionsChain, Quote
 from app.schemas.accounts import AccountSummaryList
 from app.schemas.orders import (
@@ -21,6 +23,7 @@ from app.schemas.orders import (
 )
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.schemas.trading import StockQuote
+from app.schemas.users import UserCreate, UserProfile, UserProfileSummary, UserUpdate
 
 # Import schema converters
 from app.utils.schema_converters import (
@@ -104,29 +107,21 @@ class TradingService:
         if self._db_session is not None:
             return self._db_session
 
-        # Fallback to creating a new session (production use)
-        from app.storage.database import get_async_session
-
-        async for session in get_async_session():
-            return session
-
-        # This should never be reached, but mypy requires it
-        raise RuntimeError("Unable to obtain database session")
+        # For production, sessions should be managed by dependency injection
+        # This should not happen in normal operation
+        raise RuntimeError("No database session available - ensure proper dependency injection")
 
     async def _execute_with_session(self, operation):
         """Execute a database operation with proper session management."""
-        session_injected = self._db_session is not None
-        db = await self._get_async_db_session()
+        if self._db_session is not None:
+            # Use injected session (testing)
+            return await operation(self._db_session)
+        else:
+            # Use dependency injection pattern (production)
+            from app.storage.database import get_async_session
 
-        try:
-            return await operation(db)
-        finally:
-            # Only close session if we created it (not injected)
-            if not session_injected:
-                if hasattr(db, "aclose"):
-                    await db.aclose()
-                elif hasattr(db, "close"):
-                    db.close()
+            async for db in get_async_session():
+                return await operation(db)
 
     async def _ensure_account_exists(self) -> None:
         """Ensure the account exists in the database."""
@@ -263,6 +258,214 @@ class TradingService:
                 total_starting_balance=total_starting_balance,
                 total_current_balance=total_current_balance,
             )
+
+        return await self._execute_with_session(_operation)
+
+    # ============================================================================
+    # USER PROFILE METHODS
+    # ============================================================================
+
+    async def create_user_profile(self, user_data: UserCreate) -> UserProfile:
+        """Create a new user profile."""
+
+        async def _operation(db: AsyncSession):
+            # Create new user
+            db_user = DBUser(
+                username=user_data.username,
+                email=user_data.email,
+                first_name=user_data.first_name,
+                last_name=user_data.last_name,
+                phone=user_data.phone,
+                date_of_birth=user_data.date_of_birth,
+                profile_settings=user_data.profile_settings.dict(),
+                preferences=user_data.preferences.dict(),
+            )
+            db.add(db_user)
+            await db.commit()
+            await db.refresh(db_user)
+
+            # Convert to UserProfile
+            return UserProfile(
+                id=db_user.id,
+                username=db_user.username,
+                email=db_user.email,
+                first_name=db_user.first_name,
+                last_name=db_user.last_name,
+                phone=db_user.phone,
+                date_of_birth=db_user.date_of_birth,  # type: ignore
+                is_verified=db_user.is_verified,
+                verification_status=db_user.verification_status,
+                account_tier=db_user.account_tier,
+                profile_settings=db_user.profile_settings,
+                preferences=db_user.preferences,
+                created_at=db_user.created_at,
+                updated_at=db_user.updated_at,
+                last_login_at=db_user.last_login_at,
+                full_name=f"{db_user.first_name} {db_user.last_name}",
+                account_age_days=(datetime.utcnow() - db_user.created_at).days,
+            )
+
+        return await self._execute_with_session(_operation)
+
+    async def get_user_profile(self, user_id: str) -> UserProfile | None:
+        """Get user profile by ID."""
+
+        async def _operation(db: AsyncSession):
+            stmt = select(DBUser).where(DBUser.id == user_id)
+            result = await db.execute(stmt)
+            db_user = result.scalar_one_or_none()
+
+            if not db_user:
+                return None
+
+            return UserProfile(
+                id=db_user.id,
+                username=db_user.username,
+                email=db_user.email,
+                first_name=db_user.first_name,
+                last_name=db_user.last_name,
+                phone=db_user.phone,
+                date_of_birth=db_user.date_of_birth,  # type: ignore
+                is_verified=db_user.is_verified,
+                verification_status=db_user.verification_status,
+                account_tier=db_user.account_tier,
+                profile_settings=db_user.profile_settings,
+                preferences=db_user.preferences,
+                created_at=db_user.created_at,
+                updated_at=db_user.updated_at,
+                last_login_at=db_user.last_login_at,
+                full_name=f"{db_user.first_name} {db_user.last_name}",
+                account_age_days=(datetime.utcnow() - db_user.created_at).days,
+            )
+
+        return await self._execute_with_session(_operation)
+
+    async def update_user_profile(
+        self, user_id: str, user_data: UserUpdate
+    ) -> UserProfile | None:
+        """Update user profile."""
+
+        async def _operation(db: AsyncSession):
+            # Check if user exists
+            stmt = select(DBUser).where(DBUser.id == user_id)
+            result = await db.execute(stmt)
+            db_user = result.scalar_one_or_none()
+
+            if not db_user:
+                return None
+
+            # Update fields that are provided
+            updated = False
+            if user_data.email is not None:
+                db_user.email = user_data.email
+                updated = True
+            if user_data.first_name is not None:
+                db_user.first_name = user_data.first_name
+                updated = True
+            if user_data.last_name is not None:
+                db_user.last_name = user_data.last_name
+                updated = True
+            if user_data.phone is not None:
+                db_user.phone = user_data.phone
+                updated = True
+            if user_data.date_of_birth is not None:
+                db_user.date_of_birth = user_data.date_of_birth  # type: ignore
+                updated = True
+            if user_data.profile_settings is not None:
+                db_user.profile_settings = user_data.profile_settings.dict()
+                updated = True
+            if user_data.preferences is not None:
+                db_user.preferences = user_data.preferences.dict()
+                updated = True
+
+            if updated:
+                db_user.updated_at = datetime.utcnow()
+                await db.commit()
+                await db.refresh(db_user)
+
+            return UserProfile(
+                id=db_user.id,
+                username=db_user.username,
+                email=db_user.email,
+                first_name=db_user.first_name,
+                last_name=db_user.last_name,
+                phone=db_user.phone,
+                date_of_birth=db_user.date_of_birth,  # type: ignore
+                is_verified=db_user.is_verified,
+                verification_status=db_user.verification_status,
+                account_tier=db_user.account_tier,
+                profile_settings=db_user.profile_settings,
+                preferences=db_user.preferences,
+                created_at=db_user.created_at,
+                updated_at=db_user.updated_at,
+                last_login_at=db_user.last_login_at,
+                full_name=f"{db_user.first_name} {db_user.last_name}",
+                account_age_days=(datetime.utcnow() - db_user.created_at).days,
+            )
+
+        return await self._execute_with_session(_operation)
+
+    async def delete_user_profile(self, user_id: str) -> bool:
+        """Delete user profile."""
+
+        async def _operation(db: AsyncSession):
+            stmt = delete(DBUser).where(DBUser.id == user_id)
+            result = await db.execute(stmt)
+            await db.commit()
+            return result.rowcount > 0
+
+        return await self._execute_with_session(_operation)
+
+    async def list_users(
+        self, limit: int = 50, offset: int = 0, verified_only: bool = False
+    ) -> list[UserProfileSummary]:
+        """List user profiles with pagination."""
+
+        async def _operation(db: AsyncSession):
+            stmt = select(DBUser).order_by(DBUser.created_at.desc())
+
+            if verified_only:
+                stmt = stmt.where(DBUser.is_verified)
+
+            stmt = stmt.offset(offset).limit(limit)
+            result = await db.execute(stmt)
+            db_users = result.scalars().all()
+
+            return [
+                UserProfileSummary(
+                    id=user.id,
+                    username=user.username,
+                    email=user.email,
+                    full_name=f"{user.first_name} {user.last_name}",
+                    is_verified=user.is_verified,
+                    account_tier=user.account_tier,
+                    created_at=user.created_at,
+                    last_login_at=user.last_login_at,
+                )
+                for user in db_users
+            ]
+
+        return await self._execute_with_session(_operation)
+
+    async def get_user_accounts(self, user_id: str) -> list[dict[str, Any]]:
+        """Get all accounts for a user."""
+
+        async def _operation(db: AsyncSession):
+            stmt = select(DBAccount).where(DBAccount.user_id == user_id)
+            result = await db.execute(stmt)
+            accounts = result.scalars().all()
+
+            return [
+                {
+                    "id": account.id,
+                    "owner": account.owner,
+                    "cash_balance": account.cash_balance,
+                    "starting_balance": account.starting_balance,
+                    "created_at": account.created_at,
+                    "updated_at": account.updated_at,
+                }
+                for account in accounts
+            ]
 
         return await self._execute_with_session(_operation)
 

@@ -29,6 +29,8 @@ from app.adapters.accounts import DatabaseAccountAdapter
 from app.models.database.trading import Account as DBAccount
 from app.services.performance_benchmarks import PerformanceMonitor
 
+pytestmark = pytest.mark.journey_account_infrastructure
+
 
 @pytest.mark.database
 class TestGetAccountIdsNormalOperation:

@@ -14,6 +14,8 @@ from pydantic import ValidationError
 from app.adapters.accounts import account_factory
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_account_infrastructure
+
 
 class TestAccountFactory:
     """Test the account_factory function."""

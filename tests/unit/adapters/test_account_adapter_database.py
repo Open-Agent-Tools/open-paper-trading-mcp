@@ -15,6 +15,8 @@ from app.adapters.accounts import DatabaseAccountAdapter
 from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_account_infrastructure
+
 
 @pytest.mark.database
 class TestDatabaseAccountAdapter:

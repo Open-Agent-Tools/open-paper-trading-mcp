@@ -24,8 +24,9 @@ from app.core.exceptions import NotFoundError, ValidationError
 from app.models.quotes import OptionQuote, Quote
 from app.schemas.trading import StockQuote
 
+pytestmark = pytest.mark.journey_market_data
 
-@pytest.mark.journey_market_data
+
 class TestTradingServiceQuoteMethods:
     """Test core quote retrieval methods."""
 
@@ -59,7 +60,6 @@ class TestTradingServiceQuoteMethods:
         with pytest.raises((NotFoundError, ValidationError, ValueError)):
             await trading_service_synthetic_data.get_quote("")
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -79,7 +79,6 @@ class TestTradingServiceQuoteMethods:
 
         # StockQuote doesn't have bid/ask fields - those are in Quote/OptionQuote
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -92,7 +91,6 @@ class TestTradingServiceQuoteMethods:
         assert result.price is not None
         assert result.price > 0
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -105,7 +103,6 @@ class TestTradingServiceQuoteMethods:
         assert result.price is not None
         assert result.price > 0
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -143,7 +140,6 @@ class TestTradingServiceQuoteMethods:
             # Exception is acceptable for invalid symbols
             pass
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -161,7 +157,6 @@ class TestTradingServiceQuoteMethods:
         assert result.ask is not None
         assert result.quote_date is not None
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -176,7 +171,6 @@ class TestTradingServiceQuoteMethods:
         assert result.price is not None
         assert result.price > 0
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -231,7 +225,6 @@ class TestTradingServiceQuoteMethods:
             with pytest.raises(NotFoundError):
                 await trading_service_synthetic_data.get_enhanced_quote("AAPL")
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -271,7 +264,6 @@ class TestTradingServiceQuoteMethods:
         assert basic_quote.price == enhanced_quote.price
         # Note: StockQuote doesn't have bid/ask, enhanced quote does
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio
@@ -302,7 +294,6 @@ class TestTradingServiceQuoteMethods:
         assert result_upper.symbol == "AAPL"
         assert result_lower.symbol == "AAPL"
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio

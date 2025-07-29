@@ -16,6 +16,7 @@ from app.core.exceptions import NotFoundError
 from app.core.id_utils import validate_optional_account_id
 from app.core.service_factory import get_trading_service
 from app.schemas.orders import OrderCondition, OrderCreate, OrderType
+from app.schemas.users import UserCreate, UserProfile, UserProfileSummary, UserUpdate
 
 router = APIRouter(prefix="/api/v1/trading", tags=["trading"])
 logger = logging.getLogger(__name__)
@@ -3194,5 +3195,197 @@ async def cancel_option_order_by_id(order_id: str) -> dict[str, Any]:
                 "error": str(e),
                 "order_id": order_id,
                 "message": f"Failed to cancel option order {order_id}: {e!s}",
+            },
+        ) from e
+
+
+# ============================================================================
+# USER PROFILE ENDPOINTS
+# ============================================================================
+
+
+@router.post("/users", response_model=UserProfile)
+async def create_user(user_data: UserCreate) -> UserProfile:
+    """Create a new user profile."""
+    try:
+        trading_service = get_trading_service()
+        user_profile = await trading_service.create_user_profile(user_data)
+        return user_profile
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Invalid user data",
+                "message": str(e),
+            },
+        ) from e
+    except Exception as e:
+        logger.error(f"Failed to create user: {e!s}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": f"Failed to create user: {e!s}",
+            },
+        ) from e
+
+
+@router.get("/users/{user_id}", response_model=UserProfile)
+async def get_user_profile(user_id: str) -> UserProfile:
+    """Get user profile by ID."""
+    try:
+        trading_service = get_trading_service()
+        user_profile = await trading_service.get_user_profile(user_id)
+        if not user_profile:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "success": False,
+                    "error": "User not found",
+                    "message": f"No user found with ID: {user_id}",
+                    "user_id": user_id,
+                },
+            )
+        return user_profile
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get user profile {user_id}: {e!s}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": f"Failed to get user profile: {e!s}",
+                "user_id": user_id,
+            },
+        ) from e
+
+
+@router.put("/users/{user_id}", response_model=UserProfile)
+async def update_user_profile(user_id: str, user_data: UserUpdate) -> UserProfile:
+    """Update user profile."""
+    try:
+        trading_service = get_trading_service()
+        user_profile = await trading_service.update_user_profile(user_id, user_data)
+        if not user_profile:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "success": False,
+                    "error": "User not found",
+                    "message": f"No user found with ID: {user_id}",
+                    "user_id": user_id,
+                },
+            )
+        return user_profile
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "success": False,
+                "error": "Invalid user data",
+                "message": str(e),
+                "user_id": user_id,
+            },
+        ) from e
+    except Exception as e:
+        logger.error(f"Failed to update user profile {user_id}: {e!s}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": f"Failed to update user profile: {e!s}",
+                "user_id": user_id,
+            },
+        ) from e
+
+
+@router.delete("/users/{user_id}")
+async def delete_user_profile(user_id: str) -> dict[str, Any]:
+    """Delete user profile."""
+    try:
+        trading_service = get_trading_service()
+        success = await trading_service.delete_user_profile(user_id)
+        if not success:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "success": False,
+                    "error": "User not found",
+                    "message": f"No user found with ID: {user_id}",
+                    "user_id": user_id,
+                },
+            )
+        return {
+            "success": True,
+            "message": f"User {user_id} deleted successfully",
+            "user_id": user_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete user profile {user_id}: {e!s}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": f"Failed to delete user profile: {e!s}",
+                "user_id": user_id,
+            },
+        ) from e
+
+
+@router.get("/users", response_model=list[UserProfileSummary])
+async def list_users(
+    limit: int = Query(
+        default=50, ge=1, le=1000, description="Maximum number of users to return"
+    ),
+    offset: int = Query(default=0, ge=0, description="Number of users to skip"),
+    verified_only: bool = Query(
+        default=False, description="Only return verified users"
+    ),
+) -> list[UserProfileSummary]:
+    """List user profiles with pagination."""
+    try:
+        trading_service = get_trading_service()
+        users = await trading_service.list_users(
+            limit=limit, offset=offset, verified_only=verified_only
+        )
+        return users
+    except Exception as e:
+        logger.error(f"Failed to list users: {e!s}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": f"Failed to list users: {e!s}",
+            },
+        ) from e
+
+
+@router.get("/users/{user_id}/accounts", response_model=list[dict[str, Any]])
+async def get_user_accounts(user_id: str) -> list[dict[str, Any]]:
+    """Get all accounts for a user."""
+    try:
+        trading_service = get_trading_service()
+        accounts = await trading_service.get_user_accounts(user_id)
+        return accounts
+    except Exception as e:
+        logger.error(f"Failed to get user accounts for {user_id}: {e!s}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "success": False,
+                "error": "Internal server error",
+                "message": f"Failed to get user accounts: {e!s}",
+                "user_id": user_id,
             },
         ) from e

@@ -14,6 +14,8 @@ from datetime import UTC, datetime
 
 import pytest
 
+pytestmark = pytest.mark.journey_market_data
+
 
 class TestTradingServiceStockPriceMetrics:
     """Test stock price and metrics functionality."""

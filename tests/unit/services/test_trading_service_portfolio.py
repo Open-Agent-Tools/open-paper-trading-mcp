@@ -32,6 +32,8 @@ from app.models.database.trading import Position as DBPosition
 from app.schemas.positions import Portfolio, PortfolioSummary, Position
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_basic_trading
+
 
 @pytest.mark.journey_portfolio_management
 @pytest.mark.database

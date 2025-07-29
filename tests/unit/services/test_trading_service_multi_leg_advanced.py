@@ -19,8 +19,9 @@ import pytest
 
 from app.schemas.orders import Order, OrderStatus, OrderType
 
+pytestmark = pytest.mark.journey_options_advanced
 
-@pytest.mark.journey_options_trading
+
 class TestTradingServiceMultiLegAdvanced:
     """Test advanced multi-leg order functionality."""
 

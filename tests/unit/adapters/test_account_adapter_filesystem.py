@@ -16,8 +16,9 @@ import pytest
 from app.adapters.accounts import LocalFileSystemAccountAdapter
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_account_infrastructure
 
-@pytest.mark.journey_account_management
+
 class TestLocalFileSystemAccountAdapter:
     """Test the LocalFileSystemAccountAdapter with file operations."""
 
@@ -284,7 +285,6 @@ class TestLocalFileSystemAccountAdapter:
         assert result.id == account.id
 
 
-@pytest.mark.journey_account_management
 class TestLocalFileSystemAccountAdapterEdgeCases:
     """Test edge cases and boundary conditions for LocalFileSystemAccountAdapter."""
 

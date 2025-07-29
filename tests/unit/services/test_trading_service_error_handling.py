@@ -16,13 +16,15 @@ Coverage target: Various error handling lines throughout trading_service.py
 
 import contextlib
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.core.exceptions import InputValidationError
 from app.schemas.orders import OrderCreate, OrderType
 from app.schemas.positions import Portfolio, Position
+
+pytestmark = pytest.mark.journey_performance
 
 
 class TestTradingServiceErrorHandling:
@@ -210,18 +212,20 @@ class TestTradingServiceErrorHandling:
 
     @pytest.mark.asyncio
     async def test_account_creation_duplicate_handling(
-        self, trading_service_synthetic_data
+        self, trading_service_synthetic_data, db_session
     ):
         """Test handling of duplicate account creation attempts."""
         # This tests the _ensure_account_exists method's duplicate handling
-        with patch.object(trading_service_synthetic_data, "_get_async_db_session"):
-            # First creation should succeed
-            await trading_service_synthetic_data._ensure_account_exists()
+        # Use a real database session to avoid async mock issues
+        trading_service_synthetic_data._db_session = db_session
 
-            # Second creation should handle existing account gracefully
-            await trading_service_synthetic_data._ensure_account_exists()
+        # First creation should succeed
+        await trading_service_synthetic_data._ensure_account_exists()
 
-            # No exception should be raised
+        # Second creation should handle existing account gracefully
+        await trading_service_synthetic_data._ensure_account_exists()
+
+        # No exception should be raised
 
     @pytest.mark.asyncio
     async def test_position_calculation_edge_cases(
@@ -522,7 +526,6 @@ class TestTradingServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_resource_cleanup_on_errors(self, trading_service_synthetic_data):
         """Test that resources are properly cleaned up when errors occur."""
-        from unittest.mock import AsyncMock
 
         with patch.object(
             trading_service_synthetic_data, "_get_async_db_session"

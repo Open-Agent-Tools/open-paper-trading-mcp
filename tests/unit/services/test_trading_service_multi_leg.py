@@ -37,6 +37,8 @@ from app.schemas.orders import (
 )
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_options_advanced
+
 
 @pytest.mark.database
 class TestCreateMultiLegOrder:

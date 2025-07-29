@@ -13,6 +13,8 @@ import pytest
 from app.schemas.positions import Position
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_options_advanced
+
 
 @pytest.mark.asyncio
 class TestTradingServicePositionGreeks:

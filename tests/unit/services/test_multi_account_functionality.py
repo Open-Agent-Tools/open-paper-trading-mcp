@@ -11,6 +11,8 @@ from app.core.exceptions import NotFoundError
 from app.models.database.trading import Account as DBAccount
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_basic_trading
+
 
 @pytest.mark.journey_account_management
 @pytest.mark.database

@@ -12,6 +12,8 @@ from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import AccountSummary, AccountSummaryList
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_account_management
+
 
 @pytest.mark.journey_account_management
 @pytest.mark.database

@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
 import { Container, Typography, Box, Button } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import AccountsGrid from '../components/AccountsGrid';
 import CreateAccountModal from '../components/CreateAccountModal';
+import { useAccountContext } from '../contexts/AccountContext';
 
 const AccountsList: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  
+  const navigate = useNavigate();
+  const { availableAccounts, selectAccount, refreshAccounts } = useAccountContext();
 
   const handleSelectAccount = (accountId: string) => {
-    // TODO: Implement account switching logic
-    console.log('Selected account:', accountId);
-    // This could navigate to the dashboard with the selected account
-    // or set the account in global state/context
+    // Find the account in the available accounts and select it
+    const account = availableAccounts.find(acc => acc.id === accountId);
+    if (account) {
+      selectAccount(account);
+      // Navigate to dashboard after selecting account
+      navigate('/dashboard');
+    } else {
+      console.error('Account not found:', accountId);
+    }
   };
 
   const handleCreateAccount = () => {
@@ -24,9 +32,10 @@ const AccountsList: React.FC = () => {
     setIsCreateModalOpen(false);
   };
 
-  const handleAccountCreated = () => {
-    // Trigger a refresh of the accounts grid
+  const handleAccountCreated = async () => {
+    // Trigger a refresh of the accounts grid and context
     setRefreshTrigger(prev => prev + 1);
+    await refreshAccounts();
   };
 
   return (

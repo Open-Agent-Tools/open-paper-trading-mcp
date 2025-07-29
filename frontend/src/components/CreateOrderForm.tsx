@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TextField, Button, Select, MenuItem, FormControl, InputLabel, Paper, Typography, Box, Snackbar, Alert } from '@mui/material';
 import type { NewOrder, OrderType, OrderCondition } from '../types';
 import { createOrder } from '../services/apiClient';
+import { useAccountContext } from '../contexts/AccountContext';
 
 const CreateOrderForm: React.FC = () => {
   const [symbol, setSymbol] = useState('');
@@ -13,9 +14,18 @@ const CreateOrderForm: React.FC = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const { selectedAccount } = useAccountContext();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    if (!selectedAccount) {
+      setSnackbarMessage('Please select an account first.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
     const order: NewOrder = {
       symbol,
       order_type: orderType,
@@ -23,6 +33,7 @@ const CreateOrderForm: React.FC = () => {
       condition,
       price: condition === 'limit' ? Number(price) : undefined,
       stop_price: (condition === 'stop' || condition === 'stop_limit') ? Number(stopPrice) : undefined,
+      account_id: selectedAccount.id,
     };
     
     try {

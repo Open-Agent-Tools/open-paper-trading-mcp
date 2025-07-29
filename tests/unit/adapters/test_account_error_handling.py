@@ -20,8 +20,9 @@ from app.adapters.accounts import (
 )
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_account_infrastructure
 
-@pytest.mark.journey_account_management
+
 class TestAccountValidationErrors:
     """Test input validation errors for account operations."""
 
@@ -170,7 +171,6 @@ class TestDatabaseAccountAdapterErrors:
             assert result is False
 
 
-@pytest.mark.journey_account_management
 class TestFileSystemAccountAdapterErrors:
     """Test file system adapter error handling scenarios."""
 
@@ -224,7 +224,6 @@ class TestFileSystemAccountAdapterErrors:
         assert result is False
 
 
-@pytest.mark.journey_account_management
 class TestErrorMessageAccuracy:
     """Test that error messages are clear and actionable."""
 

@@ -8,6 +8,7 @@ import Account from './pages/Account';
 import AccountsList from './pages/AccountsList';
 import Orders from './pages/Orders';
 import StockResearch from './pages/StockResearch';
+import { AccountProvider } from './contexts/AccountContext';
 
 const router = createBrowserRouter([
   {
@@ -27,7 +28,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <AccountProvider>
+        <RouterProvider router={router} />
+      </AccountProvider>
     </ThemeProvider>
   );
 };

@@ -8,6 +8,7 @@ import {
   Button,
   Tabs,
   Tab,
+  Alert,
 } from '@mui/material';
 import { 
   Search as SearchIcon,
@@ -15,6 +16,7 @@ import {
   ShowChart as ChartIcon,
   Assessment as RatingsIcon,
   AccountTree as OptionsIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import StockSearch from '../components/StockSearch';
@@ -24,10 +26,12 @@ import PriceHistoryChart from '../components/PriceHistoryChart';
 import AnalystRatings from '../components/AnalystRatings';
 import OptionsChain from '../components/OptionsChain';
 import OptionGreeks from '../components/OptionGreeks';
+import { useAccountContext } from '../contexts/AccountContext';
 import type { StockSearchResult, OptionQuote } from '../types';
 
 const StockResearch: React.FC = () => {
   const navigate = useNavigate();
+  const { selectedAccount } = useAccountContext();
   const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
   const [selectedOption, setSelectedOption] = useState<OptionQuote | null>(null);
   const [tabValue, setTabValue] = useState(0); // 0 = overview, 1 = charts, 2 = ratings, 3 = options
@@ -38,12 +42,22 @@ const StockResearch: React.FC = () => {
 
   const handleCreateOrder = () => {
     if (selectedStock) {
-      // Navigate to orders page with pre-filled symbol
-      navigate('/orders', { 
-        state: { 
-          prefillSymbol: selectedStock.symbol 
-        } 
-      });
+      if (!selectedAccount) {
+        // Show account selection prompt
+        navigate('/', { 
+          state: { 
+            message: 'Please select an account to place trades',
+            prefillSymbol: selectedStock.symbol 
+          } 
+        });
+      } else {
+        // Navigate to orders page with pre-filled symbol
+        navigate('/orders', { 
+          state: { 
+            prefillSymbol: selectedStock.symbol 
+          } 
+        });
+      }
     }
   };
 
@@ -54,13 +68,24 @@ const StockResearch: React.FC = () => {
 
   const handleTradeOption = () => {
     if (selectedOption) {
-      // Navigate to orders page with pre-filled option symbol
-      navigate('/orders', {
-        state: {
-          prefillSymbol: selectedOption.symbol,
-          orderType: 'option'
-        }
-      });
+      if (!selectedAccount) {
+        // Show account selection prompt
+        navigate('/', {
+          state: {
+            message: 'Please select an account to trade options',
+            prefillSymbol: selectedOption.symbol,
+            orderType: 'option'
+          }
+        });
+      } else {
+        // Navigate to orders page with pre-filled option symbol
+        navigate('/orders', {
+          state: {
+            prefillSymbol: selectedOption.symbol,
+            orderType: 'option'
+          }
+        });
+      }
     }
   };
 
@@ -76,6 +101,20 @@ const StockResearch: React.FC = () => {
           View company fundamentals, market metrics, and financial data.
         </Typography>
       </Box>
+
+      {/* Account Context Warning */}
+      {!selectedAccount && (
+        <Alert 
+          severity="info" 
+          icon={<WarningIcon />}
+          sx={{ mb: 3 }}
+        >
+          <Typography variant="body2">
+            <strong>No account selected:</strong> You can research stocks without an account, 
+            but you'll need to select a trading account to place orders.
+          </Typography>
+        </Alert>
+      )}
 
       {/* Search Section */}
       <Box mb={4}>

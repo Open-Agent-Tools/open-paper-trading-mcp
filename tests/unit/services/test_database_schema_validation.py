@@ -24,6 +24,8 @@ from app.models.database.trading import (
 )
 from app.schemas.orders import OrderCondition, OrderStatus, OrderType
 
+pytestmark = pytest.mark.journey_system_performance
+
 
 @pytest.mark.database
 class TestDatabaseSchemaIntegrity:

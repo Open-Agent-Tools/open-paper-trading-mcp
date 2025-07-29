@@ -30,6 +30,8 @@ from app.schemas.orders import OrderCondition, OrderStatus, OrderType
 from app.services.order_execution_engine import OrderExecutionEngine
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_basic_trading
+
 
 @pytest.mark.database
 class TestLoadOrderById:

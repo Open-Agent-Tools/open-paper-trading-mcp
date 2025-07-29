@@ -23,6 +23,8 @@ from app.models.database.trading import Position as DBPosition
 from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_system_performance
+
 
 @pytest.mark.journey_performance
 class TestTradingServiceThreadSafety:

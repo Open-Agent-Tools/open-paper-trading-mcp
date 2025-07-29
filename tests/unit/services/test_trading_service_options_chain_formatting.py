@@ -14,6 +14,8 @@ from app.models.assets import Option, Stock
 from app.models.quotes import OptionQuote, OptionsChain
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_options_trading
+
 
 @pytest.mark.asyncio
 class TestTradingServiceOptionsChainFormatting:

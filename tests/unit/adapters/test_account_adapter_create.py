@@ -17,6 +17,8 @@ from app.adapters.accounts import DatabaseAccountAdapter, account_factory
 from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_account_infrastructure
+
 
 @asynccontextmanager
 async def mock_database_session_context(mock_session):

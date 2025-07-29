@@ -30,13 +30,53 @@ if TYPE_CHECKING:
     pass
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    first_name: Mapped[str] = mapped_column(String(100))
+    last_name: Mapped[str] = mapped_column(String(100))
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    date_of_birth: Mapped[Date | None] = mapped_column(Date, nullable=True)
+
+    # Account metadata
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    verification_status: Mapped[str] = mapped_column(
+        String(50), default="pending"
+    )  # pending, verified, rejected
+    account_tier: Mapped[str] = mapped_column(
+        String(50), default="basic"
+    )  # basic, premium, professional
+
+    # Profile settings (JSON for flexibility)
+    profile_settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    preferences: Mapped[dict] = mapped_column(JSON, default=dict)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    accounts: Mapped[list["Account"]] = relationship("Account", back_populates="user")
+
+
 class Account(Base):
     __tablename__ = "accounts"
 
     id: Mapped[str] = mapped_column(
         String(10), primary_key=True, default=generate_account_id
     )
-    owner: Mapped[str] = mapped_column(String, index=True, unique=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=True)
+    owner: Mapped[str] = mapped_column(
+        String, index=True
+    )  # Keep for backward compatibility
     cash_balance: Mapped[float] = mapped_column(Float, default=10000.0)
     starting_balance: Mapped[float] = mapped_column(Float, default=10000.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -45,6 +85,7 @@ class Account(Base):
     )
 
     # Relationships
+    user: Mapped["User | None"] = relationship("User", back_populates="accounts")
     positions: Mapped[list["Position"]] = relationship(
         "Position", back_populates="account"
     )

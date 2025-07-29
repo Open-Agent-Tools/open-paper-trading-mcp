@@ -27,6 +27,8 @@ from app.models.quotes import OptionQuote, Quote
 from app.services.strategies.models import StrategyGreeks
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_options_advanced
+
 
 @pytest.mark.database
 class TestGetPortfolioGreeks:

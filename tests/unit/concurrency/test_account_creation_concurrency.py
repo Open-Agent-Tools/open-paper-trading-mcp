@@ -25,6 +25,8 @@ from app.models.database.trading import Account as DBAccount
 from app.schemas.accounts import Account
 from app.services.trading_service import TradingService
 
+pytestmark = pytest.mark.journey_system_performance
+
 
 @pytest.mark.database
 class TestAccountCreationConcurrency:

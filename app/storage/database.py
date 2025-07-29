@@ -67,8 +67,14 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Get an async database session using asyncpg (production) or aiosqlite (testing).
     """
-    async with AsyncSessionLocal() as session:
+    session = AsyncSessionLocal()
+    try:
         yield session
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 
 # Alias for FastAPI dependency injection

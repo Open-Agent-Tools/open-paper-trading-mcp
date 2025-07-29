@@ -14,10 +14,17 @@ import type {
   OptionsOrdersResponse
 } from '../types';
 
-export interface CreateAccountData {
-  owner: string;
-  starting_balance: number;
-}
+// Re-export account API for backwards compatibility
+export { 
+  getAllAccounts,
+  createAccount,
+  deleteAccount,
+  getAccountBalance,
+  getAccountDetails,
+  getAccountsSummary
+} from './accountApi';
+
+// Types moved to types/account.ts
 
 const apiClient = axios.create({
   baseURL: '/api/v1/trading',
@@ -26,28 +33,24 @@ const apiClient = axios.create({
   },
 });
 
-export const getAllAccounts = async () => {
-  const response = await apiClient.get('/accounts');
-  return response.data;
-};
-
-export const createAccount = async (accountData: CreateAccountData) => {
-  const response = await apiClient.post('/accounts', accountData);
-  return response.data;
-};
+// Account functions moved to accountApi.ts - using re-exports above
 
 export const getAccountInfo = async () => {
   const response = await apiClient.get('/account/info');
   return response.data;
 };
 
-export const getPortfolioSummary = async () => {
-  const response = await apiClient.get('/portfolio/summary');
+export const getPortfolioSummary = async (accountId?: string) => {
+  const response = await apiClient.get('/portfolio/summary', {
+    params: accountId ? { account_id: accountId } : {}
+  });
   return response.data;
 };
 
-export const getPositions = async () => {
-  const response = await apiClient.get('/positions');
+export const getPositions = async (accountId?: string) => {
+  const response = await apiClient.get('/positions', {
+    params: accountId ? { account_id: accountId } : {}
+  });
   return response.data;
 };
 
@@ -56,8 +59,10 @@ export const createOrder = async (order: NewOrder) => {
   return response.data;
 };
 
-export const getOrders = async () => {
-  const response = await apiClient.get('/orders');
+export const getOrders = async (accountId?: string) => {
+  const response = await apiClient.get('/orders', {
+    params: accountId ? { account_id: accountId } : {}
+  });
   return response.data;
 };
 
@@ -138,13 +143,17 @@ export const getOptionStrikes = async (underlying: string, expirationDate?: stri
 };
 
 // Order History API functions
-export const getStockOrders = async (): Promise<StockOrdersResponse> => {
-  const response = await apiClient.get('/orders/stocks');
+export const getStockOrders = async (accountId?: string): Promise<StockOrdersResponse> => {
+  const response = await apiClient.get('/orders/stocks', {
+    params: accountId ? { account_id: accountId } : {}
+  });
   return response.data;
 };
 
-export const getOptionsOrders = async (): Promise<OptionsOrdersResponse> => {
-  const response = await apiClient.get('/orders/options');
+export const getOptionsOrders = async (accountId?: string): Promise<OptionsOrdersResponse> => {
+  const response = await apiClient.get('/orders/options', {
+    params: accountId ? { account_id: accountId } : {}
+  });
   return response.data;
 };
 

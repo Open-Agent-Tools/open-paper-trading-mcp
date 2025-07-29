@@ -10,6 +10,8 @@ This ensures that:
 
 import pytest
 
+pytestmark = pytest.mark.journey_market_data
+
 
 class TestRobinhoodSessionFixture:
     """Test the shared Robinhood session fixture."""

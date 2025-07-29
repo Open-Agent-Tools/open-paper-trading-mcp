@@ -11,8 +11,9 @@ Coverage target: Lines 998-1028 (search_stocks method)
 
 import pytest
 
+pytestmark = pytest.mark.journey_market_data
 
-@pytest.mark.journey_market_data
+
 class TestTradingServiceStockSearch:
     """Test stock search functionality."""
 
@@ -44,7 +45,6 @@ class TestTradingServiceStockSearch:
         if result["results"]:
             assert any("APP" in res["symbol"] for res in result["results"])
 
-    @pytest.mark.journey_market_data
     @pytest.mark.slow
     @pytest.mark.robinhood
     @pytest.mark.asyncio

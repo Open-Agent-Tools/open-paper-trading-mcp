@@ -32,6 +32,7 @@ import {
   Error as FailedIcon,
 } from '@mui/icons-material';
 import { getStockOrders, getOptionsOrders } from '../services/apiClient';
+import { useAccountContext } from '../contexts/AccountContext';
 import { FONTS } from '../theme';
 import type { OrderHistoryItem, OrderStatus } from '../types';
 
@@ -66,15 +67,23 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { selectedAccount } = useAccountContext();
 
   const fetchOrderHistory = async () => {
+    if (!selectedAccount) {
+      setStockOrders([]);
+      setOptionsOrders([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const [stockResponse, optionsResponse] = await Promise.all([
-        getStockOrders(),
-        getOptionsOrders()
+        getStockOrders(selectedAccount.id),
+        getOptionsOrders(selectedAccount.id)
       ]);
 
       if (stockResponse.success) {
@@ -95,7 +104,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
   useEffect(() => {
     fetchOrderHistory();
-  }, []);
+  }, [selectedAccount]);
 
   // Auto-refresh functionality
   useEffect(() => {

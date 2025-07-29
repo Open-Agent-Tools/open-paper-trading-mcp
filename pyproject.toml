@@ -14,7 +14,7 @@ dependencies = [
     # Core FastAPI and server dependencies
     "fastapi",
     "uvicorn[standard]",
-    "pydantic",
+    "pydantic[email]",
     "pydantic-settings",
     # Essential utilities
     "python-dotenv",

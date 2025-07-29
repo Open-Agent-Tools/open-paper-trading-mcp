@@ -12,6 +12,8 @@ from app.core.id_utils import (
 )
 from app.schemas.accounts import Account
 
+pytestmark = pytest.mark.journey_account_management
+
 
 class TestAccountIdGeneration:
     """Test account ID generation."""
