@@ -33,7 +33,7 @@ from app.services.query_optimization import (
     get_optimized_order_queries,
 )
 
-pytestmark = pytest.mark.journey_system_performance
+pytestmark = pytest.mark.journey_performance
 
 
 async def create_test_account(db_session: AsyncSession, account_id: str) -> DBAccount:

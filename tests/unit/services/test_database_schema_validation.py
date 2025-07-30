@@ -24,7 +24,7 @@ from app.models.database.trading import (
 )
 from app.schemas.orders import OrderCondition, OrderStatus, OrderType
 
-pytestmark = pytest.mark.journey_system_performance
+pytestmark = pytest.mark.journey_performance
 
 
 @pytest.mark.database
@@ -79,12 +79,13 @@ class TestDatabaseSchemaIntegrity:
         async_db_session.add(account1)
         await async_db_session.commit()
 
-        # Start fresh session for next test
+        # Clear the identity map and rollback to clean state
         await async_db_session.rollback()
+        async_db_session.expunge_all()  # Remove all objects from session
 
-        # Attempt to insert duplicate primary key
+        # Attempt to insert duplicate primary key with a fresh object
         account2 = DBAccount(
-            id="TESTID1000",  # Same ID
+            id="TESTID1000",  # Same ID - this will test primary key constraint
             owner="different_user",
             cash_balance=25000.0,
         )
@@ -94,6 +95,7 @@ class TestDatabaseSchemaIntegrity:
             await async_db_session.commit()
 
         await async_db_session.rollback()
+        async_db_session.expunge_all()  # Clean state for next test
 
         # Test unique constraint on owner
         account3 = DBAccount(
