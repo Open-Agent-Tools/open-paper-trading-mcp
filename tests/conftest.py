@@ -49,6 +49,12 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "journey_integration: Integration and live data user journey tests"
     )
+    config.addinivalue_line(
+        "markers", "journey_account_infrastructure: Account adapters filesystem operations error handling concurrency"
+    )
+    config.addinivalue_line(
+        "markers", "journey_options_advanced: Options Greeks portfolio Greeks position Greeks multi-leg strategies"
+    )
 
 
 # Set testing environment variables BEFORE importing the app
