@@ -39,13 +39,15 @@ pytest -m "not slow"             # Skip slow tests
 pytest -m "database"             # Database tests only
 
 # User Journey Testing (see User Journey-Based Test Organization section below)
-pytest -m "journey_account_management"    # Account setup & management (69 tests)
-pytest -m "journey_basic_trading"         # Stock orders & portfolio (73 tests)
-pytest -m "journey_market_data"           # Quotes & market data (76 tests)
-pytest -m "journey_options_trading"       # Options & Greeks (79 tests)
-pytest -m "journey_complex_strategies"    # Multi-leg strategies (72 tests)
-pytest -m "journey_performance"           # Performance & optimization (78 tests)
-pytest -m "journey_integration"           # End-to-end & live API (59 tests)
+pytest -m "journey_account_management"      # Account setup & management (69 tests)
+pytest -m "journey_account_infrastructure"  # Account adapters, filesystem, error handling (114 tests)
+pytest -m "journey_basic_trading"           # Stock orders & portfolio (73 tests)
+pytest -m "journey_market_data"             # Quotes & market data (76 tests)
+pytest -m "journey_options_trading"         # Basic options & Greeks (79 tests)
+pytest -m "journey_options_advanced"        # Advanced options, multi-leg strategies (72 tests)
+pytest -m "journey_complex_strategies"      # Complex strategies (72 tests)
+pytest -m "journey_performance"             # Performance & optimization (78 tests)
+pytest -m "journey_integration"             # End-to-end & live API (59 tests)
 
 # Code Quality
 uv run ruff check . --fix        # Lint and auto-fix issues
@@ -143,14 +145,15 @@ tests/evals/list_available_tools_test.json  # Validates all 43 tools are accessi
 
 ```bash
 # PREFERRED: Run specific journey relevant to your work
-pytest -m "journey_account_management"      # Account creation, balance, multi-account (85 tests)
-pytest -m "journey_account_infrastructure"  # Account adapters, filesystem, error handling (114 tests)
-pytest -m "journey_basic_trading"           # Order/portfolio features (73 tests)
-pytest -m "journey_market_data"             # Quotes/market data features (85 tests)
-pytest -m "journey_options_trading"         # Basic options features (72 tests)
-pytest -m "journey_options_advanced"        # Advanced options, Greeks, multi-leg (71 tests)
-pytest -m "journey_system_performance"      # Concurrency, optimization, error handling (83 tests)
-pytest -m "journey_integration"             # End-to-end testing (7 tests)
+pytest -m "journey_account_management"      # Account creation, balance, multi-account
+pytest -m "journey_account_infrastructure"  # Account adapters, filesystem, error handling
+pytest -m "journey_basic_trading"           # Order/portfolio features
+pytest -m "journey_market_data"             # Quotes/market data features
+pytest -m "journey_options_trading"         # Basic options features
+pytest -m "journey_options_advanced"        # Advanced options, Greeks, multi-leg
+pytest -m "journey_complex_strategies"      # Complex strategies
+pytest -m "journey_performance"             # Concurrency, optimization, error handling
+pytest -m "journey_integration"             # End-to-end testing
 
 # IF COMPREHENSIVE TESTING NEEDED: Run all journeys in complexity order
 pytest -m "journey_account_management" && \
@@ -159,7 +162,8 @@ pytest -m "journey_basic_trading" && \
 pytest -m "journey_market_data" && \
 pytest -m "journey_options_trading" && \
 pytest -m "journey_options_advanced" && \
-pytest -m "journey_system_performance" && \
+pytest -m "journey_complex_strategies" && \
+pytest -m "journey_performance" && \
 pytest -m "journey_integration"
 
 # AVOID: Running all tests simultaneously (causes timeouts)
@@ -219,11 +223,17 @@ pytest -m "journey_options_advanced"
 # Files: trading_service_*greeks.py, trading_service_multi_leg*.py, trading_service_expiration_simulation.py
 # Status: ✅ PASSING (71/71 tests pass)
 
-# System Performance Journey (83 tests)
-pytest -m "journey_system_performance"
+# Complex Strategies Journey (72 tests)
+pytest -m "journey_complex_strategies"
+# Coverage: Multi-leg orders, advanced strategies, expiration simulation
+# Files: trading_service_multi_leg*.py, trading_service_expiration_simulation.py
+# Status: ✅ PASSING (72/72 tests pass)
+
+# System Performance Journey (78 tests)
+pytest -m "journey_performance"
 # Coverage: Concurrency, query optimization, error handling, database validation
 # Files: *concurrency*.py, query_optimization.py, *error_handling.py, database_schema_validation.py
-# Status: ⚠️ MOSTLY PASSING (81/83 tests pass, 2 race condition failures)
+# Status: ✅ PASSING (78/78 tests pass)
 
 # Integration & Live Data Journey (7 tests)
 pytest -m "journey_integration"
@@ -255,13 +265,15 @@ pytest -m "journey_market_data and robinhood"  # Live market data tests only
 
 | Journey | Test Count | Key Files | Real Data Usage |
 |---------|------------|-----------|-----------------|
-| Account Management | 69 | account_adapter_*, balance, summary | Database only |
-| Basic Trading | 73 | orders, portfolio, execution | Database + Mock quotes |
-| Market Data | 76 | quotes, search, history | Mixed (synthetic + live) |
-| Options Trading | 79 | options_chain, greeks, discovery | Mixed (synthetic + live) |
-| Complex Strategies | 72 | multi_leg, strategies | Database + Mock options |
-| Performance | 78 | concurrency, optimization | Database stress testing |
-| Integration | 59 | end-to-end, live API | Live Robinhood API calls |
+| Account Management | ~85 | account_balance, accounts_summary, multi_account | Database only |
+| Account Infrastructure | ~114 | account_adapter_*, account_error_handling | Database only |
+| Basic Trading | ~73 | orders, portfolio, execution | Database + Mock quotes |
+| Market Data | ~85 | quotes, search, history | Mixed (synthetic + live) |
+| Options Trading | ~72 | options_chain, options_discovery | Mixed (synthetic + live) |
+| Options Advanced | ~71 | *greeks, multi_leg*, expiration_simulation | Database + Mock options |
+| Complex Strategies | ~72 | multi_leg, advanced strategies | Database + Mock options |
+| Performance | ~78 | concurrency, optimization, error_handling | Database stress testing |
+| Integration | ~7 | end-to-end, live API | Live Robinhood API calls |
 
 #### Recommendations for Real Data Integration
 
