@@ -8,8 +8,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SearchIcon from '@mui/icons-material/Search';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import HomeIcon from '@mui/icons-material/Home';
 import { useTheme } from '@mui/material/styles';
 
 const Layout: React.FC = () => {
@@ -66,9 +64,6 @@ const Layout: React.FC = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
               >
-                <MenuItem onClick={handleClose} component={RouterLink} to="/">
-                  <HomeIcon sx={{ mr: 1 }} /> Accounts
-                </MenuItem>
                 <MenuItem 
                   onClick={handleClose}
                   sx={{ 
@@ -92,25 +87,10 @@ const Layout: React.FC = () => {
                 <MenuItem onClick={handleClose} component={RouterLink} to="/orders">
                   <ShoppingCartIcon sx={{ mr: 1 }} /> Orders
                 </MenuItem>
-                <MenuItem onClick={handleClose} component={RouterLink} to="/account">
-                  <AccountCircleIcon sx={{ mr: 1 }} /> Account
-                </MenuItem>
               </Menu>
             </>
           ) : (
             <>
-              <Button
-                component={RouterLink}
-                to="/"
-                sx={{
-                  color: 'white',
-                  backgroundColor: 'primary.light',
-                  '&:hover': { backgroundColor: 'primary.main' },
-                }}
-                startIcon={<HomeIcon />}
-              >
-                Accounts
-              </Button>
               <Button
                 component={RouterLink}
                 to="/dashboard"
@@ -137,15 +117,6 @@ const Layout: React.FC = () => {
                 startIcon={<ShoppingCartIcon />}
               >
                 Orders
-              </Button>
-              <Button
-                component={RouterLink}
-                to="/account"
-                sx={{ color: 'white', borderColor: 'white', ml: 1 }}
-                variant="outlined"
-                startIcon={<AccountCircleIcon />}
-              >
-                Account
               </Button>
               
               {/* Account Selector - Desktop - Positioned at far right */}

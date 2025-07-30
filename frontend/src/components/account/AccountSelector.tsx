@@ -72,6 +72,7 @@ const AccountSelector: React.FC<AccountSelectorProps> = ({
   const handleAccountSelect = (account: AccountSummary) => {
     selectAccount(account);
     handleClose();
+    navigate('/account');
   };
 
   const handleCreateAccount = () => {

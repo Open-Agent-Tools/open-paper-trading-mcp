@@ -73,7 +73,9 @@ class Account(Base):
     id: Mapped[str] = mapped_column(
         String(10), primary_key=True, default=generate_account_id
     )
-    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=True)
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id"), index=True, nullable=True
+    )
     owner: Mapped[str] = mapped_column(
         String, index=True
     )  # Keep for backward compatibility

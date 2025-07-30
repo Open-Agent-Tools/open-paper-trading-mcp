@@ -41,6 +41,7 @@ dependencies = [
     "mcp==1.12.2",
     "fastmcp==2.7.0",
     "psycopg2-binary>=2.9.10",
+    "email-validator>=2.2.0",
 ]
 
 [project.optional-dependencies]

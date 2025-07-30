@@ -5,11 +5,13 @@ import { getPortfolioSummary } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
 
 interface PortfolioSummary {
-  total_market_value: number;
-  total_cost_basis: number;
-  total_unrealized_pnl: number;
-  total_unrealized_pnl_percent: number;
-  total_positions: number;
+  total_value: number | null;
+  cash_balance: number | null;
+  invested_value: number | null;
+  daily_pnl: number | null;
+  daily_pnl_percent: number | null;
+  total_pnl: number | null;
+  total_pnl_percent: number | null;
 }
 
 const PortfolioValue: React.FC = () => {
@@ -41,7 +43,10 @@ const PortfolioValue: React.FC = () => {
     fetchPortfolio();
   }, [selectedAccount]);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount == null || isNaN(amount)) {
+      return '$0.00';
+    }
     return amount.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -49,17 +54,22 @@ const PortfolioValue: React.FC = () => {
     });
   };
 
-  const formatPercent = (percent: number) => {
+  const formatPercent = (percent: number | null | undefined) => {
+    if (percent == null || isNaN(percent)) {
+      return '0.00%';
+    }
     return `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
   };
 
-  const getTrendIcon = (value: number) => {
+  const getTrendIcon = (value: number | null | undefined) => {
+    if (value == null || isNaN(value)) return <TrendingFlat color="disabled" />;
     if (value > 0) return <TrendingUp color="success" />;
     if (value < 0) return <TrendingDown color="error" />;
     return <TrendingFlat color="disabled" />;
   };
 
-  const getTrendColor = (value: number) => {
+  const getTrendColor = (value: number | null | undefined) => {
+    if (value == null || isNaN(value)) return 'text.secondary';
     if (value > 0) return 'success.main';
     if (value < 0) return 'error.main';
     return 'text.secondary';
@@ -107,27 +117,27 @@ const PortfolioValue: React.FC = () => {
         <Grid item xs={12}>
           <Box sx={{ textAlign: 'center', mb: 2 }}>
             <Typography variant="h4" component="div" fontWeight="bold">
-              {formatCurrency(portfolio.total_market_value)}
+              {formatCurrency(portfolio.total_value)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Total Market Value
+              Total Portfolio Value
             </Typography>
           </Box>
         </Grid>
 
         <Grid item xs={12}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
-            {getTrendIcon(portfolio.total_unrealized_pnl)}
+            {getTrendIcon(portfolio.daily_pnl)}
             <Typography
               variant="h6"
-              sx={{ color: getTrendColor(portfolio.total_unrealized_pnl) }}
+              sx={{ color: getTrendColor(portfolio.daily_pnl) }}
             >
-              {formatCurrency(portfolio.total_unrealized_pnl)}
+              {formatCurrency(portfolio.daily_pnl)}
             </Typography>
             <Chip
-              label={formatPercent(portfolio.total_unrealized_pnl_percent)}
+              label={formatPercent(portfolio.daily_pnl_percent)}
               size="small"
-              color={portfolio.total_unrealized_pnl >= 0 ? 'success' : 'error'}
+              color={(portfolio.daily_pnl != null && portfolio.daily_pnl >= 0) ? 'success' : 'error'}
               variant="outlined"
             />
           </Box>
@@ -136,10 +146,10 @@ const PortfolioValue: React.FC = () => {
         <Grid item xs={6}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              Cost Basis
+              Cash Balance
             </Typography>
             <Typography variant="body1" fontWeight="medium">
-              {formatCurrency(portfolio.total_cost_basis)}
+              {formatCurrency(portfolio.cash_balance)}
             </Typography>
           </Box>
         </Grid>
@@ -147,10 +157,10 @@ const PortfolioValue: React.FC = () => {
         <Grid item xs={6}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              Positions
+              Invested Value
             </Typography>
             <Typography variant="body1" fontWeight="medium">
-              {portfolio.total_positions}
+              {formatCurrency(portfolio.invested_value)}
             </Typography>
           </Box>
         </Grid>

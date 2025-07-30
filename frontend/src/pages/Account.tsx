@@ -10,20 +10,25 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Alert,
 } from '@mui/material';
 import { SwapHoriz as SwapIcon } from '@mui/icons-material';
+import { useAccountContext } from '../contexts/AccountContext';
 import AccountInfo from '../components/AccountInfo';
 import AccountsGrid from '../components/AccountsGrid';
 
 const Account: React.FC = () => {
+  const { selectedAccount, selectAccount, availableAccounts } = useAccountContext();
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
 
   const handleSwitchAccount = (accountId: string) => {
-    // TODO: Implement account switching logic
-    console.log('Switching to account:', accountId);
-    setSwitchDialogOpen(false);
-    // This would update the global state/context with the new account
-    // and potentially navigate back to dashboard
+    const accountToSelect = availableAccounts.find(account => account.id === accountId);
+    if (accountToSelect) {
+      selectAccount(accountToSelect);
+      setSwitchDialogOpen(false);
+    } else {
+      console.error('Account not found:', accountId);
+    }
   };
 
   const handleOpenSwitchDialog = () => {
@@ -42,7 +47,10 @@ const Account: React.FC = () => {
             Account Information
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            View your current account details and trading information.
+            {selectedAccount 
+              ? `View details for ${selectedAccount.owner}'s account (${selectedAccount.id})`
+              : 'View your current account details and trading information.'
+            }
           </Typography>
         </Box>
         
@@ -62,6 +70,13 @@ const Account: React.FC = () => {
           Switch Account
         </Button>
       </Box>
+
+      {!selectedAccount && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          No account is currently selected. Please choose an account from the dropdown in the navigation bar 
+          or use the "Switch Account" button below.
+        </Alert>
+      )}
 
       <Card>
         <CardContent>

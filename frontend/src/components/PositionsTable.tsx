@@ -6,6 +6,24 @@ import { getPositions } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
 import type { Position } from '../types';
 
+// Enhanced Position interface with unique ID for DataGrid
+interface PositionWithId extends Position {
+  uniqueId: string;
+}
+
+// Generate unique ID for each position row
+const generateUniqueId = (position: Position): string => {
+  const baseId = position.symbol;
+  
+  // For options, include strike and expiration to ensure uniqueness
+  if (position.strike && position.expiration_date) {
+    return `${baseId}_${position.strike}_${position.expiration_date.replace(/-/g, '')}`;
+  }
+  
+  // For stocks or positions without options data, use symbol with asset type
+  return `${baseId}_${position.asset_type || 'stock'}`;
+};
+
 const columns: GridColDef[] = [
   { field: 'symbol', headerName: 'Symbol', width: 120 },
   { 
@@ -95,7 +113,7 @@ const columns: GridColDef[] = [
 ];
 
 const PositionsTable: React.FC = () => {
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<PositionWithId[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedAccount } = useAccountContext();
@@ -111,11 +129,17 @@ const PositionsTable: React.FC = () => {
       try {
         setLoading(true);
         const data = await getPositions(selectedAccount.id);
-        // Extract positions array from the response
-        setPositions(data.positions || []);
+        
+        // Extract positions array from the response and add unique IDs
+        const positionsWithIds: PositionWithId[] = (data.positions || []).map((position: Position) => ({
+          ...position,
+          uniqueId: generateUniqueId(position)
+        }));
+        
+        setPositions(positionsWithIds);
       } catch (err) {
-        setError('Failed to fetch positions.');
-        console.error(err);
+        setError('Failed to fetch positions. Please try again later.');
+        console.error('Error fetching positions:', err);
       } finally {
         setLoading(false);
       }
@@ -125,11 +149,40 @@ const PositionsTable: React.FC = () => {
   }, [selectedAccount]);
 
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Paper style={{ height: 400, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Paper>
+    );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <Paper style={{ height: 400, width: '100%' }}>
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Positions
+          </Typography>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Paper>
+    );
+  }
+
+  // Handle empty positions
+  if (!positions || positions.length === 0) {
+    return (
+      <Paper style={{ height: 400, width: '100%' }}>
+        <Typography variant="h6" gutterBottom sx={{ p: 2 }}>
+          Positions
+        </Typography>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+          <Typography variant="body1" color="text.secondary">
+            No positions found. Start trading to see your positions here.
+          </Typography>
+        </Box>
+      </Paper>
+    );
   }
 
   return (
@@ -152,10 +205,16 @@ const PositionsTable: React.FC = () => {
       <DataGrid
         rows={positions}
         columns={columns}
-        getRowId={(row) => row.symbol}
+        getRowId={(row) => row.uniqueId}
         rowsPerPageOptions={[5, 10]}
         checkboxSelection
         disableSelectionOnClick
+        autoHeight
+        sx={{
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: 'action.hover',
+          }
+        }}
       />
       </Box>
     </Paper>

@@ -6,6 +6,7 @@ import PortfolioValue from '../components/PortfolioValue';
 import CorporateEvents from '../components/CorporateEvents';
 import OrderHistory from '../components/OrderHistory';
 import AccountGuard from '../components/account/AccountGuard';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { useAccountContext } from '../contexts/AccountContext';
 
 const Dashboard: React.FC = () => {
@@ -26,10 +27,13 @@ const Dashboard: React.FC = () => {
           >
             <Typography variant="body2">
               <strong>Trading as:</strong> {selectedAccount.owner} (Account: {selectedAccount.id}) - 
-              Balance: {selectedAccount.current_balance.toLocaleString('en-US', {
-                style: 'currency',
-                currency: 'USD',
-              })}
+              Balance: {selectedAccount.current_balance != null && !isNaN(selectedAccount.current_balance) 
+                ? selectedAccount.current_balance.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                  })
+                : '$0.00'
+              }
             </Typography>
           </Alert>
         )}
@@ -37,7 +41,9 @@ const Dashboard: React.FC = () => {
         <Grid container spacing={3}>
           <Grid item xs={12} lg={8}>
             <Stack spacing={3}>
-              <PositionsTable />
+              <ErrorBoundary>
+                <PositionsTable />
+              </ErrorBoundary>
               
               {/* Additional Info Tabs */}
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -47,18 +53,28 @@ const Dashboard: React.FC = () => {
                 </Tabs>
               </Box>
 
-              {tabValue === 0 && <OrderHistory maxItems={10} />}
+              {tabValue === 0 && (
+                <ErrorBoundary>
+                  <OrderHistory maxItems={10} />
+                </ErrorBoundary>
+              )}
               {tabValue === 1 && (
-                <CorporateEvents 
-                  symbol="AAPL" // Would be dynamic based on selected position
-                />
+                <ErrorBoundary>
+                  <CorporateEvents 
+                    symbol="AAPL" // Would be dynamic based on selected position
+                  />
+                </ErrorBoundary>
               )}
             </Stack>
           </Grid>
           <Grid item xs={12} lg={4}>
             <Stack spacing={3}>
-              <PortfolioValue />
-              <CreateOrderForm />
+              <ErrorBoundary>
+                <PortfolioValue />
+              </ErrorBoundary>
+              <ErrorBoundary>
+                <CreateOrderForm />
+              </ErrorBoundary>
             </Stack>
           </Grid>
         </Grid>

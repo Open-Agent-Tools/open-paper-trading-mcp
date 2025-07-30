@@ -35,8 +35,10 @@ const apiClient = axios.create({
 
 // Account functions moved to accountApi.ts - using re-exports above
 
-export const getAccountInfo = async () => {
-  const response = await apiClient.get('/account/info');
+export const getAccountInfo = async (accountId?: string) => {
+  const response = await apiClient.get('/account/info', {
+    params: accountId ? { account_id: accountId } : {}
+  });
   return response.data;
 };
 
