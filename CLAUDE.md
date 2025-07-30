@@ -317,6 +317,24 @@ async def test_database_function(mock_get_session, test_session):
     assert result is not None
 ```
 
+**PREFERRED: TradingService Constructor Injection for Tests:**
+```python
+# BEST PRACTICE: Use dependency injection via constructor rather than mocking
+async def test_trading_service_function(db_session: AsyncSession):
+    service = TradingService(account_owner="test_user", db_session=db_session)
+    
+    # All TradingService methods properly use the injected db_session throughout
+    result = await service.get_account_balance()
+    assert result == 10000.0
+```
+
+**Why Constructor Injection is Better:**
+- TradingService constructor with `db_session` parameter properly uses it throughout all methods
+- Eliminates AsyncIO session conflicts and "operation in progress" errors
+- No mocking required - direct dependency injection
+- Consistent session usage across multiple method calls
+- Matches production dependency injection patterns
+
 **Database Infrastructure:**
 - Use async SQLAlchemy sessions from `app.storage.database`
 - All models inherit from `app.models.database.base.BaseModel`
