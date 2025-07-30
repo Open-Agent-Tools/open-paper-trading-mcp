@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InputValidationError, NotFoundError
@@ -109,7 +109,9 @@ class TradingService:
 
         # For production, sessions should be managed by dependency injection
         # This should not happen in normal operation
-        raise RuntimeError("No database session available - ensure proper dependency injection")
+        raise RuntimeError(
+            "No database session available - ensure proper dependency injection"
+        )
 
     async def _execute_with_session(self, operation):
         """Execute a database operation with proper session management."""
@@ -272,35 +274,26 @@ class TradingService:
             # Create new user
             db_user = DBUser(
                 username=user_data.username,
-                email=user_data.email,
+                email="",  # Not captured in simplified schema
                 first_name=user_data.first_name,
                 last_name=user_data.last_name,
-                phone=user_data.phone,
-                date_of_birth=user_data.date_of_birth,
-                profile_settings=user_data.profile_settings.dict(),
-                preferences=user_data.preferences.dict(),
+                phone=None,
+                date_of_birth=None,
+                profile_settings={},
+                preferences={},
             )
             db.add(db_user)
             await db.commit()
             await db.refresh(db_user)
 
-            # Convert to UserProfile
+            # Convert to UserProfile - simplified schema
             return UserProfile(
                 id=db_user.id,
                 username=db_user.username,
-                email=db_user.email,
                 first_name=db_user.first_name,
                 last_name=db_user.last_name,
-                phone=db_user.phone,
-                date_of_birth=db_user.date_of_birth,  # type: ignore
-                is_verified=db_user.is_verified,
-                verification_status=db_user.verification_status,
-                account_tier=db_user.account_tier,
-                profile_settings=db_user.profile_settings,
-                preferences=db_user.preferences,
                 created_at=db_user.created_at,
                 updated_at=db_user.updated_at,
-                last_login_at=db_user.last_login_at,
                 full_name=f"{db_user.first_name} {db_user.last_name}",
                 account_age_days=(datetime.utcnow() - db_user.created_at).days,
             )
@@ -321,19 +314,10 @@ class TradingService:
             return UserProfile(
                 id=db_user.id,
                 username=db_user.username,
-                email=db_user.email,
                 first_name=db_user.first_name,
                 last_name=db_user.last_name,
-                phone=db_user.phone,
-                date_of_birth=db_user.date_of_birth,  # type: ignore
-                is_verified=db_user.is_verified,
-                verification_status=db_user.verification_status,
-                account_tier=db_user.account_tier,
-                profile_settings=db_user.profile_settings,
-                preferences=db_user.preferences,
                 created_at=db_user.created_at,
                 updated_at=db_user.updated_at,
-                last_login_at=db_user.last_login_at,
                 full_name=f"{db_user.first_name} {db_user.last_name}",
                 account_age_days=(datetime.utcnow() - db_user.created_at).days,
             )
@@ -354,28 +338,13 @@ class TradingService:
             if not db_user:
                 return None
 
-            # Update fields that are provided
+            # Update fields that are provided (simplified schema)
             updated = False
-            if user_data.email is not None:
-                db_user.email = user_data.email
-                updated = True
             if user_data.first_name is not None:
                 db_user.first_name = user_data.first_name
                 updated = True
             if user_data.last_name is not None:
                 db_user.last_name = user_data.last_name
-                updated = True
-            if user_data.phone is not None:
-                db_user.phone = user_data.phone
-                updated = True
-            if user_data.date_of_birth is not None:
-                db_user.date_of_birth = user_data.date_of_birth  # type: ignore
-                updated = True
-            if user_data.profile_settings is not None:
-                db_user.profile_settings = user_data.profile_settings.dict()
-                updated = True
-            if user_data.preferences is not None:
-                db_user.preferences = user_data.preferences.dict()
                 updated = True
 
             if updated:
@@ -386,19 +355,10 @@ class TradingService:
             return UserProfile(
                 id=db_user.id,
                 username=db_user.username,
-                email=db_user.email,
                 first_name=db_user.first_name,
                 last_name=db_user.last_name,
-                phone=db_user.phone,
-                date_of_birth=db_user.date_of_birth,  # type: ignore
-                is_verified=db_user.is_verified,
-                verification_status=db_user.verification_status,
-                account_tier=db_user.account_tier,
-                profile_settings=db_user.profile_settings,
-                preferences=db_user.preferences,
                 created_at=db_user.created_at,
                 updated_at=db_user.updated_at,
-                last_login_at=db_user.last_login_at,
                 full_name=f"{db_user.first_name} {db_user.last_name}",
                 account_age_days=(datetime.utcnow() - db_user.created_at).days,
             )
@@ -435,12 +395,8 @@ class TradingService:
                 UserProfileSummary(
                     id=user.id,
                     username=user.username,
-                    email=user.email,
                     full_name=f"{user.first_name} {user.last_name}",
-                    is_verified=user.is_verified,
-                    account_tier=user.account_tier,
                     created_at=user.created_at,
-                    last_login_at=user.last_login_at,
                 )
                 for user in db_users
             ]

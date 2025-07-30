@@ -3,10 +3,8 @@ User profile schemas for API validation and serialization.
 """
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # Simplified user schemas for simulation platform - no complex profile settings needed
 
