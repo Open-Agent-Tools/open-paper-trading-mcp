@@ -709,34 +709,32 @@ class TestTradingServiceAccountCreation:
     # ========================================================================
 
     @pytest.mark.asyncio
-    async def test_ensure_account_exists_database_error_handling(
-        self, trading_service_factory
-    ):
+    async def test_ensure_account_exists_database_error_handling(self):
         """Test _ensure_account_exists() handles database connection errors."""
-        # Arrange
-        service = trading_service_factory(account_owner="db_error_user")
-
-        # Mock database session to raise an error
-        async def mock_failing_db_session():
-            raise Exception("Database connection failed")
-
-        service._get_async_db_session = mock_failing_db_session
+        # Arrange - Create service with mock session that raises errors
+        mock_db_session = AsyncMock()
+        mock_db_session.execute.side_effect = Exception("Database connection failed")
+        
+        service = TradingService(
+            account_owner="db_error_user", 
+            db_session=mock_db_session
+        )
 
         # Act & Assert
         with pytest.raises(Exception, match="Database connection failed"):
             await service._ensure_account_exists()
 
     @pytest.mark.asyncio
-    async def test_get_account_database_error_handling(self, trading_service_factory):
+    async def test_get_account_database_error_handling(self):
         """Test _get_account() handles database connection errors."""
-        # Arrange
-        service = trading_service_factory(account_owner="db_error_get_user")
-
-        # Mock database session to raise an error
-        async def mock_failing_db_session():
-            raise Exception("Database connection failed")
-
-        service._get_async_db_session = mock_failing_db_session
+        # Arrange - Create service with mock session that raises errors
+        mock_db_session = AsyncMock()
+        mock_db_session.execute.side_effect = Exception("Database connection failed")
+        
+        service = TradingService(
+            account_owner="db_error_get_user", 
+            db_session=mock_db_session
+        )
 
         # Act & Assert
         with pytest.raises(Exception, match="Database connection failed"):
