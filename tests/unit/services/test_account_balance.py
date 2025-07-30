@@ -342,9 +342,11 @@ class TestIntegrationWithTrading:
     async def test_balance_after_order_creation(self, db_session: AsyncSession):
         """Test that balance retrieval works correctly after creating orders."""
         owner = f"trading_user_{uuid.uuid4().hex[:6].upper()}"
+        
+        # Use dependency injection via constructor instead of mocking
         service = TradingService(account_owner=owner, db_session=db_session)
 
-        # Mock quote adapter
+        # Mock quote adapter after service creation
         mock_adapter = AsyncMock()
         from app.models.assets import asset_factory
         from app.models.quotes import Quote
@@ -363,9 +365,6 @@ class TestIntegrationWithTrading:
         )
         mock_adapter.get_quote.return_value = mock_quote
         service.quote_adapter = mock_adapter
-
-        # Use dependency injection via constructor instead of mocking
-        service = TradingService(account_owner=owner, db_session=db_session)
         # Get initial balance
         initial_balance = await service.get_account_balance()
         assert initial_balance == 10000.0
