@@ -11,7 +11,7 @@ import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy import select
@@ -85,9 +85,7 @@ class TestTradingServiceThreadSafety:
 
         # For thread safety testing, we expect at least some to succeed
         # The main point is that concurrent initialization doesn't crash the system
-        assert len(successful_inits) >= 1, (
-            "At least one initialization should succeed"
-        )
+        assert len(successful_inits) >= 1, "At least one initialization should succeed"
         assert len(results) == num_services, "All requests should complete"
 
         # All should reference the same account
@@ -190,12 +188,8 @@ class TestTradingServiceThreadSafety:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Analyze results
-        successful_orders = [
-            r for r in results if isinstance(r, dict) and r["success"]
-        ]
-        failed_orders = [
-            r for r in results if isinstance(r, dict) and not r["success"]
-        ]
+        successful_orders = [r for r in results if isinstance(r, dict) and r["success"]]
+        failed_orders = [r for r in results if isinstance(r, dict) and not r["success"]]
 
         print(f"Successful order creations: {len(successful_orders)}")
         print(f"Failed order creations: {len(failed_orders)}")
@@ -343,9 +337,7 @@ class TestTradingServiceThreadSafety:
             # Values should be close (within 1% of each other)
             min_val, max_val = min(unique_values), max(unique_values)
             variance = (max_val - min_val) / min_val if min_val > 0 else 0
-            assert variance < 0.01, (
-                f"Portfolio values too divergent: {variance:.2%}"
-            )
+            assert variance < 0.01, f"Portfolio values too divergent: {variance:.2%}"
 
     @pytest.mark.asyncio
     async def test_concurrent_account_balance_updates(self, db_session: AsyncSession):
@@ -537,13 +529,13 @@ class TestRaceConditionScenarios:
 
                 # Use the constructor-injected session instead of _get_async_db_session
                 if self._db_session is None:
-                    raise RuntimeError("No database session available for race condition test")
-                
+                    raise RuntimeError(
+                        "No database session available for race condition test"
+                    )
+
                 db = self._db_session
-                
-                stmt = select(DBAccount).where(
-                    DBAccount.owner == self.account_owner
-                )
+
+                stmt = select(DBAccount).where(DBAccount.owner == self.account_owner)
                 result = await db.execute(stmt)
                 account = result.scalar_one_or_none()
 
@@ -578,7 +570,9 @@ class TestRaceConditionScenarios:
 
             try:
                 # Use constructor injection instead of mocking
-                service = DelayedTradingService(account_owner=owner_id, db_session=db_session)
+                service = DelayedTradingService(
+                    account_owner=owner_id, db_session=db_session
+                )
                 await service._ensure_account_exists()
                 account = await service._get_account()
 
@@ -596,9 +590,7 @@ class TestRaceConditionScenarios:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Analyze results
-        successful_inits = [
-            r for r in results if isinstance(r, dict) and r["success"]
-        ]
+        successful_inits = [r for r in results if isinstance(r, dict) and r["success"]]
 
         # Check database state
         stmt = select(DBAccount).where(DBAccount.owner == owner_id)
@@ -615,9 +607,7 @@ class TestRaceConditionScenarios:
             print("WARNING: Race condition detected - multiple accounts created!")
 
         # At least one initialization should succeed
-        assert len(successful_inits) >= 1, (
-            "At least one initialization should succeed"
-        )
+        assert len(successful_inits) >= 1, "At least one initialization should succeed"
 
         # Ideally, should have exactly one account (race condition prevented)
         # But we'll accept the test if it detects the race condition
@@ -708,12 +698,8 @@ class TestRaceConditionScenarios:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Analyze results
-        successful_orders = [
-            r for r in results if isinstance(r, dict) and r["success"]
-        ]
-        failed_orders = [
-            r for r in results if isinstance(r, dict) and not r["success"]
-        ]
+        successful_orders = [r for r in results if isinstance(r, dict) and r["success"]]
+        failed_orders = [r for r in results if isinstance(r, dict) and not r["success"]]
 
         print(f"Successful orders: {len(successful_orders)}")
         print(f"Failed orders: {len(failed_orders)}")
@@ -751,10 +737,10 @@ class TestRaceConditionScenarios:
         position_id = "POS123456"
         initial_position = DBPosition(
             id=position_id,
-            account_id=account_id, 
-            symbol="AAPL", 
-            quantity=100, 
-            avg_price=150.0
+            account_id=account_id,
+            symbol="AAPL",
+            quantity=100,
+            avg_price=150.0,
         )
         db_session.add(initial_position)
         await db_session.commit()
@@ -769,9 +755,12 @@ class TestRaceConditionScenarios:
 
             try:
                 # Simple direct update using known IDs to avoid session conflicts
-                quantity_change = (update_id % 2 * 2 - 1) * (5 + update_id)  # +/- 5-15 shares
-                
+                quantity_change = (update_id % 2 * 2 - 1) * (
+                    5 + update_id
+                )  # +/- 5-15 shares
+
                 from sqlalchemy import update
+
                 update_stmt = (
                     update(DBPosition)
                     .where(DBPosition.id == position_id)
@@ -803,6 +792,7 @@ class TestRaceConditionScenarios:
 
         # Verify final state using raw SQL to avoid ORM session issues
         from sqlalchemy import text
+
         query = text("SELECT quantity FROM positions WHERE id = :position_id")
         result = await db_session.execute(query, {"position_id": position_id})
         final_quantity = result.scalar()
@@ -812,5 +802,5 @@ class TestRaceConditionScenarios:
         # Basic validation - position should still exist and not be negative
         assert final_quantity is not None, "Position should still exist"
         assert final_quantity >= 0, "Position quantity should not be negative"
-        
+
         # Test passes if we can perform concurrent updates without crashes

@@ -325,20 +325,20 @@ class TestAccountAdapterDeleteCRUD:
             # Mock successful query but failed delete
             # The execute call should return an awaitable that resolves to a result with scalar_one_or_none
             from unittest.mock import MagicMock
-            
+
             mock_result = MagicMock()  # Use MagicMock, not AsyncMock for the result
             mock_result.scalar_one_or_none.return_value = sample_account
-            
+
             # Make execute return an awaitable mock result
             async def mock_execute(*args, **kwargs):
                 return mock_result
-            
+
             mock_db.execute = mock_execute
-            
+
             # Make sure delete is an async mock that raises exception
             async def mock_delete_error(*args, **kwargs):
                 raise Exception("Database error during delete")
-            
+
             mock_db.delete = mock_delete_error
 
             # Should raise exception and not commit

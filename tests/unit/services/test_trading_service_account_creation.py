@@ -714,10 +714,9 @@ class TestTradingServiceAccountCreation:
         # Arrange - Create service with mock session that raises errors
         mock_db_session = AsyncMock()
         mock_db_session.execute.side_effect = Exception("Database connection failed")
-        
+
         service = TradingService(
-            account_owner="db_error_user", 
-            db_session=mock_db_session
+            account_owner="db_error_user", db_session=mock_db_session
         )
 
         # Act & Assert
@@ -730,10 +729,9 @@ class TestTradingServiceAccountCreation:
         # Arrange - Create service with mock session that raises errors
         mock_db_session = AsyncMock()
         mock_db_session.execute.side_effect = Exception("Database connection failed")
-        
+
         service = TradingService(
-            account_owner="db_error_get_user", 
-            db_session=mock_db_session
+            account_owner="db_error_get_user", db_session=mock_db_session
         )
 
         # Act & Assert

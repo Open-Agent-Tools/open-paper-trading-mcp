@@ -14,7 +14,6 @@ the TradingService that may not be covered by other test modules:
 Coverage target: Various error handling lines throughout trading_service.py
 """
 
-import contextlib
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
@@ -528,7 +527,7 @@ class TestTradingServiceErrorHandling:
     async def test_resource_cleanup_on_errors(self, db_session: AsyncSession):
         """Test that resources are properly cleaned up when errors occur."""
         from app.services.trading_service import TradingService
-        
+
         # Create a mock session that raises errors during execute
         mock_db = AsyncMock()
         mock_db.execute.side_effect = RuntimeError("Database error")
@@ -545,6 +544,6 @@ class TestTradingServiceErrorHandling:
 
         # Verify that database operations were attempted
         assert mock_db.execute.called, "Database operation should have been attempted"
-        
+
         # In the current implementation, rollback is not explicitly called within TradingService
         # The error is propagated up and would be handled by the caller or session context manager

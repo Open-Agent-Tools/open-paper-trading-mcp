@@ -67,18 +67,18 @@ class TestAccountBalanceRetrieval:
         # Pre-create account manually using raw SQL to avoid model issues
         account_id = "TEST123456"
         insert_query = text(
-        "INSERT INTO accounts (id, owner, cash_balance, created_at) "
-        "VALUES (:id, :owner, :cash_balance, NOW())"
+            "INSERT INTO accounts (id, owner, cash_balance, created_at) "
+            "VALUES (:id, :owner, :cash_balance, NOW())"
         )
         await db_session.execute(
-        insert_query,
-        {"id": account_id, "owner": owner, "cash_balance": expected_balance},
+            insert_query,
+            {"id": account_id, "owner": owner, "cash_balance": expected_balance},
         )
         await db_session.commit()
 
         # Create service with injected db_session and retrieve balance
         service = TradingService(account_owner=owner, db_session=db_session)
-        
+
         balance = await service.get_account_balance()
         assert balance == expected_balance
 
@@ -132,8 +132,8 @@ class TestBalancePersistence:
 
         # Create account with specific balance
         account = DBAccount(
-        owner=owner,
-        cash_balance=expected_balance,
+            owner=owner,
+            cash_balance=expected_balance,
         )
         db_session.add(account)
         await db_session.commit()
@@ -298,8 +298,8 @@ class TestErrorHandling:
         from decimal import Decimal
 
         account = DBAccount(
-        owner=owner,
-        cash_balance=Decimal("12345.67"),
+            owner=owner,
+            cash_balance=Decimal("12345.67"),
         )
         db_session.add(account)
         await db_session.commit()
@@ -320,8 +320,8 @@ class TestErrorHandling:
 
         # Create account with zero balance
         account = DBAccount(
-        owner=owner,
-        cash_balance=0.0,
+            owner=owner,
+            cash_balance=0.0,
         )
         db_session.add(account)
         await db_session.commit()
@@ -342,7 +342,7 @@ class TestIntegrationWithTrading:
     async def test_balance_after_order_creation(self, db_session: AsyncSession):
         """Test that balance retrieval works correctly after creating orders."""
         owner = f"trading_user_{uuid.uuid4().hex[:6].upper()}"
-        
+
         # Use dependency injection via constructor instead of mocking
         service = TradingService(account_owner=owner, db_session=db_session)
 
@@ -354,14 +354,14 @@ class TestIntegrationWithTrading:
         asset = asset_factory("AAPL")
         assert asset is not None
         mock_quote = Quote(
-        asset=asset,
-        price=150.0,
-        bid=149.5,
-        ask=150.5,
-        bid_size=100,
-        ask_size=200,
-        quote_date=datetime.now(),
-        volume=1000000,
+            asset=asset,
+            price=150.0,
+            bid=149.5,
+            ask=150.5,
+            bid_size=100,
+            ask_size=200,
+            quote_date=datetime.now(),
+            volume=1000000,
         )
         mock_adapter.get_quote.return_value = mock_quote
         service.quote_adapter = mock_adapter
@@ -386,6 +386,4 @@ class TestIntegrationWithTrading:
 
         # Balance should still be retrievable
         balance_after_order = await service.get_account_balance()
-        assert (
-            balance_after_order == initial_balance
-        )  # Cash not deducted until filled
+        assert balance_after_order == initial_balance  # Cash not deducted until filled

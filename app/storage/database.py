@@ -21,12 +21,12 @@ if os.getenv("TESTING", "False").lower() == "true":
 SYNC_DATABASE_URL = database_url
 sync_engine = create_engine(
     SYNC_DATABASE_URL,
-    pool_size=5,              # Maximum number of permanent connections
-    max_overflow=10,          # Maximum number of overflow connections
-    pool_timeout=30,          # Timeout for getting connection from pool
-    pool_recycle=3600,        # Recycle connections after 1 hour
-    pool_pre_ping=True,       # Verify connections before use
-    echo=False                # Set to True for SQL query debugging
+    pool_size=5,  # Maximum number of permanent connections
+    max_overflow=10,  # Maximum number of overflow connections
+    pool_timeout=30,  # Timeout for getting connection from pool
+    pool_recycle=3600,  # Recycle connections after 1 hour
+    pool_pre_ping=True,  # Verify connections before use
+    echo=False,  # Set to True for SQL query debugging
 )
 
 # Async engine
@@ -36,12 +36,12 @@ else:
     ASYNC_DATABASE_URL = database_url
 async_engine = create_async_engine(
     ASYNC_DATABASE_URL,
-    pool_size=5,              # Maximum number of permanent connections
-    max_overflow=10,          # Maximum number of overflow connections
-    pool_timeout=30,          # Timeout for getting connection from pool
-    pool_recycle=3600,        # Recycle connections after 1 hour
-    pool_pre_ping=True,       # Verify connections before use
-    echo=False                # Set to True for SQL query debugging
+    pool_size=5,  # Maximum number of permanent connections
+    max_overflow=10,  # Maximum number of overflow connections
+    pool_timeout=30,  # Timeout for getting connection from pool
+    pool_recycle=3600,  # Recycle connections after 1 hour
+    pool_pre_ping=True,  # Verify connections before use
+    echo=False,  # Set to True for SQL query debugging
 )
 
 # Create session factories
