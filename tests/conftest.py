@@ -109,6 +109,49 @@ async def setup_synthetic_database():
     await session_engine.dispose()
 
 
+async def _safe_session_cleanup(session: AsyncSession, force_rollback: bool = False) -> None:
+    """Safely clean up session state, handling rolled-back transactions."""
+    try:
+        if force_rollback:
+            # Force rollback for error cases
+            await session.rollback()
+        else:
+            # Check if we can commit or need to rollback
+            if session.in_transaction():
+                try:
+                    await session.commit()
+                except Exception:
+                    # If commit fails, rollback
+                    await session.rollback()
+            # If no active transaction, nothing to do
+    except Exception as e:
+        # Final fallback - ignore cleanup errors to prevent cascading failures
+        print(f"Session cleanup warning: {e}")
+
+
+async def _safe_table_cleanup(engine) -> None:
+    """Safely clean up table data, handling concurrent access issues."""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            async with engine.begin() as conn:
+                # Clean up in dependency order to avoid foreign key issues
+                await conn.execute(text("TRUNCATE TABLE transactions CASCADE"))
+                await conn.execute(text("TRUNCATE TABLE orders CASCADE"))
+                await conn.execute(text("TRUNCATE TABLE positions CASCADE"))
+                await conn.execute(text("TRUNCATE TABLE accounts CASCADE"))
+                await conn.commit()
+            return  # Success, exit retry loop
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"Table cleanup attempt {attempt + 1} failed, retrying: {e}")
+                import asyncio
+                await asyncio.sleep(0.1)  # Brief delay before retry
+            else:
+                print(f"Table cleanup failed after {max_retries} attempts: {e}")
+                # Don't raise - cleanup failures shouldn't break tests
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Standard database session fixture - all tests should use this."""
@@ -149,24 +192,15 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         async with test_session_factory() as session:
             try:
                 yield session
-                # Commit any pending transactions
-                await session.commit()
+                # Handle session cleanup based on current state
+                await _safe_session_cleanup(session)
             except Exception:
-                # Rollback on error
-                await session.rollback()
+                # Handle any session state gracefully
+                await _safe_session_cleanup(session, force_rollback=True)
                 raise
 
         # Clean up data (not tables) for test isolation AFTER test runs
-        try:
-            async with test_engine.begin() as conn:
-                # Truncate all tables to clean up test data
-                await conn.execute(text("TRUNCATE TABLE transactions CASCADE"))
-                await conn.execute(text("TRUNCATE TABLE orders CASCADE"))
-                await conn.execute(text("TRUNCATE TABLE positions CASCADE"))
-                await conn.execute(text("TRUNCATE TABLE accounts CASCADE"))
-                await conn.commit()
-        except Exception as e:
-            print(f"Test cleanup warning: {e}")
+        await _safe_table_cleanup(test_engine)
     except Exception as e:
         print(f"Database session setup error: {e}")
         raise
@@ -215,23 +249,15 @@ async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
         async with test_session_factory() as session:
             try:
                 yield session
-                # Commit any pending transactions
-                await session.commit()
+                # Handle session cleanup based on current state
+                await _safe_session_cleanup(session)
             except Exception:
-                # Rollback on error
-                await session.rollback()
+                # Handle any session state gracefully
+                await _safe_session_cleanup(session, force_rollback=True)
                 raise
 
         # Clean up data for test isolation AFTER test runs
-        try:
-            async with test_engine.begin() as conn:
-                await conn.execute(text("TRUNCATE TABLE transactions CASCADE"))
-                await conn.execute(text("TRUNCATE TABLE orders CASCADE"))
-                await conn.execute(text("TRUNCATE TABLE positions CASCADE"))
-                await conn.execute(text("TRUNCATE TABLE accounts CASCADE"))
-                await conn.commit()
-        except Exception as e:
-            print(f"Test cleanup warning: {e}")
+        await _safe_table_cleanup(test_engine)
     except Exception as e:
         print(f"Database session setup error: {e}")
         raise

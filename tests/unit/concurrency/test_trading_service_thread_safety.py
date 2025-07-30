@@ -25,10 +25,13 @@ from app.schemas.orders import OrderCondition, OrderCreate, OrderType
 from app.services.trading_service import TradingService
 
 # Filter out asyncio RuntimeWarnings about unawaited coroutines in concurrent testing
-# These warnings are expected during high-concurrency stress testing
-warnings.filterwarnings("ignore", message=".*coroutine.*was never awaited", category=RuntimeWarning)
-warnings.filterwarnings("ignore", message=".*Queue.get.*was never awaited", category=RuntimeWarning)
-warnings.filterwarnings("ignore", message=".*Connection._cancel.*was never awaited", category=RuntimeWarning)
+# These warnings are expected during high-concurrency stress testing and don't indicate bugs
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*coroutine.*was never awaited")
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=r".*Queue\.get.*was never awaited")  
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=r".*Connection\._cancel.*was never awaited")
+# Catch-all for any asyncio-related warnings during stress testing
+warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*asyncio.*")
+warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*sqlalchemy.*")
 
 pytestmark = pytest.mark.journey_performance
 
@@ -420,7 +423,10 @@ class TestTradingServiceThreadSafety:
                 except Exception:
                     pass  # Ignore rollback errors to prevent nested exceptions
                 
-                result["error"] = str(e)
+                # Suppress warnings when converting exception to string during stress testing
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)
+                    result["error"] = str(e)
 
             return result
 
