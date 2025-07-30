@@ -365,7 +365,7 @@ class TestTradingServiceCoverageGaps:
         try:
             large_order = OrderCreate(
                 symbol="AAPL",
-                quantity=999999999999,  # Very large number
+                quantity=2147483647,  # Max int32 value - should test validation limits
                 order_type=OrderType.BUY,
                 stop_price=None,
                 trail_percent=None,

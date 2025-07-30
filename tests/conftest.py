@@ -126,6 +126,9 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         future=True,
         pool_pre_ping=True,  # Verify connections before use
         pool_recycle=300,  # Recycle connections every 5 minutes
+        pool_size=1,  # Minimal pool size for tests
+        max_overflow=0,  # No overflow connections in tests
+        pool_timeout=10,  # Short timeout for tests
     )
 
     # Create session factory bound to current event loop
@@ -168,8 +171,16 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         print(f"Database session setup error: {e}")
         raise
     finally:
-        # Always dispose engine to prevent connection leaks
-        await test_engine.dispose()
+        # Properly close all connections before disposal
+        try:
+            # Close all connections in the pool
+            await test_engine.dispose()
+            # Give a moment for any pending cleanups
+            import asyncio
+            await asyncio.sleep(0.1)
+        except Exception as e:
+            # Suppress disposal errors during test cleanup to avoid warnings
+            print(f"Engine disposal warning: {e}")
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -225,8 +236,16 @@ async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
         print(f"Database session setup error: {e}")
         raise
     finally:
-        # Always dispose engine to prevent connection leaks
-        await test_engine.dispose()
+        # Properly close all connections before disposal
+        try:
+            # Close all connections in the pool
+            await test_engine.dispose()
+            # Give a moment for any pending cleanups
+            import asyncio
+            await asyncio.sleep(0.1)
+        except Exception as e:
+            # Suppress disposal errors during test cleanup to avoid warnings
+            print(f"Engine disposal warning: {e}")
 
 
 @pytest.fixture
@@ -516,8 +535,8 @@ def performance_monitor():
 
 
 @pytest_asyncio.fixture
-async def trading_service_synthetic_data():
-    """Create TradingService with mock test data adapter (read-only)."""
+async def trading_service_synthetic_data(db_session: AsyncSession):
+    """Create TradingService with mock test data adapter (read-only) and injected database session."""
     from datetime import datetime
 
     from app.adapters.base import QuoteAdapter
@@ -645,7 +664,9 @@ async def trading_service_synthetic_data():
             }
 
     adapter = MockTestQuoteAdapter()
-    return TradingService(quote_adapter=adapter)
+    # Inject the database session to prevent creation of new connections
+    service = TradingService(quote_adapter=adapter, db_session=db_session)
+    return service
 
 
 @pytest_asyncio.fixture(scope="session")
