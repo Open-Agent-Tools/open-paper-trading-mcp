@@ -323,10 +323,23 @@ class TestAccountAdapterDeleteCRUD:
             mock_get_session.side_effect = lambda: mock_session_generator()
 
             # Mock successful query but failed delete
-            mock_db.execute.return_value.scalar_one_or_none.return_value = (
-                sample_account
-            )
-            mock_db.delete.side_effect = Exception("Database error during delete")
+            # The execute call should return an awaitable that resolves to a result with scalar_one_or_none
+            from unittest.mock import MagicMock
+            
+            mock_result = MagicMock()  # Use MagicMock, not AsyncMock for the result
+            mock_result.scalar_one_or_none.return_value = sample_account
+            
+            # Make execute return an awaitable mock result
+            async def mock_execute(*args, **kwargs):
+                return mock_result
+            
+            mock_db.execute = mock_execute
+            
+            # Make sure delete is an async mock that raises exception
+            async def mock_delete_error(*args, **kwargs):
+                raise Exception("Database error during delete")
+            
+            mock_db.delete = mock_delete_error
 
             # Should raise exception and not commit
             with pytest.raises(Exception, match="Database error during delete"):
@@ -361,7 +374,7 @@ class TestAccountAdapterDeleteCRUD:
         assert isinstance(result, bool)
 
         # Test return value for non-existent account
-        nonexistent_id = "TEST123456"
+        nonexistent_id = "NONEXISTENT123456"
         with patch("app.adapters.accounts.get_async_session") as mock_get_session:
 
             async def mock_session_generator():
