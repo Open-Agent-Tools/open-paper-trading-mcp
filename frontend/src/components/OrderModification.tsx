@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
-import type { Order, OrderType, OrderCondition } from '../types';
+import type { Order, OrderCondition } from '../types';
 import { cancelOrder, createOrder, getStockPrice } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
 
@@ -54,8 +54,8 @@ const OrderModification: React.FC<OrderModificationProps> = ({
     setLoadingPrice(true);
     try {
       const response = await getStockPrice(symbol);
-      if (response.success && response.price) {
-        setCurrentPrice(response.price);
+      if (response.success && response.price_data?.price) {
+        setCurrentPrice(response.price_data.price);
       }
     } catch (error) {
       console.error('Failed to fetch current price:', error);

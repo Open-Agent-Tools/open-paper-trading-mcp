@@ -9,7 +9,7 @@ import {
   PlayArrow as ExecuteIcon,
   Bookmark as TemplateIcon,
   Analytics as AnalyticsIcon,
-  Edit as ModifyIcon,
+  // Edit as ModifyIcon,
   Schedule as MonitorIcon
 } from '@mui/icons-material';
 
@@ -51,7 +51,7 @@ const OrderManagement: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Handle template usage in order creation
-  const handleUseTemplate = useCallback((template: any) => {
+  const handleUseTemplate = useCallback((_template: any) => {
     // We could pre-fill the CreateOrderForm with template data
     // For now, we'll just switch to the create order tab and show a message
     setTabValue(0); // Switch to Create Order tab
@@ -62,10 +62,10 @@ const OrderManagement: React.FC = () => {
   }, []);
 
   // Handle order modification request
-  const handleModifyOrder = useCallback((order: Order) => {
-    setSelectedOrderForModification(order);
-    setShowModifyOrder(true);
-  }, []);
+  // const handleModifyOrder = useCallback((order: Order) => {
+  //   setSelectedOrderForModification(order);
+  //   setShowModifyOrder(true);
+  // }, []);
 
   // Handle order lifecycle events that require refresh
   const handleOrderLifecycleEvent = useCallback(() => {

@@ -14,7 +14,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
+  // Chip,
   useTheme,
 } from '@mui/material';
 import {
@@ -24,7 +24,7 @@ import {
   TrendingDown as PutIcon,
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { getOptionGreeks, getStockPrice } from '../services/apiClient';
+import { getOptionGreeks } from '../services/apiClient';
 import type { OptionGreeks } from '../types';
 
 interface PayoffPoint {
@@ -45,7 +45,7 @@ const OptionsAnalytics: React.FC<OptionsAnalyticsProps> = ({
   optionSymbol,
   strike = 100,
   optionType = 'call',
-  expiration,
+  // expiration,
   premium = 5
 }) => {
   const theme = useTheme();
@@ -62,7 +62,7 @@ const OptionsAnalytics: React.FC<OptionsAnalyticsProps> = ({
     strikePrice: number,
     type: 'call' | 'put',
     optionPremium: number,
-    underlyingPrice: number
+    _underlyingPrice: number
   ): PayoffPoint[] => {
     const points: PayoffPoint[] = [];
     const priceRange = strikePrice * 0.4; // ±40% of strike
@@ -335,7 +335,7 @@ const OptionsAnalytics: React.FC<OptionsAnalyticsProps> = ({
                     variant="h6" 
                     sx={{ 
                       fontFamily: 'Roboto Mono, monospace',
-                      color: payoffData.find(p => Math.abs(p.price - currentPrice) < 0.5)?.profit >= 0 
+                      color: (payoffData.find(p => Math.abs(p.price - currentPrice) < 0.5)?.profit ?? 0) >= 0 
                         ? theme.palette.success.main 
                         : theme.palette.error.main
                     }}

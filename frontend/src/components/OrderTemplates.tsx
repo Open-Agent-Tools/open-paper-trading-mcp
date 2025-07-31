@@ -5,8 +5,8 @@ import {
   CardHeader,
   Typography,
   Box,
-  Alert,
-  CircularProgress,
+  // Alert,
+  // CircularProgress,
   IconButton,
   Button,
   Grid,
@@ -211,7 +211,7 @@ const OrderTemplates: React.FC<OrderTemplatesProps> = ({ onUseTemplate }) => {
       case 'limit': return 'LMT';
       case 'stop': return 'STOP';
       case 'stop_limit': return 'STOP LMT';
-      default: return condition.toUpperCase();
+      default: return String(condition).toUpperCase();
     }
   };
 

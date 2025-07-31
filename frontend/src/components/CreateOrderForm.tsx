@@ -175,12 +175,12 @@ const CreateOrderForm: React.FC = () => {
     setOpenSnackbar(false);
   };
 
-  const getSymbolStatusColor = () => {
-    if (isValidatingSymbol) return 'info';
-    if (symbolValid === true) return 'success';
-    if (symbolValid === false) return 'error';
-    return 'default';
-  };
+  // const getSymbolStatusColor = () => {
+  //   if (isValidatingSymbol) return 'info';
+  //   if (symbolValid === true) return 'success';
+  //   if (symbolValid === false) return 'error';
+  //   return 'default';
+  // };
 
   const getSymbolHelperText = () => {
     if (isValidatingSymbol) return 'Validating symbol...';

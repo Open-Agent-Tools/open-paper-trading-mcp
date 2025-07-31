@@ -243,7 +243,7 @@ const RiskMetrics: React.FC = () => {
                       {metric.label}
                     </Typography>
                     <Chip
-                      icon={getStatusIcon(metric.status)}
+                      icon={getStatusIcon(metric.status) || undefined}
                       label={metric.status.toUpperCase()}
                       size="small"
                       sx={{

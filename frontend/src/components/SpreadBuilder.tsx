@@ -5,8 +5,8 @@ import {
   CardHeader,
   Typography,
   Box,
-  Alert,
-  CircularProgress,
+  // Alert,
+  // CircularProgress,
   IconButton,
   Grid,
   TextField,
@@ -40,7 +40,7 @@ import {
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useAccountContext } from '../contexts/AccountContext';
-import { getOptionsChain, getStockPrice, createOrder } from '../services/apiClient';
+import { getOptionsChain, getStockPrice } from '../services/apiClient';
 import type { OptionQuote } from '../types';
 
 interface SpreadLeg {
@@ -68,7 +68,7 @@ const SpreadBuilder: React.FC = () => {
   const [availableOptions, setAvailableOptions] = useState<OptionQuote[]>([]);
   const [payoffData, setPayoffData] = useState<SpreadPayoffPoint[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [showAddLegDialog, setShowAddLegDialog] = useState(false);
   const [newLeg, setNewLeg] = useState<Partial<SpreadLeg>>({ action: 'buy', optionType: 'call', quantity: 1 });
 

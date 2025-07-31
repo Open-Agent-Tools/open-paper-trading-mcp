@@ -5,7 +5,7 @@ import {
   TableRow, Paper, Tabs, Tab, Tooltip, Badge, TextField, InputAdornment,
   FormControl, InputLabel, Select, MenuItem, Button, Grid, Divider,
   TableSortLabel, TablePagination, Accordion, AccordionSummary, AccordionDetails,
-  Stack, useTheme
+  Stack, // useTheme
 } from '@mui/material';
 import {
   History as HistoryIcon, Refresh as RefreshIcon, TrendingUp as StockIcon,
@@ -61,7 +61,7 @@ const OrderHistoryEnhanced: React.FC<OrderHistoryEnhancedProps> = ({
   refreshInterval = 30,
   maxItems = 1000
 }) => {
-  const theme = useTheme();
+  // const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
   const [stockOrders, setStockOrders] = useState<OrderHistoryItem[]>([]);
   const [optionsOrders, setOptionsOrders] = useState<OrderHistoryItem[]>([]);
@@ -164,14 +164,14 @@ const OrderHistoryEnhanced: React.FC<OrderHistoryEnhancedProps> = ({
 
       // Date filters
       if (filters.dateFrom) {
-        const orderDate = new Date(order.created_at);
+        const orderDate = order.created_at ? new Date(order.created_at) : new Date();
         if (orderDate < filters.dateFrom) {
           return false;
         }
       }
 
       if (filters.dateTo) {
-        const orderDate = new Date(order.created_at);
+        const orderDate = order.created_at ? new Date(order.created_at) : new Date();
         if (orderDate > filters.dateTo) {
           return false;
         }
@@ -255,7 +255,7 @@ const OrderHistoryEnhanced: React.FC<OrderHistoryEnhancedProps> = ({
     // Calculate orders by month
     const monthStats = new Map<string, number>();
     orders.forEach(order => {
-      const date = new Date(order.created_at);
+      const date = order.created_at ? new Date(order.created_at) : new Date();
       const monthKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       monthStats.set(monthKey, (monthStats.get(monthKey) || 0) + 1);
     });

@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card, CardContent, CardHeader, Typography, Box, Grid, Alert, CircularProgress,
-  Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  // Tabs, Tab, 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, Chip, LinearProgress, IconButton, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import {
   Analytics as AnalyticsIcon,
   TrendingUp as GainIcon,
   TrendingDown as LossIcon,
-  Timeline as TimelineIcon,
+  // Timeline as TimelineIcon,
   Speed as SpeedIcon,
-  Target as AccuracyIcon,
+  // Target as AccuracyIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -48,7 +49,7 @@ interface SymbolPerformance {
 }
 
 const OrderPerformanceAnalytics: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  // const [tabValue, setTabValue] = useState(0);
   const [stockOrders, setStockOrders] = useState<OrderHistoryItem[]>([]);
   const [optionsOrders, setOptionsOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,7 +112,10 @@ const OrderPerformanceAnalytics: React.FC = () => {
         cutoffDate.setDate(now.getDate() - 30);
     }
 
-    return allOrders.filter(order => new Date(order.created_at) >= cutoffDate);
+    return allOrders.filter(order => {
+      const orderDate = order.created_at ? new Date(order.created_at) : new Date();
+      return orderDate >= cutoffDate;
+    });
   }, [stockOrders, optionsOrders, timeRange]);
 
   // Calculate performance metrics
@@ -124,7 +128,7 @@ const OrderPerformanceAnalytics: React.FC = () => {
     const fillTimes = filledOrders
       .filter(o => o.filled_at && o.created_at)
       .map(o => {
-        const created = new Date(o.created_at);
+        const created = new Date(o.created_at!);
         const filled = new Date(o.filled_at!);
         return (filled.getTime() - created.getTime()) / (1000 * 60); // minutes
       });
@@ -179,7 +183,7 @@ const OrderPerformanceAnalytics: React.FC = () => {
     const statsMap = new Map<string, { orders: number; filled: number; volume: number }>();
     
     filteredOrders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString();
+      const date = (order.created_at ? new Date(order.created_at) : new Date()).toLocaleDateString();
       const current = statsMap.get(date) || { orders: 0, filled: 0, volume: 0 };
       
       current.orders++;
@@ -331,7 +335,7 @@ const OrderPerformanceAnalytics: React.FC = () => {
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Target color="success" />
+                <SpeedIcon color="success" />
                 <Typography variant="h4">{metrics.fillRate.toFixed(1)}%</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">Fill Rate</Typography>
@@ -391,7 +395,7 @@ const OrderPerformanceAnalytics: React.FC = () => {
                     dataKey="value"
                     label={({ name, percentage }) => `${name} (${percentage}%)`}
                   >
-                    {statusDistribution.map((entry, index) => (
+                    {statusDistribution.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

@@ -5,7 +5,7 @@ import {
   CardHeader,
   Typography,
   Box,
-  Alert,
+  // Alert,
   CircularProgress,
   IconButton,
   Button,
@@ -34,7 +34,7 @@ import {
   Visibility as WatchIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
-  Edit as EditIcon,
+  // Edit as EditIcon,
   TrendingUp,
   TrendingDown,
   TrendingFlat,
@@ -67,9 +67,9 @@ const Watchlists: React.FC = () => {
   const { selectedAccount } = useAccountContext();
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedWatchlist, setSelectedWatchlist] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  // const [, setLoading] = useState(false);
   const [priceLoading, setPriceLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   
   // Dialog states
   const [showCreateWatchlistDialog, setShowCreateWatchlistDialog] = useState(false);

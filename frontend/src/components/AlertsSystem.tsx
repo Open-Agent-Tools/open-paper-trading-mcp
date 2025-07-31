@@ -32,9 +32,9 @@ import {
   Notifications as AlertIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
-  Edit as EditIcon,
-  NotificationsActive as ActiveIcon,
-  NotificationsOff as InactiveIcon,
+  // Edit as EditIcon,
+  // NotificationsActive as ActiveIcon,
+  // NotificationsOff as InactiveIcon,
 } from '@mui/icons-material';
 import { useAccountContext } from '../contexts/AccountContext';
 import { searchStocks, getStockPrice } from '../services/apiClient';
@@ -61,7 +61,7 @@ const AlertsSystem: React.FC = () => {
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   
   // Form state
   const [newAlert, setNewAlert] = useState<Partial<PriceAlert>>({

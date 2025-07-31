@@ -73,7 +73,7 @@ const OrderExecutionMonitor: React.FC<OrderExecutionMonitorProps> = ({
 
               return {
                 ...order,
-                currentPrice,
+                currentPrice: currentPrice ?? undefined,
                 ...calculateExecutionMetrics(order, currentPrice)
               };
             } catch (error) {
@@ -95,7 +95,7 @@ const OrderExecutionMonitor: React.FC<OrderExecutionMonitorProps> = ({
     }
   }, [selectedAccount, showOnlyActive, maxOrdersToShow]);
 
-  const calculateExecutionMetrics = (order: Order, currentPrice: number | null) => {
+  const calculateExecutionMetrics = (order: Order, currentPrice: number | null | undefined) => {
     if (!currentPrice) return {};
 
     const metrics: Partial<OrderWithExecution> = {};

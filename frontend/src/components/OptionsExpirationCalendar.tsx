@@ -27,7 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useAccountContext } from '../contexts/AccountContext';
 import { getPositions } from '../services/apiClient';
-import type { Position } from '../types';
+// import type { Position } from '../types';
 
 interface ExpirationEvent {
   symbol: string;
@@ -87,9 +87,9 @@ const OptionsExpirationCalendar: React.FC = () => {
         const positions = response.positions || [];
         
         // Filter and process options positions
-        const optionsPositions = positions.filter(p => p.option_type && p.expiration_date);
+        const optionsPositions = positions.filter((p: any) => p.option_type && p.expiration_date);
         
-        const expirationEvents: ExpirationEvent[] = optionsPositions.map(position => {
+        const expirationEvents: ExpirationEvent[] = optionsPositions.map((position: any) => {
           const { daysToExpiration, status } = calculateExpirationStatus(position.expiration_date!);
           
           return {
