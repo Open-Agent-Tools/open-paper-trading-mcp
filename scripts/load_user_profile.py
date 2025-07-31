@@ -172,6 +172,22 @@ class UITesterProfileLoader:
             {"symbol": "GOOGL250214C00130000", "action": "BUY", "quantity": 3, "price": 4.20, "date": "2024-12-18"},
         ]
 
+    def _parse_option_expiry(self, symbol: str) -> date:
+        """Parse expiration date from option symbol."""
+        # Find position of C or P
+        cp_pos = -1
+        for i, char in enumerate(symbol):
+            if char in ['C', 'P']:
+                cp_pos = i
+                break
+        
+        if cp_pos == -1:
+            raise ValueError(f"No C or P found in symbol: {symbol}")
+        
+        # Date is the 6 characters before C/P
+        expiry_str = symbol[cp_pos-6:cp_pos]  # e.g., "250221"
+        return datetime.strptime(f"20{expiry_str}", "%Y%m%d").date()
+
     async def load_profile(self) -> dict:
         """Load complete UITESTER01 profile with all test data."""
         print("🚀 Loading UITESTER01 test profile...")
@@ -252,7 +268,27 @@ class UITesterProfileLoader:
         print("🧹 Cleaning up existing UITESTER01 data...")
 
         # Delete in proper order due to foreign key constraints
-        # First handle tables with direct account_id relationships
+        # Delete order_legs first (no account_id, but via multi_leg_orders)
+        await db.execute(
+            text("""
+            DELETE FROM order_legs WHERE multi_leg_order_id IN (
+                SELECT id FROM multi_leg_orders WHERE account_id = :account_id
+            )
+        """),
+            {"account_id": self.account_id},
+        )
+        
+        # Delete strategy_performance (no account_id, but via recognized_strategies)
+        await db.execute(
+            text("""
+            DELETE FROM strategy_performance WHERE strategy_id IN (
+                SELECT id FROM recognized_strategies WHERE account_id = :account_id
+            )
+        """),
+            {"account_id": self.account_id},
+        )
+        
+        # Now handle tables with direct account_id relationships
         direct_account_tables = [
             "portfolio_greeks_snapshots",
             "recognized_strategies",
@@ -267,10 +303,6 @@ class UITesterProfileLoader:
                 text(f"DELETE FROM {table} WHERE account_id = :account_id"),
                 {"account_id": self.account_id},
             )
-        
-        # Handle tables with indirect relationships or different column names
-        # Delete order_legs via multi_leg_order_id (handled by cascade)
-        # Delete strategy_performance via strategy_id (handled by cascade)
         
         # Clean up test data tables with scenario filter
         test_data_tables = [
@@ -640,7 +672,7 @@ class UITesterProfileLoader:
                         "order_type": "BUY" if leg["quantity"] > 0 else "SELL",
                         "price": leg["price"],
                         "strike": leg["strike"],
-                        "expiration_date": datetime.strptime(f"20{leg['symbol'][4:10]}", "%Y%m%d").date(),
+                        "expiration_date": self._parse_option_expiry(leg["symbol"]),
                         "option_type": leg["option_type"],
                         "underlying_symbol": strategy["underlying"],
                         "filled_quantity": abs(leg["quantity"]),
@@ -816,12 +848,31 @@ class UITesterProfileLoader:
                 quote_id = str(uuid.uuid4())
 
                 # Parse option details from symbol 
-                # Format: AAPL250221C00180000 -> AAPL 25/02/21 C 00180000
+                # Format: AAPL250221C00180000 or GOOGL250214C00130000
+                # Find the date part by locating C or P
                 symbol = option["symbol"]
-                expiry_str = symbol[4:10]  # 250221
-                expiry_date = datetime.strptime(f"20{expiry_str}", "%Y%m%d").date()
-                strike = float(symbol[11:19]) / 1000  # 00180000 -> 180.000
-                option_type = "call" if symbol[10] == "C" else "put"
+                try:
+                    # Find position of C or P
+                    cp_pos = -1
+                    for i, char in enumerate(symbol):
+                        if char in ['C', 'P']:
+                            cp_pos = i
+                            break
+                    
+                    if cp_pos == -1:
+                        raise ValueError("No C or P found in symbol")
+                    
+                    # Date is the 6 characters before C/P
+                    expiry_str = symbol[cp_pos-6:cp_pos]  # e.g., "250221"
+                    expiry_date = datetime.strptime(f"20{expiry_str}", "%Y%m%d").date()
+                    
+                    # Strike is after C/P
+                    strike_str = symbol[cp_pos+1:]
+                    strike = float(strike_str) / 1000  # 00180000 -> 180.000  
+                    option_type = "call" if symbol[cp_pos] == "C" else "put"
+                except Exception as e:
+                    print(f"  ⚠️  Error parsing option symbol '{symbol}': {e}")
+                    continue
 
                 await db.execute(
                     text("""

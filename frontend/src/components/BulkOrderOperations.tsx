@@ -47,7 +47,11 @@ interface BulkOperationResult {
   message: string;
 }
 
-const BulkOrderOperations: React.FC = () => {
+interface BulkOrderOperationsProps {
+  onOrdersModified?: () => void;
+}
+
+const BulkOrderOperations: React.FC<BulkOrderOperationsProps> = ({ onOrdersModified }) => {
   const theme = useTheme();
   const { selectedAccount } = useAccountContext();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -163,6 +167,9 @@ const BulkOrderOperations: React.FC = () => {
       setLoading(false);
       setShowBulkDialog(false);
       setBulkOperation('');
+      // Refresh orders list and notify parent component
+      fetchOrders();
+      onOrdersModified?.();
     }
   };
 

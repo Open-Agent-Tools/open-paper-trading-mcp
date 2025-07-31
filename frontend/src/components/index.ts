@@ -38,6 +38,12 @@ export { default as OrdersTable } from './OrdersTable';
 export { default as BulkOrderOperations } from './BulkOrderOperations';
 export { default as OrderTemplates } from './OrderTemplates';
 
+// Advanced Order Lifecycle Components
+export { default as OrderModification } from './OrderModification';
+export { default as OrderExecutionMonitor } from './OrderExecutionMonitor';
+export { default as OrderHistoryEnhanced } from './OrderHistoryEnhanced';
+export { default as OrderPerformanceAnalytics } from './OrderPerformanceAnalytics';
+
 // Advanced Trading Components
 export { default as Watchlists } from './Watchlists';
 export { default as AlertsSystem } from './AlertsSystem';
