@@ -55,7 +55,7 @@ uv run ruff format .             # Format code (replaces black + isort)
 uv run mypy .                    # Type checking
 
 # Database Setup (required for tests)
-python3 scripts/setup_test_db.py        # Set up test database
+python3 scripts/setup_test_db.py        # Set up separate test database (trading_db_test)
 python3 scripts/setup_test_db.py cleanup # Clean up test database
 ```
 

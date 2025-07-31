@@ -61,12 +61,12 @@ def pytest_configure(config):
 
 # Set testing environment variables BEFORE importing the app
 os.environ["TESTING"] = "True"
-# Use Docker PostgreSQL database for all tests
+# Use SEPARATE test database to protect production data
 os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db"
+    "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db_test"
 )
 os.environ["TEST_DATABASE_URL"] = (
-    "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db"
+    "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db_test"
 )
 os.environ["QUOTE_ADAPTER_TYPE"] = "test"  # Use test data adapter
 
@@ -109,7 +109,9 @@ async def setup_synthetic_database():
     await session_engine.dispose()
 
 
-async def _safe_session_cleanup(session: AsyncSession, force_rollback: bool = False) -> None:
+async def _safe_session_cleanup(
+    session: AsyncSession, force_rollback: bool = False
+) -> None:
     """Safely clean up session state, handling rolled-back transactions."""
     try:
         if force_rollback:
@@ -146,6 +148,7 @@ async def _safe_table_cleanup(engine) -> None:
             if attempt < max_retries - 1:
                 print(f"Table cleanup attempt {attempt + 1} failed, retrying: {e}")
                 import asyncio
+
                 await asyncio.sleep(0.1)  # Brief delay before retry
             else:
                 print(f"Table cleanup failed after {max_retries} attempts: {e}")
@@ -211,6 +214,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
             await test_engine.dispose()
             # Give a moment for any pending cleanups
             import asyncio
+
             await asyncio.sleep(0.1)
         except Exception as e:
             # Suppress disposal errors during test cleanup to avoid warnings
@@ -268,6 +272,7 @@ async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
             await test_engine.dispose()
             # Give a moment for any pending cleanups
             import asyncio
+
             await asyncio.sleep(0.1)
         except Exception as e:
             # Suppress disposal errors during test cleanup to avoid warnings

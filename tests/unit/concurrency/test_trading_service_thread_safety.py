@@ -26,9 +26,17 @@ from app.services.trading_service import TradingService
 
 # Filter out asyncio RuntimeWarnings about unawaited coroutines in concurrent testing
 # These warnings are expected during high-concurrency stress testing and don't indicate bugs
-warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*coroutine.*was never awaited")
-warnings.filterwarnings("ignore", category=RuntimeWarning, message=r".*Queue\.get.*was never awaited")  
-warnings.filterwarnings("ignore", category=RuntimeWarning, message=r".*Connection\._cancel.*was never awaited")
+warnings.filterwarnings(
+    "ignore", category=RuntimeWarning, message=".*coroutine.*was never awaited"
+)
+warnings.filterwarnings(
+    "ignore", category=RuntimeWarning, message=r".*Queue\.get.*was never awaited"
+)
+warnings.filterwarnings(
+    "ignore",
+    category=RuntimeWarning,
+    message=r".*Connection\._cancel.*was never awaited",
+)
 # Catch-all for any asyncio-related warnings during stress testing
 warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*asyncio.*")
 warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*sqlalchemy.*")
@@ -129,8 +137,9 @@ class TestTradingServiceThreadSafety:
         try:
             await service._ensure_account_exists()
         except Exception:
-            # If account creation fails under high concurrency, create manually 
+            # If account creation fails under high concurrency, create manually
             from app.models.database.trading import Account as DBAccount
+
             account = DBAccount(owner=owner_id, cash_balance=10000.0)
             db_session.add(account)
             await db_session.commit()
@@ -218,7 +227,7 @@ class TestTradingServiceThreadSafety:
         assert len(results) == num_orders, (
             "All requests should complete (success or failure)"
         )
-        
+
         # If some orders succeeded, verify they are valid
         if len(successful_orders) > 0:
             # Verify all orders are unique
@@ -226,10 +235,12 @@ class TestTradingServiceThreadSafety:
             assert len(order_ids) == len(successful_orders), (
                 "All successful orders should have unique IDs"
             )
-        
+
         # Log the concurrency stress test results
-        print(f"Concurrency stress test: {len(successful_orders)}/{num_orders} orders succeeded")
-        print(f"This demonstrates the system's behavior under high concurrent load")
+        print(
+            f"Concurrency stress test: {len(successful_orders)}/{num_orders} orders succeeded"
+        )
+        print("This demonstrates the system's behavior under high concurrent load")
 
         # Verify orders in database (if any succeeded)
         if len(successful_orders) > 0:
@@ -422,7 +433,7 @@ class TestTradingServiceThreadSafety:
                     await db_session.rollback()
                 except Exception:
                     pass  # Ignore rollback errors to prevent nested exceptions
-                
+
                 # Suppress warnings when converting exception to string during stress testing
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", RuntimeWarning)
@@ -441,7 +452,9 @@ class TestTradingServiceThreadSafety:
         ]
 
         print(f"Successful balance updates: {len(successful_updates)}")
-        print(f"Concurrency stress test: {len(successful_updates)}/{num_updates} balance updates succeeded")
+        print(
+            f"Concurrency stress test: {len(successful_updates)}/{num_updates} balance updates succeeded"
+        )
 
         # Verify final balance consistency (if any updates succeeded)
         if len(successful_updates) > 0:
@@ -466,7 +479,9 @@ class TestTradingServiceThreadSafety:
             except Exception as e:
                 print(f"Balance verification skipped due to concurrency effects: {e}")
         else:
-            print("All balance updates failed due to high concurrency - this demonstrates stress testing")
+            print(
+                "All balance updates failed due to high concurrency - this demonstrates stress testing"
+            )
 
     def test_thread_pool_trading_service_operations(self):
         """Test TradingService operations using actual threads (not asyncio)."""
