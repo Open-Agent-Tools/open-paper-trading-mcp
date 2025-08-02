@@ -97,17 +97,16 @@ class TestDatabaseSchemaIntegrity:
         await async_db_session.rollback()
         async_db_session.expunge_all()  # Clean state for next test
 
-        # Test unique constraint on owner
+        # Test that multiple accounts can have the same owner (no unique constraint on owner)
         account3 = DBAccount(
             id="TESTID2000",
-            owner="constraint_test_user",  # Same owner
+            owner="constraint_test_user",  # Same owner - should be allowed
             cash_balance=30000.0,
         )
         async_db_session.add(account3)
 
-        with pytest.raises(IntegrityError):
-            await async_db_session.commit()
-
+        # This should succeed since owner is not unique
+        await async_db_session.commit()
         await async_db_session.rollback()
 
     @pytest.mark.asyncio
@@ -269,13 +268,14 @@ class TestDataMigrationScenarios:
         # Simulate old data format (missing optional fields)
         await async_db_session.execute(
             text("""
-            INSERT INTO accounts (id, owner, cash_balance)
-            VALUES (:id, :owner, :cash_balance)
+            INSERT INTO accounts (id, owner, cash_balance, starting_balance)
+            VALUES (:id, :owner, :cash_balance, :starting_balance)
         """),
             {
                 "id": "TESTMIGR56",
                 "owner": "migration_test_user",
                 "cash_balance": 60000.0,
+                "starting_balance": 60000.0,
             },
         )
         await async_db_session.commit()

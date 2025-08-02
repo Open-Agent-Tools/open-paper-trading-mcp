@@ -67,12 +67,17 @@ class TestAccountBalanceRetrieval:
         # Pre-create account manually using raw SQL to avoid model issues
         account_id = "TEST123456"
         insert_query = text(
-            "INSERT INTO accounts (id, owner, cash_balance, created_at) "
-            "VALUES (:id, :owner, :cash_balance, NOW())"
+            "INSERT INTO accounts (id, owner, cash_balance, starting_balance, created_at) "
+            "VALUES (:id, :owner, :cash_balance, :starting_balance, NOW())"
         )
         await db_session.execute(
             insert_query,
-            {"id": account_id, "owner": owner, "cash_balance": expected_balance},
+            {
+                "id": account_id, 
+                "owner": owner, 
+                "cash_balance": expected_balance,
+                "starting_balance": expected_balance
+            },
         )
         await db_session.commit()
 

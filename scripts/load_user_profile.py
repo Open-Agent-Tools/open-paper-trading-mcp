@@ -130,10 +130,34 @@ class UITesterProfileLoader:
                 "strategy_name": "TSLA Iron Condor Feb 2025",
                 "underlying": "TSLA",
                 "legs": [
-                    {"symbol": "TSLA250221P00180000", "strike": 180, "option_type": "put", "quantity": -1, "price": 3.50},
-                    {"symbol": "TSLA250221P00190000", "strike": 190, "option_type": "put", "quantity": 1, "price": 5.25},
-                    {"symbol": "TSLA250221C00220000", "strike": 220, "option_type": "call", "quantity": 1, "price": 6.75},
-                    {"symbol": "TSLA250221C00230000", "strike": 230, "option_type": "call", "quantity": -1, "price": 4.50},
+                    {
+                        "symbol": "TSLA250221P00180000",
+                        "strike": 180,
+                        "option_type": "put",
+                        "quantity": -1,
+                        "price": 3.50,
+                    },
+                    {
+                        "symbol": "TSLA250221P00190000",
+                        "strike": 190,
+                        "option_type": "put",
+                        "quantity": 1,
+                        "price": 5.25,
+                    },
+                    {
+                        "symbol": "TSLA250221C00220000",
+                        "strike": 220,
+                        "option_type": "call",
+                        "quantity": 1,
+                        "price": 6.75,
+                    },
+                    {
+                        "symbol": "TSLA250221C00230000",
+                        "strike": 230,
+                        "option_type": "call",
+                        "quantity": -1,
+                        "price": 4.50,
+                    },
                 ],
                 "net_credit": 1.50,  # $150 credit received
                 "date": "2024-12-20",
@@ -143,8 +167,20 @@ class UITesterProfileLoader:
                 "strategy_name": "MSFT Bull Call Spread",
                 "underlying": "MSFT",
                 "legs": [
-                    {"symbol": "MSFT250117C00290000", "strike": 290, "option_type": "call", "quantity": 2, "price": 8.50},
-                    {"symbol": "MSFT250117C00310000", "strike": 310, "option_type": "call", "quantity": -2, "price": 3.25},
+                    {
+                        "symbol": "MSFT250117C00290000",
+                        "strike": 290,
+                        "option_type": "call",
+                        "quantity": 2,
+                        "price": 8.50,
+                    },
+                    {
+                        "symbol": "MSFT250117C00310000",
+                        "strike": 310,
+                        "option_type": "call",
+                        "quantity": -2,
+                        "price": 3.25,
+                    },
                 ],
                 "net_debit": 5.25,  # $1050 debit paid
                 "date": "2024-12-10",
@@ -154,22 +190,106 @@ class UITesterProfileLoader:
         # Historical orders configuration (expanded)
         self.historical_orders = [
             # Stock orders (original XOM orders plus current holdings)
-            {"symbol": "XOM", "action": "BUY", "quantity": 100, "price": 58.50, "date": "2024-12-01"},
-            {"symbol": "XOM", "action": "SELL", "quantity": 50, "price": 61.25, "date": "2024-12-15"},
-            {"symbol": "XOM", "action": "BUY", "quantity": 75, "price": 59.75, "date": "2025-01-05"},
-            {"symbol": "XOM", "action": "SELL", "quantity": 25, "price": 62.00, "date": "2025-01-20"},
-            {"symbol": "XOM", "action": "BUY", "quantity": 200, "price": 57.80, "date": "2025-02-10"},
+            {
+                "symbol": "XOM",
+                "action": "BUY",
+                "quantity": 100,
+                "price": 58.50,
+                "date": "2024-12-01",
+            },
+            {
+                "symbol": "XOM",
+                "action": "SELL",
+                "quantity": 50,
+                "price": 61.25,
+                "date": "2024-12-15",
+            },
+            {
+                "symbol": "XOM",
+                "action": "BUY",
+                "quantity": 75,
+                "price": 59.75,
+                "date": "2025-01-05",
+            },
+            {
+                "symbol": "XOM",
+                "action": "SELL",
+                "quantity": 25,
+                "price": 62.00,
+                "date": "2025-01-20",
+            },
+            {
+                "symbol": "XOM",
+                "action": "BUY",
+                "quantity": 200,
+                "price": 57.80,
+                "date": "2025-02-10",
+            },
             # Current stock holdings orders
-            {"symbol": "AAPL", "action": "BUY", "quantity": 50, "price": 150.00, "date": "2024-11-15"},
-            {"symbol": "MSFT", "action": "BUY", "quantity": 25, "price": 280.00, "date": "2024-11-20"},
-            {"symbol": "GOOGL", "action": "BUY", "quantity": 15, "price": 120.00, "date": "2024-11-25"},
-            {"symbol": "TSLA", "action": "BUY", "quantity": 30, "price": 200.00, "date": "2024-12-01"},
-            {"symbol": "SPY", "action": "BUY", "quantity": 100, "price": 400.00, "date": "2024-12-05"},
+            {
+                "symbol": "AAPL",
+                "action": "BUY",
+                "quantity": 50,
+                "price": 150.00,
+                "date": "2024-11-15",
+            },
+            {
+                "symbol": "MSFT",
+                "action": "BUY",
+                "quantity": 25,
+                "price": 280.00,
+                "date": "2024-11-20",
+            },
+            {
+                "symbol": "GOOGL",
+                "action": "BUY",
+                "quantity": 15,
+                "price": 120.00,
+                "date": "2024-11-25",
+            },
+            {
+                "symbol": "TSLA",
+                "action": "BUY",
+                "quantity": 30,
+                "price": 200.00,
+                "date": "2024-12-01",
+            },
+            {
+                "symbol": "SPY",
+                "action": "BUY",
+                "quantity": 100,
+                "price": 400.00,
+                "date": "2024-12-05",
+            },
             # Options orders
-            {"symbol": "AAPL250221C00180000", "action": "BUY", "quantity": 2, "price": 5.50, "date": "2024-12-10"},
-            {"symbol": "MSFT250117P00300000", "action": "BUY", "quantity": 1, "price": 12.75, "date": "2024-12-12"},
-            {"symbol": "SPY250321C00420000", "action": "SELL", "quantity": 1, "price": 8.25, "date": "2024-12-15"},
-            {"symbol": "GOOGL250214C00130000", "action": "BUY", "quantity": 3, "price": 4.20, "date": "2024-12-18"},
+            {
+                "symbol": "AAPL250221C00180000",
+                "action": "BUY",
+                "quantity": 2,
+                "price": 5.50,
+                "date": "2024-12-10",
+            },
+            {
+                "symbol": "MSFT250117P00300000",
+                "action": "BUY",
+                "quantity": 1,
+                "price": 12.75,
+                "date": "2024-12-12",
+            },
+            {
+                "symbol": "SPY250321C00420000",
+                "action": "SELL",
+                "quantity": 1,
+                "price": 8.25,
+                "date": "2024-12-15",
+            },
+            {
+                "symbol": "GOOGL250214C00130000",
+                "action": "BUY",
+                "quantity": 3,
+                "price": 4.20,
+                "date": "2024-12-18",
+            },
         ]
 
     def _parse_option_expiry(self, symbol: str) -> date:
@@ -177,15 +297,15 @@ class UITesterProfileLoader:
         # Find position of C or P
         cp_pos = -1
         for i, char in enumerate(symbol):
-            if char in ['C', 'P']:
+            if char in ["C", "P"]:
                 cp_pos = i
                 break
-        
+
         if cp_pos == -1:
             raise ValueError(f"No C or P found in symbol: {symbol}")
-        
+
         # Date is the 6 characters before C/P
-        expiry_str = symbol[cp_pos-6:cp_pos]  # e.g., "250221"
+        expiry_str = symbol[cp_pos - 6 : cp_pos]  # e.g., "250221"
         return datetime.strptime(f"20{expiry_str}", "%Y%m%d").date()
 
     async def load_profile(self) -> dict:
@@ -277,7 +397,7 @@ class UITesterProfileLoader:
         """),
             {"account_id": self.account_id},
         )
-        
+
         # Delete strategy_performance (no account_id, but via recognized_strategies)
         await db.execute(
             text("""
@@ -287,7 +407,7 @@ class UITesterProfileLoader:
         """),
             {"account_id": self.account_id},
         )
-        
+
         # Now handle tables with direct account_id relationships
         direct_account_tables = [
             "portfolio_greeks_snapshots",
@@ -297,25 +417,25 @@ class UITesterProfileLoader:
             "orders",
             "positions",
         ]
-        
+
         for table in direct_account_tables:
             await db.execute(
                 text(f"DELETE FROM {table} WHERE account_id = :account_id"),
                 {"account_id": self.account_id},
             )
-        
+
         # Clean up test data tables with scenario filter
         test_data_tables = [
             "test_stock_quotes",
             "test_option_quotes",
         ]
-        
+
         for table in test_data_tables:
             await db.execute(
                 text(f"DELETE FROM {table} WHERE scenario = :scenario"),
                 {"scenario": "ui_testing"},
             )
-        
+
         # Finally delete the account
         await db.execute(
             text("DELETE FROM accounts WHERE id = :account_id"),
@@ -650,7 +770,7 @@ class UITesterProfileLoader:
             # Create order legs
             for leg in strategy["legs"]:
                 leg_id = str(uuid.uuid4())
-                
+
                 await db.execute(
                     text("""
                     INSERT INTO order_legs (
@@ -721,7 +841,9 @@ class UITesterProfileLoader:
         # Create snapshots for the last 30 days
         for days_back in range(0, 30, 7):  # Weekly snapshots
             snapshot_date = (datetime.now() - timedelta(days=days_back)).date()
-            snapshot_time = datetime.combine(snapshot_date, datetime.min.time()).replace(hour=16, minute=0)
+            snapshot_time = datetime.combine(
+                snapshot_date, datetime.min.time()
+            ).replace(hour=16, minute=0)
 
             snapshot_id = str(uuid.uuid4())
 
@@ -768,7 +890,7 @@ class UITesterProfileLoader:
                     "theta_dollars": base_theta * 100,
                     "total_portfolio_value": portfolio_value,
                     "options_value": portfolio_value * 0.15,  # ~15% options
-                    "stocks_value": portfolio_value * 0.85,   # ~85% stocks
+                    "stocks_value": portfolio_value * 0.85,  # ~85% stocks
                 },
             )
 
@@ -798,9 +920,11 @@ class UITesterProfileLoader:
         for symbol, base_price in stock_prices.items():
             for days_back in range(0, 10):  # Last 10 days
                 quote_date = (datetime.now() - timedelta(days=days_back)).date()
-                
+
                 # Add some realistic price variation
-                price_variation = base_price * (0.98 + (days_back * 0.004))  # Slight trend
+                price_variation = base_price * (
+                    0.98 + (days_back * 0.004)
+                )  # Slight trend
                 bid = price_variation - 0.02
                 ask = price_variation + 0.02
 
@@ -839,7 +963,7 @@ class UITesterProfileLoader:
         for option in options_data:
             for days_back in range(0, 5):  # Last 5 days for options
                 quote_date = (datetime.now() - timedelta(days=days_back)).date()
-                
+
                 base_price = option["price"]
                 price_variation = base_price * (0.95 + (days_back * 0.02))
                 bid = price_variation - 0.10
@@ -847,7 +971,7 @@ class UITesterProfileLoader:
 
                 quote_id = str(uuid.uuid4())
 
-                # Parse option details from symbol 
+                # Parse option details from symbol
                 # Format: AAPL250221C00180000 or GOOGL250214C00130000
                 # Find the date part by locating C or P
                 symbol = option["symbol"]
@@ -855,20 +979,20 @@ class UITesterProfileLoader:
                     # Find position of C or P
                     cp_pos = -1
                     for i, char in enumerate(symbol):
-                        if char in ['C', 'P']:
+                        if char in ["C", "P"]:
                             cp_pos = i
                             break
-                    
+
                     if cp_pos == -1:
                         raise ValueError("No C or P found in symbol")
-                    
+
                     # Date is the 6 characters before C/P
-                    expiry_str = symbol[cp_pos-6:cp_pos]  # e.g., "250221"
+                    expiry_str = symbol[cp_pos - 6 : cp_pos]  # e.g., "250221"
                     expiry_date = datetime.strptime(f"20{expiry_str}", "%Y%m%d").date()
-                    
+
                     # Strike is after C/P
-                    strike_str = symbol[cp_pos+1:]
-                    strike = float(strike_str) / 1000  # 00180000 -> 180.000  
+                    strike_str = symbol[cp_pos + 1 :]
+                    strike = float(strike_str) / 1000  # 00180000 -> 180.000
                     option_type = "call" if symbol[cp_pos] == "C" else "put"
                 except Exception as e:
                     print(f"  ⚠️  Error parsing option symbol '{symbol}': {e}")
@@ -1012,7 +1136,10 @@ async def main():
         loader = UITesterProfileLoader()
         results = await loader.load_profile()
 
-        if results["account_created"] and (results["stock_positions_created"] > 0 or results["options_positions_created"] > 0):
+        if results["account_created"] and (
+            results["stock_positions_created"] > 0
+            or results["options_positions_created"] > 0
+        ):
             print("\n🎉 Profile loading complete!")
             print(f"   Account: {loader.account_id}")
             print(f"   Owner: {loader.owner_name}")

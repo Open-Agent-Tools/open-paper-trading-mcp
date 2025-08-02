@@ -48,7 +48,10 @@ class AdapterFactoryConfig:
                 "priority": 998,  # Slightly higher priority than CSV test data
                 "timeout": 5.0,
                 "cache_ttl": 3600.0,  # 1 hour for test data
-                "config": {"current_date": "${TEST_DATE}", "scenario": "${TEST_SCENARIO}"},
+                "config": {
+                    "current_date": "${TEST_DATE}",
+                    "scenario": "${TEST_SCENARIO}",
+                },
             },
             "robinhood": {
                 "enabled": True,  # Requires credentials

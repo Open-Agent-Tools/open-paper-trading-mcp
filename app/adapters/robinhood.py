@@ -376,7 +376,9 @@ class RobinhoodAdapter(QuoteAdapter):
 
         # If no expiration date specified, return empty chain (UI should select expiration first)
         if expiration_date is None:
-            logger.info(f"No expiration date specified for {underlying}, returning empty chain")
+            logger.info(
+                f"No expiration date specified for {underlying}, returning empty chain"
+            )
             return OptionsChain(
                 underlying_symbol=underlying,
                 expiration_date=datetime.now(UTC).date(),
@@ -429,23 +431,29 @@ class RobinhoodAdapter(QuoteAdapter):
                 all_instruments = rh.options.find_options_by_expiration(
                     underlying, expiration_str
                 )
-                
+
                 if not all_instruments:
                     continue
-                
+
                 # Separate calls and puts
-                all_calls = [opt for opt in all_instruments if opt.get('type') == 'call']
-                all_puts = [opt for opt in all_instruments if opt.get('type') == 'put']
-                
+                all_calls = [
+                    opt for opt in all_instruments if opt.get("type") == "call"
+                ]
+                all_puts = [opt for opt in all_instruments if opt.get("type") == "put"]
+
                 # Sort by strike price
-                all_calls.sort(key=lambda x: float(x.get('strike_price', 0)))
-                all_puts.sort(key=lambda x: float(x.get('strike_price', 0)))
-                
+                all_calls.sort(key=lambda x: float(x.get("strike_price", 0)))
+                all_puts.sort(key=lambda x: float(x.get("strike_price", 0)))
+
                 # Select strikes around current underlying price (10 below, 10 above)
                 if underlying_price:
                     # Find strikes closest to underlying price
-                    call_instruments = self._select_strikes_around_price(all_calls, underlying_price, 10)
-                    put_instruments = self._select_strikes_around_price(all_puts, underlying_price, 10)
+                    call_instruments = self._select_strikes_around_price(
+                        all_calls, underlying_price, 10
+                    )
+                    put_instruments = self._select_strikes_around_price(
+                        all_puts, underlying_price, 10
+                    )
                 else:
                     # Fallback to first 10 strikes if no underlying price
                     call_instruments = all_calls[:10]
@@ -524,37 +532,69 @@ class RobinhoodAdapter(QuoteAdapter):
             return None
 
     def _create_option_quote_from_instrument(
-        self, instrument: dict[str, Any], underlying_asset: Asset, underlying_price: float | None
+        self,
+        instrument: dict[str, Any],
+        underlying_asset: Asset,
+        underlying_price: float | None,
     ) -> OptionQuote | None:
         """Create an OptionQuote directly from Robinhood instrument data."""
         try:
             # Create the option asset first
             option_type = instrument.get("type", "").lower()
-            option_asset = self._create_option_asset(instrument, underlying_asset, option_type)
+            option_asset = self._create_option_asset(
+                instrument, underlying_asset, option_type
+            )
             if not option_asset:
                 return None
 
             # Extract pricing data from instrument
-            bid = float(instrument.get("bid_price", 0)) if instrument.get("bid_price") else 0.0
-            ask = float(instrument.get("ask_price", 0)) if instrument.get("ask_price") else 0.0
-            
+            bid = (
+                float(instrument.get("bid_price", 0))
+                if instrument.get("bid_price")
+                else 0.0
+            )
+            ask = (
+                float(instrument.get("ask_price", 0))
+                if instrument.get("ask_price")
+                else 0.0
+            )
+
             # Use mark_price as the primary price, fallback to midpoint of bid/ask
             price = None
-            if instrument.get("mark_price"):
-                price = float(instrument.get("mark_price"))
+            mark_price = instrument.get("mark_price")
+            if mark_price is not None:
+                price = float(mark_price)
             elif bid and ask:
                 price = (bid + ask) / 2
 
-            volume = int(float(instrument.get("volume", 0))) if instrument.get("volume") else None
-            open_interest = int(float(instrument.get("open_interest", 0))) if instrument.get("open_interest") else None
+            volume = (
+                int(float(instrument.get("volume", 0)))
+                if instrument.get("volume")
+                else None
+            )
+            open_interest = (
+                int(float(instrument.get("open_interest", 0)))
+                if instrument.get("open_interest")
+                else None
+            )
 
             # Extract Greeks if available
-            delta = float(instrument.get("delta", 0)) if instrument.get("delta") else None
-            gamma = float(instrument.get("gamma", 0)) if instrument.get("gamma") else None
-            theta = float(instrument.get("theta", 0)) if instrument.get("theta") else None
+            delta = (
+                float(instrument.get("delta", 0)) if instrument.get("delta") else None
+            )
+            gamma = (
+                float(instrument.get("gamma", 0)) if instrument.get("gamma") else None
+            )
+            theta = (
+                float(instrument.get("theta", 0)) if instrument.get("theta") else None
+            )
             vega = float(instrument.get("vega", 0)) if instrument.get("vega") else None
             rho = float(instrument.get("rho", 0)) if instrument.get("rho") else None
-            implied_volatility = float(instrument.get("implied_volatility", 0)) if instrument.get("implied_volatility") else None
+            implied_volatility = (
+                float(instrument.get("implied_volatility", 0))
+                if instrument.get("implied_volatility")
+                else None
+            )
 
             return OptionQuote(
                 asset=option_asset,
@@ -579,31 +619,33 @@ class RobinhoodAdapter(QuoteAdapter):
             logger.error(f"Error creating option quote from instrument: {e}")
             return None
 
-    def _select_strikes_around_price(self, options: list[dict], underlying_price: float, count: int) -> list[dict]:
+    def _select_strikes_around_price(
+        self, options: list[dict], underlying_price: float, count: int
+    ) -> list[dict]:
         """Select strikes centered around the underlying price."""
         if not options or underlying_price <= 0:
             return options[:count]
-        
+
         # Find the option with strike closest to underlying price
         closest_idx = 0
-        min_diff = float('inf')
-        
+        min_diff = float("inf")
+
         for i, option in enumerate(options):
-            strike = float(option.get('strike_price', 0))
+            strike = float(option.get("strike_price", 0))
             diff = abs(strike - underlying_price)
             if diff < min_diff:
                 min_diff = diff
                 closest_idx = i
-        
+
         # Select strikes around the closest one
         half_count = count // 2
         start_idx = max(0, closest_idx - half_count)
         end_idx = min(len(options), start_idx + count)
-        
+
         # Adjust start if we're near the end
         if end_idx - start_idx < count:
             start_idx = max(0, end_idx - count)
-        
+
         return options[start_idx:end_idx]
 
     async def is_market_open(self) -> bool:
@@ -760,20 +802,20 @@ class RobinhoodAdapter(QuoteAdapter):
         """Get information about sample data."""
         return {"message": "RobinhoodAdapter uses live data, not sample data"}
 
-    async def get_expiration_dates(self, underlying: str) -> list[date]:
+    def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
-        if not await self._ensure_authenticated():
-            return []
-            
+        # Note: This is a synchronous method to match base class interface
+        # Authentication is handled by the robin_stocks library internally
+
         try:
             chains_data = rh.options.get_chains(underlying)
             if not chains_data or not isinstance(chains_data, dict):
                 return []
-                
+
             expiration_dates_list = chains_data.get("expiration_dates", [])
             if not expiration_dates_list:
                 return []
-                
+
             # Convert string dates to date objects
             dates = []
             for date_str in expiration_dates_list:
@@ -782,9 +824,9 @@ class RobinhoodAdapter(QuoteAdapter):
                     dates.append(date_obj)
                 except ValueError:
                     continue
-                    
+
             return sorted(dates)
-            
+
         except Exception as e:
             logger.error(f"Error getting expiration dates for {underlying}: {e}")
             return []

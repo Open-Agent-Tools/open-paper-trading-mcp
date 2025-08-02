@@ -911,7 +911,7 @@ class TradingService:
 
     async def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
-        if hasattr(self.quote_adapter, 'get_expiration_dates'):
+        if hasattr(self.quote_adapter, "get_expiration_dates"):
             if asyncio.iscoroutinefunction(self.quote_adapter.get_expiration_dates):
                 return await self.quote_adapter.get_expiration_dates(underlying)
             else:

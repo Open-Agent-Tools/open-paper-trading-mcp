@@ -429,10 +429,9 @@ class TestTradingServiceThreadSafety:
                 result["success"] = True
 
             except Exception as e:
-                try:
+                import contextlib
+                with contextlib.suppress(Exception):
                     await db_session.rollback()
-                except Exception:
-                    pass  # Ignore rollback errors to prevent nested exceptions
 
                 # Suppress warnings when converting exception to string during stress testing
                 with warnings.catch_warnings():
