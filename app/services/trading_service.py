@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -908,9 +909,16 @@ class TradingService:
             cash_balance=cash_balance, positions=positions
         )
 
-    def get_expiration_dates(self, underlying: str) -> list[date]:
+    async def get_expiration_dates(self, underlying: str) -> list[date]:
         """Get available expiration dates for an underlying symbol."""
-        return self.quote_adapter.get_expiration_dates(underlying)
+        if hasattr(self.quote_adapter, 'get_expiration_dates'):
+            if asyncio.iscoroutinefunction(self.quote_adapter.get_expiration_dates):
+                return await self.quote_adapter.get_expiration_dates(underlying)
+            else:
+                return self.quote_adapter.get_expiration_dates(underlying)
+        else:
+            # Fallback to empty list if adapter doesn't support expiration dates
+            return []
 
     async def create_multi_leg_order(self, order_data: Any) -> Order:
         """Create a multi-leg order."""

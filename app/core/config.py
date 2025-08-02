@@ -51,8 +51,8 @@ class Settings(BaseSettings):
     QUOTE_ADAPTER_TYPE: str = os.getenv("QUOTE_ADAPTER_TYPE", "test")
 
     # Test Data Configuration
-    TEST_SCENARIO: str = os.getenv("TEST_SCENARIO", "default")
-    TEST_DATE: str = os.getenv("TEST_DATE", "2017-03-24")
+    TEST_SCENARIO: str = os.getenv("TEST_SCENARIO", "ui_testing")
+    TEST_DATE: str = os.getenv("TEST_DATE", "2025-07-30")
 
     # Robinhood Configuration
     ROBINHOOD_USERNAME: str = os.getenv("ROBINHOOD_USERNAME", "")

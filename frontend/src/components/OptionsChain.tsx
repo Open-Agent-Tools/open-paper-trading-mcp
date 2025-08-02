@@ -54,13 +54,15 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
   const fetchExpirations = async () => {
     if (!symbol) return;
 
+    // Reset expiration selection when symbol changes
+    setSelectedExpiration('');
+    setChainData(null);
+
     try {
       const response = await getOptionExpirations(symbol);
       if (response.success && response.expirations) {
         setAvailableExpirations(response.expirations);
-        if (response.expirations.length > 0 && !selectedExpiration) {
-          setSelectedExpiration(response.expirations[0]);
-        }
+        // Don't auto-select expiration - let user choose first
       }
     } catch (err) {
       // Silently handle - expirations are optional
@@ -73,12 +75,18 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
       return;
     }
 
+    // Don't fetch options chain if no expiration is selected
+    if (!selectedExpiration) {
+      setChainData(null);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     onLoadingChange?.(true);
 
     try {
-      const response = await getOptionsChain(symbol, selectedExpiration || undefined);
+      const response = await getOptionsChain(symbol, selectedExpiration);
       if (response.success) {
         setChainData({
           underlying: response.underlying,
@@ -225,21 +233,21 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
                   <TableCell align="right">
                     <Box>
                       <Typography variant="body2" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        ${option.price.toFixed(2)}
+                        {option.price !== null ? `$${option.price.toFixed(2)}` : '-'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        Mid: ${midPrice.toFixed(2)}
+                        Mid: {!isNaN(midPrice) ? `$${midPrice.toFixed(2)}` : '-'}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {option.volume.toLocaleString()}
+                      {option.volume !== null ? option.volume.toLocaleString() : '-'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {option.open_interest.toLocaleString()}
+                      {option.open_interest !== null ? option.open_interest.toLocaleString() : '-'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
@@ -300,6 +308,50 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
           <Alert severity="info">
             {error}. Options data may not be available for this symbol or require a subscription.
           </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!chainData && symbol && availableExpirations.length > 0 && !selectedExpiration) {
+    return (
+      <Card>
+        <CardHeader
+          title={
+            <Box display="flex" alignItems="center" gap={1}>
+              <ShowChartIcon color="primary" />
+              <Typography variant="h6">
+                {symbol} Options Chain
+              </Typography>
+            </Box>
+          }
+        />
+        <CardContent>
+          <Box textAlign="center" py={4}>
+            <Typography variant="h6" gutterBottom>
+              Select an Expiration Date
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              Choose from {availableExpirations.length} available expiration dates to view options chain
+            </Typography>
+            <Box display="flex" gap={1} flexWrap="wrap" justifyContent="center">
+              {availableExpirations.slice(0, 8).map((exp) => (
+                <Chip
+                  key={exp}
+                  label={formatExpiration(exp)}
+                  onClick={() => setSelectedExpiration(exp)}
+                  variant="outlined"
+                  color="primary"
+                  sx={{ cursor: 'pointer' }}
+                />
+              ))}
+            </Box>
+            {availableExpirations.length > 8 && (
+              <Typography variant="caption" color="text.secondary" mt={2} display="block">
+                And {availableExpirations.length - 8} more dates...
+              </Typography>
+            )}
+          </Box>
         </CardContent>
       </Card>
     );

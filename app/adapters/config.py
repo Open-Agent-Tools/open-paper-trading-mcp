@@ -41,14 +41,14 @@ class AdapterFactoryConfig:
                 "priority": 999,  # Lowest priority (fallback)
                 "timeout": 5.0,
                 "cache_ttl": 3600.0,  # 1 hour for test data
-                "config": {"current_date": "2017-03-24"},
+                "config": {"current_date": "${TEST_DATE}"},
             },
             "test_data_db": {
                 "enabled": True,
                 "priority": 998,  # Slightly higher priority than CSV test data
                 "timeout": 5.0,
                 "cache_ttl": 3600.0,  # 1 hour for test data
-                "config": {"current_date": "2017-03-24", "scenario": "default"},
+                "config": {"current_date": "${TEST_DATE}", "scenario": "${TEST_SCENARIO}"},
             },
             "robinhood": {
                 "enabled": True,  # Requires credentials

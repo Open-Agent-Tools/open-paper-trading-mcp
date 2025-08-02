@@ -1549,16 +1549,9 @@ async def get_option_expirations(underlying: str) -> dict[str, Any]:
     try:
         service = get_trading_service()
 
-        # Get full options chain to extract expiration dates
-        chain = await service.get_options_chain(underlying)
-
-        # Extract unique expiration dates
-        expirations = set()
-        for option_quote in chain.calls + chain.puts:
-            if option_quote.expiration_date:
-                expirations.add(option_quote.expiration_date.isoformat())
-
-        expiration_list = sorted(expirations)
+        # Get available expiration dates directly from adapter
+        expiration_dates = await service.get_expiration_dates(underlying)
+        expiration_list = [date.isoformat() for date in expiration_dates]
 
         return {
             "success": True,

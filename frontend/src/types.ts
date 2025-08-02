@@ -256,11 +256,11 @@ export interface OptionQuote {
   symbol: string;
   strike: number;
   expiration: string;
-  price: number;
+  price: number | null;
   bid: number;
   ask: number;
-  volume: number;
-  open_interest: number;
+  volume: number | null;
+  open_interest: number | null;
   implied_volatility: number;
 }
 
