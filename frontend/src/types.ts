@@ -195,14 +195,33 @@ export interface AnalystRating {
 
 export interface StockRatingsData {
   symbol: string;
-  summary: {
+  overall_rating: string;
+  rating_score: number;
+  analyst_count: number;
+  ratings_breakdown: {
+    strong_buy: number;
+    buy: number;
+    hold: number;
+    sell: number;
+    strong_sell: number;
+  };
+  price_targets: {
+    average_target: number;
+    high_target: number;
+    low_target: number;
+    median_target: number;
+  };
+  last_updated: string;
+  message?: string;
+  // Legacy fields for backwards compatibility
+  summary?: {
     buy: number;
     hold: number;
     sell: number;
     average_rating: string;
     target_price: number;
   };
-  ratings: AnalystRating[];
+  ratings?: AnalystRating[];
 }
 
 export interface StockRatingsResponse {

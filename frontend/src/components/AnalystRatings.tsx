@@ -146,8 +146,24 @@ const AnalystRatings: React.FC<AnalystRatingsProps> = ({
     );
   }
 
-  const { summary, ratings } = ratingsData;
-  const totalRatings = summary.buy + summary.hold + summary.sell;
+  // Handle the actual API response structure
+  const ratingsBreakdown = ratingsData.ratings_breakdown || {};
+  const priceTargets = ratingsData.price_targets || {};
+  
+  // Calculate total ratings and simplified breakdown
+  const buyCount = (ratingsBreakdown.strong_buy || 0) + (ratingsBreakdown.buy || 0);
+  const holdCount = ratingsBreakdown.hold || 0;
+  const sellCount = (ratingsBreakdown.sell || 0) + (ratingsBreakdown.strong_sell || 0);
+  const totalRatings = buyCount + holdCount + sellCount;
+  
+  // Create summary object from API data
+  const summary = {
+    buy: buyCount,
+    hold: holdCount,
+    sell: sellCount,
+    average_rating: ratingsData.overall_rating || 'N/A',
+    target_price: priceTargets.average_target || 0
+  };
 
   return (
     <Card>
@@ -172,7 +188,7 @@ const AnalystRatings: React.FC<AnalystRatingsProps> = ({
         }
         subheader={
           <Typography variant="body2" color="text.secondary">
-            {totalRatings} analyst{totalRatings !== 1 ? 's' : ''} • Target: ${summary.target_price.toFixed(2)}
+            {ratingsData.analyst_count || totalRatings} analyst{(ratingsData.analyst_count || totalRatings) !== 1 ? 's' : ''} • Target: ${summary.target_price.toFixed(2)}
           </Typography>
         }
       />
@@ -263,9 +279,50 @@ const AnalystRatings: React.FC<AnalystRatingsProps> = ({
           </Typography>
         </Box>
 
-        {/* Individual Ratings Table */}
-        {ratings && ratings.length > 0 && (
-          <Box>
+        {/* Price Target Details */}
+        <Box>
+          <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+            Price Target Range
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={3}>
+              <Box textAlign="center" p={2} sx={{ backgroundColor: theme.palette.action.hover, borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary">High</Typography>
+                <Typography variant="h6" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  ${priceTargets.high_target?.toFixed(2) || 'N/A'}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={3}>
+              <Box textAlign="center" p={2} sx={{ backgroundColor: theme.palette.action.hover, borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary">Median</Typography>
+                <Typography variant="h6" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  ${priceTargets.median_target?.toFixed(2) || 'N/A'}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={3}>
+              <Box textAlign="center" p={2} sx={{ backgroundColor: theme.palette.action.hover, borderRadius: 1 }}>
+                <Typography variant="body2" color="text.secondary">Low</Typography>
+                <Typography variant="h6" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  ${priceTargets.low_target?.toFixed(2) || 'N/A'}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={3}>
+              <Box textAlign="center" p={2} sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 1 }}>
+                <Typography variant="body2" sx={{ color: 'white' }}>Score</Typography>
+                <Typography variant="h6" sx={{ fontFamily: 'Roboto Mono, monospace', color: 'white' }}>
+                  {ratingsData.rating_score?.toFixed(1) || 'N/A'}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Individual Ratings Table - Show if legacy ratings data is available */}
+        {ratingsData.ratings && ratingsData.ratings.length > 0 && (
+          <Box mt={3}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
               Recent Ratings
             </Typography>
@@ -280,7 +337,7 @@ const AnalystRatings: React.FC<AnalystRatingsProps> = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {ratings.slice(0, 10).map((rating, index) => (
+                  {ratingsData.ratings.slice(0, 10).map((rating, index) => (
                     <TableRow key={index}>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -311,9 +368,9 @@ const AnalystRatings: React.FC<AnalystRatingsProps> = ({
               </Table>
             </TableContainer>
             
-            {ratings.length > 10 && (
+            {ratingsData.ratings.length > 10 && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Showing 10 of {ratings.length} ratings
+                Showing 10 of {ratingsData.ratings.length} ratings
               </Typography>
             )}
           </Box>
