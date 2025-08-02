@@ -160,7 +160,8 @@ export interface StockPriceResponse {
 
 // Price History Types
 export interface PriceHistoryPoint {
-  timestamp: string;
+  timestamp?: string;
+  date?: string; // API uses 'date' instead of 'timestamp'
   open: number;
   high: number;
   low: number;
@@ -171,7 +172,9 @@ export interface PriceHistoryPoint {
 export interface PriceHistoryData {
   symbol: string;
   period: string;
-  points: PriceHistoryPoint[];
+  interval?: string; // API includes interval field
+  points?: PriceHistoryPoint[]; // Frontend expects 'points'
+  data_points?: PriceHistoryPoint[]; // API returns 'data_points'
 }
 
 export interface PriceHistoryResponse {

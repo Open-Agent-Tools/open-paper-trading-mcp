@@ -18,7 +18,6 @@ import {
   ShowChart as ShowChartIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import { getPriceHistory } from '../services/apiClient';
 import { FONTS } from '../theme';
 import type { PriceHistoryData } from '../types';
@@ -32,7 +31,6 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
   symbol, 
   onLoadingChange 
 }) => {
-  const theme = useTheme();
   const [historyData, setHistoryData] = useState<PriceHistoryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,11 +76,11 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
 
   // Calculate price change and trend
   const priceStats = useMemo(() => {
-    if (!historyData?.points || historyData.points.length === 0) {
+    // Handle both possible response structures
+    const points = historyData?.points || historyData?.data_points;
+    if (!points || points.length === 0) {
       return null;
     }
-
-    const points = historyData.points;
     const startPrice = points[0]?.close || 0;
     const endPrice = points[points.length - 1]?.close || 0;
     const change = endPrice - startPrice;
@@ -101,13 +99,14 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
     };
   }, [historyData]);
 
-  // Simple ASCII-style chart visualization
-  const renderSimpleChart = () => {
-    if (!historyData?.points || historyData.points.length === 0) {
+  // Enhanced chart visualization
+  const renderChart = () => {
+    // Handle both possible response structures
+    const points = historyData?.points || historyData?.data_points;
+    if (!points || points.length === 0) {
       return null;
     }
 
-    const points = historyData.points;
     const prices = points.map(p => p.close);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
@@ -115,7 +114,7 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
 
     if (priceRange === 0) {
       return (
-        <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Box sx={{ minHeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             No price movement in selected period
           </Typography>
@@ -123,77 +122,161 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
       );
     }
 
-    // Create sparkline-style visualization
-    const chartHeight = 80;
-    const chartWidth = 300;
-    const pointWidth = chartWidth / prices.length;
+    // Chart dimensions - fill container width, minimum 600px height
+    const chartHeight = 600;
+    const chartPadding = { top: 40, right: 80, bottom: 60, left: 80 };
+    const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom;
+    
+    // Calculate price axis ticks
+    const priceStep = priceRange / 8; // 8 price levels
+    const priceTicks = Array.from({ length: 9 }, (_, i) => minPrice + (i * priceStep));
+    
+    // Calculate time axis ticks (show every few points)
+    const timeStep = Math.max(1, Math.floor(points.length / 8)); // ~8 time labels
+    const timeTicks = points.filter((_, i) => i % timeStep === 0 || i === points.length - 1);
 
     return (
-      <Box sx={{ p: 2 }}>
-        <Box
-          sx={{
-            width: chartWidth,
-            height: chartHeight,
-            position: 'relative',
-            margin: '0 auto',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: 1,
-            backgroundColor: theme.palette.background.default,
-          }}
+      <Box sx={{ width: '100%', minHeight: chartHeight, position: 'relative' }}>
+        <svg 
+          width="100%" 
+          height={chartHeight}
+          viewBox={`0 0 800 ${chartHeight}`}
+          preserveAspectRatio="none"
+          style={{ width: '100%', height: chartHeight }}
         >
-          <svg width={chartWidth} height={chartHeight}>
-            {/* Grid lines */}
-            {[0.25, 0.5, 0.75].map((ratio, i) => (
-              <line
-                key={i}
-                x1="0"
-                y1={chartHeight * ratio}
-                x2={chartWidth}
-                y2={chartHeight * ratio}
-                stroke={theme.palette.divider}
-                strokeWidth="0.5"
-                opacity="0.5"
-              />
-            ))}
-            
-            {/* Price line */}
-            <polyline
-              fill="none"
-              stroke={priceStats?.isPositive ? theme.palette.success.main : theme.palette.error.main}
-              strokeWidth="2"
-              points={prices.map((price, i) => {
-                const x = i * pointWidth + pointWidth / 2;
-                const y = chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-                return `${x},${y}`;
-              }).join(' ')}
-            />
-            
-            {/* Price points */}
-            {prices.map((price, i) => {
-              const x = i * pointWidth + pointWidth / 2;
-              const y = chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-              return (
-                <circle
-                  key={i}
-                  cx={x}
-                  cy={y}
-                  r="1.5"
-                  fill={priceStats?.isPositive ? theme.palette.success.main : theme.palette.error.main}
+          <defs>
+            <linearGradient id="priceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={priceStats?.isPositive ? '#1f7a4f' : '#dc3545'} stopOpacity="0.2" />
+              <stop offset="100%" stopColor={priceStats?.isPositive ? '#1f7a4f' : '#dc3545'} stopOpacity="0.03" />
+            </linearGradient>
+          </defs>
+          
+          {/* Chart background */}
+          <rect 
+            x={chartPadding.left} 
+            y={chartPadding.top} 
+            width={800 - chartPadding.left - chartPadding.right} 
+            height={plotHeight}
+            fill="#ffffff"
+            stroke="#dee2e6"
+            strokeWidth="1"
+          />
+          
+          {/* Horizontal grid lines and price labels */}
+          {priceTicks.map((price, i) => {
+            const y = chartPadding.top + plotHeight - ((price - minPrice) / priceRange) * plotHeight;
+            return (
+              <g key={i}>
+                <line
+                  x1={chartPadding.left}
+                  y1={y}
+                  x2={800 - chartPadding.right}
+                  y2={y}
+                  stroke="#e9ecef"
+                  strokeWidth="0.5"
+                  opacity="0.8"
                 />
-              );
-            })}
-          </svg>
-        </Box>
-        
-        {/* Price labels */}
-        <Box display="flex" justifyContent="space-between" mt={1}>
-          <Typography variant="caption" color="text.secondary">
-            ${minPrice.toFixed(2)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ${maxPrice.toFixed(2)}
-          </Typography>
-        </Box>
+                <text
+                  x={chartPadding.left - 10}
+                  y={y + 4}
+                  textAnchor="end"
+                  fontSize="12"
+                  fontFamily="'Roboto Mono', monospace"
+                  fill="#6c757d"
+                >
+                  ${price.toFixed(2)}
+                </text>
+              </g>
+            );
+          })}
+          
+          {/* Vertical grid lines and time labels */}
+          {timeTicks.map((point, i) => {
+            const originalIndex = points.indexOf(point);
+            const x = chartPadding.left + (originalIndex / (points.length - 1)) * (800 - chartPadding.left - chartPadding.right);
+            const date = new Date(point.date || point.timestamp || '');
+            
+            // Show time for 1-day period, date for others
+            const timeLabel = period === 'day' 
+              ? date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+              : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            
+            return (
+              <g key={i}>
+                <line
+                  x1={x}
+                  y1={chartPadding.top}
+                  x2={x}
+                  y2={chartPadding.top + plotHeight}
+                  stroke="#e9ecef"
+                  strokeWidth="0.5"
+                  opacity="0.8"
+                />
+                <text
+                  x={x}
+                  y={chartHeight - chartPadding.bottom + 20}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontFamily="'Roboto', sans-serif"
+                  fill="#6c757d"
+                >
+                  {timeLabel}
+                </text>
+              </g>
+            );
+          })}
+          
+          {/* Price area fill */}
+          <path
+            d={`M ${chartPadding.left} ${chartPadding.top + plotHeight} ${prices.map((price, i) => {
+              const x = chartPadding.left + (i / (prices.length - 1)) * (800 - chartPadding.left - chartPadding.right);
+              const y = chartPadding.top + plotHeight - ((price - minPrice) / priceRange) * plotHeight;
+              return `L ${x} ${y}`;
+            }).join(' ')} L ${chartPadding.left + (800 - chartPadding.left - chartPadding.right)} ${chartPadding.top + plotHeight} Z`}
+            fill="url(#priceGradient)"
+          />
+          
+          {/* Price line */}
+          <polyline
+            fill="none"
+            stroke={priceStats?.isPositive ? '#1f7a4f' : '#dc3545'}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            points={prices.map((price, i) => {
+              const x = chartPadding.left + (i / (prices.length - 1)) * (800 - chartPadding.left - chartPadding.right);
+              const y = chartPadding.top + plotHeight - ((price - minPrice) / priceRange) * plotHeight;
+              return `${x},${y}`;
+            }).join(' ')}
+          />
+          
+          {/* Y-axis label */}
+          <text
+            x={25}
+            y={chartHeight / 2}
+            textAnchor="middle"
+            fontSize="13"
+            fontFamily="'Roboto', sans-serif"
+            fontWeight="500"
+            fill="#495057"
+            transform={`rotate(-90 25 ${chartHeight / 2})`}
+          >
+            Price ($)
+          </text>
+          
+          {/* X-axis label */}
+          <text
+            x={400}
+            y={chartHeight - 10}
+            textAnchor="middle"
+            fontSize="13"
+            fontFamily="'Roboto', sans-serif"
+            fontWeight="500"
+            fill="#495057"
+          >
+            Time
+          </text>
+        </svg>
       </Box>
     );
   };
@@ -265,8 +348,13 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
               <Chip
                 label={priceStats.isPositive ? 'UP' : 'DOWN'}
                 size="small"
-                color={priceStats.isPositive ? 'success' : 'error'}
-                sx={{ ml: 1 }}
+                sx={{ 
+                  ml: 1,
+                  backgroundColor: priceStats.isPositive ? '#d4edda' : '#f8d7da',
+                  color: priceStats.isPositive ? '#1f7a4f' : '#dc3545',
+                  fontWeight: 500,
+                  fontSize: '0.75rem'
+                }}
               />
             )}
           </Box>
@@ -301,12 +389,16 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
                 ${priceStats.endPrice.toFixed(2)}
               </Typography>
               <Box display="flex" alignItems="center" gap={1}>
-                {priceStats.isPositive ? <TrendingUpIcon color="success" /> : <TrendingUpIcon color="error" sx={{ transform: 'rotate(180deg)' }} />}
+                {priceStats.isPositive ? 
+                  <TrendingUpIcon sx={{ color: '#1f7a4f' }} /> : 
+                  <TrendingUpIcon sx={{ color: '#dc3545', transform: 'rotate(180deg)' }} />
+                }
                 <Typography
                   variant="body1"
                   sx={{
-                    color: priceStats.isPositive ? theme.palette.success.main : theme.palette.error.main,
+                    color: priceStats.isPositive ? '#1f7a4f' : '#dc3545',
                     fontFamily: FONTS.monospace,
+                    fontWeight: 500,
                   }}
                 >
                   {priceStats.change >= 0 ? '+' : ''}{priceStats.change.toFixed(2)} ({priceStats.changePercent.toFixed(2)}%)
@@ -321,18 +413,11 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
               <Typography variant="body2" color="text.secondary">
                 Low: <Box component="span" sx={{ fontFamily: FONTS.monospace }}>${priceStats.low.toFixed(2)}</Box>
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Points: {historyData.points.length}
-              </Typography>
             </Box>
           </Box>
         )}
         
-        {renderSimpleChart()}
-        
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block', textAlign: 'center' }}>
-          Period: {periodOptions.find(p => p.value === period)?.label} • Data points: {historyData.points.length}
-        </Typography>
+        {renderChart()}
       </CardContent>
     </Card>
   );
