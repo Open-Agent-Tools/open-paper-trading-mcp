@@ -60,7 +60,50 @@
 - ✅ **Fix MyPy Type Errors** - Resolved 2 type errors in Robinhood adapter (August 2, 2025)
 - ✅ **Fix Ruff Linting** - Resolved SIM105 violation in thread safety tests (August 2, 2025) 
 - ✅ **Database Test Fix** - Fixed account balance test failures due to missing starting_balance field (August 2, 2025)
+- ❌ **Critical Service Test Coverage** - Address zero test coverage for critical business logic services
 - ❌ **MCP ADK Evaluations** - Create comprehensive ADK evaluation tests for all 43 MCP tools across 7 functional categories
+
+#### **🚨 CRITICAL TEST COVERAGE GAPS** (HIGH PRIORITY - Next 2 Weeks)
+
+**Current Coverage Status**: 30.30% overall, with critical services at 0% coverage
+
+**Phase 1: Critical Service Testing** (~60 hours)
+- ❌ **PortfolioRiskMetrics Testing** (0% → 80% coverage)
+  - VaR calculations and risk analysis validation
+  - Correlation matrix and portfolio optimization testing
+  - Risk scoring and exposure analysis validation
+  - Monte Carlo simulation testing for portfolio scenarios
+  
+- ❌ **OrderValidationAdvanced Testing** (0% → 80% coverage)
+  - Multi-leg options strategy validation testing
+  - Complex order parameter validation (spreads, straddles, condors)
+  - Risk-based order rejection logic testing
+  - Position size and margin requirement validation
+
+- ❌ **RiskAnalysis Testing** (0% → 80% coverage)
+  - Portfolio risk assessment algorithm testing
+  - Sector concentration and diversification scoring
+  - Volatility and beta calculation validation
+  - Risk tolerance alignment testing
+
+- ❌ **ExpirationService Testing** (0% → 80% coverage)
+  - Options expiration date handling and auto-exercise logic
+  - Assignment probability calculations
+  - Expiration notification and alert system testing
+  - Portfolio impact assessment for expiring positions
+
+**Success Targets for Phase 1:**
+- **Critical Services Coverage**: 0% → 80%+ coverage
+- **Overall Coverage**: 30.30% → 65%+ coverage
+- **Maintain**: 99.8%+ test success rate
+- **Timeline**: Complete by August 17, 2025
+
+**Test Development Strategy:**
+1. **Week 1**: PortfolioRiskMetrics + OrderValidationAdvanced (30 hours)
+2. **Week 2**: RiskAnalysis + ExpirationService (30 hours)
+3. **Integration**: Cross-service integration testing (additional 15 hours)
+
+**Priority Justification**: These services handle critical business logic for risk management, advanced options trading, and regulatory compliance. Zero test coverage represents a significant production readiness gap.
 
 #### MCP Tool Evaluation Test Plan (0/43 tools tested)
 
@@ -158,8 +201,36 @@
 - ✅ Error handling works for invalid inputs
 - ✅ Performance meets acceptable thresholds (< 5s response)
 
-**Estimated Timeline**: 3-4 weeks (2-3 tools per day)
-**Target Completion**: September 1, 2025
+**Phase 2: MCP Tools ADK Evaluation Plan** (~60 hours total)
+
+**Current Status**: Only 1/43 MCP tools have ADK evaluation tests (2.3% coverage)
+
+**ADK Evaluation Implementation Timeline:**
+
+**Week 3-4 (August 18-31): Core Tools** (30 hours)
+- **Phase 2A**: Core System + Account Tools (9 ADK tests)
+- **Phase 2B**: Market Data Tools (8 ADK tests) 
+- **Priority**: These tools are most frequently used by AI agents
+
+**Week 5-6 (September 1-14): Trading Tools** (30 hours)  
+- **Phase 2C**: Order Management + Stock Trading Tools (12 ADK tests)
+- **Phase 2D**: Options Trading + Cancellation Tools (10 ADK tests)
+- **Priority**: Essential for trading functionality validation
+
+**Success Targets for Phase 2:**
+- **MCP Tools Coverage**: 2.3% → 100% ADK evaluation coverage
+- **Reliability Target**: >95% successful ADK evaluation pass rate
+- **Performance Target**: <5s average response time per tool
+- **Timeline**: Complete by September 14, 2025
+
+**ADK vs Traditional Testing Strategy:**
+- **Traditional Unit Tests**: Cannot test MCP protocol interactions
+- **ADK Evaluations**: Test actual agent-tool communication patterns
+- **Agent Simulation**: Validates real-world AI agent usage scenarios
+- **Protocol Validation**: Ensures MCP compliance and reliability
+
+**Estimated Timeline**: 6 weeks total (Critical Services: 2 weeks + MCP ADK: 4 weeks)
+**Target Completion**: September 14, 2025
 
 #### MCP Prompts Implementation (TBD)
 
@@ -198,8 +269,44 @@
 - ❌ **Error Handling** - User-friendly error messages for invalid prompt arguments
 
 ### Performance & Security
+- ❌ **Performance Testing** - Load testing for high-volume scenarios (40 hours)
 - ❌ **Test Suite Optimization** - Optimize full test suite execution to prevent timeouts
 - ❌ **Security Hardening** - Remove default SECRET_KEY, implement database secrets, add rate limiting
+
+#### **Phase 3: Performance & Load Testing** (MEDIUM PRIORITY - September 15-30)
+
+**Performance Validation Requirements** (~40 hours)
+
+- ❌ **High-Volume Order Processing** (15 hours)
+  - Concurrent order submission stress testing (100+ simultaneous orders)
+  - Database connection pool behavior under load
+  - Memory usage patterns during peak trading simulation
+  - Order execution latency benchmarking
+  
+- ❌ **Concurrent User Session Testing** (15 hours)
+  - Multi-account concurrent access validation
+  - Session isolation and data integrity testing
+  - Real-time market data distribution load testing
+  - WebSocket connection stability under load
+
+- ❌ **Database Performance Validation** (10 hours)
+  - PostgreSQL connection pool optimization testing
+  - Query performance under high-volume scenarios
+  - Index effectiveness and optimization validation
+  - Database backup/restore performance testing
+
+**Performance Targets:**
+- **Order Processing**: <100ms average latency for simple orders
+- **Market Data**: <500ms for options chain requests
+- **Concurrent Users**: Support 50+ simultaneous active sessions
+- **Database**: <50ms average query response time
+- **Memory Usage**: <2GB RAM under normal load, <4GB under stress
+
+**Load Testing Strategy:**
+1. **Baseline Metrics**: Establish current performance baselines
+2. **Gradual Load Increase**: Test 1x, 5x, 10x, 25x normal load
+3. **Stress Testing**: Push system to failure points and recovery
+4. **Endurance Testing**: 24-hour continuous operation validation
 
 ---
 
@@ -219,6 +326,10 @@
 - Portfolio management: 80%
 - Advanced features: 35%
 
-**Testing**: **99.8% Success Rate** (580/581 tests passing) - Updated August 2, 2025
+**Testing**: **99.8% Success Rate** (580/581 tests passing) - Updated August 3, 2025
+- **Current Test Coverage**: 30.30% overall (2,956/9,755 lines)
+- **Critical Gap**: 4 core services with 0% coverage (1,232 lines untested)
+- **MCP ADK Coverage**: 1/43 tools tested (2.3% coverage)
+- **Next Priority**: Critical service testing (August 3-17) + MCP ADK evaluations (August 18 - September 14)
 
 **Overall**: **PRODUCTION READY** with enhancement opportunities
