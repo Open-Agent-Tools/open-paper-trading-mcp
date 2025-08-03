@@ -5,6 +5,7 @@ export { default as CreateAccountModal } from './CreateAccountModal';
 export { default as CreateOrderForm } from './CreateOrderForm';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as Footer } from './Footer';
+export { default as GlobalLoadingIndicator } from './GlobalLoadingIndicator';
 export { default as Layout } from './Layout';
 export { default as StatusIndicator } from './StatusIndicator';
 

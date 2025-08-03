@@ -1,7 +1,6 @@
 import logging
 import os
 
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Configure logger
@@ -17,8 +16,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Open Paper Trading MCP"
     API_V1_STR: str = "/api/v1"
 
-    # CORS
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:2080"]
+    # CORS - simplified for Docker
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://localhost:2080"
 
     # Database
     DATABASE_URL: str = os.getenv(
@@ -59,14 +58,11 @@ class Settings(BaseSettings):
     ROBINHOOD_PASSWORD: str = os.getenv("ROBINHOOD_PASSWORD", "")
     ROBINHOOD_TOKEN_PATH: str = os.getenv("ROBINHOOD_TOKEN_PATH", "/app/.tokens")
 
-    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
-    @classmethod
-    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list | str):
-            return v
-        raise ValueError(v)
+    def get_cors_origins(self) -> list[str]:
+        """Convert CORS origins string to list."""
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",")]
+        return self.BACKEND_CORS_ORIGINS
 
 
 settings = Settings()

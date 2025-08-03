@@ -19,6 +19,7 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { getPriceHistory } from '../services/apiClient';
+import { useComponentLoading } from '../contexts/LoadingContext';
 import { FONTS } from '../theme';
 import type { PriceHistoryData } from '../types';
 
@@ -31,8 +32,8 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
   symbol, 
   onLoadingChange 
 }) => {
+  const { loading, startLoading, stopLoading } = useComponentLoading('price-history');
   const [historyData, setHistoryData] = useState<PriceHistoryData | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<string>('week');
 
@@ -51,7 +52,7 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
       return;
     }
 
-    setLoading(true);
+    startLoading();
     setError(null);
     onLoadingChange?.(true);
 
@@ -65,7 +66,7 @@ const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load price history');
     } finally {
-      setLoading(false);
+      stopLoading();
       onLoadingChange?.(false);
     }
   };

@@ -3,18 +3,19 @@ import { DataGrid } from '@mui/x-data-grid';
 import type { GridColDef, GridValueFormatterParams, GridRenderCellParams } from '@mui/x-data-grid';
 import { CircularProgress, Alert, Paper, Typography, Chip, Snackbar, Button, Box } from '@mui/material';
 import { getOrders, cancelOrder } from '../services/apiClient';
+import { useComponentLoading } from '../contexts/LoadingContext';
 import type { Order } from '../types';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 const OrdersTable: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { loading, startLoading, stopLoading } = useComponentLoading('order-history');
   const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'error' } | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
-      setLoading(true);
+      startLoading();
       const response = await getOrders();
       if (response.success && response.orders) {
         setOrders(response.orders);
@@ -25,9 +26,9 @@ const OrdersTable: React.FC = () => {
       setError('Failed to fetch orders.');
       console.error(err);
     } finally {
-      setLoading(false);
+      stopLoading();
     }
-  }, []);
+  }, [startLoading, stopLoading]);
 
   useEffect(() => {
     fetchOrders();

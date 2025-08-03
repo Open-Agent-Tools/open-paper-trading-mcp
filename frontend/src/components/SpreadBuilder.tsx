@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useAccountContext } from '../contexts/AccountContext';
+import { useComponentLoading } from '../contexts/LoadingContext';
 import { getOptionsChain, getStockPrice } from '../services/apiClient';
 import type { OptionQuote } from '../types';
 
@@ -62,50 +63,168 @@ interface SpreadPayoffPoint {
 const SpreadBuilder: React.FC = () => {
   const theme = useTheme();
   const { selectedAccount } = useAccountContext();
+  const { loading, startLoading, stopLoading } = useComponentLoading('spread-builder');
   const [underlying, setUnderlying] = useState<string>('AAPL');
   const [underlyingPrice, setUnderlyingPrice] = useState<number>(150);
   const [legs, setLegs] = useState<SpreadLeg[]>([]);
   const [availableOptions, setAvailableOptions] = useState<OptionQuote[]>([]);
   const [payoffData, setPayoffData] = useState<SpreadPayoffPoint[]>([]);
-  const [loading, setLoading] = useState(false);
   const [, setError] = useState<string | null>(null);
   const [showAddLegDialog, setShowAddLegDialog] = useState(false);
   const [newLeg, setNewLeg] = useState<Partial<SpreadLeg>>({ action: 'buy', optionType: 'call', quantity: 1 });
 
   // Pre-defined spread strategies
   const spreadStrategies = [
+    // Vertical Spreads
     {
-      name: 'Long Call Spread',
-      description: 'Buy lower strike call, sell higher strike call',
+      name: 'Bull Call Spread',
+      description: 'Buy lower strike call, sell higher strike call (bullish)',
+      category: 'Directional',
       legs: (strike: number) => [
         { action: 'buy' as const, optionType: 'call' as const, strike: strike - 5, quantity: 1 },
         { action: 'sell' as const, optionType: 'call' as const, strike: strike + 5, quantity: 1 }
       ]
     },
     {
-      name: 'Long Put Spread',
-      description: 'Buy higher strike put, sell lower strike put',
+      name: 'Bear Call Spread',
+      description: 'Sell lower strike call, buy higher strike call (bearish)',
+      category: 'Directional',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike - 5, quantity: 1 },
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 5, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Bull Put Spread',
+      description: 'Sell higher strike put, buy lower strike put (bullish)',
+      category: 'Directional',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike + 5, quantity: 1 },
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Bear Put Spread',
+      description: 'Buy higher strike put, sell lower strike put (bearish)',
+      category: 'Directional',
       legs: (strike: number) => [
         { action: 'buy' as const, optionType: 'put' as const, strike: strike + 5, quantity: 1 },
         { action: 'sell' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 }
       ]
     },
+    
+    // Iron Condors & Butterflies
     {
       name: 'Iron Condor',
-      description: 'Sell call spread and put spread',
+      description: 'Sell OTM put spread and OTM call spread (neutral)',
+      category: 'Neutral',
       legs: (strike: number) => [
         { action: 'sell' as const, optionType: 'put' as const, strike: strike - 10, quantity: 1 },
-        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 },
-        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 5, quantity: 1 },
-        { action: 'sell' as const, optionType: 'call' as const, strike: strike + 10, quantity: 1 }
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 15, quantity: 1 },
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike + 10, quantity: 1 },
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 15, quantity: 1 }
       ]
     },
     {
-      name: 'Straddle',
-      description: 'Buy call and put at same strike',
+      name: 'Iron Butterfly',
+      description: 'Sell ATM call and put, buy OTM call and put (neutral)',
+      category: 'Neutral',
+      legs: (strike: number) => [
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 10, quantity: 1 },
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike, quantity: 1 },
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike, quantity: 1 },
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 10, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Long Call Butterfly',
+      description: 'Buy 1 low call, sell 2 mid calls, buy 1 high call (neutral)',
+      category: 'Neutral',
+      legs: (strike: number) => [
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike - 10, quantity: 1 },
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike, quantity: 2 },
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 10, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Long Put Butterfly',
+      description: 'Buy 1 high put, sell 2 mid puts, buy 1 low put (neutral)',
+      category: 'Neutral',
+      legs: (strike: number) => [
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike + 10, quantity: 1 },
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike, quantity: 2 },
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 10, quantity: 1 }
+      ]
+    },
+    
+    // Straddles & Strangles
+    {
+      name: 'Long Straddle',
+      description: 'Buy call and put at same strike (high volatility)',
+      category: 'Volatility',
       legs: (strike: number) => [
         { action: 'buy' as const, optionType: 'call' as const, strike, quantity: 1 },
         { action: 'buy' as const, optionType: 'put' as const, strike, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Short Straddle',
+      description: 'Sell call and put at same strike (low volatility)',
+      category: 'Volatility',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'call' as const, strike, quantity: 1 },
+        { action: 'sell' as const, optionType: 'put' as const, strike, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Long Strangle',
+      description: 'Buy OTM call and put (high volatility)',
+      category: 'Volatility',
+      legs: (strike: number) => [
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 5, quantity: 1 },
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Short Strangle',
+      description: 'Sell OTM call and put (low volatility)',
+      category: 'Volatility',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike + 5, quantity: 1 },
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 }
+      ]
+    },
+    
+    // Advanced Strategies
+    {
+      name: 'Jade Lizard',
+      description: 'Sell call spread and sell put (high prob, bullish bias)',
+      category: 'Advanced',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike - 10, quantity: 1 },
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike + 5, quantity: 1 },
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 15, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Reverse Jade Lizard',
+      description: 'Sell put spread and sell call (high prob, bearish bias)',
+      category: 'Advanced',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike + 10, quantity: 1 },
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 },
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 15, quantity: 1 }
+      ]
+    },
+    {
+      name: 'Big Lizard',
+      description: 'Iron condor with unbalanced wings (directional bias)',
+      category: 'Advanced',
+      legs: (strike: number) => [
+        { action: 'sell' as const, optionType: 'put' as const, strike: strike - 5, quantity: 1 },
+        { action: 'buy' as const, optionType: 'put' as const, strike: strike - 15, quantity: 1 },
+        { action: 'sell' as const, optionType: 'call' as const, strike: strike + 10, quantity: 1 },
+        { action: 'buy' as const, optionType: 'call' as const, strike: strike + 20, quantity: 1 }
       ]
     }
   ];
@@ -124,7 +243,7 @@ const SpreadBuilder: React.FC = () => {
   const fetchOptionsChain = async () => {
     if (!underlying) return;
 
-    setLoading(true);
+    startLoading();
     try {
       const response = await getOptionsChain(underlying);
       if (response.success) {
@@ -134,7 +253,7 @@ const SpreadBuilder: React.FC = () => {
     } catch (err) {
       setError('Failed to fetch options chain');
     } finally {
-      setLoading(false);
+      stopLoading();
     }
   };
 
@@ -175,6 +294,45 @@ const SpreadBuilder: React.FC = () => {
     }
 
     return points;
+  };
+
+  // Calculate strategy risk metrics
+  const calculateRiskMetrics = () => {
+    if (legs.length === 0 || payoffData.length === 0) return null;
+
+    const profits = payoffData.map(p => p.profit);
+    const maxProfit = Math.max(...profits);
+    const maxLoss = Math.min(...profits);
+    
+    // Find breakeven points (where profit crosses zero)
+    const breakevenPoints: number[] = [];
+    for (let i = 1; i < payoffData.length; i++) {
+      const prev = payoffData[i - 1];
+      const curr = payoffData[i];
+      if ((prev.profit <= 0 && curr.profit > 0) || (prev.profit > 0 && curr.profit <= 0)) {
+        // Linear interpolation to find exact breakeven
+        const ratio = Math.abs(prev.profit) / (Math.abs(prev.profit) + Math.abs(curr.profit));
+        const breakevenPrice = prev.price + ratio * (curr.price - prev.price);
+        breakevenPoints.push(Math.round(breakevenPrice * 100) / 100);
+      }
+    }
+
+    // Profit probability (rough estimate based on current price)
+    const currentPricePoint = payoffData.find(p => Math.abs(p.price - underlyingPrice) < 1);
+    const currentProfit = currentPricePoint?.profit || 0;
+    
+    // Win probability (simplified - assumes price movement follows normal distribution)
+    const profitablePoints = payoffData.filter(p => p.profit > 0).length;
+    const winProbability = (profitablePoints / payoffData.length) * 100;
+
+    return {
+      maxProfit: maxProfit === Infinity ? 'Unlimited' : formatCurrency(maxProfit),
+      maxLoss: maxLoss === -Infinity ? 'Unlimited' : formatCurrency(Math.abs(maxLoss)),
+      breakevenPoints,
+      currentProfit,
+      winProbability: Math.round(winProbability),
+      riskRewardRatio: maxLoss !== 0 ? Math.round((maxProfit / Math.abs(maxLoss)) * 100) / 100 : 'N/A'
+    };
   };
 
   const addLeg = () => {
@@ -262,6 +420,8 @@ const SpreadBuilder: React.FC = () => {
     const legCost = leg.action === 'buy' ? -leg.premium : leg.premium;
     return sum + legCost * leg.quantity;
   }, 0);
+
+  const riskMetrics = calculateRiskMetrics();
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('en-US', {
@@ -361,21 +521,39 @@ const SpreadBuilder: React.FC = () => {
             {/* Strategy Templates */}
             <Grid item xs={12}>
               <Typography variant="subtitle2" gutterBottom>
-                Quick Strategies
+                Options Strategy Templates
               </Typography>
-              <Box display="flex" gap={1} flexWrap="wrap">
-                {spreadStrategies.map((strategy, index) => (
-                  <Button
-                    key={strategy.name}
-                    size="small"
-                    variant="outlined"
-                    onClick={() => applyStrategy(index)}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    {strategy.name}
-                  </Button>
-                ))}
-              </Box>
+              
+              {/* Group strategies by category */}
+              {['Directional', 'Neutral', 'Volatility', 'Advanced'].map(category => {
+                const categoryStrategies = spreadStrategies.filter(s => s.category === category);
+                if (categoryStrategies.length === 0) return null;
+                
+                return (
+                  <Box key={category} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      {category} Strategies
+                    </Typography>
+                    <Box display="flex" gap={1} flexWrap="wrap">
+                      {categoryStrategies.map((strategy) => {
+                        const globalIndex = spreadStrategies.indexOf(strategy);
+                        return (
+                          <Chip
+                            key={strategy.name}
+                            label={strategy.name}
+                            variant="outlined"
+                            onClick={() => applyStrategy(globalIndex)}
+                            sx={{ 
+                              cursor: 'pointer',
+                              '&:hover': { backgroundColor: theme.palette.action.hover }
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                );
+              })}
             </Grid>
 
             {/* Spread Legs */}
@@ -499,6 +677,78 @@ const SpreadBuilder: React.FC = () => {
                 </Box>
               )}
             </Grid>
+
+            {/* Risk Analysis */}
+            {riskMetrics && (
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Strategy Risk Analysis
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={3}>
+                    <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Max Profit
+                      </Typography>
+                      <Typography variant="h6" color="success.main" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {riskMetrics.maxProfit}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Max Loss
+                      </Typography>
+                      <Typography variant="h6" color="error.main" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {riskMetrics.maxLoss}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Win Probability
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {riskMetrics.winProbability}%
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Risk/Reward
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {riskMetrics.riskRewardRatio}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  
+                  {riskMetrics.breakevenPoints.length > 0 && (
+                    <Grid item xs={12}>
+                      <Paper variant="outlined" sx={{ p: 2 }}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Breakeven Points
+                        </Typography>
+                        <Box display="flex" gap={1} flexWrap="wrap">
+                          {riskMetrics.breakevenPoints.map((point, index) => (
+                            <Chip
+                              key={index}
+                              label={formatCurrency(point)}
+                              size="small"
+                              variant="outlined"
+                              sx={{ fontFamily: 'Roboto Mono, monospace' }}
+                            />
+                          ))}
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+            )}
 
             {/* Payoff Diagram */}
             {payoffData.length > 0 && (

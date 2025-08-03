@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { getOptionsChain, getOptionExpirations } from '../services/apiClient';
+import { useComponentLoading } from '../contexts/LoadingContext';
 import type { OptionsChainData, OptionQuote } from '../types';
 
 interface OptionsChainProps {
@@ -44,8 +45,8 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
   onOptionSelect
 }) => {
   const theme = useTheme();
+  const { loading, startLoading, stopLoading } = useComponentLoading('options-chain');
   const [chainData, setChainData] = useState<OptionsChainData | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedExpiration, setSelectedExpiration] = useState<string>('');
   const [availableExpirations, setAvailableExpirations] = useState<string[]>([]);
@@ -81,7 +82,7 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
       return;
     }
 
-    setLoading(true);
+    startLoading();
     setError(null);
     onLoadingChange?.(true);
 
@@ -99,7 +100,7 @@ const OptionsChain: React.FC<OptionsChainProps> = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load options chain');
     } finally {
-      setLoading(false);
+      stopLoading();
       onLoadingChange?.(false);
     }
   };

@@ -3,6 +3,7 @@ import { Paper, Typography, Box, CircularProgress, Alert, Grid, Chip } from '@mu
 import { TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material';
 import { getPortfolioSummary } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
+import { useComponentLoading } from '../contexts/LoadingContext';
 
 interface PortfolioSummary {
   total_value: number | null;
@@ -16,7 +17,7 @@ interface PortfolioSummary {
 
 const PortfolioValue: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { loading, startLoading, stopLoading } = useComponentLoading('portfolio-data');
   const [error, setError] = useState<string | null>(null);
   const { selectedAccount } = useAccountContext();
 
@@ -24,24 +25,24 @@ const PortfolioValue: React.FC = () => {
     const fetchPortfolio = async () => {
       if (!selectedAccount) {
         setPortfolio(null);
-        setLoading(false);
+        stopLoading();
         return;
       }
 
       try {
-        setLoading(true);
+        startLoading();
         const data = await getPortfolioSummary(selectedAccount.id);
         setPortfolio(data.summary || null);
       } catch (err) {
         setError('Failed to fetch portfolio data.');
         console.error(err);
       } finally {
-        setLoading(false);
+        stopLoading();
       }
     };
 
     fetchPortfolio();
-  }, [selectedAccount]);
+  }, [selectedAccount, startLoading, stopLoading]);
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount == null || isNaN(amount)) {

@@ -430,6 +430,7 @@ class TestTradingServiceThreadSafety:
 
             except Exception as e:
                 import contextlib
+
                 with contextlib.suppress(Exception):
                     await db_session.rollback()
 

@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { getStockPrice } from '../services/apiClient';
+import { useComponentLoading } from '../contexts/LoadingContext';
 import type { StockPriceData } from '../types';
 
 interface StockQuoteProps {
@@ -35,8 +36,8 @@ const StockQuote: React.FC<StockQuoteProps> = ({
   refreshInterval = 30
 }) => {
   const theme = useTheme();
+  const { loading, startLoading, stopLoading } = useComponentLoading('stock-quote');
   const [priceData, setPriceData] = useState<StockPriceData | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -46,7 +47,7 @@ const StockQuote: React.FC<StockQuoteProps> = ({
       return;
     }
 
-    setLoading(true);
+    startLoading();
     setError(null);
     onLoadingChange?.(true);
 
@@ -67,7 +68,7 @@ const StockQuote: React.FC<StockQuoteProps> = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stock price');
     } finally {
-      setLoading(false);
+      stopLoading();
       onLoadingChange?.(false);
     }
   };

@@ -8,13 +8,13 @@ ENV PYTHONUNBUFFERED=1
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and uv in a single layer
 RUN apt-get update && apt-get install -y \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install the latest version of uv
-RUN pip install --upgrade pip && pip install uv
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --upgrade pip uv
 
 # Copy only the dependency files first (for better Docker layer caching)
 COPY pyproject.toml ./
@@ -31,8 +31,11 @@ COPY . .
 # Remove any .venv that might have been copied and recreate fresh
 RUN rm -rf .venv && uv sync --no-dev
 
-# Expose the port the app runs on
-EXPOSE 2080
+# Create directory for Robinhood tokens
+RUN mkdir -p /app/.tokens
+
+# Expose the ports the apps run on
+EXPOSE 2080 2081
 
 # Create a start script to run both servers
 COPY start.sh /start.sh

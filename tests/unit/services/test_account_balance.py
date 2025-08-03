@@ -73,10 +73,10 @@ class TestAccountBalanceRetrieval:
         await db_session.execute(
             insert_query,
             {
-                "id": account_id, 
-                "owner": owner, 
+                "id": account_id,
+                "owner": owner,
                 "cash_balance": expected_balance,
-                "starting_balance": expected_balance
+                "starting_balance": expected_balance,
             },
         )
         await db_session.commit()

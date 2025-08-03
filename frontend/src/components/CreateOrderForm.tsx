@@ -9,6 +9,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import type { NewOrder, OrderType, OrderCondition } from '../types';
 import { createOrder, getStockPrice } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
+import { useComponentLoading } from '../contexts/LoadingContext';
 
 interface OrderPreview {
   estimatedCost: number;
@@ -42,7 +43,7 @@ const CreateOrderForm: React.FC = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { loading: isSubmitting, startLoading: startSubmitting, stopLoading: stopSubmitting } = useComponentLoading('order-submission');
   
   const { selectedAccount } = useAccountContext();
 
@@ -133,7 +134,7 @@ const CreateOrderForm: React.FC = () => {
       return;
     }
 
-    setIsSubmitting(true);
+    startSubmitting();
 
     const order: NewOrder = {
       symbol: symbol.toUpperCase(),
@@ -166,7 +167,7 @@ const CreateOrderForm: React.FC = () => {
       setSnackbarMessage('Failed to submit order. Please try again.');
       setSnackbarSeverity('error');
     } finally {
-      setIsSubmitting(false);
+      stopSubmitting();
       setOpenSnackbar(true);
     }
   };

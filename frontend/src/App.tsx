@@ -9,6 +9,8 @@ import AccountsList from './pages/AccountsList';
 import Orders from './pages/Orders';
 import StockResearch from './pages/StockResearch';
 import { AccountProvider } from './contexts/AccountContext';
+import { LoadingProvider } from './contexts/LoadingContext';
+import GlobalLoadingIndicator from './components/GlobalLoadingIndicator';
 
 const router = createBrowserRouter([
   {
@@ -28,9 +30,12 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AccountProvider>
-        <RouterProvider router={router} />
-      </AccountProvider>
+      <LoadingProvider>
+        <AccountProvider>
+          <GlobalLoadingIndicator variant="topbar" showDetails={true} />
+          <RouterProvider router={router} />
+        </AccountProvider>
+      </LoadingProvider>
     </ThemeProvider>
   );
 };
