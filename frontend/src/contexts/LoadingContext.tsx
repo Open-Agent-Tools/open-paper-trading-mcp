@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
 interface LoadingState {
@@ -23,20 +23,20 @@ interface LoadingProviderProps {
 export const LoadingProvider: React.FC<LoadingProviderProps> = ({ children }) => {
   const [loadingStates, setLoadingStates] = useState<LoadingState>({});
 
-  const setLoading = (key: string, loading: boolean) => {
+  const setLoading = useCallback((key: string, loading: boolean) => {
     setLoadingStates(prev => ({
       ...prev,
       [key]: loading
     }));
-  };
+  }, []);
 
-  const clearLoading = (key: string) => {
+  const clearLoading = useCallback((key: string) => {
     setLoadingStates(prev => {
       const newState = { ...prev };
       delete newState[key];
       return newState;
     });
-  };
+  }, []);
 
   const isAnyLoading = (): boolean => {
     return Object.values(loadingStates).some(loading => loading);
@@ -78,9 +78,9 @@ export const useLoading = (): LoadingContextType => {
 export const useComponentLoading = (componentKey: string) => {
   const { setLoading, isLoading, clearLoading } = useLoading();
 
-  const startLoading = () => setLoading(componentKey, true);
-  const stopLoading = () => setLoading(componentKey, false);
-  const clear = () => clearLoading(componentKey);
+  const startLoading = useCallback(() => setLoading(componentKey, true), [setLoading, componentKey]);
+  const stopLoading = useCallback(() => setLoading(componentKey, false), [setLoading, componentKey]);
+  const clear = useCallback(() => clearLoading(componentKey), [clearLoading, componentKey]);
   const loading = isLoading(componentKey);
 
   return {
