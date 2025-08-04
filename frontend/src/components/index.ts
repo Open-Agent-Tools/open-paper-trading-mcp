@@ -35,7 +35,6 @@ export { default as SpreadBuilder } from './SpreadBuilder';
 
 // Order Management Components
 export { default as OrderHistory } from './OrderHistory';
-export { default as OrdersTable } from './OrdersTable';
 export { default as BulkOrderOperations } from './BulkOrderOperations';
 export { default as OrderTemplates } from './OrderTemplates';
 

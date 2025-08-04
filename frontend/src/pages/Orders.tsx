@@ -1,6 +1,5 @@
 import React from 'react';
 import { Box, Grid, Stack } from '@mui/material';
-import OrdersTable from '../components/OrdersTable';
 import CreateOrderForm from '../components/CreateOrderForm';
 import OrderHistory from '../components/OrderHistory';
 import AccountGuard from '../components/account/AccountGuard';
@@ -16,7 +15,6 @@ const Orders: React.FC = () => {
           <Grid item xs={12} lg={8}>
             <Stack spacing={3}>
               <OrderHistory />
-              <OrdersTable />
             </Stack>
           </Grid>
           <Grid item xs={12} lg={4}>
