@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import type { GridColDef, GridValueFormatterParams } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { CircularProgress, Alert, Paper, Typography, Box } from '@mui/material';
 import { getPositions } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
@@ -30,8 +30,8 @@ const columns: GridColDef[] = [
     field: 'asset_type', 
     headerName: 'Type', 
     width: 80,
-    valueFormatter: (params: GridValueFormatterParams) => {
-      const value = params.value as string;
+    valueFormatter: (params) => {
+      const value = params as string;
       return value ? value.toUpperCase() : 'STOCK';
     }
   },
@@ -41,33 +41,33 @@ const columns: GridColDef[] = [
     headerName: 'Avg Price', 
     type: 'number', 
     width: 120, 
-    valueFormatter: (params: GridValueFormatterParams) => 
-      params.value ? `$${(params.value as number).toFixed(2)}` : '-'
+    valueFormatter: (params) => 
+      params ? `$${(params as number).toFixed(2)}` : '-'
   },
   { 
     field: 'current_price', 
     headerName: 'Current Price', 
     type: 'number', 
     width: 130, 
-    valueFormatter: (params: GridValueFormatterParams) => 
-      params.value ? `$${(params.value as number).toFixed(2)}` : '-'
+    valueFormatter: (params) => 
+      params ? `$${(params as number).toFixed(2)}` : '-'
   },
   { 
     field: 'market_value', 
     headerName: 'Market Value', 
     type: 'number', 
     width: 130, 
-    valueFormatter: (params: GridValueFormatterParams) => 
-      params.value ? `$${(params.value as number).toLocaleString()}` : '-'
+    valueFormatter: (params) => 
+      params ? `$${(params as number).toLocaleString()}` : '-'
   },
   { 
     field: 'unrealized_pnl', 
     headerName: 'P&L', 
     type: 'number', 
     width: 120, 
-    valueFormatter: (params: GridValueFormatterParams) => {
-      if (!params.value) return '-';
-      const value = params.value as number;
+    valueFormatter: (params) => {
+      if (!params) return '-';
+      const value = params as number;
       const sign = value >= 0 ? '+' : '';
       return `${sign}$${value.toFixed(2)}`;
     },
@@ -81,9 +81,9 @@ const columns: GridColDef[] = [
     headerName: 'P&L %', 
     type: 'number', 
     width: 100, 
-    valueFormatter: (params: GridValueFormatterParams) => {
-      if (!params.value) return '-';
-      const value = params.value as number;
+    valueFormatter: (params) => {
+      if (!params) return '-';
+      const value = params as number;
       const sign = value >= 0 ? '+' : '';
       return `${sign}${value.toFixed(2)}%`;
     },
@@ -97,16 +97,16 @@ const columns: GridColDef[] = [
     headerName: 'Strike', 
     type: 'number', 
     width: 90, 
-    valueFormatter: (params: GridValueFormatterParams) => 
-      params.value ? `$${(params.value as number).toFixed(2)}` : '-'
+    valueFormatter: (params) => 
+      params ? `$${(params as number).toFixed(2)}` : '-'
   },
   { 
     field: 'expiration_date', 
     headerName: 'Expiry', 
     width: 100, 
-    valueFormatter: (params: GridValueFormatterParams) => {
-      if (!params.value) return '-';
-      const date = new Date(params.value as string);
+    valueFormatter: (params) => {
+      if (!params) return '-';
+      const date = new Date(params as string);
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
     }
   },
@@ -206,9 +206,9 @@ const PositionsTable: React.FC = () => {
         rows={positions}
         columns={columns}
         getRowId={(row) => row.uniqueId}
-        rowsPerPageOptions={[5, 10]}
+        pageSizeOptions={[5, 10]}
         checkboxSelection
-        disableSelectionOnClick
+        disableRowSelectionOnClick
         autoHeight
         sx={{
           '& .MuiDataGrid-row:hover': {

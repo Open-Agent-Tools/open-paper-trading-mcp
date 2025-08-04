@@ -5,7 +5,6 @@ import {
 } from '@mui/x-data-grid';
 import type {
   GridColDef,
-  GridValueGetterParams,
   GridRenderCellParams,
 } from '@mui/x-data-grid';
 import {
@@ -104,7 +103,7 @@ const AccountsGrid: React.FC<AccountsGridProps> = ({
       headerName: 'Created',
       width: 120,
       sortable: true,
-      valueGetter: (params: GridValueGetterParams) => formatDate(params.value),
+      valueGetter: (params) => formatDate(params),
     },
     {
       field: 'starting_balance',
@@ -113,7 +112,7 @@ const AccountsGrid: React.FC<AccountsGridProps> = ({
       sortable: true,
       align: 'right',
       headerAlign: 'right',
-      valueGetter: (params: GridValueGetterParams) => formatCurrency(params.value),
+      valueGetter: (params) => formatCurrency(params),
     },
     {
       field: 'current_balance',
@@ -122,7 +121,7 @@ const AccountsGrid: React.FC<AccountsGridProps> = ({
       sortable: true,
       align: 'right',
       headerAlign: 'right',
-      valueGetter: (params: GridValueGetterParams) => formatCurrency(params.value),
+      valueGetter: (params) => formatCurrency(params),
     },
     {
       field: 'balance_change',
@@ -228,21 +227,23 @@ const AccountsGrid: React.FC<AccountsGridProps> = ({
           <DataGrid
             rows={accounts}
             columns={columns}
-            components={{ Toolbar: GridToolbar }}
-            componentsProps={{
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{
               toolbar: {
                 showQuickFilter: true,
                 quickFilterProps: { debounceMs: 500 },
               },
             }}
-            disableSelectionOnClick
-            pageSize={25}
-            rowsPerPageOptions={[10, 25, 50, 100]}
+            disableRowSelectionOnClick
             initialState={{
+              pagination: {
+                paginationModel: { pageSize: 25 },
+              },
               sorting: {
                 sortModel: [{ field: 'created_at', sort: 'desc' }],
               },
             }}
+            pageSizeOptions={[10, 25, 50, 100]}
             sx={{
               '& .MuiDataGrid-root': {
                 border: 'none',

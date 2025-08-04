@@ -7,6 +7,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'static',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          vendor: ['react', 'react-dom'],
+          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          'mui-data': ['@mui/x-data-grid', '@mui/x-date-pickers'],
+          charts: ['recharts'],
+          routing: ['react-router-dom']
+        }
+      }
+    }
   },
   server: {
     port: 3000,

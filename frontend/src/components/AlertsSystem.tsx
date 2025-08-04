@@ -465,12 +465,13 @@ const AlertsSystem: React.FC = () => {
                   {stockSearchResults.slice(0, 5).map((stock) => (
                     <ListItem 
                       key={stock.symbol}
-                      button
+                      component="button"
                       onClick={() => {
                         setSelectedStock(stock);
                         setStockSearchQuery('');
                         setStockSearchResults([]);
                       }}
+                      sx={{ cursor: 'pointer' }}
                     >
                       <ListItemText
                         primary={stock.name}

@@ -577,9 +577,10 @@ const Watchlists: React.FC = () => {
               {stockSearchResults.slice(0, 10).map((stock) => (
                 <ListItem 
                   key={stock.symbol}
-                  button
+                  component="button"
                   onClick={() => addStockToWatchlist(stock)}
                   disabled={currentWatchlist?.items.some(item => item.symbol === stock.symbol)}
+                  sx={{ cursor: 'pointer' }}
                 >
                   <ListItemText
                     primary={stock.name}

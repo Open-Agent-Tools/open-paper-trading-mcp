@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import type { GridColDef, GridValueFormatterParams, GridRenderCellParams } from '@mui/x-data-grid';
+import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { CircularProgress, Alert, Paper, Typography, Chip, Snackbar, Button, Box } from '@mui/material';
 import { getOrders, cancelOrder } from '../services/apiClient';
 import { useComponentLoading } from '../contexts/LoadingContext';
@@ -57,14 +57,14 @@ const OrdersTable: React.FC = () => {
       headerName: 'Price', 
       type: 'number', 
       width: 120, 
-      valueFormatter: (params: GridValueFormatterParams) => (params.value ? `$${(params.value as number).toFixed(2)}` : 'N/A') 
+      valueFormatter: (params) => (params ? `$${(params as number).toFixed(2)}` : 'N/A') 
     },
     { 
       field: 'stop_price', 
       headerName: 'Stop Price', 
       type: 'number', 
       width: 120, 
-      valueFormatter: (params: GridValueFormatterParams) => (params.value ? `$${(params.value as number).toFixed(2)}` : 'N/A') 
+      valueFormatter: (params) => (params ? `$${(params as number).toFixed(2)}` : 'N/A') 
     },
     {
       field: 'status',
@@ -89,9 +89,9 @@ const OrdersTable: React.FC = () => {
       field: 'created_at', 
       headerName: 'Created', 
       width: 120,
-      valueFormatter: (params: GridValueFormatterParams) => {
-        if (params.value) {
-          return new Date(params.value as string).toLocaleDateString();
+      valueFormatter: (params) => {
+        if (params) {
+          return new Date(params as string).toLocaleDateString();
         }
         return 'N/A';
       }
@@ -137,9 +137,9 @@ const OrdersTable: React.FC = () => {
         <DataGrid
           rows={orders}
           columns={columns}
-          rowsPerPageOptions={[5, 10]}
+          pageSizeOptions={[5, 10]}
           checkboxSelection
-          disableSelectionOnClick
+          disableRowSelectionOnClick
         />
         </Box>
       </Paper>
