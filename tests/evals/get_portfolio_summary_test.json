@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "get_portfolio_summary_test_set",
+  "name": "Get Portfolio Summary Test",
+  "description": "Test case for retrieving portfolio summary through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_portfolio_summary_test",
+      "conversation": [
+        {
+          "invocation_id": "portfolio-summary-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Give me a summary of my portfolio performance."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's a summary of your simulated portfolio performance for account UITESTER01:\n\n**Portfolio Summary:**\n\n*   **Total Value:** $*\n*   **Cash Balance:** $*\n*   **Invested Value:** $*\n*   **Daily Profit & Loss (P&L):** $* (*%)\n*   **Total Profit & Loss (P&L):** $* (*%)\n\nThis information is for a simulated paper trading account and does not involve real money."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-summary",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "get_portfolio_summary"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

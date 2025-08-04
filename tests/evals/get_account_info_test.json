@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "get_account_info_test_set",
+  "name": "Get Account Info Test",
+  "description": "Test case for retrieving account information through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_account_info_test",
+      "conversation": [
+        {
+          "invocation_id": "account-info-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me my account information."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here is your simulated account information for **UITESTER01**:\n\n*   **Account ID:** UITESTER01\n*   **Account Owner:** UI_TESTER_WES\n*   **Cash Balance:** $*\n*   **Total Account Value:** $*\n*   **Invested Value:** $*\n*   **Number of Positions:** 9\n*   **Currency:** USD\n*   **Account Created:** 2024-11-01\n*   **Last Updated:** 2025-08-04\n\nPlease remember, this is a **simulated paper trading account**, and no real money is involved. This is for educational and practice purposes only."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-info",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "get_account_info"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

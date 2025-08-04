@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "get_account_balance_test_set",
+  "name": "Get Account Balance Test",
+  "description": "Test case for retrieving account balance through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_account_balance_test",
+      "conversation": [
+        {
+          "invocation_id": "account-balance-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is my account balance?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Your account balance for UITESTER01 is:\n\n*   **Cash Balance:** $*\n*   **Account Status:** Active\n*   **Currency:** USD\n\nThis is your available cash balance for trading in your simulated paper trading account."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-balance",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "get_account_balance"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

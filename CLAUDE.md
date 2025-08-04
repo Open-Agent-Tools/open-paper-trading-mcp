@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Open Paper Trading MCP is a comprehensive paper trading simulator with dual interfaces: a REST API (FastAPI) and AI agent tools (MCP). The system simulates multi-asset trading (stocks, options, ETFs, bonds) with real market data for algorithmic trading development and AI agent training.
 
-**Current Status (2025-08-03)**: 🎉 **PRODUCTION READY QUALITY** - Successfully implemented dual-server architecture with FastAPI server (port 2080) for frontend/API and independent MCP server (port 2081) for AI agent tools. Both servers running simultaneously with full functionality. FastMCP integration resolved via server separation after mounting conflicts. **Code cleanup completed**: All ruff linting issues resolved (100% compliance), core application 100% mypy compliant, 580/581 journey tests passing (99.8% success rate). AsyncIO infrastructure fully stabilized with zero warnings. Database connection pool optimized with proper resource management. **Advanced Options Trading**: Professional spread builder with 15+ strategies, real-time P&L analysis, and comprehensive risk metrics. **Global Loading System**: Centralized loading state management with 3 indicator variants and component-specific tracking.
+**CRITICAL: Real Data Only Policy** - The system MUST always use real market data from Robinhood API for all production APIs, MCP tools, and core trading service responses. Synthetic/test data should ONLY be used in pytest mocks and test fixtures. Never use test adapters in production Docker containers or live services.
+
+**Current Status (2025-08-04)**: 🎉 **PRODUCTION READY QUALITY** - Successfully implemented dual-server architecture with FastAPI server (port 2080) for frontend/API and independent MCP server (port 2081) for AI agent tools. Both servers running simultaneously with full functionality. FastMCP integration resolved via server separation after mounting conflicts. **Code cleanup completed**: All ruff linting issues resolved (100% compliance), core application 100% mypy compliant, 576/581 journey tests passing (99.1% success rate). AsyncIO infrastructure fully stabilized with zero warnings. Database connection pool optimized with proper resource management. **Advanced Options Trading**: Professional spread builder with 15+ strategies, real-time P&L analysis, and comprehensive risk metrics. **Global Loading System**: Centralized loading state management with 3 indicator variants and component-specific tracking.
 
 ## Essential Commands
 
@@ -31,7 +33,7 @@ uv run python app/main.py        # Start FastAPI server (port 2080)
 uv run python app/mcp_server.py  # Start MCP server (port 2081)
 
 # Testing - PREFER USER JOURNEY-BASED TESTING
-uv run pytest -v                 # All tests (AVOID - causes timeouts with 606 tests)
+uv run pytest -v                 # All tests (AVOID - causes timeouts with 581 tests)
 pytest tests/unit/               # Unit tests only
 pytest tests/integration/        # Integration tests
 pytest tests/performance/        # Performance tests (if directory exists)
@@ -352,6 +354,26 @@ async def test_trading_service_function(db_session: AsyncSession):
 - All models inherit from `app.models.database.base.BaseModel`
 - Migrations managed via Alembic
 - Connection pooling configured for production load
+
+### Data Usage Guidelines
+
+**CRITICAL: Real Data Only Policy**
+- **Production Services**: ALWAYS use `QUOTE_ADAPTER_TYPE=robinhood` for live market data
+- **APIs & MCP Tools**: MUST return real market data from Robinhood API
+- **Docker Containers**: Configure with Robinhood adapter for production deployment
+- **Performance**: Optimize with concurrent API calls, caching, and connection pooling
+
+**Synthetic Data Usage Restrictions**
+- **ONLY for pytest mocks**: Use test fixtures and mocks in unit tests
+- **NEVER in production**: Do not use `test_data` or `synthetic` adapters in live systems
+- **NEVER in Docker**: Production containers must use real market data
+- **Testing Only**: Synthetic data restricted to `tests/` directory and pytest fixtures
+
+**Performance Optimization**
+- Use `asyncio.gather()` for concurrent quote fetching
+- Implement proper error handling with fallbacks to cached prices
+- Use connection pooling for database and external API calls
+- Cache frequently accessed data with appropriate TTL
 
 ### Service Integration
 - Services are dependency-injected via FastAPI's DI system

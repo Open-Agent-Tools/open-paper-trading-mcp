@@ -9,6 +9,7 @@ from pathlib import Path
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -35,6 +36,24 @@ app = FastAPI(
     title="Open Paper Trading",
     description="Paper trading platform with FastAPI and React frontend",
     version="0.1.0",
+)
+
+# Add CORS middleware to allow frontend to access API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Vite default port
+        "http://localhost:3001",  # Vite backup port
+        "http://localhost:3002",  # Vite backup port
+        "http://localhost:2080",  # Same origin (production)
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+        "http://127.0.0.1:2080",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Register services (dependency injection)

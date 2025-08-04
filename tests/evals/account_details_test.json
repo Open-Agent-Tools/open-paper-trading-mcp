@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "account_details_test_set",
+  "name": "Account Details Test",
+  "description": "Test case for retrieving detailed account information through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "account_details_test",
+      "conversation": [
+        {
+          "invocation_id": "account-details-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me detailed information about my account."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here is the detailed information for your account, UITESTER01:\n\n*   **Account ID:** UITESTER01\n*   **Owner:** UI_TESTER_WES\n*   **Cash Balance:** $*\n*   **Starting Balance:** $*\n*   **Total Value:** $*\n*   **Invested Value:** $*\n*   **Number of Positions:** 9\n*   **Currency:** USD\n*   **Created At:** November 1, 2024, 10:30 AM\n*   **Last Updated:** August 4, 2025, 1:44 PM\n\nThis is a simulated paper trading account, and no real money is involved."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-details",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "get_account_info"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

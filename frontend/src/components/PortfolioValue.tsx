@@ -4,45 +4,69 @@ import { TrendingUp, TrendingDown, TrendingFlat } from '@mui/icons-material';
 import { getPortfolioSummary } from '../services/apiClient';
 import { useAccountContext } from '../contexts/AccountContext';
 import { useComponentLoading } from '../contexts/LoadingContext';
-
-interface PortfolioSummary {
-  total_value: number | null;
-  cash_balance: number | null;
-  invested_value: number | null;
-  daily_pnl: number | null;
-  daily_pnl_percent: number | null;
-  total_pnl: number | null;
-  total_pnl_percent: number | null;
-}
+import type { PortfolioSummary } from '../types';
 
 const PortfolioValue: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const { loading, startLoading, stopLoading } = useComponentLoading('portfolio-data');
   const [error, setError] = useState<string | null>(null);
-  const { selectedAccount } = useAccountContext();
+  const { selectedAccount, isInitialized } = useAccountContext();
+
 
   useEffect(() => {
     const fetchPortfolio = async () => {
+      // Wait for account context to be initialized
+      if (!isInitialized) {
+        return;
+      }
+
       if (!selectedAccount) {
         setPortfolio(null);
+        setError(null);
         stopLoading();
         return;
       }
 
       try {
         startLoading();
-        const data = await getPortfolioSummary(selectedAccount.id);
-        setPortfolio(data.summary || null);
+        setError(null);
+        
+        const response = await getPortfolioSummary(selectedAccount.id);
+        
+        if (response.success && response.summary) {
+          setPortfolio(response.summary);
+        } else {
+          setError(response.message || 'Failed to fetch portfolio data');
+          setPortfolio(null);
+        }
       } catch (err) {
-        setError('Failed to fetch portfolio data.');
-        console.error(err);
+        console.error('Portfolio fetch error:', err);
+        
+        // Provide more specific error messages
+        let errorMessage = 'Failed to fetch portfolio data';
+        if (err instanceof Error) {
+          if (err.message.includes('Network error')) {
+            errorMessage = 'Unable to connect to server. Please check your connection.';
+          } else if (err.message.includes('timeout')) {
+            errorMessage = 'Request timed out. Please try again.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Portfolio endpoint not found.';
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Server error. Please try again later.';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+        setPortfolio(null);
       } finally {
         stopLoading();
       }
     };
 
     fetchPortfolio();
-  }, [selectedAccount, startLoading, stopLoading]);
+  }, [selectedAccount, isInitialized, startLoading, stopLoading]);
 
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount == null || isNaN(amount)) {
@@ -102,7 +126,9 @@ const PortfolioValue: React.FC = () => {
           Portfolio Value
         </Typography>
         <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography color="text.secondary">No portfolio data available</Typography>
+          <Typography color="text.secondary">
+            {!selectedAccount ? 'Please select an account to view portfolio data' : 'No portfolio data available'}
+          </Typography>
         </Box>
       </Paper>
     );

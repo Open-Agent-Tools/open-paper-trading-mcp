@@ -11,7 +11,8 @@ import type {
   OptionsChainResponse,
   OptionGreeksResponse,
   StockOrdersResponse,
-  OptionsOrdersResponse
+  OptionsOrdersResponse,
+  PortfolioSummaryResponse
 } from '../types';
 
 // Re-export account API for backwards compatibility
@@ -26,12 +27,43 @@ export {
 
 // Types moved to types/account.ts
 
+// Use direct backend URL during development if proxy not working
+const baseURL = import.meta.env.DEV 
+  ? 'http://localhost:2080/api/v1/trading'  // Direct backend call
+  : '/api/v1/trading';  // Proxy/relative path for production
+
 const apiClient = axios.create({
-  baseURL: '/api/v1/trading',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    
+    // Handle network errors
+    if (!error.response) {
+      throw new Error('Network error - please check your connection and ensure the backend server is running');
+    }
+
+    // Handle server errors
+    if (error.response.status >= 500) {
+      throw new Error('Server error - please try again later');
+    }
+
+    // Handle client errors
+    if (error.response.status >= 400) {
+      const message = error.response.data?.message || error.response.data?.detail || 'Request failed';
+      throw new Error(message);
+    }
+
+    throw error;
+  }
+);
 
 // Account functions moved to accountApi.ts - using re-exports above
 
@@ -42,7 +74,7 @@ export const getAccountInfo = async (accountId?: string) => {
   return response.data;
 };
 
-export const getPortfolioSummary = async (accountId?: string) => {
+export const getPortfolioSummary = async (accountId?: string): Promise<PortfolioSummaryResponse> => {
   const response = await apiClient.get('/portfolio/summary', {
     params: accountId ? { account_id: accountId } : {}
   });

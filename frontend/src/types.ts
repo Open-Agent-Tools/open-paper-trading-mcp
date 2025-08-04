@@ -327,3 +327,21 @@ export interface OptionsOrdersResponse {
   count: number;
   message: string;
 }
+
+// Portfolio Types
+export interface PortfolioSummary {
+  total_value: number | null;
+  cash_balance: number | null;
+  invested_value: number | null;
+  daily_pnl: number | null;
+  daily_pnl_percent: number | null;
+  total_pnl: number | null;
+  total_pnl_percent: number | null;
+}
+
+export interface PortfolioSummaryResponse {
+  success: boolean;
+  summary: PortfolioSummary;
+  account_id: string | null;
+  message: string;
+}

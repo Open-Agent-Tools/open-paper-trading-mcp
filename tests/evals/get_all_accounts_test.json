@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "get_all_accounts_test_set",
+  "name": "Get All Accounts Test",
+  "description": "Test case for retrieving all accounts summary through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_all_accounts_test",
+      "conversation": [
+        {
+          "invocation_id": "all-accounts-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me all available accounts."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are your available accounts:\n\n*   **Account ID**: `P34B193B2S`\n    *   **Owner**: default\n    *   **Created At**: 2025-07-30T15:20:56.971141\n    *   **Starting Balance**: $*\n    *   **Current Balance**: $*\n    *   **Change**: $*\n    *   **Change Percent**: *%\n\n*   **Account ID**: `UITESTER01`\n    *   **Owner**: UI_TESTER_WES\n    *   **Created At**: 2024-11-01T10:30:00\n    *   **Starting Balance**: $*\n    *   **Current Balance**: $*\n    *   **Change**: $*\n    *   **Change Percent**: *%\n\n**Summary:**\n*   **Total Accounts**: 2\n*   **Total Starting Balance**: $*\n*   **Total Current Balance**: $*\n*   **Total Change**: $*\n*   **Total Change Percent**: *%\n\nRemember, this is a simulated paper trading environment, and no real money is involved."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-all-accounts",
+                "args": {},
+                "name": "get_all_accounts"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

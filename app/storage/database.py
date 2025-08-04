@@ -1,4 +1,5 @@
 import os
+import threading
 from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 
@@ -29,26 +30,50 @@ sync_engine = create_engine(
     echo=False,  # Set to True for SQL query debugging
 )
 
-# Async engine
+# Async engine - lazy initialization to avoid MissingGreenlet error
 if "+asyncpg" not in database_url:
     ASYNC_DATABASE_URL = database_url.replace("postgresql://", "postgresql+asyncpg://")
 else:
     ASYNC_DATABASE_URL = database_url
-async_engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    pool_size=5,  # Maximum number of permanent connections
-    max_overflow=10,  # Maximum number of overflow connections
-    pool_timeout=30,  # Timeout for getting connection from pool
-    pool_recycle=3600,  # Recycle connections after 1 hour
-    pool_pre_ping=True,  # Verify connections before use
-    echo=False,  # Set to True for SQL query debugging
-)
 
-# Create session factories
+# Thread-local storage for async database components
+_thread_local = threading.local()
+
+
+def get_async_engine():
+    """Get or create the async engine (thread-local lazy initialization)."""
+    if not hasattr(_thread_local, "async_engine") or _thread_local.async_engine is None:
+        _thread_local.async_engine = create_async_engine(
+            ASYNC_DATABASE_URL,
+            pool_size=5,  # Maximum number of permanent connections
+            max_overflow=10,  # Maximum number of overflow connections
+            pool_timeout=30,  # Timeout for getting connection from pool
+            pool_recycle=3600,  # Recycle connections after 1 hour
+            pool_pre_ping=True,  # Verify connections before use
+            echo=False,  # Set to True for SQL query debugging
+        )
+    return _thread_local.async_engine
+
+
+def get_async_session_factory():
+    """Get or create the async session factory (thread-local lazy initialization)."""
+    if (
+        not hasattr(_thread_local, "async_session_factory")
+        or _thread_local.async_session_factory is None
+    ):
+        engine = get_async_engine()
+        _thread_local.async_session_factory = async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+    return _thread_local.async_session_factory
+
+
+# For backward compatibility, create module-level variables that get initialized lazily
+async_engine = None
+AsyncSessionLocal = None
+
+# Create sync session factory (this is safe at module level)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
-AsyncSessionLocal = async_sessionmaker(
-    async_engine, class_=AsyncSession, expire_on_commit=False
-)
 
 # Export both sync and async engines and sessions
 __all__ = [
@@ -56,7 +81,9 @@ __all__ = [
     "SessionLocal",
     "async_engine",
     "get_async_db",
+    "get_async_engine",
     "get_async_session",
+    "get_async_session_factory",
     "get_sync_session",
     "init_db",
     "sync_engine",
@@ -83,7 +110,8 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Get an async database session using asyncpg (production) or aiosqlite (testing).
     """
-    session = AsyncSessionLocal()
+    session_factory = get_async_session_factory()
+    session = session_factory()
     try:
         yield session
     except Exception:
@@ -103,5 +131,6 @@ async def init_db() -> None:
     """
     from app.models.database.base import Base
 
-    async with async_engine.begin() as conn:
+    engine = get_async_engine()
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

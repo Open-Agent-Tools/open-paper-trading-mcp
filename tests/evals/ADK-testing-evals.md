@@ -81,12 +81,16 @@ Before running evaluations, ensure:
    export ROBINHOOD_PASSWORD="your_robinhood_password"
    ```
 
-3. **✅ MCP Server Running**
+3. **✅ Docker Services Running**
    ```bash
-   # Ensure Docker containers are running
+   # REQUIRED: Start Docker containers (MCP server runs inside Docker)
    docker-compose up -d
-   # OR start the MCP server directly
-   uv run python app/main.py
+   
+   # Verify both containers are healthy
+   docker-compose ps
+   
+   # DO NOT start local servers - ADK evaluations must run against Docker endpoints
+   # The MCP server runs on port 2081 inside the Docker container
    ```
 
 4. **✅ Correct Working Directory**
@@ -113,14 +117,14 @@ list_available_tools_test_set:
   Tests failed: 0
 ```
 
-**Last Successful Run**: 2025-07-25T17:00:00Z
+**Last Successful Run**: 2025-08-04T15:30:00Z (Docker-based evaluation)
 
 ## Available Evaluation Tests
 
 ### 1. List Available Tools Test
 **File**: `tests/evals/list_available_tools_test.json`  
 **Purpose**: Validates that the agent can successfully list all available MCP tools  
-**Expected Output**: Alphabetically sorted bullet list of 58 MCP tools
+**Expected Output**: Alphabetically sorted bullet list of 43 MCP tools
 
 ```bash
 adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json --config_file_path tests/evals/test_config.json
@@ -228,11 +232,19 @@ adk eval examples/google_adk_agent tests/evals/list_available_tools_test.json --
 
 #### 1. MCP Server Connection Issues
 ```bash
-# Test MCP server directly
-uv run python app/main.py
+# ❌ DO NOT start local servers - ADK must use Docker endpoints
+# uv run python app/main.py  # DON'T DO THIS
 
-# Check if server responds to list_tools via Docker
-docker-compose exec app uv run python app/mcp/server.py --list-tools
+# ✅ Check Docker container status
+docker-compose ps
+
+# ✅ Check MCP server logs inside Docker
+docker logs open-paper-trading-mcp-app-1
+
+# ✅ Test MCP server endpoint (should be accessible on port 2081)
+curl -X POST http://localhost:2081/mcp/v1/initialize \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}}}'
 ```
 
 #### 2. Authentication Errors
@@ -293,11 +305,12 @@ echo "Running all ADK evaluations..."
 # Ensure we're in the right directory
 cd /Users/wes/Development/open-paper-trading-mcp
 
-# Ensure containers are running
+# REQUIRED: Ensure Docker containers are running (not local servers)
 docker-compose up -d
 
-# Wait for services to be ready
-sleep 10
+# Wait for services to be ready and verify health
+sleep 15
+docker-compose ps  # Both containers should show "healthy" status
 
 # List available tools test
 echo "Testing tool listing..."

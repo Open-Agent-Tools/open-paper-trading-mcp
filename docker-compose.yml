@@ -45,8 +45,8 @@ services:
       - MCP_HTTP_PORT=2081
       - MCP_HTTP_URL=http://localhost:2081
       
-      # Quote adapter configuration (use test data by default)
-      - QUOTE_ADAPTER_TYPE=test
+      # Quote adapter configuration (use robinhood for live data)
+      - QUOTE_ADAPTER_TYPE=robinhood
       - TEST_SCENARIO=ui_testing
       - TEST_DATE=2025-07-30
       

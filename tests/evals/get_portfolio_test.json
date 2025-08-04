@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "get_portfolio_test_set",
+  "name": "Get Portfolio Test",
+  "description": "Test case for retrieving portfolio information through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_portfolio_test",
+      "conversation": [
+        {
+          "invocation_id": "portfolio-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me my portfolio."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Your portfolio for account UITESTER01 has a cash balance of $10,000.00 and a total value of $108,841.25. Your daily and total PnL (Profit and Loss) is\n   $36,513.15. You currently hold 9 positions.\n\n  Here are your current holdings:\n\n  **Stocks:**\n\n  *   **AAPL (Apple Inc.)**: 50 shares\n      *   Average Cost: $150.00\n      *   Current Price: $205.36\n      *   Market Value: $10,268.00\n      *   Unrealized PnL: $2,768.00\n  *   **MSFT (Microsoft Corp.)**: 25 shares\n      *   Average Cost: $280.00\n      *   Current Price: $535.46\n      *   Market Value: $13,386.50\n      *   Unrealized PnL: $6,386.50\n  *   **GOOGL (Alphabet Inc. Class A)**: 15 shares\n      *   Average Cost: $120.00\n      *   Current Price: $194.11\n      *   Market Value: $2,911.65\n      *   Unrealized PnL: $1,111.65\n  *   **TSLA (Tesla Inc.)**: 30 shares\n      *   Average Cost: $200.00\n      *   Current Price: $308.50\n      *   Market Value: $9,255.00\n      *   Unrealized PnL: $3,255.00\n  *   **SPY (SPDR S&P 500 ETF Trust)**: 100 shares\n      *   Average Cost: $400.00\n      *   Current Price: $629.92\n      *   Market Value: $62,992.00\n      *   Unrealized PnL: $22,992.00\n\n  **Options:**\n\n  *   **AAPL250221C00180000 (Apple Call Option)**: 2 contracts, long\n      *   Average Cost: $5.50\n      *   Current Price: $5.50\n      *   Market Value: $1,100.00\n      *   Unrealized PnL: $0.00\n  *   **MSFT250117P00300000 (Microsoft Put Option)**: 1 contract, long\n      *   Average Cost: $*\n      *   Current Price: $*\n      *   Market Value: $*\n      *   Unrealized PnL: $*\n  *   **SPY250321C00420000 (SPDR S&P 500 ETF Trust Call Option)**: -1 contract, short\n      *   Average Cost: $*\n      *   Current Price: $*\n      *   Market Value: -$*\n      *   Unrealized PnL: -$*\n  *   **GOOGL250214C00130000 (Alphabet Inc. Class A Call Option)**: 3 contracts, long\n      *   Average Cost: $*\n      *   Current Price: $*\n      *   Market Value: $*\n      *   Unrealized PnL: $*\n\n  This is a simulated paper trading account, and no real money is involved."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-portfolio",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "get_portfolio"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "get_positions_test_set",
+  "name": "Get Positions Test",
+  "description": "Test case for retrieving current positions through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_positions_test",
+      "conversation": [
+        {
+          "invocation_id": "positions-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What positions do I currently hold?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are the positions you currently hold in your UITESTER01 account with stock and option holdings, including detailed metrics for 9 total positions. This is a simulated paper trading account."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-positions",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "positions"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -27,11 +27,32 @@ else:
     print(f"❌ .env file not found at {env_path}")
 
 # Import MCP tools AFTER environment variables are loaded
+from app.core.service_factory import register_services  # noqa: E402
 from app.mcp_tools import mcp  # noqa: E402
+
+
+async def async_register_services() -> None:
+    """Register services in async context to handle database connections."""
+    register_services()
+
 
 if __name__ == "__main__":
     print("🚀 Starting MCP server on port 2081...")
     print("🔌 MCP Server: http://localhost:2081/")
+
+    # Register services before starting server
+    print("📋 Registering services...")
+    try:
+        import asyncio
+
+        # Run service registration in async context
+        asyncio.run(async_register_services())
+        print("✅ Services registered successfully")
+    except Exception as e:
+        print(f"⚠️ Failed to register services (will run without DB): {e}")
+        # Don't exit - let MCP server start anyway for tools that don't need DB
+        # The tools will handle the missing service gracefully
+
     print("🛠️  Available tools (43 total):")
     print("   • Set 1: Core System & Account Tools (9 tools)")
     print("   • Set 2: Market Data Tools (8 tools)")

@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import type { AccountSummary, AccountsResponse } from '../types/account';
 
-// API base URL configuration
-const API_BASE_URL = '/api/v1/trading';
+// API base URL configuration - use direct backend URL during development
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:2080/api/v1/trading'  // Direct backend call
+  : '/api/v1/trading';  // Proxy/relative path for production
 
 // Account Context Types
 export interface AccountContextState {

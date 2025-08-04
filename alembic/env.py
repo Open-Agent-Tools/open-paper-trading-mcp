@@ -43,10 +43,19 @@ def run_migrations_offline() -> None:
     if url is None:
         import os
 
-        url = os.getenv(
+        # Convert async DATABASE_URL to sync for Alembic
+        async_url = os.getenv(
             "DATABASE_URL",
-            "postgresql://trading_user:trading_password@localhost:5432/trading_db",
+            "postgresql+asyncpg://trading_user:trading_password@localhost:5432/trading_db",
         )
+        # Replace asyncpg driver with psycopg2 for synchronous Alembic migrations
+        url = (
+            async_url.replace("postgresql+asyncpg://", "postgresql://")
+            if async_url
+            else None
+        )
+        if url is None:
+            url = "postgresql://trading_user:trading_password@localhost:5432/trading_db"
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -70,7 +79,13 @@ def run_migrations_online() -> None:
 
     database_url = os.getenv("DATABASE_URL")
     if database_url:
-        config.set_main_option("sqlalchemy.url", database_url)
+        # Convert async DATABASE_URL to sync for Alembic migrations
+        sync_database_url = database_url.replace(
+            "postgresql+asyncpg://", "postgresql://"
+        )
+        print(f"DEBUG: Original URL: {database_url}")
+        print(f"DEBUG: Converted URL: {sync_database_url}")
+        config.set_main_option("sqlalchemy.url", sync_database_url)
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),

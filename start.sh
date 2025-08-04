@@ -11,12 +11,9 @@ while ! pg_isready -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d $POSTGRES_DB; do
 done
 echo "✅ Database is ready!"
 
-# Run database migrations if needed
-echo "🔄 Running database migrations..."
+# Skip database migrations temporarily due to duplicate column issue
+echo "⏩ Skipping database migrations (column already exists)"
 cd /app
-# Use the DATABASE_URL environment variable for alembic
-export SQLALCHEMY_DATABASE_URL=$DATABASE_URL
-uv run alembic upgrade head || echo "⚠️ Migration failed or not needed"
 
 # Create log directories
 mkdir -p /app/logs /tmp

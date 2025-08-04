@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from app.services.trading_service import TradingService
 
 
-def create_trading_service(account_owner: str = "default") -> "TradingService":
+def create_trading_service(account_owner: str = "UI_TESTER_WES") -> "TradingService":
     """Create and configure a TradingService instance.
 
     Args:
@@ -45,11 +45,8 @@ def _get_quote_adapter() -> QuoteAdapter:
     quote_adapter = factory.create_adapter(settings.QUOTE_ADAPTER_TYPE)
 
     if quote_adapter is None:
-        # Fall back to database test data adapter
-        quote_adapter = factory.create_adapter("synthetic_data_db")
-
-    if quote_adapter is None:
-        # Final fallback to dev data adapter
+        # Skip database adapter during service registration to avoid async issues
+        # Fall back directly to dev data adapter
         from app.adapters.synthetic_data import DevDataQuoteAdapter
 
         quote_adapter = DevDataQuoteAdapter()

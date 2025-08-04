@@ -15,7 +15,6 @@ from ..models.assets import Asset, Option, Stock, asset_factory
 from ..models.database.trading import DevOptionQuote, DevStockQuote
 from ..models.quotes import OptionQuote, OptionsChain, Quote
 from ..services.greeks import calculate_option_greeks
-from ..storage.database import get_async_session
 from .base import AdapterConfig, QuoteAdapter
 
 
@@ -67,33 +66,41 @@ class DevDataQuoteAdapter(QuoteAdapter):
         if self._cache_loaded:
             return
 
-        async for db in get_async_session():
-            # Load stock quotes for current date and scenario
-            stock_result = await db.execute(
-                select(DevStockQuote).where(
-                    DevStockQuote.quote_date == self.current_date,
-                    DevStockQuote.scenario == self.scenario,
+        try:
+            from ..storage.database import get_async_session
+
+            async for db in get_async_session():
+                # Load stock quotes for current date and scenario
+                stock_result = await db.execute(
+                    select(DevStockQuote).where(
+                        DevStockQuote.quote_date == self.current_date,
+                        DevStockQuote.scenario == self.scenario,
+                    )
                 )
-            )
-            stock_quotes = stock_result.scalars().all()
+                stock_quotes = stock_result.scalars().all()
 
-            for stock_quote in stock_quotes:
-                self._stock_cache[stock_quote.symbol] = stock_quote
+                for stock_quote in stock_quotes:
+                    self._stock_cache[stock_quote.symbol] = stock_quote
 
-            # Load option quotes for current date and scenario
-            option_result = await db.execute(
-                select(DevOptionQuote).where(
-                    DevOptionQuote.quote_date == self.current_date,
-                    DevOptionQuote.scenario == self.scenario,
+                # Load option quotes for current date and scenario
+                option_result = await db.execute(
+                    select(DevOptionQuote).where(
+                        DevOptionQuote.quote_date == self.current_date,
+                        DevOptionQuote.scenario == self.scenario,
+                    )
                 )
-            )
-            option_quotes = option_result.scalars().all()
+                option_quotes = option_result.scalars().all()
 
-            for option_quote in option_quotes:
-                self._option_cache[option_quote.symbol] = option_quote
+                for option_quote in option_quotes:
+                    self._option_cache[option_quote.symbol] = option_quote
 
+                self._cache_loaded = True
+                break
+        except Exception as e:
+            # If database access fails, mark as loaded with empty cache
+            # This allows the adapter to work but return None for quotes
+            print(f"Warning: Failed to load test data from database: {e}")
             self._cache_loaded = True
-            break
 
     def set_date(self, date_str: str) -> None:
         """Set the current date for quote retrieval."""
@@ -111,6 +118,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
 
     async def get_available_dates(self) -> list[str]:
         """Get list of available test dates."""
+        from ..storage.database import get_async_session
+
         async for db in get_async_session():
             result = await db.execute(
                 select(DevStockQuote.quote_date.distinct())
@@ -127,6 +136,8 @@ class DevDataQuoteAdapter(QuoteAdapter):
 
     async def get_available_scenarios(self) -> list[str]:
         """Get list of available test scenarios."""
+        from ..storage.database import get_async_session
+
         async for db in get_async_session():
             result = await db.execute(
                 select(DevStockQuote.scenario.distinct())

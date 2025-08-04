@@ -8,8 +8,13 @@ import type {
   AccountSummary
 } from '../types/account';
 
+// Use direct backend URL during development if proxy not working
+const baseURL = import.meta.env.DEV 
+  ? 'http://localhost:2080/api/v1/trading'  // Direct backend call
+  : '/api/v1/trading';  // Proxy/relative path for production
+
 const apiClient = axios.create({
-  baseURL: '/api/v1/trading',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

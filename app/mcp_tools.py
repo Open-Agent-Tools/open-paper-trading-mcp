@@ -4,12 +4,39 @@ Trading tools for AI agents including account and portfolio management
 """
 
 import asyncio
-from typing import Any
 
-from fastmcp import FastMCP
+# Import for type annotation
+from typing import TYPE_CHECKING, Any
+
+from fastmcp import Context, FastMCP
 
 from app.core.id_utils import validate_optional_account_id
-from app.core.service_factory import get_trading_service
+from app.core.service_factory import create_trading_service, get_trading_service
+from app.core.user_context import user_context_manager
+
+if TYPE_CHECKING:
+    from app.services.trading_service import TradingService
+
+
+def get_fresh_trading_service(account_id: str | None = None) -> "TradingService":
+    """Get a fresh TradingService instance for MCP tool calls.
+
+    This creates a new instance instead of using the singleton to avoid
+    thread-local database session issues in the async execution context.
+
+    Args:
+        account_id: Account ID to determine account owner, defaults to UI_TESTER_WES
+    """
+
+    # Map common account IDs to their owners, fallback to the account_id as owner
+    account_owner = "UI_TESTER_WES"  # Default for UITESTER01 and unknown accounts
+
+    if account_id == "P34B193B2S":
+        account_owner = "default"
+    elif account_id and account_id != "UITESTER01":
+        account_owner = account_id  # Use account_id as owner for unknown accounts
+
+    return create_trading_service(account_owner)
 
 
 def run_async_safely(coro):
@@ -18,12 +45,41 @@ def run_async_safely(coro):
         # Try to get existing event loop
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            # If loop is running, create a new one in a thread
-            import concurrent.futures
+            # If loop is running, we need to run in a new thread with a new event loop
+            import threading
 
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, coro)
-                return future.result()
+            result_container = []
+            exception_container = []
+
+            def run_in_new_loop():
+                """Run coroutine in a new event loop in a separate thread"""
+                try:
+                    # Create a new event loop for this thread
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        result = new_loop.run_until_complete(coro)
+                        result_container.append(result)
+                    finally:
+                        new_loop.close()
+                except Exception as e:
+                    exception_container.append(e)
+
+            # Run in a separate thread
+            thread = threading.Thread(target=run_in_new_loop)
+            thread.start()
+            thread.join(timeout=30)  # 30 second timeout
+
+            if thread.is_alive():
+                raise TimeoutError("Async operation timed out after 30 seconds")
+
+            if exception_container:
+                raise exception_container[0]
+
+            if result_container:
+                return result_container[0]
+            else:
+                raise RuntimeError("No result returned from async operation")
         else:
             return loop.run_until_complete(coro)
     except RuntimeError:
@@ -109,20 +165,46 @@ def get_account_balance(account_id: str | None = None) -> dict[str, Any]:
 
 
 @mcp.tool
-def get_account_info(account_id: str | None = None) -> dict[str, Any]:
+def debug_context_info(ctx: Context) -> dict[str, Any]:
+    """Debug tool to inspect MCP context and user mapping information"""
+    try:
+        context_info = user_context_manager.log_context_info(ctx)
+        resolved_account_id = user_context_manager.get_account_id_for_tool(ctx)
+
+        return {
+            "success": True,
+            "context_info": context_info,
+            "resolved_account_id": resolved_account_id,
+            "message": "Context information retrieved successfully",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to retrieve context information: {e!s}",
+        }
+
+
+@mcp.tool
+def get_account_info(ctx: Context, account_id: str | None = None) -> dict[str, Any]:
     """Get comprehensive account information including balance and basic details
 
     Args:
-        account_id: Optional 10-character account ID. If not provided, uses default account.
+        account_id: Optional 10-character account ID. If not provided, uses account from context.
     """
     try:
+        # Get account ID from context if not provided
+        context_account_id = user_context_manager.get_account_id_for_tool(
+            ctx, account_id
+        )
+
         # Validate account_id parameter
-        account_id = validate_optional_account_id(account_id)
+        resolved_account_id = validate_optional_account_id(context_account_id) or "UITESTER01"
 
         service = get_trading_service()
 
         # Use the new get_account_info method
-        account_info = run_async_safely(service.get_account_info(account_id))
+        account_info = run_async_safely(service.get_account_info(resolved_account_id))
 
         return {
             "success": True,
@@ -131,10 +213,19 @@ def get_account_info(account_id: str | None = None) -> dict[str, Any]:
         }
 
     except Exception as e:
+        # Get the resolved account ID for error reporting
+        try:
+            context_account_id = user_context_manager.get_account_id_for_tool(
+                ctx, account_id
+            )
+            resolved_account_id = context_account_id or account_id or "UITESTER01"
+        except Exception:
+            resolved_account_id = account_id or "UITESTER01"
+
         return {
             "success": False,
             "error": str(e),
-            "account_id": account_id,
+            "account_id": resolved_account_id,
             "message": f"Failed to retrieve account information: {e!s}",
         }
 
@@ -160,12 +251,12 @@ def get_portfolio(account_id: str | None = None) -> dict[str, Any]:
                 {
                     "symbol": position.symbol,
                     "quantity": position.quantity,
-                    "average_cost": position.average_cost,
+                    "average_cost": position.avg_price,
                     "current_price": position.current_price,
                     "market_value": position.market_value,
                     "unrealized_pnl": position.unrealized_pnl,
-                    "asset_type": position.asset_type,
-                    "side": position.side,
+                    "asset_type": "option" if position.is_option else "stock",
+                    "side": "long" if position.quantity > 0 else "short",
                 }
             )
 
