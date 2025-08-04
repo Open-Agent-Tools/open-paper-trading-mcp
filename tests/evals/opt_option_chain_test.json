@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "option_chain_test_set",
+  "name": "Option Chain Test",
+  "description": "Test case for retrieving options chain data through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_chain_test",
+      "conversation": [
+        {
+          "invocation_id": "option-chain-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me the options chain for Apple (AAPL) for the next expiration date.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's the options chain for AAPL showing call and put options with strike prices, expiration dates, bid/ask prices, volume, open interest, and implied volatility for the next available expiration."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "underlying": "AAPL"
+                },
+                "name": "option_chain"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

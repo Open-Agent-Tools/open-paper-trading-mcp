@@ -120,18 +120,44 @@ The system provides 43 core MCP tools for AI agent interaction across 7 function
 ### MCP Testing Strategy
 **CRITICAL**: MCP tools cannot be tested with traditional unit tests. They must be validated using ADK (Agent Development Kit) evaluations:
 
-```bash
-# Current ADK evaluation tests
-tests/evals/list_available_tools_test.json  # Validates all 43 tools are accessible
+#### **ADK Evaluation Naming Convention**
+ADK evaluation files use a standardized prefix system aligned with user journey marks:
 
-# Future ADK evaluations needed:
-# - Individual tool function tests
-# - Edge case handling 
-# - Error response validation
-# - Multi-tool workflow tests
+```bash
+# Prefix System (3-character prefixes for grouping)
+acc_*    # Core System & Account Tools (9 tools) - Maps to journey_account_management
+mkt_*    # Market Data Tools (8 tools) - Maps to journey_market_data  
+stk_*    # Stock Trading Tools (8 tools) - Maps to journey_basic_trading
+opt_*    # Options Trading Tools (10 tools) - Maps to journey_options_trading + journey_options_advanced
+ord_*    # Order Management Tools (4 tools) - Maps to journey_basic_trading
+can_*    # Order Cancellation Tools (4 tools) - Maps to journey_basic_trading
+
+# Group Execution Examples:
+adk eval examples/google_adk_agent tests/evals/acc_*_test.json --config_file_path tests/evals/test_config.json
+adk eval examples/google_adk_agent tests/evals/mkt_*_test.json --config_file_path tests/evals/test_config.json
+adk eval examples/google_adk_agent tests/evals/stk_*_test.json --config_file_path tests/evals/test_config.json
+```
+
+#### **Current ADK Evaluation Status**
+```bash
+# ✅ Implemented (1/43 tools)
+tests/evals/acc_list_tools_test.json  # Validates all 43 tools are accessible
+
+# 📋 Phase 2 Implementation Plan (42 remaining tools):
+# acc_* (8 more): health_check, account management, portfolio tools
+# mkt_* (8 tools): stock_price, stock_info, market_hours, etc.
+# stk_* (8 tools): buy_stock, sell_stock, limit/stop variants
+# opt_* (10 tools): option_chain, option_quote, spreads, Greeks
+# ord_* (4 tools): order history and status tracking
+# can_* (4 tools): individual and bulk order cancellation
 ```
 
 **Why ADK Evaluations**: MCP tools operate through the Model Context Protocol and require agent-based evaluation to test their actual functionality in the MCP environment.
+
+**ADK Execution Requirements**:
+- **Working Directory**: Always run from project root (`/Users/wes/Development/open-paper-trading-mcp/`)
+- **Docker Services**: Must have `docker-compose up -d` running (MCP server on port 2081)
+- **Environment Variables**: `GOOGLE_API_KEY` and optional Robinhood credentials required
 
 ## Development Patterns
 

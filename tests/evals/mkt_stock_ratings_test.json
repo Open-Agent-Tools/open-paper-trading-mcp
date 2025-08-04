@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "stock_ratings_test_set",
+  "name": "Stock Ratings Test",
+  "description": "Test case for retrieving analyst ratings through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "stock_ratings_test",
+      "conversation": [
+        {
+          "invocation_id": "stock-ratings-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are the current analyst ratings for Tesla (TSLA)?\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Tesla (TSLA) has analyst ratings showing the distribution of buy, hold, and sell recommendations from various financial institutions, along with average price targets and rating changes."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "TSLA"
+                },
+                "name": "stock_ratings"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

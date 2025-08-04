@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "sell_stock_stop_test_set",
+  "name": "Sell Stock Stop Test",
+  "description": "Test case for placing a stop sell order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "sell_stock_stop_test",
+      "conversation": [
+        {
+          "invocation_id": "sell-stock-stop-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Set a stop loss order to sell 75 shares of Amazon (AMZN) if the price drops to $3200.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Stop sell order (stop loss) placed successfully for 75 shares of AMZN with stop price at $3200.00. Order ID: STP101, Status: Pending until market price reaches or goes below your stop price, then will execute as market order."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "AMZN",
+                  "quantity": 75,
+                  "stop_price": 3200.0
+                },
+                "name": "sell_stock_stop"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

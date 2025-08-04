@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "sell_stock_limit_test_set",
+  "name": "Sell Stock Limit Test",
+  "description": "Test case for placing a limit sell order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "sell_stock_limit_test",
+      "conversation": [
+        {
+          "invocation_id": "sell-stock-limit-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Place a limit sell order for 100 shares of Google (GOOGL) at $2800 per share.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Limit sell order placed successfully for 100 shares of GOOGL at $2800.00 per share. Order ID: JKL012, Status: Pending until market price reaches or exceeds your limit price."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "GOOGL",
+                  "quantity": 100,
+                  "limit_price": 2800.0
+                },
+                "name": "sell_stock_limit"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

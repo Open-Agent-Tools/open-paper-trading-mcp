@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "buy_stock_test_set",
+  "name": "Buy Stock Test",
+  "description": "Test case for placing a market buy order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "buy_stock_test",
+      "conversation": [
+        {
+          "invocation_id": "buy-stock-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Place a market buy order for 10 shares of Apple (AAPL).\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Market buy order placed successfully for 10 shares of AAPL. Order ID: ABC123, Status: Pending execution at current market price."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "AAPL",
+                  "quantity": 10,
+                  "order_type": "market"
+                },
+                "name": "buy_stock"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

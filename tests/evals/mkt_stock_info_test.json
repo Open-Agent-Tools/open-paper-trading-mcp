@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "stock_info_test_set",
+  "name": "Stock Info Test",
+  "description": "Test case for retrieving detailed company information through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "stock_info_test",
+      "conversation": [
+        {
+          "invocation_id": "stock-info-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Get detailed company information for Apple Inc (AAPL).\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Apple Inc (AAPL) is a technology company with detailed fundamentals including market cap, P/E ratio, dividend yield, and business description. The company operates in the consumer electronics and software services sector."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "AAPL"
+                },
+                "name": "stock_info"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

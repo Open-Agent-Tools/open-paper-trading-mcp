@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "health_check_test_set",
+  "name": "Health Check Test",
+  "description": "Test case for checking MCP system health status through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "health_check_test",
+      "conversation": [
+        {
+          "invocation_id": "health-check-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Check the health status of the trading system.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "MCP Server is healthy and operational"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "health_check"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

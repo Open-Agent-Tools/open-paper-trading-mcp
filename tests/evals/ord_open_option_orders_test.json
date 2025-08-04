@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "open_option_orders_test_set",
+  "name": "Open Option Orders Test",
+  "description": "Test case for retrieving currently open option orders through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "open_option_orders_test",
+      "conversation": [
+        {
+          "invocation_id": "open-option-orders-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me all my currently pending/open option orders.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are your currently open option orders showing pending options orders that haven't been executed yet, including limit orders for calls and puts, spread orders, and any partially filled option contracts with their current status."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "open_option_orders"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "cancel_option_order_test_set",
+  "name": "Cancel Option Order Test",
+  "description": "Test case for cancelling a specific option order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "cancel_option_order_test",
+      "conversation": [
+        {
+          "invocation_id": "cancel-option-order-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Cancel my option order with ID 'OPT456'.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Option order OPT456 has been successfully cancelled. The option order is no longer active and will not be executed."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "order_id": "OPT456"
+                },
+                "name": "cancel_option_order_by_id"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

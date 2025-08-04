@@ -1,0 +1,49 @@
+{
+  "eval_set_id": "price_history_test_set",
+  "name": "Price History Test",
+  "description": "Test case for retrieving historical price data through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "price_history_test",
+      "conversation": [
+        {
+          "invocation_id": "price-history-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me the price history for AAPL over the past week.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's the price history for AAPL over the past week, showing daily open, high, low, close prices and trading volume with key price movements and trends."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "AAPL",
+                  "period": "week"
+                },
+                "name": "price_history"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

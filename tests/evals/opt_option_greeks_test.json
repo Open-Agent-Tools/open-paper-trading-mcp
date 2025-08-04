@@ -1,0 +1,49 @@
+{
+  "eval_set_id": "option_greeks_test_set",
+  "name": "Option Greeks Test",
+  "description": "Test case for calculating option Greeks through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_greeks_test",
+      "conversation": [
+        {
+          "invocation_id": "option-greeks-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Calculate the Greeks (delta, gamma, theta, vega, rho) for the Tesla $200 call option expiring in 30 days.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are the calculated Greeks for the Tesla $200 call option: Delta shows price sensitivity, Gamma shows delta change rate, Theta shows time decay, Vega shows volatility sensitivity, and Rho shows interest rate sensitivity."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "option_symbol": "TSLA240219C00200000",
+                  "underlying_price": 250.0
+                },
+                "name": "option_greeks"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "option_expirations_test_set",
+  "name": "Option Expirations Test",
+  "description": "Test case for retrieving available option expiration dates through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_expirations_test",
+      "conversation": [
+        {
+          "invocation_id": "option-expirations-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are all the available expiration dates for Google (GOOGL) options?\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are all the available expiration dates for Google (GOOGL) options, listed chronologically from the nearest to furthest expiration dates, including weekly and monthly expiration cycles."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "underlying": "GOOGL"
+                },
+                "name": "option_expirations"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

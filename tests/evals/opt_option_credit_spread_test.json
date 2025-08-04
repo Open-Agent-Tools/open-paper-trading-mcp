@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "option_credit_spread_test_set",
+  "name": "Option Credit Spread Test",
+  "description": "Test case for placing a credit spread order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_credit_spread_test",
+      "conversation": [
+        {
+          "invocation_id": "option-credit-spread-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Create a credit spread by selling the Microsoft $400 call and buying the $410 call, both expiring April 19th, for 3 contracts at $2.50 net credit.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Credit spread order created successfully: Sold 3 contracts of MSFT $400 call and bought 3 contracts of MSFT $410 call (both expiring April 19th) for a net credit of $2.50 per spread. Order ID: CRD606, Total credit received: $750."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "short_instrument_id": "MSFT240419C00400000",
+                  "long_instrument_id": "MSFT240419C00410000",
+                  "quantity": 3,
+                  "credit_price": 2.50
+                },
+                "name": "option_credit_spread"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

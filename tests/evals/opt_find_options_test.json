@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "find_options_test_set",
+  "name": "Find Options Test",
+  "description": "Test case for finding tradable options through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "find_options_test",
+      "conversation": [
+        {
+          "invocation_id": "find-options-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Find all call options for Microsoft (MSFT) expiring in the next 30 days.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are the tradable call options for Microsoft (MSFT) expiring in the next 30 days, showing various strike prices, expiration dates, and current market data for each available contract."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "MSFT",
+                  "expiration_date": "2024-02-16",
+                  "option_type": "call"
+                },
+                "name": "find_options"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "open_stock_orders_test_set",
+  "name": "Open Stock Orders Test",
+  "description": "Test case for retrieving currently open stock orders through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "open_stock_orders_test",
+      "conversation": [
+        {
+          "invocation_id": "open-stock-orders-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me all my currently pending/open stock orders.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are your currently open stock orders showing pending orders that haven't been executed yet, including limit orders, stop orders, and any partially filled orders with their current status."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "open_stock_orders"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

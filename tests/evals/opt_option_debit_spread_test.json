@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "option_debit_spread_test_set",
+  "name": "Option Debit Spread Test",
+  "description": "Test case for placing a debit spread order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_debit_spread_test",
+      "conversation": [
+        {
+          "invocation_id": "option-debit-spread-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Create a debit spread by buying the Nvidia $900 call and selling the $950 call, both expiring May 17th, for 2 contracts at $15.00 net debit.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Debit spread order created successfully: Bought 2 contracts of NVDA $900 call and sold 2 contracts of NVDA $950 call (both expiring May 17th) for a net debit of $15.00 per spread. Order ID: DBT707, Total debit paid: $3,000."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "short_instrument_id": "NVDA240517C00950000",
+                  "long_instrument_id": "NVDA240517C00900000",
+                  "quantity": 2,
+                  "debit_price": 15.00
+                },
+                "name": "option_debit_spread"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

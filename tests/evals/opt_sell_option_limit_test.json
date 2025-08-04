@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "sell_option_limit_test_set",
+  "name": "Sell Option Limit Test",
+  "description": "Test case for placing a limit sell order for options through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "sell_option_limit_test",
+      "conversation": [
+        {
+          "invocation_id": "sell-option-limit-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Sell 10 contracts of the Tesla $250 put option expiring March 15th at a limit price of $8.25 per contract.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Limit sell order placed successfully for 10 contracts of the Tesla $250 put option expiring March 15th at $8.25 per contract. Order ID: OPT505, Status: Pending until market price reaches or exceeds your limit price."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "instrument_id": "TSLA240315P00250000",
+                  "quantity": 10,
+                  "limit_price": 8.25
+                },
+                "name": "sell_option_limit"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

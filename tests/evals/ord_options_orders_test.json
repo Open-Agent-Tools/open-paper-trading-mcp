@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "options_orders_test_set",
+  "name": "Options Orders Test",
+  "description": "Test case for retrieving options order history through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "options_orders_test",
+      "conversation": [
+        {
+          "invocation_id": "options-orders-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me my recent options order history.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's your recent options order history showing order IDs, option contracts, strike prices, expiration dates, order types, quantities, premiums, and execution status with timestamps for each options transaction."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "options_orders"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

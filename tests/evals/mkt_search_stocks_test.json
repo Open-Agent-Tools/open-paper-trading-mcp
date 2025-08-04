@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "search_stocks_test_set",
+  "name": "Search Stocks Test",
+  "description": "Test case for searching stocks by symbol or company name through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "search_stocks_test",
+      "conversation": [
+        {
+          "invocation_id": "search-stocks-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Search for stocks related to 'Apple' or 'technology'.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Found multiple stocks matching 'Apple': AAPL (Apple Inc), and other technology-related stocks with their symbols, names, and basic information."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "query": "Apple"
+                },
+                "name": "search_stocks_tool"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

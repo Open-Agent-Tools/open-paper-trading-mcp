@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "stock_orders_test_set",
+  "name": "Stock Orders Test",
+  "description": "Test case for retrieving stock order history through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "stock_orders_test",
+      "conversation": [
+        {
+          "invocation_id": "stock-orders-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me my recent stock order history.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's your recent stock order history showing order IDs, symbols, quantities, order types, prices, and execution status with timestamps for each transaction."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "stock_orders"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

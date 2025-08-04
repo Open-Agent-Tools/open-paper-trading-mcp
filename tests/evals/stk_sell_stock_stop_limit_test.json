@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "sell_stock_stop_limit_test_set",
+  "name": "Sell Stock Stop Limit Test",
+  "description": "Test case for placing a stop-limit sell order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "sell_stock_stop_limit_test",
+      "conversation": [
+        {
+          "invocation_id": "sell-stock-stop-limit-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Set a stop-limit sell order for 40 shares of Nvidia (NVDA) with stop price $800 and limit price $795.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Stop-limit sell order placed successfully for 40 shares of NVDA with stop price at $800.00 and limit price at $795.00. Order ID: STL303, Status: Pending until market price drops to $800, then becomes limit order at $795 minimum."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "NVDA",
+                  "quantity": 40,
+                  "stop_price": 800.0,
+                  "limit_price": 795.0
+                },
+                "name": "sell_stock_stop_limit"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

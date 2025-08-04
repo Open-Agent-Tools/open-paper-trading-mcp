@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "buy_option_limit_test_set",
+  "name": "Buy Option Limit Test",
+  "description": "Test case for placing a limit buy order for options through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "buy_option_limit_test",
+      "conversation": [
+        {
+          "invocation_id": "buy-option-limit-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Buy 5 contracts of the Apple $160 call option expiring February 16th at a limit price of $3.50 per contract.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Limit buy order placed successfully for 5 contracts of the Apple $160 call option expiring February 16th at $3.50 per contract. Order ID: OPT404, Status: Pending until market price reaches or goes below your limit price."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "instrument_id": "AAPL240216C00160000",
+                  "quantity": 5,
+                  "limit_price": 3.50
+                },
+                "name": "buy_option_limit"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

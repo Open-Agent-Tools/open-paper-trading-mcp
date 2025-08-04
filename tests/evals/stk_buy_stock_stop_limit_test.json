@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "buy_stock_stop_limit_test_set",
+  "name": "Buy Stock Stop Limit Test",
+  "description": "Test case for placing a stop-limit buy order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "buy_stock_stop_limit_test",
+      "conversation": [
+        {
+          "invocation_id": "buy-stock-stop-limit-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Place a stop-limit buy order for 30 shares of Meta (META) with stop price $320 and limit price $325.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Stop-limit buy order placed successfully for 30 shares of META with stop price at $320.00 and limit price at $325.00. Order ID: STL202, Status: Pending until market price reaches $320, then becomes limit order at $325 maximum."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "META",
+                  "quantity": 30,
+                  "stop_price": 320.0,
+                  "limit_price": 325.0
+                },
+                "name": "buy_stock_stop_limit"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

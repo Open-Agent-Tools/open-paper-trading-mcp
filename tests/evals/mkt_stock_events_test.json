@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "stock_events_test_set",
+  "name": "Stock Events Test",
+  "description": "Test case for retrieving corporate events through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "stock_events_test",
+      "conversation": [
+        {
+          "invocation_id": "stock-events-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me any upcoming corporate events for Microsoft (MSFT).\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Microsoft (MSFT) has upcoming corporate events including earnings announcements, dividend dates, and other significant corporate actions with their scheduled dates and expected impact."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "MSFT"
+                },
+                "name": "stock_events"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

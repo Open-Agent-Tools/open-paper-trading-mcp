@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "stock_level2_data_test_set",
+  "name": "Stock Level 2 Data Test",
+  "description": "Test case for retrieving Level II market data through agent interaction (requires Gold subscription)",
+  "eval_cases": [
+    {
+      "eval_id": "stock_level2_data_test",
+      "conversation": [
+        {
+          "invocation_id": "stock-level2-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Get Level II market data for NVDA showing bid/ask depth.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Level II market data for NVDA shows the order book with bid and ask prices at different depth levels, market maker information, and trading volume at each price level. Note: This requires a Gold subscription for access."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "NVDA"
+                },
+                "name": "stock_level2_data"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

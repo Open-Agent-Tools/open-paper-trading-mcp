@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "option_strikes_test_set",
+  "name": "Option Strikes Test",
+  "description": "Test case for retrieving available strike prices through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_strikes_test",
+      "conversation": [
+        {
+          "invocation_id": "option-strikes-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me all available strike prices for Amazon (AMZN) put options expiring on March 15, 2024.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here are all the available strike prices for Amazon (AMZN) put options expiring on March 15, 2024, listed from lowest to highest strike prices with current market data."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "underlying": "AMZN",
+                  "expiration_date": "2024-03-15",
+                  "option_type": "put"
+                },
+                "name": "option_strikes"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

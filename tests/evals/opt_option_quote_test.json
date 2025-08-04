@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "option_quote_test_set",
+  "name": "Option Quote Test",
+  "description": "Test case for retrieving specific option contract quote through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "option_quote_test",
+      "conversation": [
+        {
+          "invocation_id": "option-quote-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Get a quote for the AAPL call option with $150 strike expiring next Friday.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's the quote for the AAPL $150 call option expiring next Friday, showing current bid/ask prices, last traded price, volume, open interest, and implied volatility."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "option_symbol": "AAPL240119C00150000"
+                },
+                "name": "option_quote"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

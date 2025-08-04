@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "cancel_stock_order_test_set",
+  "name": "Cancel Stock Order Test",
+  "description": "Test case for cancelling a specific stock order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "cancel_stock_order_test",
+      "conversation": [
+        {
+          "invocation_id": "cancel-stock-order-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Cancel my stock order with ID 'ORDER123'.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Stock order ORDER123 has been successfully cancelled. The order is no longer active and will not be executed."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "order_id": "ORDER123"
+                },
+                "name": "cancel_stock_order_by_id"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

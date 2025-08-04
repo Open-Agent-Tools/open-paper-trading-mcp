@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "stock_price_test_set",
+  "name": "Stock Price Test",
+  "description": "Test case for retrieving current stock price through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "stock_price_test",
+      "conversation": [
+        {
+          "invocation_id": "stock-price-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Get the current stock price for AAPL.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The current stock price for AAPL is $150.25 with additional market data including bid/ask spread and trading volume."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "AAPL"
+                },
+                "name": "stock_price"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

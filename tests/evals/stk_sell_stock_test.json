@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "sell_stock_test_set",
+  "name": "Sell Stock Test",
+  "description": "Test case for placing a market sell order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "sell_stock_test",
+      "conversation": [
+        {
+          "invocation_id": "sell-stock-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Sell 25 shares of Microsoft (MSFT) at market price.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Market sell order placed successfully for 25 shares of MSFT. Order ID: GHI789, Status: Pending execution at current market price."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "MSFT",
+                  "quantity": 25,
+                  "order_type": "market"
+                },
+                "name": "sell_stock"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

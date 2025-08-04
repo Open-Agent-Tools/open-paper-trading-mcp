@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "buy_stock_stop_test_set",
+  "name": "Buy Stock Stop Test",
+  "description": "Test case for placing a stop buy order through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "buy_stock_stop_test",
+      "conversation": [
+        {
+          "invocation_id": "buy-stock-stop-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Place a stop buy order for 20 shares of Netflix (NFLX) with a stop price of $450.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Stop buy order placed successfully for 20 shares of NFLX with stop price at $450.00. Order ID: STK789, Status: Pending until market price reaches or exceeds your stop price, then will execute as market order."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "NFLX",
+                  "quantity": 20,
+                  "stop_price": 450.0
+                },
+                "name": "buy_stock_stop"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "cancel_all_option_orders_test_set",
+  "name": "Cancel All Option Orders Test",
+  "description": "Test case for cancelling all open option orders through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "cancel_all_option_orders_test",
+      "conversation": [
+        {
+          "invocation_id": "cancel-all-option-orders-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Cancel all of my open option orders.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "All open option orders have been successfully cancelled. Total of 3 option orders were cancelled. All pending option orders including single-leg and spread orders are no longer active and will not be executed."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "cancel_all_option_orders_tool"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

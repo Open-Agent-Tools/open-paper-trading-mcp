@@ -1,0 +1,46 @@
+{
+  "eval_set_id": "market_hours_test_set",
+  "name": "Market Hours Test",
+  "description": "Test case for checking current market hours and status through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "market_hours_test",
+      "conversation": [
+        {
+          "invocation_id": "market-hours-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are the current market hours and is the market open right now?\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The market status shows regular trading hours from 9:30 AM to 4:00 PM ET. Current status indicates whether the market is currently open, closed, or in pre/after-market trading."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {},
+                "name": "market_hours"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}
