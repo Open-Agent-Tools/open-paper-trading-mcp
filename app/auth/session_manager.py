@@ -108,6 +108,16 @@ class SessionManager:
         self.pickle_name = "robinhood_session.pickle"
         
         logger.info(f"Robinhood token storage configured at: {self.token_dir / self.pickle_name}")
+        
+    def reset_authentication_state(self) -> None:
+        """Reset authentication state to allow fresh authentication attempt."""
+        self._is_authenticated = False
+        self.login_time = None
+        self._last_auth_attempt = None
+        self._auth_failure_count = 0
+        self._circuit_breaker_open = False
+        self._circuit_breaker_reset_time = None
+        logger.info("Authentication state reset - fresh authentication will be attempted on next request")
 
     def set_credentials(self, username: str, password: str) -> None:
         """Store credentials for re-authentication."""
@@ -213,59 +223,75 @@ class SessionManager:
         async with self._lock:
             # Check circuit breaker first
             if self._check_circuit_breaker():
-                raise AuthenticationError(
-                    "Circuit breaker is open - authentication blocked"
-                )
+                logger.warning("Circuit breaker is open - skipping authentication")
+                return False
 
+            # If we're already authenticated and session is valid, return immediately
+            if self.is_session_valid():
+                return True
+                
             # Try to load existing session from pickle first
             if await self._try_load_pickle_session():
                 return True
                 
-            if self.is_session_valid():
-                return True
+            # Only attempt authentication if we haven't recently failed
+            # This prevents repeated MFA prompts
+            if (self._last_auth_attempt and 
+                datetime.now() - self._last_auth_attempt < timedelta(minutes=5)):
+                logger.info("Recent authentication attempt failed, skipping to prevent MFA spam")
+                return False
+                
             return await self._authenticate()
             
     async def _try_load_pickle_session(self) -> bool:
         """Try to load an existing pickle session."""
+        pickle_file = self.token_dir / self.pickle_name
+        
+        if not pickle_file.exists():
+            logger.info("No pickle session file found, will authenticate with credentials")
+            return False
+            
         try:
-            if self._check_pickle_session():
-                loop = asyncio.get_event_loop()
+            logger.info(f"Attempting to load existing session from {pickle_file}")
+            loop = asyncio.get_event_loop()
+            
+            # Robin stocks will automatically load from pickle if we don't provide credentials
+            # and the pickle file exists
+            def load_session():
+                return rh.login(
+                    store_session=True,
+                    pickle_path=self.pickle_path,
+                    pickle_name=self.pickle_name
+                )
+            
+            # Try to load the session
+            session_result = await loop.run_in_executor(None, load_session)
+            logger.info(f"Session load result: {session_result}")
+            
+            # Test if the loaded session is actually valid by making an API call
+            def test_session():
+                return rh.load_user_profile()
                 
-                # Load existing session using robin_stocks' built-in session loading
-                def load_session():
-                    # Robin stocks automatically loads from pickle if no credentials provided
-                    # and store_session=True with pickle_path specified
-                    return rh.login(
-                        username=None,  # No username triggers pickle loading 
-                        password=None,  # No password triggers pickle loading
-                        expiresIn=86400,
-                        scope="internal", 
-                        store_session=True,
-                        mfa_code=None,
-                        pickle_path=self.pickle_path,
-                        pickle_name=self.pickle_name
-                    )
-                
-                # Try to load the session
-                session_result = await loop.run_in_executor(None, load_session)
-                
-                # Test if the loaded session is actually valid by making an API call
-                user_profile = await loop.run_in_executor(None, rh.load_user_profile)
-                
-                if user_profile and session_result:
-                    self._is_authenticated = True
-                    # Update login time to when pickle was created, not now
-                    pickle_file = self.token_dir / self.pickle_name
-                    if pickle_file.exists():
-                        self.login_time = datetime.fromtimestamp(pickle_file.stat().st_mtime)
-                    else:
-                        self.login_time = datetime.now()
-                        
-                    logger.info("✅ Successfully loaded existing Robinhood session from pickle")
-                    return True
+            user_profile = await loop.run_in_executor(None, test_session)
+            logger.info(f"User profile test result: {bool(user_profile)}")
+            
+            if user_profile:
+                self._is_authenticated = True
+                # Update login time to when pickle was created
+                self.login_time = datetime.fromtimestamp(pickle_file.stat().st_mtime)
+                logger.info("✅ Successfully loaded existing Robinhood session from pickle")
+                return True
+            else:
+                logger.warning("Pickle session exists but user profile test failed")
                     
         except Exception as e:
-            logger.warning(f"Failed to load pickle session, will authenticate with credentials: {e}")
+            logger.warning(f"Failed to load pickle session: {type(e).__name__}: {e}")
+            # Remove invalid pickle file
+            try:
+                pickle_file.unlink()
+                logger.info("Removed invalid pickle session file")
+            except Exception:
+                pass
             
         return False
 
@@ -283,24 +309,31 @@ class SessionManager:
             logger.info(
                 f"Attempting to authenticate user: {self.username} (attempt {self._auth_attempts})"
             )
+            logger.info(f"Token storage path: {self.token_dir / self.pickle_name}")
             loop = asyncio.get_event_loop()
 
             # Perform login with persistent session storage
-            await loop.run_in_executor(
-                None, 
-                rh.login, 
-                self.username, 
-                self.password,
-                86400,  # expiresIn: 24 hours
-                "internal",  # scope
-                True,  # store_session
-                None,  # mfa_code
-                self.pickle_path,  # pickle_path for token storage
-                self.pickle_name   # pickle_name
-            )
+            def login_with_credentials():
+                return rh.login(
+                    username=self.username, 
+                    password=self.password,
+                    expiresIn=86400,  # 24 hours
+                    scope="internal",
+                    store_session=True,
+                    mfa_code=None,
+                    pickle_path=self.pickle_path,
+                    pickle_name=self.pickle_name
+                )
+            
+            login_result = await loop.run_in_executor(None, login_with_credentials)
+            logger.info(f"Login result: {login_result}")
 
             # Verify login by making a test API call
-            user_profile = await loop.run_in_executor(None, rh.load_user_profile)
+            def test_auth():
+                return rh.load_user_profile()
+                
+            user_profile = await loop.run_in_executor(None, test_auth)
+            logger.info(f"User profile verification: {bool(user_profile)}")
 
             if user_profile:
                 self.login_time = datetime.now()
@@ -381,39 +414,41 @@ class SessionManager:
 
     async def with_session(self, api_call_func, *args, **kwargs):
         """Execute an API call with ensured authentication and session persistence."""
-        # Ensure we're authenticated before making the call
-        if not await self.ensure_authenticated():
-            raise AuthenticationError("Could not establish authenticated session")
+        # Try to ensure we're authenticated before making the call
+        # If authentication fails, we'll still attempt the API call in case there's a cached session
+        authenticated = await self.ensure_authenticated()
+        if not authenticated:
+            logger.warning("Authentication failed or skipped, attempting API call anyway (may use cached session)")
         
         try:
             # Execute the API call
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(None, api_call_func, *args, **kwargs)
             
-            # Update successful call timestamp
-            self.update_last_successful_call()
+            # Update successful call timestamp if we got a result
+            if result is not None:
+                self.update_last_successful_call()
+                # If we weren't authenticated but the call succeeded, mark as authenticated
+                if not self._is_authenticated:
+                    self._is_authenticated = True
+                    self.login_time = datetime.now()
+                    logger.info("API call succeeded despite failed authentication - session likely loaded from cache")
+                    
             return result
             
         except Exception as e:
+            error_str = str(e).lower()
+            
             # Check if this is an authentication error
-            if any(auth_pattern in str(e).lower() for auth_pattern in 
-                   ["unauthorized", "401", "invalid token", "session expired"]):
-                logger.warning(f"API call failed with auth error, clearing session: {e}")
-                # Clear current session and try once more
+            if any(auth_pattern in error_str for auth_pattern in 
+                   ["unauthorized", "401", "invalid token", "session expired", "logged in"]):
+                logger.warning(f"API call failed with auth error: {e}")
+                # Clear current session state
                 self._is_authenticated = False
                 self.login_time = None
                 
-                # Try to re-authenticate and retry the call once
-                if await self.ensure_authenticated():
-                    try:
-                        result = await loop.run_in_executor(None, api_call_func, *args, **kwargs)
-                        self.update_last_successful_call()
-                        return result
-                    except Exception as retry_error:
-                        logger.error(f"Retry after re-authentication also failed: {retry_error}")
-                        raise retry_error
-                else:
-                    raise AuthenticationError("Failed to re-authenticate after session expired") from e
+                # Don't retry immediately to avoid MFA spam
+                raise AuthenticationError(f"Authentication required: {e}") from e
             else:
                 # Non-authentication error, just re-raise
                 raise e
