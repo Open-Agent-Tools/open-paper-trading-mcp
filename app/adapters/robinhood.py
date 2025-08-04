@@ -111,13 +111,7 @@ class RobinhoodAdapter(QuoteAdapter):
         try:
             self._request_count += 1
 
-            if not await self._ensure_authenticated():
-                logger.error(
-                    "quote_request_auth_failed",
-                    extra={"symbol": symbol, "adapter": "robinhood"},
-                )
-                self._error_count += 1
-                return None
+            # Authentication is now handled by session manager in each API call
 
             if isinstance(asset, Stock):
                 result = await self._get_stock_quote(asset)
@@ -179,16 +173,23 @@ class RobinhoodAdapter(QuoteAdapter):
             raise
 
     async def _get_stock_quote(self, asset: Stock) -> Quote | None:
-        """Get stock quote from Robinhood."""
+        """Get stock quote from Robinhood using persistent session."""
         try:
-            quote_data = rh.stocks.get_latest_price(asset.symbol)
+            # Use session manager for persistent authentication
+            quote_data = await self.session_manager.with_session(
+                rh.stocks.get_latest_price, asset.symbol
+            )
+            
             if not quote_data or not quote_data[0]:
                 return None
 
             price = float(quote_data[0])
 
-            # Get fundamentals for more data
-            fundamentals = rh.stocks.get_fundamentals(asset.symbol)
+            # Get fundamentals for more data using persistent session
+            fundamentals = await self.session_manager.with_session(
+                rh.stocks.get_fundamentals, asset.symbol
+            )
+            
             if fundamentals and fundamentals[0]:
                 fund_data = fundamentals[0]
                 volume = (
@@ -215,10 +216,11 @@ class RobinhoodAdapter(QuoteAdapter):
             return None
 
     async def _get_option_quote(self, asset: Option) -> OptionQuote | None:
-        """Get option quote from Robinhood."""
+        """Get option quote from Robinhood using persistent session."""
         try:
-            # Find the option instrument
-            option_data = rh.options.find_options_by_expiration_and_strike(
+            # Find the option instrument using persistent session
+            option_data = await self.session_manager.with_session(
+                rh.options.find_options_by_expiration_and_strike,
                 asset.underlying.symbol,
                 asset.expiration_date.isoformat(),
                 asset.strike,
@@ -229,7 +231,9 @@ class RobinhoodAdapter(QuoteAdapter):
                 return None
 
             instrument = option_data[0]
-            market_data = rh.options.get_option_market_data_by_id(instrument["id"])
+            market_data = await self.session_manager.with_session(
+                rh.options.get_option_market_data_by_id, instrument["id"]
+            )
 
             if not market_data:
                 return None
