@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are your currently open option orders showing pending options orders that haven't been executed yet, including limit orders for calls and puts, spread orders, and any partially filled option contracts with their current status."
+                "text": "Here are your currently open option orders:\n\n**Found * open option orders currently pending**\n\n*\n\nThese are all pending options orders that haven't been executed yet, including limit orders for calls and puts, spread orders, and any partially filled contracts. All orders are in your paper trading account."
               }
             ],
             "role": "model"

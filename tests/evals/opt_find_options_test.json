@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are the tradable call options for Microsoft (MSFT) expiring in the next 30 days, showing various strike prices, expiration dates, and current market data for each available contract."
+                "text": "I found the available expiration dates for MSFT options and then retrieved the call options. Here are the tradable call options for Microsoft (MSFT) expiring in the next 30 days:\n\n**Found * call options for available expiration dates**\n\n*\n\nThese options show various strike prices with current bid/ask prices, volume, and Greeks data."
               }
             ],
             "role": "model"
@@ -27,10 +27,17 @@
           "intermediate_data": {
             "tool_uses": [
               {
-                "id": "adk-tool-use-id",
+                "id": "adk-tool-use-id-1",
+                "args": {
+                  "underlying": "MSFT"
+                },
+                "name": "option_expirations"
+              },
+              {
+                "id": "adk-tool-use-id-2",
                 "args": {
                   "symbol": "MSFT",
-                  "expiration_date": "2024-02-16",
+                  "expiration_date": "*",
                   "option_type": "call"
                 },
                 "name": "find_options"

@@ -19,21 +19,13 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here's the quote for the AAPL $150 call option expiring next Friday, showing current bid/ask prices, last traded price, volume, open interest, and implied volatility."
+                "text": "I need the specific option symbol to get a quote. Can you provide the option symbol (like AAPL240119C00150000) or would you like me to help find the available options for AAPL?"
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [
-              {
-                "id": "adk-tool-use-id",
-                "args": {
-                  "option_symbol": "AAPL240119C00150000"
-                },
-                "name": "option_quote"
-              }
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           }
         }

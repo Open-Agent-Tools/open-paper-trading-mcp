@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Microsoft (MSFT) has upcoming corporate events including earnings announcements, dividend dates, and other significant corporate actions with their scheduled dates and expected impact."
+                "text": "Here are the upcoming corporate events for Microsoft (MSFT):\n\n- **Q3 Earnings Report:** Scheduled for *\n- **Quarterly Dividend Payment:** Scheduled for *, estimated amount $*\n\n**Disclaimer:** This is simulated data for paper trading purposes. Dates and amounts may not be accurate."
               }
             ],
             "role": "model"

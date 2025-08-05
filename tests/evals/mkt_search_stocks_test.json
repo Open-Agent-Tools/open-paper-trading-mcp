@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Found multiple stocks matching 'Apple': AAPL (Apple Inc), and other technology-related stocks with their symbols, names, and basic information."
+                "text": "Here are the search results for stocks related to 'Apple' and 'technology':\n\n**Apple:**\n- AAPL: Apple\n- APLE: Apple Hospitality REIT\n- PAPL: Pineapple Financial\n- AAPX: (No name provided)\n- AAPY: (No name provided)\n- MLP: Maui Land & Pineapple\n\n**Technology:**\n- ABAT: American Battery Technology\n- ADD: Color Star Technology\n- AERT: Aeries Technology\n- AFJK: Aimei Health Technology\n- AGIX: (No name provided)\n- AIHS: Senmiao Technology\n- AIO: (No name provided)\n- AIQ: Global X Funds Global X Artificial Intelligence & Technology\n- ALIGN: Align Technology\n- ALBBY: Alibaba Health Information Technology (Note: Not tradeable)\n\n**Disclaimer:** This is a list of stocks found based on your search query. It is not investment advice. Please conduct your own research and consult with a financial advisor before making any investment decisions. Remember, this is paper trading, so no real money is involved."
               }
             ],
             "role": "model"
@@ -30,6 +30,13 @@
                 "id": "adk-tool-use-id",
                 "args": {
                   "query": "Apple"
+                },
+                "name": "search_stocks_tool"
+              },
+              {
+                "id": "adk-tool-use-id-2",
+                "args": {
+                  "query": "technology"
                 },
                 "name": "search_stocks_tool"
               }

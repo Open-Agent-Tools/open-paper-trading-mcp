@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are the positions you currently hold in your UITESTER01 account with stock and option holdings, including detailed metrics for 9 total positions. This is a simulated paper trading account."
+                "text": "OK. Here is a summary of your current positions in account UITESTER01:\n\nYou have 9 positions:\n*   100 shares of SPY\n*   50 shares of AAPL\n*   25 shares of MSFT\n*   30 shares of TSLA\n*   15 shares of GOOGL\n*   1 MSFT put option (MSFT250117P00300000)\n*   3 GOOGL call options (GOOGL250214C00130000)\n*   2 AAPL call options (AAPL250221C00180000)\n*   Short 1 SPY call option (SPY250321C00420000)\n\nThe total market value of your portfolio is $*, with a total cost basis of $* and unrealized profit/loss of $*.\n\nThis is a paper trading account, so all transactions are simulated and do not involve real money."
               }
             ],
             "role": "model"

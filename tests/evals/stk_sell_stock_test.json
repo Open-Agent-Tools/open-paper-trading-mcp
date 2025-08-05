@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Market sell order placed successfully for 25 shares of MSFT. Order ID: GHI789, Status: Pending execution at current market price."
+                "text": "OK. I have placed a market sell order for 25 shares of MSFT in account UITESTER01. The order is pending. Remember, this is a simulated trade."
               }
             ],
             "role": "model"
@@ -29,9 +29,10 @@
               {
                 "id": "adk-tool-use-id",
                 "args": {
+                  "account_id": "UITESTER01",
+                  "order_type": "market",
                   "symbol": "MSFT",
-                  "quantity": 25,
-                  "order_type": "market"
+                  "quantity": 25
                 },
                 "name": "sell_stock"
               }

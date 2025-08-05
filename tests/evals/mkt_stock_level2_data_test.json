@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Level II market data for NVDA shows the order book with bid and ask prices at different depth levels, market maker information, and trading volume at each price level. Note: This requires a Gold subscription for access."
+                "text": "Here is the Level II market data for NVDA, providing a snapshot of the bid and ask depth:\n\n**Bids:**\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n\n**Asks:**\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n\n**Market Maker Moves:**\n*   Total Bid Size: *\n*   Total Ask Size: *\n*   Spread: *\n*   Spread Percentage: *%\n\nThis Level II data shows the real-time depth of the market, indicating the interest in buying and selling NVDA at different price levels. Note that this is simulated data."
               }
             ],
             "role": "model"

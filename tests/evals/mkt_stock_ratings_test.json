@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Tesla (TSLA) has analyst ratings showing the distribution of buy, hold, and sell recommendations from various financial institutions, along with average price targets and rating changes."
+                "text": "The analyst ratings for Tesla (TSLA) are:\n\n- Overall Rating: *\n- Rating Score: *\n- Analyst Count: *\n- Ratings Breakdown:\n    - Strong Buy: *\n    - Buy: *\n    - Hold: *\n    - Sell: *\n    - Strong Sell: *\n- Price Targets:\n    - Average Target: $*\n    - High Target: $*\n    - Low Target: $*\n    - Median Target: $*\n\nDisclaimer: This is simulated data for educational purposes. Analyst ratings are not guarantees of future stock performance and should not be used as the sole basis for investment decisions."
               }
             ],
             "role": "model"

@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Stop buy order placed successfully for 20 shares of NFLX with stop price at $450.00. Order ID: STK789, Status: Pending until market price reaches or exceeds your stop price, then will execute as market order."
+                "text": "OK. I have placed a stop buy order for 20 shares of NFLX with a stop price of $450. The order ID is *. The order is currently pending.\n\nRemember, this is a simulated trade in a paper trading environment."
               }
             ],
             "role": "model"
@@ -31,7 +31,8 @@
                 "args": {
                   "symbol": "NFLX",
                   "quantity": 20,
-                  "stop_price": 450.0
+                  "account_id": "UITESTER01",
+                  "stop_price": 450
                 },
                 "name": "buy_stock_stop"
               }

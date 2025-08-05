@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Stop-limit sell order placed successfully for 40 shares of NVDA with stop price at $800.00 and limit price at $795.00. Order ID: STL303, Status: Pending until market price drops to $800, then becomes limit order at $795 minimum."
+                "text": "OK. I have placed a stop-limit sell order for 40 shares of NVDA with a stop price of $800 and limit price of $795. The order ID is *. The order is currently pending.\n\nRemember, this is a simulated trade in a paper trading environment."
               }
             ],
             "role": "model"
@@ -31,8 +31,9 @@
                 "args": {
                   "symbol": "NVDA",
                   "quantity": 40,
-                  "stop_price": 800.0,
-                  "limit_price": 795.0
+                  "account_id": "UITESTER01",
+                  "stop_price": 800,
+                  "limit_price": 795
                 },
                 "name": "sell_stock_stop_limit"
               }

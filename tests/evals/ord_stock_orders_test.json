@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here's your recent stock order history showing order IDs, symbols, quantities, order types, prices, and execution status with timestamps for each transaction."
+                "text": "Here's your recent stock order history:\n\n**Found * stock orders**\n\n*\n\nThis shows your complete stock trading activity with order IDs, symbols, quantities, order types, prices, and execution status. All orders are from your paper trading account so no real money was involved."
               }
             ],
             "role": "model"

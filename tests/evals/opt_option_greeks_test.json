@@ -19,22 +19,13 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are the calculated Greeks for the Tesla $200 call option: Delta shows price sensitivity, Gamma shows delta change rate, Theta shows time decay, Vega shows volatility sensitivity, and Rho shows interest rate sensitivity."
+                "text": "I need the specific option symbol to calculate the Greeks. Can you provide the option symbol (like TSLA240615C00200000) for the Tesla $200 call option?"
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [
-              {
-                "id": "adk-tool-use-id",
-                "args": {
-                  "option_symbol": "TSLA240219C00200000",
-                  "underlying_price": 250.0
-                },
-                "name": "option_greeks"
-              }
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           }
         }

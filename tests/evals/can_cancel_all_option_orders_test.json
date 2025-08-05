@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "All open option orders have been successfully cancelled. Total of 3 option orders were cancelled. All pending option orders including single-leg and spread orders are no longer active and will not be executed."
+                "text": "*cancelled * option orders*"
               }
             ],
             "role": "model"

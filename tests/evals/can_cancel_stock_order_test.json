@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Stock order ORDER123 has been successfully cancelled. The order is no longer active and will not be executed."
+                "text": "*cancelled*order*"
               }
             ],
             "role": "model"

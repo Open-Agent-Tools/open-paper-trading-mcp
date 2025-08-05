@@ -11,7 +11,7 @@
           "user_content": {
             "parts": [
               {
-                "text": "Show me all available strike prices for Amazon (AMZN) put options expiring on March 15, 2024.\n\n"
+                "text": "Show me all available strike prices for Amazon (AMZN) put options expiring in the next 30 days.\n\n"
               }
             ],
             "role": "user"
@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are all the available strike prices for Amazon (AMZN) put options expiring on March 15, 2024, listed from lowest to highest strike prices with current market data."
+                "text": "I found the available expiration dates for AMZN options and then retrieved the strike prices. Here are the available strike prices for Amazon (AMZN) put options:\n\n**Available Strike Prices**: $*\n\n*\n\nThese strikes cover a range around the current stock price for the available expiration dates."
               }
             ],
             "role": "model"
@@ -27,10 +27,17 @@
           "intermediate_data": {
             "tool_uses": [
               {
-                "id": "adk-tool-use-id",
+                "id": "adk-tool-use-id-1",
+                "args": {
+                  "underlying": "AMZN"
+                },
+                "name": "option_expirations"
+              },
+              {
+                "id": "adk-tool-use-id-2",
                 "args": {
                   "underlying": "AMZN",
-                  "expiration_date": "2024-03-15",
+                  "expiration_date": "*",
                   "option_type": "put"
                 },
                 "name": "option_strikes"

@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Stop sell order (stop loss) placed successfully for 75 shares of AMZN with stop price at $3200.00. Order ID: STP101, Status: Pending until market price reaches or goes below your stop price, then will execute as market order."
+                "text": "OK. I have placed a stop sell order for 75 shares of AMZN with a stop price of $3200. The order ID is *. The order is currently pending.\n\nRemember, this is a simulated trade in a paper trading environment."
               }
             ],
             "role": "model"
@@ -31,7 +31,8 @@
                 "args": {
                   "symbol": "AMZN",
                   "quantity": 75,
-                  "stop_price": 3200.0
+                  "account_id": "UITESTER01",
+                  "stop_price": 3200
                 },
                 "name": "sell_stock_stop"
               }

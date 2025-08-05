@@ -11,7 +11,7 @@
           "user_content": {
             "parts": [
               {
-                "text": "Create a debit spread by buying the Nvidia $900 call and selling the $950 call, both expiring May 17th, for 2 contracts at $15.00 net debit.\n\n"
+                "text": "Create a debit spread by buying the Nvidia $900 call and selling the $950 call, both expiring next Friday, for 2 contracts at $15.00 net debit.\n\n"
               }
             ],
             "role": "user"
@@ -19,24 +19,13 @@
           "final_response": {
             "parts": [
               {
-                "text": "Debit spread order created successfully: Bought 2 contracts of NVDA $900 call and sold 2 contracts of NVDA $950 call (both expiring May 17th) for a net debit of $15.00 per spread. Order ID: DBT707, Total debit paid: $3,000."
+                "text": "I need the specific option instrument IDs for both legs of the debit spread. Can you provide the instrument IDs for the NVDA $900 call and $950 call options expiring next Friday?"
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [
-              {
-                "id": "adk-tool-use-id",
-                "args": {
-                  "short_instrument_id": "NVDA240517C00950000",
-                  "long_instrument_id": "NVDA240517C00900000",
-                  "quantity": 2,
-                  "debit_price": 15.00
-                },
-                "name": "option_debit_spread"
-              }
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           }
         }

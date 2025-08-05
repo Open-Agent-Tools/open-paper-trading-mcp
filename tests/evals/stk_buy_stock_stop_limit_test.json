@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Stop-limit buy order placed successfully for 30 shares of META with stop price at $320.00 and limit price at $325.00. Order ID: STL202, Status: Pending until market price reaches $320, then becomes limit order at $325 maximum."
+                "text": "OK. I have placed a stop-limit buy order for 30 shares of META with a stop price of $320 and limit price of $325. The order ID is *. The order is currently pending.\n\nRemember, this is a simulated trade in a paper trading environment."
               }
             ],
             "role": "model"
@@ -31,8 +31,9 @@
                 "args": {
                   "symbol": "META",
                   "quantity": 30,
-                  "stop_price": 320.0,
-                  "limit_price": 325.0
+                  "account_id": "UITESTER01",
+                  "stop_price": 320,
+                  "limit_price": 325
                 },
                 "name": "buy_stock_stop_limit"
               }

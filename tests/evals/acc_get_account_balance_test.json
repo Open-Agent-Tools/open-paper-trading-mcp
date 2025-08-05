@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Your account balance for UITESTER01 is:\n\n*   **Cash Balance:** $*\n*   **Account Status:** Active\n*   **Currency:** USD\n\nThis is your available cash balance for trading in your simulated paper trading account."
+                "text": "The current account balance is $* USD. This is a simulated balance for paper trading. Please remember that all activities in this account are simulated and do not involve real money."
               }
             ],
             "role": "model"
@@ -28,9 +28,7 @@
             "tool_uses": [
               {
                 "id": "adk-tool-use-balance",
-                "args": {
-                  "account_id": "UITESTER01"
-                },
+                "args": {},
                 "name": "get_account_balance"
               }
             ],

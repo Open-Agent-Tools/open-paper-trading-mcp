@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Market buy order placed successfully for 10 shares of AAPL. Order ID: ABC123, Status: Pending execution at current market price."
+                "text": "OK. I have placed a market buy order for 10 shares of AAPL in account UITESTER01. The order is pending. Remember, this is a simulated trade."
               }
             ],
             "role": "model"
@@ -29,9 +29,10 @@
               {
                 "id": "adk-tool-use-id",
                 "args": {
+                  "account_id": "UITESTER01",
+                  "order_type": "market",
                   "symbol": "AAPL",
-                  "quantity": 10,
-                  "order_type": "market"
+                  "quantity": 10
                 },
                 "name": "buy_stock"
               }

@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are your available accounts:\n\n*   **Account ID**: `P34B193B2S`\n    *   **Owner**: default\n    *   **Created At**: 2025-07-30T15:20:56.971141\n    *   **Starting Balance**: $*\n    *   **Current Balance**: $*\n    *   **Change**: $*\n    *   **Change Percent**: *%\n\n*   **Account ID**: `UITESTER01`\n    *   **Owner**: UI_TESTER_WES\n    *   **Created At**: 2024-11-01T10:30:00\n    *   **Starting Balance**: $*\n    *   **Current Balance**: $*\n    *   **Change**: $*\n    *   **Change Percent**: *%\n\n**Summary:**\n*   **Total Accounts**: 2\n*   **Total Starting Balance**: $*\n*   **Total Current Balance**: $*\n*   **Total Change**: $*\n*   **Total Change Percent**: *%\n\nRemember, this is a simulated paper trading environment, and no real money is involved."
+                "text": "OK. There is one account available:\n\nAccount ID: UITESTER01\nOwner: UI_TESTER_WES\nCreated at: 2024-11-01 10:30:00\nStarting Balance: $10,000.00\nCurrent Balance: $10,000.00\nChange: $0.00\nChange Percent: 0.0%"
               }
             ],
             "role": "model"

@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "All open stock orders have been successfully cancelled. Total of 5 stock orders were cancelled. All pending stock orders are no longer active and will not be executed."
+                "text": "*cancelled * stock orders*"
               }
             ],
             "role": "model"

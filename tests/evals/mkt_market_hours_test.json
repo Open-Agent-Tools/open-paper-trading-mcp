@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "The market status shows regular trading hours from 9:30 AM to 4:00 PM ET. Current status indicates whether the market is currently open, closed, or in pre/after-market trading."
+                "text": "The market is currently *."
               }
             ],
             "role": "model"

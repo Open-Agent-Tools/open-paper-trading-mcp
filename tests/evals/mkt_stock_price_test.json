@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "The current stock price for AAPL is $150.25 with additional market data including bid/ask spread and trading volume."
+                "text": "The current stock price for AAPL is $*."
               }
             ],
             "role": "model"

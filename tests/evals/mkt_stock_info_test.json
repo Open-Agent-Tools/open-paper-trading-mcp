@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Apple Inc (AAPL) is a technology company with detailed fundamentals including market cap, P/E ratio, dividend yield, and business description. The company operates in the consumer electronics and software services sector."
+                "text": "Here is the detailed company information for Apple Inc. (AAPL):\n\n- **Symbol:** AAPL\n- **Company Name:** Apple\n- **Sector:** Electronic Technology\n- **Industry:** Telecommunications Equipment\n- **Description:** Apple Inc. designs, manufactures, and sells smartphones, personal computers, tablets, wearables, and accessories, and provides related services. It operates in the Americas, Europe, Greater China, Japan, and the Rest of Asia Pacific. Its products and services include iPhone, Mac, iPad, AirPods, Apple TV, Apple Watch, Beats products, AppleCare, iCloud, digital content stores, streaming, and licensing services. The company was founded in April 1976 and is headquartered in Cupertino, CA.\n- **Market Cap:** $*\n- **PE Ratio:** *\n- **Dividend Yield:** *%\n- **52 Week High:** $*\n- **52 Week Low:** $*\n- **Average Volume:** *\n- **Tradeable:** True\n\nThis information should give you a good overview of Apple Inc. for your paper trading activities."
               }
             ],
             "role": "model"

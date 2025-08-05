@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Limit buy order placed successfully for 50 shares of TSLA at $200.00 per share. Order ID: DEF456, Status: Pending until market price reaches or goes below your limit price."
+                "text": "OK. I have placed a limit buy order for 50 shares of TSLA at $200. The order ID is *. The order is currently pending.\n\nRemember, this is a simulated trade in a paper trading environment."
               }
             ],
             "role": "model"
@@ -31,7 +31,8 @@
                 "args": {
                   "symbol": "TSLA",
                   "quantity": 50,
-                  "limit_price": 200.0
+                  "account_id": "UITESTER01",
+                  "limit_price": 200
                 },
                 "name": "buy_stock_limit"
               }

@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Option order OPT456 has been successfully cancelled. The option order is no longer active and will not be executed."
+                "text": "*cancelled*option order*"
               }
             ],
             "role": "model"

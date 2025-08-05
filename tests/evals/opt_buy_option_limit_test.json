@@ -19,23 +19,13 @@
           "final_response": {
             "parts": [
               {
-                "text": "Limit buy order placed successfully for 5 contracts of the Apple $160 call option expiring February 16th at $3.50 per contract. Order ID: OPT404, Status: Pending until market price reaches or goes below your limit price."
+                "text": "Can you provide me with the option instrument ID? I need that to place the order."
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [
-              {
-                "id": "adk-tool-use-id",
-                "args": {
-                  "instrument_id": "AAPL240216C00160000",
-                  "quantity": 5,
-                  "limit_price": 3.50
-                },
-                "name": "buy_option_limit"
-              }
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           }
         }

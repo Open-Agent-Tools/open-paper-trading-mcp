@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here's your recent options order history showing order IDs, option contracts, strike prices, expiration dates, order types, quantities, premiums, and execution status with timestamps for each options transaction."
+                "text": "Here's your recent options order history:\n\n**Found * options orders**\n\n*\n\nThis shows your complete options trading activity with order IDs, option contracts, quantities, order types, prices, and execution status. All orders are from your paper trading account so no real money was involved."
               }
             ],
             "role": "model"

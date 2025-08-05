@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are your currently open stock orders showing pending orders that haven't been executed yet, including limit orders, stop orders, and any partially filled orders with their current status."
+                "text": "Here are your currently open stock orders:\n\n**Found * open stock orders currently pending**\n\n*\n\nThese are all pending orders that haven't been executed yet, including limit orders, stop orders, and any partially filled orders. All orders are in your paper trading account."
               }
             ],
             "role": "model"
