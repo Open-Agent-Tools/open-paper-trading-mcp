@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "The market is currently *."
+                "text": "The market is currently open.\n\nHere are the market hours for today, August 5th, 2025:\n\n*   **Regular Hours:**\n    *   Opens: 1:30 PM UTC\n    *   Closes: 8:00 PM UTC\n*   **Late Option Closes:** 8:15 PM UTC\n*   **Extended Hours:**\n    *   Opens: 1:00 PM UTC\n    *   Closes: 10:00 PM UTC\n\nPlease remember that all times are in UTC."
               }
             ],
             "role": "model"

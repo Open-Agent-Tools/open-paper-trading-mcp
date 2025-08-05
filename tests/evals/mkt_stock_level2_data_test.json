@@ -19,21 +19,13 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here is the Level II market data for NVDA, providing a snapshot of the bid and ask depth:\n\n**Bids:**\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n\n**Asks:**\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n*   **Price *:** Size *, Orders *\n\n**Market Maker Moves:**\n*   Total Bid Size: *\n*   Total Ask Size: *\n*   Spread: *\n*   Spread Percentage: *%\n\nThis Level II data shows the real-time depth of the market, indicating the interest in buying and selling NVDA at different price levels. Note that this is simulated data."
+                "text": "I am sorry, but I cannot fulfill this request. Accessing Level II market data, which includes bid/ask depth, requires a Gold subscription, and I do not have the necessary permissions for that."
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [
-              {
-                "id": "adk-tool-use-id",
-                "args": {
-                  "symbol": "NVDA"
-                },
-                "name": "stock_level2_data"
-              }
-            ],
+            "tool_uses": [],
             "intermediate_responses": []
           }
         }

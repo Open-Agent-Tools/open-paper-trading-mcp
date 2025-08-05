@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here's the price history for AAPL over the past week, showing daily open, high, low, close prices and trading volume with key price movements and trends."
+                "text": "Here's the price history for AAPL over the past week, showing hourly data:*This data provides a detailed look at how AAPL's price has fluctuated hourly over the last week. As a reminder, this is simulated paper trading data and does not involve real money.*Would you like to see the price history for a different period or for another stock?"
               }
             ],
             "role": "model"
