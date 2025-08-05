@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "*cancelled*option order*"
+                "text": "I was unable to cancel your option order with ID 'OPT456' because the order was not found. Please double-check the order ID and try again.\n\nRemember, this is a simulated paper trading account, and no real money is involved."
               }
             ],
             "role": "model"

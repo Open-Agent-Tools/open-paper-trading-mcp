@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "*cancelled * stock orders*"
+                "text": "I have successfully attempted to cancel all your open stock orders. It appears there were 0 orders to cancel, so no actions were taken.\n\nPlease remember that this is a simulated paper trading account, and no real money is involved."
               }
             ],
             "role": "model"

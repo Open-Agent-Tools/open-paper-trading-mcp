@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "*cancelled * option orders*"
+                "text": "I've successfully cancelled all of your open option orders. It looks like there were no open orders to cancel at this time."
               }
             ],
             "role": "model"

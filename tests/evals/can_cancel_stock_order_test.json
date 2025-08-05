@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "*cancelled*order*"
+                "text": "I'm sorry, but I was unable to cancel your stock order with ID 'ORDER123' as it was not found in the system.\n\nThis is a simulated trading platform, and no real money is involved."
               }
             ],
             "role": "model"
