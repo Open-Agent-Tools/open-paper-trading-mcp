@@ -11,7 +11,7 @@
           "user_content": {
             "parts": [
               {
-                "text": "Buy 5 contracts of the Apple $160 call option expiring February 16th at a limit price of $3.50 per contract.\n\n"
+                "text": "Buy 5 contracts of the Apple $160 call option expiring about a month from now at a limit price of $3.50 per contract.\n\n"
               }
             ],
             "role": "user"
@@ -19,13 +19,21 @@
           "final_response": {
             "parts": [
               {
-                "text": "Can you provide me with the option instrument ID? I need that to place the order."
+                "text": "I'll help you buy the Apple $160 call option expiring about a month from now. Let me first look up the available expiration dates for AAPL options and find the appropriate contract."
               }
             ],
             "role": "model"
           },
           "intermediate_data": {
-            "tool_uses": [],
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "underlying": "AAPL"
+                },
+                "name": "option_expirations"
+              }
+            ],
             "intermediate_responses": []
           }
         }

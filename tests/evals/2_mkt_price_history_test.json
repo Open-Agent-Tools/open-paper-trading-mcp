@@ -1,0 +1,49 @@
+{
+  "eval_set_id": "price_history_test_set",
+  "name": "Price History Test",
+  "description": "Test case for retrieving historical price data through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "price_history_test",
+      "conversation": [
+        {
+          "invocation_id": "price-history-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me the price history for AAPL over the past week.\n\n"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here is the price history for Apple (AAPL) over the past week, with data provided on an hourly interval:\n\n**AAPL Price History (Past Week)**\n\n| Date (UTC)           | Open   | High   | Low    | Close  | Volume    |\n| :------------------- | :----- | :----- | :----- | :----- | :-------- |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n| *-*-*T*:*:*Z | *.* | *.* | *.* | *.* | *,*,* |\n\n**Disclaimer:** This is simulated paper trading data and does not reflect real-time market conditions or actual investment advice. Investing in the stock market involves risks, and past performance is not indicative of future results."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-id",
+                "args": {
+                  "symbol": "AAPL",
+                  "period": "week"
+                },
+                "name": "price_history"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

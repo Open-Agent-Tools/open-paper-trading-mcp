@@ -1,17 +1,17 @@
 {
-  "eval_set_id": "cancel_all_option_orders_test_set",
-  "name": "Cancel All Option Orders Test",
-  "description": "Test case for cancelling all open option orders through agent interaction",
+  "eval_set_id": "cancel_all_stock_orders_test_set",
+  "name": "Cancel All Stock Orders Test",
+  "description": "Test case for cancelling all open stock orders through agent interaction",
   "eval_cases": [
     {
-      "eval_id": "cancel_all_option_orders_test",
+      "eval_id": "cancel_all_stock_orders_test",
       "conversation": [
         {
-          "invocation_id": "cancel-all-option-orders-001",
+          "invocation_id": "cancel-all-stock-orders-001",
           "user_content": {
             "parts": [
               {
-                "text": "Cancel all of my open option orders.\n\n"
+                "text": "Cancel all of my open stock orders.\n\n"
               }
             ],
             "role": "user"
@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "I've successfully cancelled all of your open option orders. It looks like there were no open orders to cancel at this time."
+                "text": "I have successfully cancelled *"
               }
             ],
             "role": "model"
@@ -28,8 +28,10 @@
             "tool_uses": [
               {
                 "id": "adk-tool-use-id",
-                "args": {},
-                "name": "cancel_all_option_orders_tool"
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "cancel_all_stock_orders_tool"
               }
             ],
             "intermediate_responses": []

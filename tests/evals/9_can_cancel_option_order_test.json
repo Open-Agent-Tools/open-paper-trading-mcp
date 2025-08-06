@@ -1,17 +1,17 @@
 {
-  "eval_set_id": "option_expirations_test_set",
-  "name": "Option Expirations Test",
-  "description": "Test case for retrieving available option expiration dates through agent interaction",
+  "eval_set_id": "cancel_option_order_test_set",
+  "name": "Cancel Option Order Test",
+  "description": "Test case for cancelling a specific option order through agent interaction",
   "eval_cases": [
     {
-      "eval_id": "option_expirations_test",
+      "eval_id": "cancel_option_order_test",
       "conversation": [
         {
-          "invocation_id": "option-expirations-001",
+          "invocation_id": "cancel-option-order-001",
           "user_content": {
             "parts": [
               {
-                "text": "What are all the available expiration dates for Google (GOOGL) options?\n\n"
+                "text": "Cancel my option order with ID 'OPT456'.\n\n"
               }
             ],
             "role": "user"
@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "There are no available expiration dates for GOOGL options in the current dataset."
+                "text": "I was unable to cancel your option order with ID 'OPT456' because the order was not found. Please double-check the order ID and try again.\n\nRemember, this is a simulated paper trading account, and no real money is involved."
               }
             ],
             "role": "model"
@@ -29,9 +29,10 @@
               {
                 "id": "adk-tool-use-id",
                 "args": {
-                  "underlying": "GOOGL"
+                  "order_id": "OPT456",
+                  "account_id": "UITESTER01"
                 },
-                "name": "option_expirations"
+                "name": "cancel_option_order_by_id"
               }
             ],
             "intermediate_responses": []

@@ -1,17 +1,17 @@
 {
-  "eval_set_id": "cancel_option_order_test_set",
-  "name": "Cancel Option Order Test",
-  "description": "Test case for cancelling a specific option order through agent interaction",
+  "eval_set_id": "stock_events_test_set",
+  "name": "Stock Events Test",
+  "description": "Test case for retrieving corporate events through agent interaction",
   "eval_cases": [
     {
-      "eval_id": "cancel_option_order_test",
+      "eval_id": "stock_events_test",
       "conversation": [
         {
-          "invocation_id": "cancel-option-order-001",
+          "invocation_id": "stock-events-001",
           "user_content": {
             "parts": [
               {
-                "text": "Cancel my option order with ID 'OPT456'.\n\n"
+                "text": "Show me any upcoming events for MSFT"
               }
             ],
             "role": "user"
@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "I was unable to cancel your option order with ID 'OPT456' because the order was not found. Please double-check the order ID and try again.\n\nRemember, this is a simulated paper trading account, and no real money is involved."
+                "text": "Here are the upcoming corporate events for Microsoft (MSFT):\n\n- **Q3 Earnings Report:** Scheduled for *\n- **Quarterly Dividend Payment:** Scheduled for *, estimated amount $*\n\n**Disclaimer:** This is simulated data for paper trading purposes. Dates and amounts may not be accurate."
               }
             ],
             "role": "model"
@@ -29,9 +29,9 @@
               {
                 "id": "adk-tool-use-id",
                 "args": {
-                  "order_id": "OPT456"
+                  "symbol": "MSFT"
                 },
-                "name": "cancel_option_order_by_id"
+                "name": "stock_events"
               }
             ],
             "intermediate_responses": []

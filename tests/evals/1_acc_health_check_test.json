@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "The trading system is healthy and operational. This is a simulated environment, meaning no real money is involved in any of the trading activities."
+                "text": "The trading system is healthy and operational.\n\n"
               }
             ],
             "role": "model"

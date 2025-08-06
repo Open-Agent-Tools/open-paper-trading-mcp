@@ -1,0 +1,48 @@
+{
+  "eval_set_id": "get_portfolio_test_set",
+  "name": "Get Portfolio Test",
+  "description": "Test case for retrieving portfolio information through agent interaction",
+  "eval_cases": [
+    {
+      "eval_id": "get_portfolio_test",
+      "conversation": [
+        {
+          "invocation_id": "portfolio-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Show me my portfolio."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here is a summary of your simulated paper trading portfolio for account **UITESTER01**:\n\n**Account Summary:**\n*   **Cash Balance:** $*\n*   **Total Portfolio Value:** $*\n*   **Daily P&L:** $*\n*   **Total P&L:** $*\n*   **Number of Positions:** 9\n\n**Current Positions:**\n\n| Symbol             | Type   | Quantity | Average Cost | Current Price | Market Value | Unrealized P&L | Side  |\n| :----------------- | :----- | :------- | :----------- | :------------ | :----------- | :------------- | :---- |\n| AAPL               | Stock  | 50       | $*      | $*       | $*    | $*          | Long  |\n| MSFT               | Stock  | 25       | $*      | $*       | $*    | $*          | Long  |\n| GOOGL              | Stock  | 15       | $*      | $*       | $*    | $*          | Long  |\n| TSLA               | Stock  | 30       | $*      | $*       | $*    | $*          | Long  |\n| SPY                | Stock  | 100      | $*      | $*       | $*   | $*          | Long  |\n| AAPL250221C00180000 | Option | 2        | $*        | $*         | $*    | $*          | Long  |\n| MSFT250117P00300000 | Option | 1        | $*       | $*        | $*    | $*          | Long  |\n| SPY250321C00420000 | Option | -1       | $*        | $*         | $*     | $*          | Short |\n| GOOGL250214C00130000| Option | 3        | $*        | $*         | $*    | $*          | Long  |\n\nThis is a simulated paper trading account, and no real money is involved."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "adk-tool-use-portfolio",
+                "args": {
+                  "account_id": "UITESTER01"
+                },
+                "name": "get_portfolio"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "paper_trading_agent",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}

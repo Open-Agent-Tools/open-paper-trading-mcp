@@ -28,7 +28,9 @@
             "tool_uses": [
               {
                 "id": "adk-tool-use-id",
-                "args": {},
+                "args": {
+                  "account_id": "UITESTER01"
+                },
                 "name": "open_stock_orders"
               }
             ],

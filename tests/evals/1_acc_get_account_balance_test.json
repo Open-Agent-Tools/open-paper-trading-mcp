@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "The current account balance is $* USD. This is a simulated balance for paper trading. Please remember that all activities in this account are simulated and do not involve real money."
+                "text": "Your current account balance for account UITESTER01 is $* USD.\n\nThis is a simulated paper trading account, so no real money is involved."
               }
             ],
             "role": "model"
@@ -28,7 +28,9 @@
             "tool_uses": [
               {
                 "id": "adk-tool-use-balance",
-                "args": {},
+                "args": {
+                  "account_id": "UITESTER01"
+                },
                 "name": "get_account_balance"
               }
             ],

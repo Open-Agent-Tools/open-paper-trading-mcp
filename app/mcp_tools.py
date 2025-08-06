@@ -698,7 +698,7 @@ def stock_ratings(symbol: str) -> dict[str, Any]:
 
 @mcp.tool
 def stock_events(symbol: str) -> dict[str, Any]:
-    """Get corporate events for a stock (for owned positions)
+    """Get corporate events for a stock
 
     Args:
         symbol: Stock ticker symbol (e.g., "AAPL")
@@ -751,10 +751,18 @@ def stock_level2_data(symbol: str) -> dict[str, Any]:
 
 
 @mcp.tool
-def stock_orders() -> dict[str, Any]:
-    """Retrieve a list of recent stock order history and their statuses"""
+def stock_orders(account_id: str | None = None) -> dict[str, Any]:
+    """Retrieve a list of recent stock order history and their statuses
+    
+    Args:
+        account_id: Account ID to retrieve orders for (optional, defaults to primary account)
+    """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         all_orders = run_async_safely(service.get_orders())
 
         # Filter for stock orders only (exclude options)
@@ -802,10 +810,18 @@ def stock_orders() -> dict[str, Any]:
 
 
 @mcp.tool
-def options_orders() -> dict[str, Any]:
-    """Retrieve a list of recent options order history and their statuses"""
+def options_orders(account_id: str | None = None) -> dict[str, Any]:
+    """Retrieve a list of recent options order history and their statuses
+    
+    Args:
+        account_id: Account ID to retrieve orders for (optional, defaults to primary account)
+    """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         all_orders = run_async_safely(service.get_orders())
 
         # Filter for options orders only
@@ -854,10 +870,18 @@ def options_orders() -> dict[str, Any]:
 
 
 @mcp.tool
-def open_stock_orders() -> dict[str, Any]:
-    """Retrieve all open stock orders"""
+def open_stock_orders(account_id: str | None = None) -> dict[str, Any]:
+    """Retrieve all open stock orders
+    
+    Args:
+        account_id: Account ID to retrieve orders for (optional, defaults to primary account)
+    """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         all_orders = run_async_safely(service.get_orders())
 
         # Filter for open stock orders only
@@ -906,10 +930,18 @@ def open_stock_orders() -> dict[str, Any]:
 
 
 @mcp.tool
-def open_option_orders() -> dict[str, Any]:
-    """Retrieve all open option orders"""
+def open_option_orders(account_id: str | None = None) -> dict[str, Any]:
+    """Retrieve all open option orders
+    
+    Args:
+        account_id: Account ID to retrieve orders for (optional, defaults to primary account)
+    """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         all_orders = run_async_safely(service.get_orders())
 
         # Filter for open option orders only
@@ -996,7 +1028,7 @@ def option_chain(underlying: str, expiration_date: str | None = None) -> dict[st
                     "ask": option_quote.ask,
                     "volume": option_quote.volume,
                     "open_interest": option_quote.open_interest,
-                    "implied_volatility": option_quote.implied_volatility,
+                    "implied_volatility": option_quote.iv,
                 }
             )
 
@@ -1013,7 +1045,7 @@ def option_chain(underlying: str, expiration_date: str | None = None) -> dict[st
                     "ask": option_quote.ask,
                     "volume": option_quote.volume,
                     "open_interest": option_quote.open_interest,
-                    "implied_volatility": option_quote.implied_volatility,
+                    "implied_volatility": option_quote.iv,
                 }
             )
 
@@ -1160,16 +1192,11 @@ def option_expirations(underlying: str) -> dict[str, Any]:
     try:
         service = get_trading_service()
 
-        # Get full options chain to extract expiration dates
-        chain = run_async_safely(service.get_options_chain(underlying))
-
-        # Extract unique expiration dates
-        expirations = set()
-        for option_quote in chain.calls + chain.puts:
-            if option_quote.expiration_date:
-                expirations.add(option_quote.expiration_date.isoformat())
-
-        expiration_list = sorted(expirations)
+        # Get available expiration dates directly
+        expiration_dates = run_async_safely(service.get_expiration_dates(underlying))
+        
+        # Convert dates to ISO format strings
+        expiration_list = [date.isoformat() for date in sorted(expiration_dates)]
 
         return {
             "success": True,
@@ -1261,9 +1288,9 @@ def option_strikes(
 def buy_stock(
     symbol: str,
     quantity: float,
-    order_type: str = "market",
+    order_type: str,
+    account_id: str,
     price: float | None = None,
-    account_id: str | None = None,
 ) -> dict[str, Any]:
     """Place a buy order for stocks
 
@@ -1271,11 +1298,10 @@ def buy_stock(
         symbol: Stock ticker symbol (e.g., "AAPL")
         quantity: Number of shares to buy
         order_type: Order type ("market", "limit", "stop", "stop_limit")
+        account_id: Account ID for the order
         price: Limit/stop price (required for limit/stop orders)
-        account_id: Optional account ID (uses default if not specified)
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1331,9 +1357,9 @@ def buy_stock(
 def sell_stock(
     symbol: str,
     quantity: float,
-    order_type: str = "market",
+    order_type: str,
+    account_id: str,
     price: float | None = None,
-    account_id: str | None = None,
 ) -> dict[str, Any]:
     """Place a sell order for stocks
 
@@ -1341,11 +1367,10 @@ def sell_stock(
         symbol: Stock ticker symbol (e.g., "AAPL")
         quantity: Number of shares to sell
         order_type: Order type ("market", "limit", "stop", "stop_limit")
+        account_id: Account ID for the order
         price: Limit/stop price (required for limit/stop orders)
-        account_id: Optional account ID (uses default if not specified)
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1399,7 +1424,7 @@ def sell_stock(
 
 @mcp.tool
 def buy_stock_limit(
-    symbol: str, quantity: float, limit_price: float, account_id: str | None = None
+    symbol: str, quantity: float, limit_price: float, account_id: str
 ) -> dict[str, Any]:
     """Place a limit buy order for stocks
 
@@ -1407,10 +1432,9 @@ def buy_stock_limit(
         symbol: Stock ticker symbol (e.g., "AAPL")
         quantity: Number of shares to buy
         limit_price: Maximum price to pay per share
-        account_id: Optional account ID (uses default if not specified)
+        account_id: Account ID for the order
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1456,7 +1480,7 @@ def buy_stock_limit(
 
 @mcp.tool
 def sell_stock_limit(
-    symbol: str, quantity: float, limit_price: float, account_id: str | None = None
+    symbol: str, quantity: float, limit_price: float, account_id: str
 ) -> dict[str, Any]:
     """Place a limit sell order for stocks
 
@@ -1464,10 +1488,9 @@ def sell_stock_limit(
         symbol: Stock ticker symbol (e.g., "AAPL")
         quantity: Number of shares to sell
         limit_price: Minimum price to accept per share
-        account_id: Optional account ID (uses default if not specified)
+        account_id: Account ID for the order
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1513,7 +1536,7 @@ def sell_stock_limit(
 
 @mcp.tool
 def buy_stock_stop(
-    symbol: str, quantity: float, stop_price: float, account_id: str | None = None
+    symbol: str, quantity: float, stop_price: float, account_id: str
 ) -> dict[str, Any]:
     """Place a stop buy order for stocks
 
@@ -1521,10 +1544,9 @@ def buy_stock_stop(
         symbol: Stock ticker symbol (e.g., "AAPL")
         quantity: Number of shares to buy
         stop_price: Stop trigger price
-        account_id: Optional account ID (uses default if not specified)
+        account_id: Account ID for the order
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1570,7 +1592,7 @@ def buy_stock_stop(
 
 @mcp.tool
 def sell_stock_stop(
-    symbol: str, quantity: float, stop_price: float, account_id: str | None = None
+    symbol: str, quantity: float, stop_price: float, account_id: str
 ) -> dict[str, Any]:
     """Place a stop sell order for stocks
 
@@ -1578,10 +1600,9 @@ def sell_stock_stop(
         symbol: Stock ticker symbol (e.g., "AAPL")
         quantity: Number of shares to sell
         stop_price: Stop trigger price
-        account_id: Optional account ID (uses default if not specified)
+        account_id: Account ID for the order
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1631,7 +1652,7 @@ def buy_stock_stop_limit(
     quantity: float,
     stop_price: float,
     limit_price: float,
-    account_id: str | None = None,
+    account_id: str,
 ) -> dict[str, Any]:
     """Place a stop-limit buy order for stocks
 
@@ -1640,10 +1661,9 @@ def buy_stock_stop_limit(
         quantity: Number of shares to buy
         stop_price: Stop trigger price
         limit_price: Maximum price to pay once triggered
-        account_id: Optional account ID (uses default if not specified)
+        account_id: Account ID for the order
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -1695,7 +1715,7 @@ def sell_stock_stop_limit(
     quantity: float,
     stop_price: float,
     limit_price: float,
-    account_id: str | None = None,
+    account_id: str,
 ) -> dict[str, Any]:
     """Place a stop-limit sell order for stocks
 
@@ -1704,10 +1724,9 @@ def sell_stock_stop_limit(
         quantity: Number of shares to sell
         stop_price: Stop trigger price
         limit_price: Minimum price to accept once triggered
-        account_id: Optional account ID (uses default if not specified)
+        account_id: Account ID for the order
     """
     try:
-        account_id = validate_optional_account_id(account_id)
         service = get_trading_service()
 
         from app.schemas.orders import OrderCondition, OrderCreate, OrderType
@@ -2040,14 +2059,19 @@ def option_debit_spread(
 
 
 @mcp.tool
-def cancel_stock_order_by_id(order_id: str) -> dict[str, Any]:
+def cancel_stock_order_by_id(order_id: str, account_id: str | None = None) -> dict[str, Any]:
     """Cancel a specific stock order by its ID
 
     Args:
         order_id: The ID of the stock order to cancel
+        account_id: Account ID to cancel order from (optional, defaults to primary account)
     """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         result = run_async_safely(service.cancel_order(order_id))
 
         if "error" in result:
@@ -2075,14 +2099,19 @@ def cancel_stock_order_by_id(order_id: str) -> dict[str, Any]:
 
 
 @mcp.tool
-def cancel_option_order_by_id(order_id: str) -> dict[str, Any]:
+def cancel_option_order_by_id(order_id: str, account_id: str | None = None) -> dict[str, Any]:
     """Cancel a specific option order by its ID
 
     Args:
         order_id: The ID of the option order to cancel
+        account_id: Account ID to cancel order from (optional, defaults to primary account)
     """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         result = run_async_safely(service.cancel_order(order_id))
 
         if "error" in result:
@@ -2110,10 +2139,18 @@ def cancel_option_order_by_id(order_id: str) -> dict[str, Any]:
 
 
 @mcp.tool
-def cancel_all_stock_orders_tool() -> dict[str, Any]:
-    """Cancel all open stock orders"""
+def cancel_all_stock_orders_tool(account_id: str | None = None) -> dict[str, Any]:
+    """Cancel all open stock orders
+    
+    Args:
+        account_id: Account ID to cancel orders from (optional, defaults to primary account)
+    """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         result = run_async_safely(service.cancel_all_stock_orders())
 
         if "error" in result:
@@ -2140,10 +2177,18 @@ def cancel_all_stock_orders_tool() -> dict[str, Any]:
 
 
 @mcp.tool
-def cancel_all_option_orders_tool() -> dict[str, Any]:
-    """Cancel all open option orders"""
+def cancel_all_option_orders_tool(account_id: str | None = None) -> dict[str, Any]:
+    """Cancel all open option orders
+    
+    Args:
+        account_id: Account ID to cancel orders from (optional, defaults to primary account)
+    """
     try:
-        service = get_trading_service()
+        if account_id:
+            from app.services.trading_service import TradingService
+            service = TradingService(account_owner=account_id)
+        else:
+            service = get_trading_service()
         result = run_async_safely(service.cancel_all_option_orders())
 
         if "error" in result:

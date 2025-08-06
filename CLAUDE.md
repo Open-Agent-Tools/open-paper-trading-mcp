@@ -124,32 +124,33 @@ The system provides 43 core MCP tools for AI agent interaction across 7 function
 ADK evaluation files use a standardized prefix system aligned with user journey marks:
 
 ```bash
-# Prefix System (3-character prefixes for grouping)
-acc_*    # Core System & Account Tools (9 tools) - Maps to journey_account_management
-mkt_*    # Market Data Tools (8 tools) - Maps to journey_market_data  
-stk_*    # Stock Trading Tools (8 tools) - Maps to journey_basic_trading
-opt_*    # Options Trading Tools (10 tools) - Maps to journey_options_trading + journey_options_advanced
-ord_*    # Order Management Tools (4 tools) - Maps to journey_basic_trading
-can_*    # Order Cancellation Tools (4 tools) - Maps to journey_basic_trading
+# Prefix System (numbered prefixes for logical grouping and execution order)
+1_acc_*  # Core System & Account Tools (9 tools) - Maps to journey_account_management
+2_mkt_*  # Market Data Tools (8 tools) - Maps to journey_market_data  
+3_stk_*  # Stock Trading Tools (8 tools) - Maps to journey_basic_trading
+4_opt_*  # Options Trading Tools - Single-step (6 tools) - Maps to journey_options_trading
+5_ord_*  # Order Management Tools (4 tools) - Maps to journey_basic_trading
+8_opt_*  # Options Complex Workflows (4 tools) - Multi-step discovery workflows
+9_can_*  # Order Cancellation Tools (4 tools) - Maps to journey_basic_trading
 
 # Group Execution Examples:
-adk eval examples/google_adk_agent tests/evals/acc_*_test.json --config_file_path tests/evals/test_config.json
-adk eval examples/google_adk_agent tests/evals/mkt_*_test.json --config_file_path tests/evals/test_config.json
-adk eval examples/google_adk_agent tests/evals/stk_*_test.json --config_file_path tests/evals/test_config.json
+adk eval examples/google_adk_agent tests/evals/1_acc_*_test.json --config_file_path tests/evals/test_config.json
+adk eval examples/google_adk_agent tests/evals/2_mkt_*_test.json --config_file_path tests/evals/test_config.json
+adk eval examples/google_adk_agent tests/evals/3_stk_*_test.json --config_file_path tests/evals/test_config.json
 ```
 
 #### **Current ADK Evaluation Status**
 ```bash
 # ✅ Implemented (1/43 tools)
-tests/evals/acc_list_tools_test.json  # Validates all 43 tools are accessible
+tests/evals/1_acc_list_tools_test.json  # Validates all 43 tools are accessible
 
 # 📋 Phase 2 Implementation Plan (42 remaining tools):
-# acc_* (8 more): health_check, account management, portfolio tools
-# mkt_* (8 tools): stock_price, stock_info, market_hours, etc.
-# stk_* (8 tools): buy_stock, sell_stock, limit/stop variants
-# opt_* (10 tools): option_chain, option_quote, spreads, Greeks
-# ord_* (4 tools): order history and status tracking
-# can_* (4 tools): individual and bulk order cancellation
+# 1_acc_* (8 more): health_check, account management, portfolio tools
+# 2_mkt_* (8 tools): stock_price, stock_info, market_hours, etc.
+# 3_stk_* (8 tools): buy_stock, sell_stock, limit/stop variants
+# 4_opt_* (10 tools): option_chain, option_quote, spreads, Greeks
+# 5_ord_* (4 tools): order history and status tracking
+# 9_can_* (4 tools): individual and bulk order cancellation
 ```
 
 **Why ADK Evaluations**: MCP tools operate through the Model Context Protocol and require agent-based evaluation to test their actual functionality in the MCP environment.

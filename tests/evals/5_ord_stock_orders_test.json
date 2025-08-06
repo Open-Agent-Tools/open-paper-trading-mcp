@@ -1,17 +1,17 @@
 {
-  "eval_set_id": "stock_events_test_set",
-  "name": "Stock Events Test",
-  "description": "Test case for retrieving corporate events through agent interaction",
+  "eval_set_id": "stock_orders_test_set",
+  "name": "Stock Orders Test",
+  "description": "Test case for retrieving stock order history through agent interaction",
   "eval_cases": [
     {
-      "eval_id": "stock_events_test",
+      "eval_id": "stock_orders_test",
       "conversation": [
         {
-          "invocation_id": "stock-events-001",
+          "invocation_id": "stock-orders-001",
           "user_content": {
             "parts": [
               {
-                "text": "Show me any upcoming corporate events for Microsoft (MSFT).\n\n"
+                "text": "Show me my recent stock order history.\n\n"
               }
             ],
             "role": "user"
@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Here are the upcoming corporate events for Microsoft (MSFT):\n\n- **Q3 Earnings Report:** Scheduled for *\n- **Quarterly Dividend Payment:** Scheduled for *, estimated amount $*\n\n**Disclaimer:** This is simulated data for paper trading purposes. Dates and amounts may not be accurate."
+                "text": "Here is your recent stock order history:*This information is for simulated trading purposes only and does not involve real money."
               }
             ],
             "role": "model"
@@ -29,9 +29,9 @@
               {
                 "id": "adk-tool-use-id",
                 "args": {
-                  "symbol": "MSFT"
+                  "account_id": "UITESTER01"
                 },
-                "name": "stock_events"
+                "name": "stock_orders"
               }
             ],
             "intermediate_responses": []
