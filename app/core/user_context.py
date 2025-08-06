@@ -63,8 +63,8 @@ class UserContextManager:
 
         # Try to get user_id from context session first
         user_id = None
-        if hasattr(ctx, 'session') and ctx.session:
-            user_id = getattr(ctx.session, 'user_id', None)
+        if hasattr(ctx, "session") and ctx.session:
+            user_id = getattr(ctx.session, "user_id", None)
 
         # If not in session, try to get from client_id
         if not user_id:
@@ -72,9 +72,9 @@ class UserContextManager:
             user_id = getattr(ctx, "client_id", None)
 
         # If still no user_id, try to extract from any available session data
-        if not user_id and hasattr(ctx, 'session') and ctx.session:
+        if not user_id and hasattr(ctx, "session") and ctx.session:
             # Some MCP implementations may store user info differently
-            session_data = getattr(ctx.session, 'data', {}) or {}
+            session_data = getattr(ctx.session, "data", {}) or {}
             user_id = session_data.get("user_id")
 
         # Look up account ID for this user

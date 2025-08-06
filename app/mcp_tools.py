@@ -199,7 +199,9 @@ def get_account_info(ctx: Context, account_id: str | None = None) -> dict[str, A
         )
 
         # Validate account_id parameter
-        resolved_account_id = validate_optional_account_id(context_account_id) or "UITESTER01"
+        resolved_account_id = (
+            validate_optional_account_id(context_account_id) or "UITESTER01"
+        )
 
         service = get_trading_service()
 
@@ -753,13 +755,14 @@ def stock_level2_data(symbol: str) -> dict[str, Any]:
 @mcp.tool
 def stock_orders(account_id: str | None = None) -> dict[str, Any]:
     """Retrieve a list of recent stock order history and their statuses
-    
+
     Args:
         account_id: Account ID to retrieve orders for (optional, defaults to primary account)
     """
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -812,13 +815,14 @@ def stock_orders(account_id: str | None = None) -> dict[str, Any]:
 @mcp.tool
 def options_orders(account_id: str | None = None) -> dict[str, Any]:
     """Retrieve a list of recent options order history and their statuses
-    
+
     Args:
         account_id: Account ID to retrieve orders for (optional, defaults to primary account)
     """
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -872,13 +876,14 @@ def options_orders(account_id: str | None = None) -> dict[str, Any]:
 @mcp.tool
 def open_stock_orders(account_id: str | None = None) -> dict[str, Any]:
     """Retrieve all open stock orders
-    
+
     Args:
         account_id: Account ID to retrieve orders for (optional, defaults to primary account)
     """
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -932,13 +937,14 @@ def open_stock_orders(account_id: str | None = None) -> dict[str, Any]:
 @mcp.tool
 def open_option_orders(account_id: str | None = None) -> dict[str, Any]:
     """Retrieve all open option orders
-    
+
     Args:
         account_id: Account ID to retrieve orders for (optional, defaults to primary account)
     """
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -1194,7 +1200,7 @@ def option_expirations(underlying: str) -> dict[str, Any]:
 
         # Get available expiration dates directly
         expiration_dates = run_async_safely(service.get_expiration_dates(underlying))
-        
+
         # Convert dates to ISO format strings
         expiration_list = [date.isoformat() for date in sorted(expiration_dates)]
 
@@ -2059,7 +2065,9 @@ def option_debit_spread(
 
 
 @mcp.tool
-def cancel_stock_order_by_id(order_id: str, account_id: str | None = None) -> dict[str, Any]:
+def cancel_stock_order_by_id(
+    order_id: str, account_id: str | None = None
+) -> dict[str, Any]:
     """Cancel a specific stock order by its ID
 
     Args:
@@ -2069,6 +2077,7 @@ def cancel_stock_order_by_id(order_id: str, account_id: str | None = None) -> di
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -2099,7 +2108,9 @@ def cancel_stock_order_by_id(order_id: str, account_id: str | None = None) -> di
 
 
 @mcp.tool
-def cancel_option_order_by_id(order_id: str, account_id: str | None = None) -> dict[str, Any]:
+def cancel_option_order_by_id(
+    order_id: str, account_id: str | None = None
+) -> dict[str, Any]:
     """Cancel a specific option order by its ID
 
     Args:
@@ -2109,6 +2120,7 @@ def cancel_option_order_by_id(order_id: str, account_id: str | None = None) -> d
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -2141,13 +2153,14 @@ def cancel_option_order_by_id(order_id: str, account_id: str | None = None) -> d
 @mcp.tool
 def cancel_all_stock_orders_tool(account_id: str | None = None) -> dict[str, Any]:
     """Cancel all open stock orders
-    
+
     Args:
         account_id: Account ID to cancel orders from (optional, defaults to primary account)
     """
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()
@@ -2179,13 +2192,14 @@ def cancel_all_stock_orders_tool(account_id: str | None = None) -> dict[str, Any
 @mcp.tool
 def cancel_all_option_orders_tool(account_id: str | None = None) -> dict[str, Any]:
     """Cancel all open option orders
-    
+
     Args:
         account_id: Account ID to cancel orders from (optional, defaults to primary account)
     """
     try:
         if account_id:
             from app.services.trading_service import TradingService
+
             service = TradingService(account_owner=account_id)
         else:
             service = get_trading_service()

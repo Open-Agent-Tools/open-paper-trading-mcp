@@ -179,7 +179,7 @@ class RobinhoodAdapter(QuoteAdapter):
             quote_data = await self.session_manager.with_session(
                 rh.stocks.get_latest_price, asset.symbol
             )
-            
+
             if not quote_data or not quote_data[0]:
                 return None
 
@@ -189,7 +189,7 @@ class RobinhoodAdapter(QuoteAdapter):
             fundamentals = await self.session_manager.with_session(
                 rh.stocks.get_fundamentals, asset.symbol
             )
-            
+
             if fundamentals and fundamentals[0]:
                 fund_data = fundamentals[0]
                 volume = (

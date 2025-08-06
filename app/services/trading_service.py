@@ -662,12 +662,13 @@ class TradingService:
                 async def get_cached_price_safe(symbol: str):
                     try:
                         # Try to get cached price from test_stock_quotes table
-                        from sqlalchemy import select, desc, text
-                        from datetime import datetime, timedelta
-                        
+                        from datetime import datetime, timedelta, timezone
+
+                        from sqlalchemy import text
+
                         # Check for recent cached quote (within last 24 hours)
-                        cutoff_time = datetime.utcnow() - timedelta(hours=24)
-                        
+                        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+
                         # Use raw query since test_stock_quotes might not have ORM model
                         cached_stmt = text("""
                             SELECT symbol, price, quote_date 
@@ -677,21 +678,23 @@ class TradingService:
                             ORDER BY quote_date DESC 
                             LIMIT 1
                         """)
-                        
-                        cached_result = await db.execute(cached_stmt, {
-                            "symbol": symbol,
-                            "cutoff_time": cutoff_time
-                        })
+
+                        cached_result = await db.execute(
+                            cached_stmt, {"symbol": symbol, "cutoff_time": cutoff_time}
+                        )
                         cached_row = cached_result.fetchone()
-                        
+
                         if cached_row:
                             # Use cached price
-                            from app.schemas.quotes import StockQuote as StockQuoteSchema
+                            from app.schemas.quotes import (
+                                StockQuote as StockQuoteSchema,
+                            )
+
                             quote = StockQuoteSchema(
                                 symbol=cached_row[0],  # symbol
                                 price=float(cached_row[1]),  # price
                                 quote_date=cached_row[2],  # quote_date
-                                asset=None
+                                asset=None,
                             )
                             return symbol, quote
                         else:
@@ -708,7 +711,11 @@ class TradingService:
                 # Build quote lookup dict
                 quotes: dict[str, Any] = {}
                 for quote_result in quote_results:
-                    if not isinstance(quote_result, BaseException) and isinstance(quote_result, tuple) and len(quote_result) == 2:
+                    if (
+                        not isinstance(quote_result, BaseException)
+                        and isinstance(quote_result, tuple)
+                        and len(quote_result) == 2
+                    ):
                         symbol, quote = quote_result
                         if isinstance(symbol, str):
                             quotes[symbol] = quote
@@ -733,19 +740,29 @@ class TradingService:
                         print(
                             f"⚠️ Position conversion failed for {db_pos.symbol}: {convert_error}"
                         )
-                        # Create a basic position with minimal data to avoid data loss
-                        from app.schemas.positions import Position
+                        # Try to create a basic position with minimal data to avoid data loss
+                        try:
+                            from app.schemas.positions import Position
 
-                        basic_position = Position(
-                            symbol=db_pos.symbol,
-                            quantity=db_pos.quantity,
-                            avg_price=db_pos.avg_price,
-                            current_price=db_pos.avg_price,
-                            unrealized_pnl=0.0,
-                            realized_pnl=0.0,
-                            asset=None,
-                        )
-                        positions.append(basic_position)
+                            # Truncate symbol if too long for validation
+                            symbol = db_pos.symbol[:20] if len(db_pos.symbol) > 20 else db_pos.symbol
+
+                            basic_position = Position(
+                                symbol=symbol,
+                                quantity=db_pos.quantity,
+                                avg_price=db_pos.avg_price,
+                                current_price=db_pos.avg_price,
+                                unrealized_pnl=0.0,
+                                realized_pnl=0.0,
+                                asset=None,
+                            )
+                            positions.append(basic_position)
+                        except Exception as validation_error:
+                            # If even basic position creation fails, log and skip this position
+                            print(
+                                f"⚠️ Basic position creation failed for {db_pos.symbol}: {validation_error}"
+                            )
+                            # Skip this position entirely to avoid breaking portfolio calculation
 
             total_invested = sum(
                 pos.quantity * (pos.current_price or 0) for pos in positions

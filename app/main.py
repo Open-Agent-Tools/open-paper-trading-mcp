@@ -85,25 +85,34 @@ if frontend_dist.exists():
     if static_dir.exists():
         # Add cache control middleware for static files
         from starlette.middleware.base import BaseHTTPMiddleware
-        from starlette.responses import Response
-        
+
         class CacheControlMiddleware(BaseHTTPMiddleware):
             async def dispatch(self, request, call_next):
                 response = await call_next(request)
                 # For static assets, add cache control headers
                 if request.url.path.startswith("/static/"):
                     # For JS/CSS files with hash in filename, cache aggressively
-                    if any(request.url.path.endswith(ext) for ext in ['.js', '.css']):
-                        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+                    if any(request.url.path.endswith(ext) for ext in [".js", ".css"]):
+                        response.headers["Cache-Control"] = (
+                            "public, max-age=31536000, immutable"
+                        )
                     else:
                         response.headers["Cache-Control"] = "public, max-age=3600"
                 # For HTML files, disable caching to avoid stale content
-                elif request.url.path in ["/", "/dashboard", "/orders", "/research", "/account"]:
-                    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                elif request.url.path in [
+                    "/",
+                    "/dashboard",
+                    "/orders",
+                    "/research",
+                    "/account",
+                ]:
+                    response.headers["Cache-Control"] = (
+                        "no-cache, no-store, must-revalidate"
+                    )
                     response.headers["Pragma"] = "no-cache"
                     response.headers["Expires"] = "0"
                 return response
-        
+
         app.add_middleware(CacheControlMiddleware)
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
         print(f"✅ Static assets mounted from {static_dir} with cache control")

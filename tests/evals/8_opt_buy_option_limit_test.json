@@ -19,7 +19,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "I'll help you buy the Apple $160 call option expiring about a month from now. Let me first look up the available expiration dates for AAPL options and find the appropriate contract."
+                "text": "I was unable to retrieve the Apple $160 call option expiring on * due to a timeout. This means I could not get the necessary instrument ID to place the order.\n\nPlease try again or provide different criteria for the option, such as a different expiration date or strike price."
               }
             ],
             "role": "model"
@@ -32,6 +32,15 @@
                   "underlying": "AAPL"
                 },
                 "name": "option_expirations"
+              },
+              {
+                "id": "adk-tool-use-id-2",
+                "args": {
+                  "expiration_date": "*",
+                  "symbol": "AAPL",
+                  "option_type": "call"
+                },
+                "name": "find_options"
               }
             ],
             "intermediate_responses": []

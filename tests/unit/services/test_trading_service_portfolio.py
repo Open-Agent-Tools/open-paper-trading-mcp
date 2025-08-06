@@ -248,11 +248,12 @@ class TestGetPortfolio:
 
         result = await service.get_portfolio()
 
-        # Position should be skipped due to no quote
+        # Position should use avg_price as fallback when quote unavailable
         assert result.cash_balance == 50000.0
-        assert len(result.positions) == 0  # Position skipped
-        assert result.total_value == 50000.0  # Only cash
-        assert result.total_pnl == 0.0
+        assert len(result.positions) == 1  # Position included with fallback price
+        assert result.positions[0].current_price == 50.0  # Uses avg_price as fallback
+        assert result.total_value == 55000.0  # Cash + position value
+        assert result.total_pnl == 0.0  # No unrealized gain/loss with avg_price fallback
 
     @pytest.mark.asyncio
     async def test_get_portfolio_mixed_assets(self, db_session: AsyncSession):
@@ -663,15 +664,18 @@ class TestGetPositions:
         mock_quote_adapter.get_quote.side_effect = mock_get_quote
 
         mock_position_converter = AsyncMock()
-        mock_schema_position = Position(
-            symbol="NVDA",
-            quantity=100,
-            avg_price=150.0,
-            current_price=160.0,
-            unrealized_pnl=1000.0,
-            realized_pnl=0.0,
-        )
-        mock_position_converter.to_schema.return_value = mock_schema_position
+        
+        def mock_to_schema(db_pos, current_price):
+            return Position(
+                symbol=db_pos.symbol,
+                quantity=db_pos.quantity,
+                avg_price=db_pos.avg_price,
+                current_price=current_price,
+                unrealized_pnl=(current_price - db_pos.avg_price) * db_pos.quantity,
+                realized_pnl=0.0,
+            )
+        
+        mock_position_converter.to_schema.side_effect = mock_to_schema
 
         service = TradingService(
             quote_adapter=mock_quote_adapter,
@@ -682,9 +686,12 @@ class TestGetPositions:
 
         result = await service.get_positions()
 
-        # Only position with successful quote should be returned
-        assert len(result) == 1
-        assert result[0].symbol == "NVDA"
+        # Both positions should be returned, one with quote price, one with fallback avg_price
+        assert len(result) == 2
+        # The mock only returns one position due to mock_position_converter setup
+        # In reality, both would be returned with different price handling
+        nvda_position = next((p for p in result if p.symbol == "NVDA"), None)
+        assert nvda_position is not None
 
 
 @pytest.mark.journey_portfolio_management
